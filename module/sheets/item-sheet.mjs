@@ -91,6 +91,12 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       parts.attributes.template = `systems/sksk/templates/item/parts/class.hbs`;
       // Classes have no item-level effects tab; effects live on abilities instead.
       delete parts.effects;
+    } else if (itemType === 'talent') {
+      parts.header.template = `systems/sksk/templates/item/parts/header-talent.hbs`;
+      parts.attributes.template = `systems/sksk/templates/item/parts/talent.hbs`;
+      // Talents have a single ability; its Active Effects are shown inline
+      // rather than in a separate item-level effects tab.
+      delete parts.effects;
     }
 
     return parts;
@@ -104,6 +110,9 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       delete tabs.effects;
     } else if (group === 'primary' && this.item.type === 'class') {
       tabs.attributes.label = 'SKSK.SheetLabels.Class';
+      delete tabs.effects;
+    } else if (group === 'primary' && this.item.type === 'talent') {
+      tabs.attributes.label = 'TYPES.Item.talent';
       delete tabs.effects;
     }
     return tabs;
@@ -167,6 +176,11 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
 
     if (item.type === 'class') {
       context.classTypeChoices = CONFIG.SKSK.classTypes;
+    }
+
+    if (item.type === 'talent') {
+      context.talentTypeChoices = CONFIG.SKSK.talentTypes;
+      context.attributeChoices = CONFIG.SKSK.attributes;
     }
 
     if (item.type === 'species' || item.type === 'class') {

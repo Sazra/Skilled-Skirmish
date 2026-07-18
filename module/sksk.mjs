@@ -44,7 +44,7 @@ Hooks.once('init', function () {
     label: 'SKSK.SheetLabels.Actor',
   });
   foundry.applications.apps.DocumentSheetConfig.registerSheet(Item, 'sksk', SKSKItemSheet, {
-    types: ['item', 'feature', 'class', 'species', 'weapon', 'armor', 'spell'],
+    types: ['item', 'feature', 'talent', 'class', 'species', 'weapon', 'armor', 'spell'],
     makeDefault: true,
     label: 'SKSK.SheetLabels.Item',
   });

@@ -80,6 +80,17 @@
         "Advanced": "Advanced Class"
       }
     },
+    "Talent": {
+      "Type": {
+        "Level6": "Level 6",
+        "Level12": "Level 12",
+        "Level18": "Level 18",
+        "Level24": "Level 24",
+        "Mythic": "Mythic",
+        "Bonus": "Bonus Talent",
+        "Bloodline": "Bloodline"
+      }
+    },
     "Item": {
       "Spell": {
         "SpellLVL": "Level {level} Spells",

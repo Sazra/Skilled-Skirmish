@@ -27,20 +27,23 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       delete: SKSKActorSheet.#onEffectAction,
       toggle: SKSKActorSheet.#onEffectAction,
       roll: SKSKActorSheet.#onRoll,
-    }
+    },
+    // Drop target for assigning existing Items (of any type) to this actor
+    // by dragging them from the sidebar, a compendium, or another sheet.
+    dragDrop: [{ dragSelector: null, dropSelector: null }],
   };
 
   /** @override */
   static TABS = {
     primary: {
       tabs: [
-        { id: "main", label: "Main" },
         { id: "description", label: "Description" },
         { id: "items", label: "Items" },
+        { id: "abilities", label: "Abilities" },
         { id: "spells", label: "Spells" },
         { id: "effects", label: "Effects" },
       ],
-      initial: "main",
+      initial: "description",
     },
   };
 
@@ -48,12 +51,8 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
   _prepareTabs(group) {
     const tabs = super._prepareTabs(group);
     if (group === "primary" && this.actor.type === 'npc') {
-      // NPCs don't have main or spells tabs
-      delete tabs.main;
+      // NPCs don't have a spells tab
       delete tabs.spells;
-      // Set description as initial tab for NPCs
-      tabs.description.active = true;
-      tabs.description.cssClass = "active";
     }
     return tabs;
   }
@@ -72,16 +71,16 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     tabs: {
       template: "systems/sksk/templates/actor/parts/tab-navigation.hbs",
     },
-    main: {
-      template: "systems/sksk/templates/actor/parts/main.hbs",
-      scrollable: [""],
-    },
     description: {
       template: "systems/sksk/templates/actor/parts/description.hbs",
       scrollable: [""],
     },
     items: {
       template: "systems/sksk/templates/actor/parts/items.hbs",
+      scrollable: [""],
+    },
+    abilities: {
+      template: "systems/sksk/templates/actor/parts/abilities.hbs",
       scrollable: [""],
     },
     spells: {
@@ -104,20 +103,12 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     if (actorType === 'npc') {
       parts.header.template = `systems/sksk/templates/actor/parts/header-npc.hbs`;
       parts.resources.template = `systems/sksk/templates/actor/parts/resources-npc.hbs`;
-      // Remove tabs that NPCs don't have
-      delete parts.main;
+      // NPCs don't have a spells tab
       delete parts.spells;
     } else {
       parts.header.template = `systems/sksk/templates/actor/parts/header.hbs`;
       parts.resources.template = `systems/sksk/templates/actor/parts/resources.hbs`;
     }
-
-    // Set tab templates (these are shared)
-    if (parts.description) parts.description.template = `systems/sksk/templates/actor/parts/description.hbs`;
-    if (parts.items) parts.items.template = `systems/sksk/templates/actor/parts/items.hbs`;
-    if (parts.effects) parts.effects.template = `systems/sksk/templates/actor/parts/effects.hbs`;
-    if (parts.main) parts.main.template = `systems/sksk/templates/actor/parts/main.hbs`;
-    if (parts.spells) parts.spells.template = `systems/sksk/templates/actor/parts/spells.hbs`;
 
     return parts;
   }
@@ -128,6 +119,30 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
    */
   get actor() {
     return this.document;
+  }
+
+  constructor(...args) {
+    super(...args);
+    this.#dragDrop = this.#createDragDropHandlers();
+  }
+
+  /**
+   * The drag-and-drop workflows bound to this sheet.
+   * @type {DragDrop[]}
+   */
+  #dragDrop;
+
+  #createDragDropHandlers() {
+    return this.options.dragDrop.map(config => {
+      config.permissions = {
+        dragstart: () => this.isEditable,
+        drop: () => this.isEditable,
+      };
+      config.callbacks = {
+        drop: this._onDropItem.bind(this),
+      };
+      return new foundry.applications.ux.DragDrop.implementation(config);
+    });
   }
 
   /* -------------------------------------------- */
@@ -236,6 +251,57 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       9: [],
     };
 
+    const actorLevel = context.system.resources?.level?.value ?? 1;
+
+    // Whether the actor also holds an Advanced Class raises the Second
+    // Class unlock levels from 13/18/24 to 14/19/25.
+    const hasAdvancedClass = context.items.some(
+      (i) => i.type === 'class' && i.system.classType === 'advanced'
+    );
+
+    // The level at which each of a class's 3 abilities unlocks, by class type.
+    const classAbilityLevels = {
+      first: [1, 6, 12],
+      second: hasAdvancedClass ? [14, 19, 25] : [13, 18, 24],
+      advanced: [13, 13, 13],
+      third: [25, 25, 25],
+    };
+
+    // Abilities granted by class/species items, flattened into a single
+    // list for the Abilities tab (alongside talents).
+    const classAndSpeciesAbilities = [];
+
+    const collectClassAbilities = (source) => {
+      const levels = classAbilityLevels[source.system.classType] ?? [1, 1, 1];
+      source.system.abilities?.forEach((ability, index) => {
+        if (!ability.name && !ability.description) return;
+        const requiredLevel = levels[index] ?? 1;
+        // Not unlocked yet at the actor's current level.
+        if (actorLevel < requiredLevel) return;
+        classAndSpeciesAbilities.push({
+          name: ability.name || source.name,
+          description: ability.description,
+          sourceId: source.id,
+          sourceImg: source.img,
+          sourceLabel: `${source.name}: Level ${requiredLevel}`,
+        });
+      });
+    };
+
+    const collectSpeciesAbilities = (source) => {
+      for (const ability of source.system.abilities ?? []) {
+        if (!ability.name && !ability.description) continue;
+        classAndSpeciesAbilities.push({
+          name: ability.name || source.name,
+          description: ability.description,
+          sourceId: source.id,
+          sourceImg: source.img,
+          // Species abilities are labeled with only the species' name.
+          sourceLabel: source.name,
+        });
+      }
+    };
+
     // Iterate through items, allocating to containers
     for (let i of context.items) {
       i.img = i.img || Item.DEFAULT_ICON;
@@ -257,15 +323,20 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       }
       // Append to talents.
       else if (i.type === 'talent') {
+        i.typeLabel = game.i18n.localize(CONFIG.SKSK.talentTypes[i.system.talentType]);
         talents.push(i);
       }
       // Append to classes.
       else if (i.type === 'class') {
+        i.typeLabel = game.i18n.localize(CONFIG.SKSK.classTypes[i.system.classType]);
         classes.push(i);
+        collectClassAbilities(i);
       }
       // Append to species.
       else if (i.type === 'species') {
+        i.typeLabel = game.i18n.localize(CONFIG.SKSK.speciesTypes[i.system.speciesType]);
         species.push(i);
+        collectSpeciesAbilities(i);
       }
       // Append to spells.
       else if (i.type === 'spell') {
@@ -282,6 +353,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     context.classes = classes;
     context.species = species;
     context.spells = spells;
+    context.classAndSpeciesAbilities = classAndSpeciesAbilities;
   }
 
   /* -------------------------------------------- */
@@ -290,8 +362,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
   async _onRender(context, options) {
     await super._onRender(context, options);
 
-    const activeTab = this.tabGroups?.primary
-      ?? (this.actor.type === 'npc' ? 'description' : this.constructor.TABS.primary.initial);
+    const activeTab = this.tabGroups?.primary ?? this.constructor.TABS.primary.initial;
     if (activeTab && this.element.querySelector(`.tab[data-group="primary"][data-tab="${activeTab}"]`)) {
       this.changeTab(activeTab, "primary", { force: true, updatePosition: false });
     }
@@ -306,6 +377,30 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
         li.addEventListener('dragstart', handler, false);
       }
     }
+
+    // Bind drop handling so existing Items (of any type) can be dragged
+    // onto this sheet from the sidebar, a compendium, or another sheet.
+    this.#dragDrop.forEach(d => d.bind(this.element));
+  }
+
+  /**
+   * Handle dropping an Item onto this sheet, embedding a copy of it on
+   * the actor. Works for every item type.
+   * @param {DragEvent} event
+   * @private
+   */
+  async _onDropItem(event) {
+    const data = foundry.applications.ux.TextEditor.implementation.getDragEventData(event);
+    if (data.type !== 'Item') return;
+
+    const item = await Item.implementation.fromDropData(data);
+    if (!item) return;
+
+    // Already an owned item on this actor - nothing to do.
+    if (item.actor === this.actor) return;
+
+    const itemData = item.toObject();
+    return this.actor.createEmbeddedDocuments('Item', [itemData]);
   }
 
   /**

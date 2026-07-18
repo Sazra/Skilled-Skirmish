@@ -1,0 +1,83 @@
+<section class="tab {{tab.cssClass}}" data-group="primary" data-tab="attributes">
+
+  <div class="resource">
+    <label class="resource-label">Talent Type</label>
+    <select name="system.talentType">
+      {{selectOptions talentTypeChoices selected=system.talentType localize=true}}
+    </select>
+  </div>
+
+  <div class="resource">
+    <label class="resource-label">Attribute Bonuses</label>
+    <ol class="items-list">
+      <li class="item flexrow items-header">
+        <div class="item-name">Attribute</div>
+        <div class="item-name">Bonus</div>
+        <div class="item-controls">
+          <a class="item-control item-create" data-action="addAttributeBonus" title="Add attribute bonus">
+            <i class="fas fa-plus"></i>
+          </a>
+        </div>
+      </li>
+      {{#each system.attributeBonuses as |entry index|}}
+      <li class="item flexrow">
+        <div class="item-name">
+          <select name="system.attributeBonuses.{{index}}.attribute">
+            {{selectOptions ../attributeChoices selected=entry.attribute localize=true}}
+          </select>
+        </div>
+        <div class="item-name">
+          <input type="text" name="system.attributeBonuses.{{index}}.bonus" value="{{entry.bonus}}"
+            data-dtype="Number" />
+        </div>
+        <div class="item-controls">
+          <a class="item-control item-delete" data-action="removeArrayEntry" data-field="attributeBonuses"
+            data-index="{{index}}" title="Remove">
+            <i class="fas fa-trash"></i>
+          </a>
+        </div>
+      </li>
+      {{/each}}
+    </ol>
+  </div>
+
+  <div class="resource">
+    <label class="resource-label">Skill Bonuses</label>
+    <ol class="items-list">
+      <li class="item flexrow items-header">
+        <div class="item-name">Skill (placeholder)</div>
+        <div class="item-name">Bonus</div>
+        <div class="item-controls">
+          <a class="item-control item-create" data-action="addSkillBonus" title="Add skill bonus">
+            <i class="fas fa-plus"></i>
+          </a>
+        </div>
+      </li>
+      {{#each system.skillBonuses as |entry index|}}
+      <li class="item flexrow">
+        <div class="item-name">
+          <input type="text" name="system.skillBonuses.{{index}}.skill" value="{{entry.skill}}"
+            placeholder="Skill name" />
+        </div>
+        <div class="item-name">
+          <input type="text" name="system.skillBonuses.{{index}}.bonus" value="{{entry.bonus}}"
+            data-dtype="Number" />
+        </div>
+        <div class="item-controls">
+          <a class="item-control item-delete" data-action="removeArrayEntry" data-field="skillBonuses"
+            data-index="{{index}}" title="Remove">
+            <i class="fas fa-trash"></i>
+          </a>
+        </div>
+      </li>
+      {{/each}}
+    </ol>
+  </div>
+
+  <div class="resource">
+    <label class="resource-label">Ability</label>
+    <textarea name="system.ability" rows="4" placeholder="Describe the ability">{{system.ability}}</textarea>
+    {{> "systems/sksk/templates/item/parts/item-effects.hbs"}}
+  </div>
+
+</section>

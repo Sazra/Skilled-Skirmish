@@ -27,6 +27,16 @@ SKSK.classTypes = {
   advanced: 'SKSK.Class.Type.Advanced',
 };
 
+SKSK.talentTypes = {
+  level6: 'SKSK.Talent.Type.Level6',
+  level12: 'SKSK.Talent.Type.Level12',
+  level18: 'SKSK.Talent.Type.Level18',
+  level24: 'SKSK.Talent.Type.Level24',
+  mythic: 'SKSK.Talent.Type.Mythic',
+  bonus: 'SKSK.Talent.Type.Bonus',
+  bloodline: 'SKSK.Talent.Type.Bloodline',
+};
+
 SKSK.attributeAbbreviations = {
   str: 'SKSK.Attribute.Str.abbr',
   dex: 'SKSK.Attribute.Dex.abbr',

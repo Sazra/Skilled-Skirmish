@@ -3,6 +3,43 @@
   <img class="profile-img" src="{{actor.img}}" data-edit="img" title="{{actor.name}}" height="100" width="100" />
   <div class="header-fields">
     <h1 class="charname"><input name="name" type="text" value="{{actor.name}}" placeholder="Name" /></h1>
+
+    <div class="header-items flexrow">
+      <div class="header-item-list">
+        <label class="resource-label">Class</label>
+        <ol class="items-list compact-list">
+          {{#each classes as |cls|}}
+          <li class="item flexrow" data-item-id="{{cls._id}}">
+            <a class="item-name flexrow" data-action="editItem">
+              <img class="item-image" src="{{cls.img}}" width="16" height="16" />
+              <span>{{cls.name}}</span>
+              <span class="item-type-label">({{cls.typeLabel}})</span>
+            </a>
+            <a class="item-control item-delete" data-action="deleteItem" title="Remove">
+              <i class="fas fa-times"></i>
+            </a>
+          </li>
+          {{/each}}
+        </ol>
+      </div>
+      <div class="header-item-list">
+        <label class="resource-label">Species</label>
+        <ol class="items-list compact-list">
+          {{#each species as |sp|}}
+          <li class="item flexrow" data-item-id="{{sp._id}}">
+            <a class="item-name flexrow" data-action="editItem">
+              <img class="item-image" src="{{sp.img}}" width="16" height="16" />
+              <span>{{sp.name}}</span>
+              <span class="item-type-label">({{sp.typeLabel}})</span>
+            </a>
+            <a class="item-control item-delete" data-action="deleteItem" title="Remove">
+              <i class="fas fa-times"></i>
+            </a>
+          </li>
+          {{/each}}
+        </ol>
+      </div>
+    </div>
   </div>
   <div class="header-level flex-group-center">
     <label for="system.resources.level.value" class="resource-label">Level</label>
