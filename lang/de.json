@@ -1,0 +1,73 @@
+{
+    "SKSK": {
+        "Attribute": {
+            "Str": {
+                "long": "Stärke",
+                "abbr": "str"
+            },
+            "Con": {
+                "long": "Widerstand",
+                "abbr": "con"
+            },
+            "Dex": {
+                "long": "Geschicklichkeit",
+                "abbr": "dex"
+            },
+            "Per": {
+                "long": "Wahrnehmung",
+                "abbr": "per"
+            },
+            "Wil": {
+                "long": "Willenskraft",
+                "abbr": "wil"
+            },
+            "Aur": {
+                "long": "Aura",
+                "abbr": "aur"
+            },
+            "Cha": {
+                "long": "Charisma",
+                "abbr": "cha"
+            },
+            "App": {
+                "long": "Aussehen",
+                "abbr": "app"
+            }
+        },
+        "SheetLabels": {
+            "Actor": "SKSK Actor Sheet",
+            "Item": "SKSK Item Sheet",
+            "Resources": "Ressourcen",
+            "Attributes": "Attribute"
+        },
+        "Item": {
+            "Spell": {
+                "SpellLVL": "Level {level} Spells",
+                "AddLVL": "Add LVL {level}"
+            }
+        },
+        "Effect": {
+            "Source": "Quelle",
+            "Toggle": "Effekt Umschalten",
+            "Temporary": "Temporäre Effekte",
+            "Passive": "Passive Effekte",
+            "Inactive": "Inaktive Effekte"
+        }
+    },
+    "TYPES": {
+        "Actor": {
+            "character": "Charakter",
+            "npc": "NPC"
+        },
+        "Item": {
+            "item": "Gegenstand",
+            "feature": "Eigenschaft",
+            "talent": "Talent",
+            "class": "Klasse",
+            "species": "Rasse",
+            "armor": "Rüstung",
+            "weapon": "Waffe",
+            "spell": "Zauber"
+        }
+    }
+}

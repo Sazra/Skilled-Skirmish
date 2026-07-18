@@ -1,0 +1,97 @@
+{
+  "SKSK": {
+    "Attribute": {
+      "Str": {
+        "long": "Strength",
+        "abbr": "str"
+      },
+      "Con": {
+        "long": "Constitution",
+        "abbr": "con"
+      },
+      "Dex": {
+        "long": "Dexterity",
+        "abbr": "dex"
+      },
+      "Per": {
+        "long": "Perception",
+        "abbr": "per"
+      },
+      "Wil": {
+        "long": "Willpower",
+        "abbr": "wil"
+      },
+      "Aur": {
+        "long": "Aura",
+        "abbr": "aur"
+      },
+      "Cha": {
+        "long": "Charisma",
+        "abbr": "cha"
+      },
+      "App": {
+        "long": "Appearance",
+        "abbr": "app"
+      }
+    },
+    "Skill": {
+      "Weapon": {
+        "Axe": "Axe",
+        "Bow": "Bow",
+        "BluntWeapon": "Blunt Weapon",
+        "Dagger": "Dagger",
+        "Firearms": "Firearms",
+        "MartialArts": "Martial Arts",
+        "Polearm": "Polearm",
+        "Sword": "Sword"
+      },
+      "Armor": {},
+      "Production": {},
+      "Rogue": {},
+      "MagicSchool": {},
+      "Magic": {},
+      "Fighter": {},
+      "Misc": {},
+      "Attribute": {},
+      "Resistance": {},
+      "Immunity": {},
+      "Absorb": {},
+      "Special": {}
+    },
+    "SheetLabels": {
+      "Actor": "SKSK Actor Sheet",
+      "Item": "SKSK Item Sheet",
+      "Resources": "Resources",
+      "Attributes": "Attributes"
+    },
+    "Item": {
+      "Spell": {
+        "SpellLVL": "Level {level} Spells",
+        "AddLVL": "Add LVL {level}"
+      }
+    },
+    "Effect": {
+      "Source": "Source",
+      "Toggle": "Toggle Effect",
+      "Temporary": "Temporary Effects",
+      "Passive": "Passive Effects",
+      "Inactive": "Inactive Effects"
+    }
+  },
+  "TYPES": {
+    "Actor": {
+      "character": "Character",
+      "npc": "NPC"
+    },
+    "Item": {
+      "item": "Item",
+      "feature": "Feature",
+      "talent": "Talent",
+      "weapon": "Weapon",
+      "armor": "Armor",
+      "class": "Class",
+      "species": "Species",
+      "spell": "Spell"
+    }
+  }
+}

@@ -1,0 +1,17 @@
+<aside class="side-tab side-tab-attributes">
+    <div class="side-tab-content flexcol">
+        {{#each system.attributes as |attribute key|}}
+        <div class="attribute flexcol flex-group-center">
+            <label for="system.attributes.{{key}}.value" class="resource-label rollable flexlarge align-left"
+                data-action="roll" data-roll="d20+@attributes.{{key}}.mod"
+                data-label="{{attribute.label}}">{{attribute.label}}</label>
+            <div class="flexrow flex-group-center">
+                <input type="text" name="system.attributes.{{key}}.value" value="{{attribute.value}}"
+                    data-dtype="Number" />
+                <span class="attribute-mod rollable" data-action="roll" data-roll="d20+@attributes.{{key}}.mod"
+                    data-label="{{attribute.label}}">{{numberFormat attribute.mod decimals=0 sign=true}}</span>
+            </div>
+        </div>
+        {{/each}}
+    </div>
+</aside>

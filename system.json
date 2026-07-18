@@ -1,0 +1,75 @@
+{
+  "id": "sksk",
+  "title": "Skilled Skirmish",
+  "description": "The Skilled Skirmish system for FoundryVTT!",
+  "type": "system",
+  "authors": [
+    {
+      "name": "Sazra",
+      "discord": "sazra"
+    }
+  ],
+  "url": "",
+  "license": "",
+  "readme": "",
+  "bugs": "",
+  "changelog": "",
+  "media": [
+    {
+      "type": "setup",
+      "url": "systems/sksk/assets/anvil-impact.png",
+      "thumbnail": "systems/sksk/assets/anvil-impact.png"
+    }
+  ],
+  "version": "2.1.0",
+  "compatibility": {
+    "minimum": "14",
+    "verified": "14",
+    "maximum": "14"
+  },
+  "esmodules": [
+    "module/sksk.mjs"
+  ],
+  "documentTypes": {
+    "Actor": {
+      "character": {},
+      "npc": {}
+    },
+    "Item": {
+      "item": {},
+      "armor": {},
+      "weapon": {},
+      "talent": {},
+      "class": {},
+      "species": {},
+      "spell": {}
+    }
+  },
+  "styles": [
+    "css/sksk.css"
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    },
+    {
+      "lang": "de",
+      "name": "Deutsch",
+      "path": "lang/de.json"
+    }
+  ],
+  "packs": [],
+  "packFolders": [],
+  "socket": false,
+  "background": "systems/sksk/assets/anvil-impact.png",
+  "grid": {
+    "type": 0,
+    "distance": 1,
+    "units": "m",
+    "diagonals": 0
+  },
+  "primaryTokenAttribute": "life",
+  "secondaryTokenAttribute": "mana"
+}
