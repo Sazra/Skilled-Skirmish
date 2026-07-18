@@ -23,6 +23,11 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       edit: SKSKItemSheet.#onEffectAction,
       delete: SKSKItemSheet.#onEffectAction,
       toggle: SKSKItemSheet.#onEffectAction,
+      addAttributeBonus: SKSKItemSheet.#addAttributeBonus,
+      addSkillBonus: SKSKItemSheet.#addSkillBonus,
+      addAbility: SKSKItemSheet.#addAbility,
+      removeArrayEntry: SKSKItemSheet.#removeArrayEntry,
+      addAbilityEffect: SKSKItemSheet.#addAbilityEffect,
     }
   };
 
@@ -76,14 +81,24 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
     // For now, all item types use the same header, but we could customize per type
     parts.header.template = `systems/sksk/templates/item/parts/header.hbs`;
 
-    // Customize templates based on item type if needed
-    // For example, features might not have attributes tab
-    if (itemType === 'feature' || itemType === 'spell') {
-      // These item types might have different attribute templates
-      // For now, keep the same
+    if (itemType === 'species') {
+      parts.header.template = `systems/sksk/templates/item/parts/header-species.hbs`;
+      parts.attributes.template = `systems/sksk/templates/item/parts/species.hbs`;
+      // Species have no item-level effects tab; effects live on abilities instead.
+      delete parts.effects;
     }
 
     return parts;
+  }
+
+  /** @override */
+  _prepareTabs(group) {
+    const tabs = super._prepareTabs(group);
+    if (group === 'primary' && this.item.type === 'species') {
+      tabs.attributes.label = 'SKSK.SheetLabels.Species';
+      delete tabs.effects;
+    }
+    return tabs;
   }
 
   /* -------------------------------------------- */
@@ -134,6 +149,18 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
     // Prepare active effects for easier access
     context.effects = prepareActiveEffectCategories(item.effects);
 
+    if (item.type === 'species') {
+      context.speciesTypeChoices = CONFIG.SKSK.speciesTypes;
+      context.attributeChoicesNoAura = Object.fromEntries(
+        Object.entries(CONFIG.SKSK.attributes).filter(([key]) => key !== 'aur')
+      );
+      context.canAddAbility = (item.system.abilities?.length ?? 0) < 3;
+      // Active Effects scoped to a specific ability, indexed to match system.abilities.
+      context.abilityEffects = (item.system.abilities ?? []).map((ability, index) =>
+        item.effects.filter(effect => effect.getFlag('sksk', 'abilityIndex') === index)
+      );
+    }
+
     return context;
   }
 
@@ -160,5 +187,61 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
    */
   static #onEffectAction(event, target) {
     onManageActiveEffect(event, this.item, target);
+  }
+
+  /**
+   * Append a blank entry to an array-valued system field.
+   * @param {string} field  The system field name, e.g. "attributeBonuses".
+   * @param {object} entry  The blank entry to append.
+   * @private
+   */
+  async #addArrayEntry(field, entry) {
+    const current = foundry.utils.deepClone(this.item.system[field] ?? []);
+    current.push(entry);
+    await this.item.update({ [`system.${field}`]: current });
+  }
+
+  /**
+   * Remove an entry from an array-valued system field.
+   * @param {PointerEvent} event   The originating click event.
+   * @param {HTMLElement} target   The capturing HTML element, carrying
+   *                               data-field and data-index.
+   * @private
+   */
+  static async #removeArrayEntry(event, target) {
+    const field = target.dataset.field;
+    const index = Number(target.dataset.index);
+    const current = foundry.utils.deepClone(this.item.system[field] ?? []);
+    current.splice(index, 1);
+    await this.item.update({ [`system.${field}`]: current });
+  }
+
+  static async #addAttributeBonus(event, target) {
+    await this.#addArrayEntry('attributeBonuses', { attribute: 'str', bonus: 1 });
+  }
+
+  static async #addSkillBonus(event, target) {
+    await this.#addArrayEntry('skillBonuses', { skill: '', bonus: 1 });
+  }
+
+  static async #addAbility(event, target) {
+    if ((this.item.system.abilities?.length ?? 0) >= 3) return;
+    await this.#addArrayEntry('abilities', { name: '', description: '' });
+  }
+
+  /**
+   * Create a new Active Effect scoped to a specific ability.
+   * @param {PointerEvent} event   The originating click event.
+   * @param {HTMLElement} target   The capturing HTML element, carrying data-index.
+   * @private
+   */
+  static async #addAbilityEffect(event, target) {
+    const index = Number(target.dataset.index);
+    await this.item.createEmbeddedDocuments('ActiveEffect', [{
+      name: game.i18n.format('DOCUMENT.New', { type: game.i18n.localize('DOCUMENT.ActiveEffect') }),
+      img: 'icons/svg/aura.svg',
+      origin: this.item.uuid,
+      'flags.sksk.abilityIndex': index,
+    }]);
   }
 }

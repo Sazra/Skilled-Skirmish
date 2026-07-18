@@ -104,8 +104,6 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     if (actorType === 'npc') {
       parts.header.template = `systems/sksk/templates/actor/parts/header-npc.hbs`;
       parts.resources.template = `systems/sksk/templates/actor/parts/resources-npc.hbs`;
-      // NPCs have no attributes block
-      delete parts.attributes;
       // Remove tabs that NPCs don't have
       delete parts.main;
       delete parts.spells;

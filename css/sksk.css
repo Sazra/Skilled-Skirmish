@@ -255,6 +255,19 @@
   flex: 1;
 }
 
+.sksk .sheet-header .header-level {
+  flex: 0 0 70px;
+  display: flex;
+  flex-direction: column;
+  align-self: center;
+  gap: 4px;
+}
+
+.sksk .sheet-header .header-level input {
+  width: 100%;
+  text-align: center;
+}
+
 .sksk .sheet-header h1.charname {
   height: 50px;
   padding: 0px;
@@ -333,6 +346,24 @@
 .sksk .sheet-body .tab,
 .sksk .sheet-body .tab prose-mirror {
   height: 100%;
+}
+
+/* Item sheet: keep header + tab navigation fixed, let the active tab's
+   body scroll internally instead of clipping/overflowing the window. */
+.application.sksk.item .window-content {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sksk.item .window-content>section.tab {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 8px;
+}
+
+.sksk .ability-effects {
+  margin-top: 4px;
 }
 
 .sksk prose-mirror {

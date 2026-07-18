@@ -15,6 +15,11 @@ SKSK.attributes = {
   app: 'SKSK.Attribute.App.long',
 };
 
+SKSK.speciesTypes = {
+  main: 'SKSK.Species.Type.Main',
+  sub: 'SKSK.Species.Type.Sub',
+};
+
 SKSK.attributeAbbreviations = {
   str: 'SKSK.Attribute.Str.abbr',
   dex: 'SKSK.Attribute.Dex.abbr',

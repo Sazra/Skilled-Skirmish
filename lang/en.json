@@ -62,7 +62,14 @@
       "Actor": "SKSK Actor Sheet",
       "Item": "SKSK Item Sheet",
       "Resources": "Resources",
-      "Attributes": "Attributes"
+      "Attributes": "Attributes",
+      "Species": "Species"
+    },
+    "Species": {
+      "Type": {
+        "Main": "Main Species",
+        "Sub": "Sub-Species"
+      }
     },
     "Item": {
       "Spell": {

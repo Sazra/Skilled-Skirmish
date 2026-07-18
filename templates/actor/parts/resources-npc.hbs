@@ -11,6 +11,24 @@
     </div>
 
     <div class="resource flex-group-center">
+      <label for="system.negativeLife.value" class="resource-label">Negative Life</label>
+      <div class="resource-content flexrow flex-center flex-between">
+        <input type="text" name="system.negativeLife.value" value="{{system.negativeLife.value}}" data-dtype="Number" />
+        <span>/</span>
+        <input type="text" name="system.negativeLife.max" value="{{system.negativeLife.max}}" data-dtype="Number" />
+      </div>
+    </div>
+
+    <div class="resource flex-group-center">
+      <label for="system.barrier.value" class="resource-label">Barrier</label>
+      <div class="resource-content flexrow flex-center flex-between">
+        <input type="text" name="system.barrier.value" value="{{system.barrier.value}}" data-dtype="Number" />
+        <span>/</span>
+        <input type="text" name="system.barrier.max" value="{{system.barrier.max}}" data-dtype="Number" />
+      </div>
+    </div>
+
+    <div class="resource flex-group-center">
       <label for="system.mana.value" class="resource-label">Mana</label>
       <div class="resource-content flexrow flex-center flex-between">
         <input type="text" name="system.mana.value" value="{{system.mana.value}}" data-dtype="Number" />
@@ -20,11 +38,34 @@
     </div>
 
     <div class="resource flex-group-center">
-      <label for="system.cr" class="resource-label">CR / XP</label>
+      <label for="system.actionPoints.value" class="resource-label">AP</label>
       <div class="resource-content flexrow flex-center flex-between">
-        <input type="text" name="system.cr" value="{{system.cr}}" data-dtype="Number" />
+        <input type="text" name="system.actionPoints.value" value="{{system.actionPoints.value}}" data-dtype="Number" />
         <span>/</span>
-        <input type="text" disabled="true" name="system.xp" value="{{system.xp}}" data-dtype="Number" />
+        <input type="text" name="system.actionPoints.max" value="{{system.actionPoints.max}}" data-dtype="Number" />
+      </div>
+    </div>
+
+    <div class="resource flex-group-center">
+      <label for="system.reactionPoints.value" class="resource-label">RP</label>
+      <div class="resource-content flexrow flex-center flex-between">
+        <input type="text" name="system.reactionPoints.value" value="{{system.reactionPoints.value}}" data-dtype="Number" />
+        <span>/</span>
+        <input type="text" name="system.reactionPoints.max" value="{{system.reactionPoints.max}}" data-dtype="Number" />
+      </div>
+    </div>
+
+    <div class="resource flex-group-center">
+      <label for="system.armorClass" class="resource-label">AC</label>
+      <div class="resource-content flexrow flex-center flex-between">
+        <input type="text" name="system.armorClass" value="{{system.armorClass}}" data-dtype="Number" />
+      </div>
+    </div>
+
+    <div class="resource flex-group-center">
+      <label for="system.magicResistance" class="resource-label">MR</label>
+      <div class="resource-content flexrow flex-center flex-between">
+        <input type="text" name="system.magicResistance" value="{{system.magicResistance}}" data-dtype="Number" />
       </div>
     </div>
 

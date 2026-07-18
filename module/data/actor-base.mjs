@@ -9,16 +9,81 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       value: new fields.NumberField({ ...requiredInteger, initial: 10, min: 0 }),
       max: new fields.NumberField({ ...requiredInteger, initial: 10 })
     });
+    // Damage taken after life reaches 0 is deducted from negative life
+    // instead of killing the character outright.
+    schema.negativeLife = new fields.SchemaField({
+      value: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+      max: new fields.NumberField({ ...requiredInteger, initial: 10 })
+    });
+    // Usually-temporary pool that shields life (or negative life) from damage.
+    schema.barrier = new fields.SchemaField({
+      value: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+      max: new fields.NumberField({ ...requiredInteger, initial: 0 })
+    });
     schema.mana = new fields.SchemaField({
       value: new fields.NumberField({ ...requiredInteger, initial: 5, min: 0 }),
       max: new fields.NumberField({ ...requiredInteger, initial: 5 })
     });
+    schema.actionPoints = new fields.SchemaField({
+      value: new fields.NumberField({ ...requiredInteger, initial: 3, min: 0 }),
+      max: new fields.NumberField({ ...requiredInteger, initial: 3 })
+    });
+    schema.reactionPoints = new fields.SchemaField({
+      value: new fields.NumberField({ ...requiredInteger, initial: 1, min: 0 }),
+      max: new fields.NumberField({ ...requiredInteger, initial: 1 })
+    });
+    // Attack rolls must exceed this to deal weapon damage.
+    schema.armorClass = new fields.NumberField({ ...requiredInteger, initial: 10 });
+    // Attack rolls must exceed this for a spell to have full effect.
+    schema.magicResistance = new fields.NumberField({ ...requiredInteger, initial: 10 });
     schema.biography = new fields.StringField({ required: true, blank: true });
+
+    schema.resources = new fields.SchemaField({
+      level: new fields.SchemaField({
+        value: new fields.NumberField({ ...requiredInteger, initial: 1 })
+      }),
+    });
+
+    const attributeKeys = Object.keys(CONFIG.SKSK.attributes);
+    const attributesSchema = {};
+    for (const attribute of attributeKeys) {
+      attributesSchema[attribute] = new fields.SchemaField({
+        value: new fields.NumberField({ ...requiredInteger, initial: 10, min: 0 }),
+        mod: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+        label: new fields.StringField({ required: true, blank: true })
+      });
+    }
+    schema.attributes = new fields.SchemaField(attributesSchema);
 
     return schema;
   }
 
   prepareBaseData() {
     super.prepareBaseData();
+  }
+
+  prepareDerivedData() {
+    super.prepareDerivedData();
+    if (!this.attributes) return;
+    for (const key in this.attributes) {
+      if (!this.attributes[key]) continue;
+      this.attributes[key].mod = Math.floor((this.attributes[key].value - 10) / 2);
+      this.attributes[key].label = game.i18n.localize(CONFIG.SKSK.attributes[key]) ?? key;
+    }
+  }
+
+  getRollData() {
+    const data = {};
+
+    if (this.attributes) {
+      data.attributes = {};
+      for (let [k, v] of Object.entries(this.attributes)) {
+        data.attributes[k] = foundry.utils.deepClone(v);
+      }
+    }
+
+    data.lvl = this.resources.level.value;
+
+    return data;
   }
 }
