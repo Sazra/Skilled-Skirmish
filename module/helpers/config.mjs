@@ -20,6 +20,13 @@ SKSK.speciesTypes = {
   sub: 'SKSK.Species.Type.Sub',
 };
 
+SKSK.classTypes = {
+  first: 'SKSK.Class.Type.First',
+  second: 'SKSK.Class.Type.Second',
+  third: 'SKSK.Class.Type.Third',
+  advanced: 'SKSK.Class.Type.Advanced',
+};
+
 SKSK.attributeAbbreviations = {
   str: 'SKSK.Attribute.Str.abbr',
   dex: 'SKSK.Attribute.Dex.abbr',

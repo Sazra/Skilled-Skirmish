@@ -63,12 +63,21 @@
       "Item": "SKSK Item Sheet",
       "Resources": "Resources",
       "Attributes": "Attributes",
-      "Species": "Species"
+      "Species": "Species",
+      "Class": "Class"
     },
     "Species": {
       "Type": {
         "Main": "Main Species",
         "Sub": "Sub-Species"
+      }
+    },
+    "Class": {
+      "Type": {
+        "First": "First Class",
+        "Second": "Second Class",
+        "Third": "Third Class",
+        "Advanced": "Advanced Class"
       }
     },
     "Item": {

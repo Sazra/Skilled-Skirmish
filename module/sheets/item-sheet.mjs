@@ -86,6 +86,11 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       parts.attributes.template = `systems/sksk/templates/item/parts/species.hbs`;
       // Species have no item-level effects tab; effects live on abilities instead.
       delete parts.effects;
+    } else if (itemType === 'class') {
+      parts.header.template = `systems/sksk/templates/item/parts/header-class.hbs`;
+      parts.attributes.template = `systems/sksk/templates/item/parts/class.hbs`;
+      // Classes have no item-level effects tab; effects live on abilities instead.
+      delete parts.effects;
     }
 
     return parts;
@@ -96,6 +101,9 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
     const tabs = super._prepareTabs(group);
     if (group === 'primary' && this.item.type === 'species') {
       tabs.attributes.label = 'SKSK.SheetLabels.Species';
+      delete tabs.effects;
+    } else if (group === 'primary' && this.item.type === 'class') {
+      tabs.attributes.label = 'SKSK.SheetLabels.Class';
       delete tabs.effects;
     }
     return tabs;
@@ -155,6 +163,13 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
         Object.entries(CONFIG.SKSK.attributes).filter(([key]) => key !== 'aur')
       );
       context.canAddAbility = (item.system.abilities?.length ?? 0) < 3;
+    }
+
+    if (item.type === 'class') {
+      context.classTypeChoices = CONFIG.SKSK.classTypes;
+    }
+
+    if (item.type === 'species' || item.type === 'class') {
       // Active Effects scoped to a specific ability, indexed to match system.abilities.
       context.abilityEffects = (item.system.abilities ?? []).map((ability, index) =>
         item.effects.filter(effect => effect.getFlag('sksk', 'abilityIndex') === index)

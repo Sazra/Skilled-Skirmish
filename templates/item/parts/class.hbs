@@ -1,0 +1,90 @@
+<section class="tab {{tab.cssClass}}" data-group="primary" data-tab="attributes">
+
+  <div class="resource">
+    <label class="resource-label">Class Type</label>
+    <select name="system.classType">
+      {{selectOptions classTypeChoices selected=system.classType localize=true}}
+    </select>
+  </div>
+
+  <div class="resource">
+    <label class="resource-label">Life</label>
+    <input type="text" name="system.life" value="{{system.life}}" data-dtype="Number" />
+  </div>
+
+  <div class="resource">
+    <label class="resource-label">Skill Bonuses</label>
+    <ol class="items-list">
+      <li class="item flexrow items-header">
+        <div class="item-name">Skill (placeholder)</div>
+        <div class="item-name">Bonus</div>
+        <div class="item-controls">
+          <a class="item-control item-create" data-action="addSkillBonus" title="Add skill bonus">
+            <i class="fas fa-plus"></i>
+          </a>
+        </div>
+      </li>
+      {{#each system.skillBonuses as |entry index|}}
+      <li class="item flexrow">
+        <div class="item-name">
+          <input type="text" name="system.skillBonuses.{{index}}.skill" value="{{entry.skill}}"
+            placeholder="Skill name" />
+        </div>
+        <div class="item-name">
+          <input type="text" name="system.skillBonuses.{{index}}.bonus" value="{{entry.bonus}}"
+            data-dtype="Number" />
+        </div>
+        <div class="item-controls">
+          <a class="item-control item-delete" data-action="removeArrayEntry" data-field="skillBonuses"
+            data-index="{{index}}" title="Remove">
+            <i class="fas fa-trash"></i>
+          </a>
+        </div>
+      </li>
+      {{/each}}
+    </ol>
+  </div>
+
+  <div class="resource">
+    <label class="resource-label">Abilities</label>
+    <ol class="items-list">
+      {{#each system.abilities as |entry index|}}
+      <li class="item flexcol">
+        <input type="text" name="system.abilities.{{index}}.name" value="{{entry.name}}"
+          placeholder="Ability name" />
+        <textarea name="system.abilities.{{index}}.description" rows="3"
+          placeholder="Describe the ability">{{entry.description}}</textarea>
+
+        <ol class="items-list ability-effects">
+          {{#each (lookup ../abilityEffects index) as |effect|}}
+          <li class="item effect flexrow" data-effect-id="{{effect.id}}">
+            <div class="item-name effect-name flexrow">
+              <img class="item-image" src="{{effect.img}}" />
+              <h4>{{effect.name}}</h4>
+            </div>
+            <div class="item-controls effect-controls flexrow">
+              <a class="effect-control" data-action="toggle" title="{{localize 'SKSK.Effect.Toggle'}}">
+                <i class="fas {{#if effect.disabled}}fa-check{{else}}fa-times{{/if}}"></i>
+              </a>
+              <a class="effect-control" data-action="edit" title="{{localize 'DOCUMENT.Update' type='Effect'}}">
+                <i class="fas fa-edit"></i>
+              </a>
+              <a class="effect-control" data-action="delete" title="{{localize 'DOCUMENT.Delete' type='Effect'}}">
+                <i class="fas fa-trash"></i>
+              </a>
+            </div>
+          </li>
+          {{/each}}
+          <li class="item flexrow">
+            <a class="item-control item-create" data-action="addAbilityEffect" data-index="{{index}}"
+              title="Add effect">
+              <i class="fas fa-plus"></i> Add Effect
+            </a>
+          </li>
+        </ol>
+      </li>
+      {{/each}}
+    </ol>
+  </div>
+
+</section>
