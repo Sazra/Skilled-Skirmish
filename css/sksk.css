@@ -391,6 +391,10 @@
   color: var(--color-text-hyperlink, #00538d);
 }
 
+.sksk .skill-category-body .skill-weakness {
+  color: #a22;
+}
+
 .sksk .skill-category-body .skill-toggle {
   flex: 0 0 auto;
   justify-content: center;

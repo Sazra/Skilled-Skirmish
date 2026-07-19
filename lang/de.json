@@ -170,6 +170,28 @@
                 "IceResistance": "Eisresistenz",
                 "DiseaseResistance": "Krankheitsresistenz"
             },
+            "Weakness": {
+                "FireWeakness": "Feuerschwäche",
+                "WaterWeakness": "Wasserschwäche",
+                "EarthWeakness": "Erdschwäche",
+                "AirWeakness": "Luftschwäche",
+                "LightWeakness": "Lichtschwäche",
+                "DarkWeakness": "Dunkelschwäche",
+                "LifeWeakness": "Lebensschwäche",
+                "DeathWeakness": "Todesschwäche",
+                "MentalWeakness": "Mentale Schwäche",
+                "NatureWeakness": "Naturschwäche",
+                "ColdWeakness": "Kälteschwäche",
+                "HeatWeakness": "Hitzeschwäche",
+                "BluntWeakness": "Wuchtschwäche",
+                "SharpWeakness": "Klingenschwäche",
+                "PiercingWeakness": "Stichschwäche",
+                "PoisonWeakness": "Giftschwäche",
+                "AcidWeakness": "Säureschwäche",
+                "ElectricityWeakness": "Elektrizitätsschwäche",
+                "IceWeakness": "Eisschwäche",
+                "DiseaseWeakness": "Krankheitsschwäche"
+            },
             "Immunity": {
                 "FireImmunity": "Feuerimmunität",
                 "WaterImmunity": "Wasserimmunität",
@@ -234,6 +256,7 @@
             "Misc": "Nutzungsfertigkeiten",
             "Attribute": "Attributsfertigkeiten",
             "Resistances": "Resistenzfertigkeiten",
+            "Weaknesses": "Schwächen",
             "Immunity": "Immunitäten",
             "Absorb": "Absorbierung",
             "Special": "Spezielle Fertigkeiten"

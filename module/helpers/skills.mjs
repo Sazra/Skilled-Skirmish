@@ -105,8 +105,9 @@ function evaluateArithmetic(expression) {
 /**
  * Flat, UI-friendly list of skill choices for the skill-bonus pickers on
  * Species and Class items. Restricted to multi-level (5 or 10) skills;
- * binary (maxLevel 1) skills like Chantless or Immortal don't take level
- * bonuses. Each entry carries a `group` (its category) so a single
+ * binary (maxLevel 1) skills like Chantless, Immunity or Absorption don't
+ * take level bonuses, and stackable skills like Weaknesses aren't leveled
+ * skills at all. Each entry carries a `group` (its category) so a single
  * `<select>` can render them as `<optgroup>`s instead of one long flat list.
  * @return {Array<{value: string, label: string, group: string}>}
  */
@@ -114,7 +115,7 @@ export function getSkillBonusChoices() {
   const choices = [];
   for (const [category, categorySkills] of Object.entries(CONFIG.SKSK.skills)) {
     for (const [key, def] of Object.entries(categorySkills)) {
-      if (def.maxLevel === 1) continue;
+      if (def.maxLevel !== 5 && def.maxLevel !== 10) continue;
       choices.push({ value: key, label: def.label, group: CONFIG.SKSK.skillCategories[category] });
     }
   }

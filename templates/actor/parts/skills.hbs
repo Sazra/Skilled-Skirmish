@@ -28,9 +28,23 @@
               <input type="checkbox" name="system.skills.{{skill.key}}.toggle" {{checked skill.toggle}} />
             </div>
             {{/if}}
+          {{else if skill.isStackable}}
+            <div class="skill-level" title="Number of stacks">
+              {{skill.stacks}}
+            </div>
+            <div class="item-controls">
+              {{#if ../../isNpc}}
+              <input type="text" name="system.skills.{{skill.key}}.formula" value="{{skill.formula}}"
+                placeholder="Formula (stack count)"
+                title="Formula for the number of stacks (+, -, *, /, ^, parentheses). Use L for the actor's level." />
+              {{else}}
+              <input type="text" name="system.skills.{{skill.key}}.points" value="{{skill.points}}"
+                data-dtype="Number" title="Number of stacks" />
+              {{/if}}
+            </div>
           {{else}}
-            <div class="skill-level" title="Current level{{#if skill.bonus}} (includes +{{skill.bonus}} level(s) from Species/Class){{/if}}">
-              {{skill.level}} / {{skill.maxLevel}}{{#if skill.bonus}} <span class="skill-bonus">(+{{skill.bonus}})</span>{{/if}}
+            <div class="skill-level" title="Current level{{#if skill.bonus}} (includes +{{skill.bonus}} level(s) from Species/Class){{/if}}{{#if skill.weaknessStacks}} (Weakness x{{skill.weaknessStacks}}: +{{skill.weaknessDamagePercent}}% damage taken){{/if}}">
+              {{skill.level}} / {{skill.maxLevel}}{{#if skill.bonus}} <span class="skill-bonus">(+{{skill.bonus}})</span>{{/if}}{{#if skill.weaknessStacks}} <span class="skill-weakness">(Weakness x{{skill.weaknessStacks}})</span>{{/if}}
             </div>
             <div class="item-controls">
               {{#if ../../isNpc}}

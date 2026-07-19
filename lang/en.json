@@ -161,6 +161,28 @@
         "IceResistance": "Ice Resistance",
         "DiseaseResistance": "Disease Resistance"
       },
+      "Weakness": {
+        "FireWeakness": "Fire Weakness",
+        "WaterWeakness": "Water Weakness",
+        "EarthWeakness": "Earth Weakness",
+        "AirWeakness": "Air Weakness",
+        "LightWeakness": "Light Weakness",
+        "DarkWeakness": "Dark Weakness",
+        "LifeWeakness": "Life Weakness",
+        "DeathWeakness": "Death Weakness",
+        "MentalWeakness": "Mental Weakness",
+        "NatureWeakness": "Nature Weakness",
+        "ColdWeakness": "Cold Weakness",
+        "HeatWeakness": "Heat Weakness",
+        "BluntWeakness": "Blunt Weakness",
+        "SharpWeakness": "Sharp Weakness",
+        "PiercingWeakness": "Piercing Weakness",
+        "PoisonWeakness": "Poison Weakness",
+        "AcidWeakness": "Acid Weakness",
+        "ElectricityWeakness": "Electricity Weakness",
+        "IceWeakness": "Ice Weakness",
+        "DiseaseWeakness": "Disease Weakness"
+      },
       "Immunity": {
         "FireImmunity": "Fire Immunity",
         "WaterImmunity": "Water Immunity",
@@ -225,6 +247,7 @@
       "Misc": "Utility Skills",
       "Attribute": "Attribute Skills",
       "Resistances": "Resistance Skills",
+      "Weaknesses": "Weaknesses",
       "Immunity": "Immunities",
       "Absorb": "Absorption",
       "Special": "Special Skills"

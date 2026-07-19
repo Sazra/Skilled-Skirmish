@@ -62,6 +62,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
         { id: "misc", label: "SKSK.SkillCategory.Misc" },
         { id: "attribute", label: "SKSK.SkillCategory.Attribute" },
         { id: "resistances", label: "SKSK.SkillCategory.Resistances" },
+        { id: "weaknesses", label: "SKSK.SkillCategory.Weaknesses" },
         { id: "immunity", label: "SKSK.SkillCategory.Immunity" },
         { id: "absorb", label: "SKSK.SkillCategory.Absorb" },
         { id: "special", label: "SKSK.SkillCategory.Special" },
@@ -419,13 +420,18 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
           label: def.label,
           maxLevel: def.maxLevel,
           isBinary: def.maxLevel === 1,
+          isStackable: !!def.stackable,
           points: data.points ?? 0,
           toggle: data.toggle ?? false,
           formula: data.formula ?? '',
           bonus: skillBonusTotals[key] ?? 0,
         };
 
-        if (isNpc) {
+        if (row.isStackable) {
+          // Weaknesses aren't leveled skills; the raw value IS the stack
+          // count (character: entered directly, NPC: formula result).
+          row.stacks = isNpc ? evaluateSkillFormula(row.formula, rollData) : row.points;
+        } else if (isNpc) {
           // The formula computes total points directly; "L" in the
           // formula is replaced with the actor's level, so non-linear
           // scaling (e.g. "L * L") works, not just a flat rate per level.
@@ -445,8 +451,74 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
         return row;
       });
     }
+
+    // Resistance, Immunity, Absorption and Weakness of the same element
+    // interact: an active Immunity or Absorption hides (without zeroing)
+    // the matching Resistance row, while a Weakness instead stacks on top
+    // of whatever Resistance remains visible (+100% damage taken/instance).
+    const rowsByKey = {};
+    for (const rows of Object.values(skillCategories)) {
+      for (const row of rows) rowsByKey[row.key] = row;
+    }
+    skillCategories.resistances = (skillCategories.resistances ?? []).filter(row => {
+      const element = row.key.replace(/Resistance$/, '');
+      const blocked = rowsByKey[`${element}Immunity`]?.unlocked || rowsByKey[`${element}Absorption`]?.unlocked;
+      if (blocked) return false;
+      const stacks = rowsByKey[`${element}Weakness`]?.stacks ?? 0;
+      if (stacks > 0) {
+        row.weaknessStacks = stacks;
+        row.weaknessDamagePercent = stacks * 100;
+      }
+      return true;
+    });
+
     context.skillCategories = skillCategories;
     context.isNpc = isNpc;
+  }
+
+  /* -------------------------------------------- */
+
+  /** @override */
+  _onChangeForm(formConfig, event) {
+    this.#enforceElementExclusivity(event.target);
+    super._onChangeForm(formConfig, event);
+  }
+
+  /**
+   * Weakness, Immunity and Absorption of the same element are mutually
+   * exclusive. When a player switches one on for an element, edit the
+   * other two's inputs directly (unchecked / zeroed) before the pending
+   * submitOnChange form submission fires, so the correction lands in the
+   * same document update as the actual change instead of a follow-up write.
+   * Only reacts to the character-facing toggle/points inputs - NPC formula
+   * fields are left to the GM's own judgement, since a formula's result can
+   * vary by level and isn't a fixed on/off state to enforce live.
+   * @param {HTMLElement} target   The input that just changed.
+   */
+  #enforceElementExclusivity(target) {
+    const match = target?.name?.match(/^system\.skills\.(\w+)\.(toggle|points)$/);
+    if (!match) return;
+    const [, key, field] = match;
+
+    let element;
+    if (field === 'toggle' && key.endsWith('Immunity') && target.checked) {
+      element = key.slice(0, -'Immunity'.length);
+    } else if (field === 'toggle' && key.endsWith('Absorption') && target.checked) {
+      element = key.slice(0, -'Absorption'.length);
+    } else if (field === 'points' && key.endsWith('Weakness') && Number(target.value) > 0) {
+      element = key.slice(0, -'Weakness'.length);
+    } else {
+      return;
+    }
+
+    const form = target.form;
+    for (const sibling of [`${element}Immunity`, `${element}Absorption`, `${element}Weakness`]) {
+      if (sibling === key) continue;
+      const toggleInput = form?.querySelector(`[name="system.skills.${sibling}.toggle"]`);
+      if (toggleInput) toggleInput.checked = false;
+      const pointsInput = form?.querySelector(`[name="system.skills.${sibling}.points"]`);
+      if (pointsInput) pointsInput.value = 0;
+    }
   }
 
   /* -------------------------------------------- */
