@@ -4,6 +4,7 @@ import {
   onManageActiveEffect,
   prepareActiveEffectCategories,
 } from '../helpers/effects.mjs';
+import { getSkillLevel, evaluateSkillFormula, computeSkillBonusTotals } from '../helpers/skills.mjs';
 
 /**
  * Extend the basic ActorSheet with some very simple modifications
@@ -40,10 +41,32 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
         { id: "description", label: "Description" },
         { id: "items", label: "Items" },
         { id: "abilities", label: "Abilities" },
+        { id: "skills", label: "SKSK.SheetLabels.Skills" },
         { id: "spells", label: "Spells" },
         { id: "effects", label: "Effects" },
       ],
       initial: "description",
+    },
+    // Sub-tabs shown inside the Skills tab; one per CONFIG.SKSK.skills
+    // category. Hardcoded (rather than derived from CONFIG.SKSK) because
+    // static class fields evaluate before the init hook populates CONFIG.SKSK.
+    skillCategories: {
+      tabs: [
+        { id: "weapons", label: "SKSK.SkillCategory.Weapons" },
+        { id: "armors", label: "SKSK.SkillCategory.Armors" },
+        { id: "production", label: "SKSK.SkillCategory.Production" },
+        { id: "rogue", label: "SKSK.SkillCategory.Rogue" },
+        { id: "magicSchools", label: "SKSK.SkillCategory.MagicSchools" },
+        { id: "magic", label: "SKSK.SkillCategory.Magic" },
+        { id: "fighter", label: "SKSK.SkillCategory.Fighter" },
+        { id: "misc", label: "SKSK.SkillCategory.Misc" },
+        { id: "attribute", label: "SKSK.SkillCategory.Attribute" },
+        { id: "resistances", label: "SKSK.SkillCategory.Resistances" },
+        { id: "immunity", label: "SKSK.SkillCategory.Immunity" },
+        { id: "absorb", label: "SKSK.SkillCategory.Absorb" },
+        { id: "special", label: "SKSK.SkillCategory.Special" },
+      ],
+      initial: "weapons",
     },
   };
 
@@ -81,6 +104,10 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     },
     abilities: {
       template: "systems/sksk/templates/actor/parts/abilities.hbs",
+      scrollable: [""],
+    },
+    skills: {
+      template: "systems/sksk/templates/actor/parts/skills.hbs",
       scrollable: [""],
     },
     spells: {
@@ -170,6 +197,11 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     const actor = context.document;
     const actorData = actor.system;
 
+    // With more than one tab group declared, the base _prepareContext no
+    // longer auto-populates context.tabs - prepare both groups ourselves.
+    context.tabs = this._prepareTabs('primary');
+    context.skillTabs = Object.values(this._prepareTabs('skillCategories'));
+
     // Add the actor's data to context for easier access, as well as flags.
     context.actor = actor;
     context.data = actor.toObject(); // Legacy compatibility
@@ -194,6 +226,8 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     if (actor.type === 'npc') {
       this._prepareItems(context);
     }
+
+    this._prepareSkills(context);
 
     // Add roll data for TinyMCE editors.
     context.rollData = actor.getRollData();
@@ -356,6 +390,65 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     context.classAndSpeciesAbilities = classAndSpeciesAbilities;
   }
 
+  /**
+   * Build, per skill category, the list of rows shown in the Skills tab's
+   * sub-tabs: for a character, points/toggle are entered directly and the
+   * level is derived from them; for an NPC, a formula stands in for
+   * points/toggle so the skill scales automatically with the NPC's level.
+   *
+   * @param {Object} context The context to prepare.
+   *
+   * @return {undefined}
+   */
+  _prepareSkills(context) {
+    const actor = this.actor;
+    const isNpc = actor.type === 'npc';
+    const skills = actor.system.skills ?? {};
+    const rollData = actor.getRollData();
+    // Starting bonuses from equipped Species (always) and first-only Class
+    // items. These are whole skill LEVELS (not points) added on top of the
+    // level derived from entered points/formula, capped at the skill's max.
+    const skillBonusTotals = computeSkillBonusTotals(actor);
+
+    const skillCategories = {};
+    for (const [category, categorySkills] of Object.entries(CONFIG.SKSK.skills)) {
+      skillCategories[category] = Object.entries(categorySkills).map(([key, def]) => {
+        const data = skills[key] ?? {};
+        const row = {
+          key,
+          label: def.label,
+          maxLevel: def.maxLevel,
+          isBinary: def.maxLevel === 1,
+          points: data.points ?? 0,
+          toggle: data.toggle ?? false,
+          formula: data.formula ?? '',
+          bonus: skillBonusTotals[key] ?? 0,
+        };
+
+        if (isNpc) {
+          // The formula computes total points directly; "L" in the
+          // formula is replaced with the actor's level, so non-linear
+          // scaling (e.g. "L * L") works, not just a flat rate per level.
+          const formulaResult = evaluateSkillFormula(row.formula, rollData);
+          if (row.isBinary) {
+            row.unlocked = formulaResult === 1;
+          } else {
+            row.points = formulaResult;
+            row.level = Math.min(def.maxLevel, getSkillLevel(row.points, def.maxLevel) + row.bonus);
+          }
+        } else if (row.isBinary) {
+          row.unlocked = row.toggle;
+        } else {
+          row.level = Math.min(def.maxLevel, getSkillLevel(row.points, def.maxLevel) + row.bonus);
+        }
+
+        return row;
+      });
+    }
+    context.skillCategories = skillCategories;
+    context.isNpc = isNpc;
+  }
+
   /* -------------------------------------------- */
 
   /** @override */
@@ -365,6 +458,11 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     const activeTab = this.tabGroups?.primary ?? this.constructor.TABS.primary.initial;
     if (activeTab && this.element.querySelector(`.tab[data-group="primary"][data-tab="${activeTab}"]`)) {
       this.changeTab(activeTab, "primary", { force: true, updatePosition: false });
+    }
+
+    const activeSkillTab = this.tabGroups?.skillCategories ?? this.constructor.TABS.skillCategories.initial;
+    if (activeSkillTab && this.element.querySelector(`.tab[data-group="skillCategories"][data-tab="${activeSkillTab}"]`)) {
+      this.changeTab(activeSkillTab, "skillCategories", { force: true, updatePosition: false });
     }
 
     // Drag events for macros.

@@ -343,6 +343,59 @@
   border-top: none;
 }
 
+/* Sub-tab navigation for the Skills tab's 13 categories. Smaller and
+   wraps, unlike the primary nav which is a single row. */
+.sksk .skill-category-tabs {
+  flex-wrap: wrap;
+  gap: 2px;
+  border: 1px solid var(--color-border-light-primary);
+  margin: 0 0 6px;
+  padding: 4px;
+}
+
+.sksk .skill-category-tabs a {
+  padding: 2px 6px;
+  font-size: 11px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+}
+
+.sksk .skill-category-tabs a.active {
+  border-color: var(--color-border-dark-primary, #191813);
+  background: var(--sksk-side-tab-bg, rgba(0, 0, 0, 0.05));
+  font-weight: bold;
+}
+
+.sksk .skill-category-body .items-list .item {
+  padding: 2px 4px;
+}
+
+.sksk .skill-category-body .item-controls input[type="text"] {
+  width: 40px;
+  text-align: center;
+}
+
+.sksk .skill-category-body .item-controls input[name$=".formula"] {
+  width: 90px;
+}
+
+.sksk .skill-category-body .skill-level {
+  flex: 0 0 auto;
+  min-width: 50px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--color-text-dark-secondary, #7a7971);
+}
+
+.sksk .skill-category-body .skill-bonus {
+  color: var(--color-text-hyperlink, #00538d);
+}
+
+.sksk .skill-category-body .skill-toggle {
+  flex: 0 0 auto;
+  justify-content: center;
+}
+
 /* Side tabs: resources (left) and attributes (right). Taken out of flow
    entirely, so they never influence the sheet's (auto) height. They hug
    their own content and are allowed to protrude past the window's edge

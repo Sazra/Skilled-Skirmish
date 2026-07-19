@@ -1,0 +1,53 @@
+<section class="tab {{tab.cssClass}}" data-group="primary" data-tab="skills">
+
+  <nav class="sheet-tabs tabs skill-category-tabs" data-group="skillCategories">
+    {{#each skillTabs as |cat|}}
+    <a class="{{cat.cssClass}}" data-action="tab" data-group="skillCategories" data-tab="{{cat.id}}">
+      <label>{{localize cat.label}}</label>
+    </a>
+    {{/each}}
+  </nav>
+
+  <div class="skill-category-body">
+    {{#each skillCategories as |skills category|}}
+    <section class="tab" data-group="skillCategories" data-tab="{{category}}">
+      <ol class="items-list">
+        {{#each skills as |skill|}}
+        <li class="item flexrow">
+          <div class="item-name"><h4>{{localize skill.label}}</h4></div>
+
+          {{#if skill.isBinary}}
+            {{#if ../../isNpc}}
+            <div class="item-controls">
+              <input type="text" name="system.skills.{{skill.key}}.formula" value="{{skill.formula}}"
+                placeholder="Formula (1 = unlocked)"
+                title="Formula (+, -, *, /, ^, parentheses); a result of 1 means the skill is unlocked. Use L for the actor's level." />
+            </div>
+            {{else}}
+            <div class="item-controls skill-toggle">
+              <input type="checkbox" name="system.skills.{{skill.key}}.toggle" {{checked skill.toggle}} />
+            </div>
+            {{/if}}
+          {{else}}
+            <div class="skill-level" title="Current level{{#if skill.bonus}} (includes +{{skill.bonus}} level(s) from Species/Class){{/if}}">
+              {{skill.level}} / {{skill.maxLevel}}{{#if skill.bonus}} <span class="skill-bonus">(+{{skill.bonus}})</span>{{/if}}
+            </div>
+            <div class="item-controls">
+              {{#if ../../isNpc}}
+              <input type="text" name="system.skills.{{skill.key}}.formula" value="{{skill.formula}}"
+                placeholder="Formula (e.g. 2^L * 40)"
+                title="Formula for total skill points (+, -, *, /, ^, parentheses). Use L for the actor's level." />
+              {{else}}
+              <input type="text" name="system.skills.{{skill.key}}.points" value="{{skill.points}}"
+                data-dtype="Number" title="Skill points" />
+              {{/if}}
+            </div>
+          {{/if}}
+        </li>
+        {{/each}}
+      </ol>
+    </section>
+    {{/each}}
+  </div>
+
+</section>

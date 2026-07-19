@@ -4,6 +4,7 @@ import {
   onManageActiveEffect,
   prepareActiveEffectCategories,
 } from '../helpers/effects.mjs';
+import { getSkillBonusChoices } from '../helpers/skills.mjs';
 
 /**
  * Extend the basic ItemSheet with some very simple modifications
@@ -176,6 +177,11 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
 
     if (item.type === 'class') {
       context.classTypeChoices = CONFIG.SKSK.classTypes;
+      context.isFirstClass = item.system.classType === 'first';
+    }
+
+    if (item.type === 'species' || item.type === 'class') {
+      context.skillBonusChoices = getSkillBonusChoices();
     }
 
     if (item.type === 'talent') {
@@ -250,7 +256,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
   }
 
   static async #addSkillBonus(event, target) {
-    await this.#addArrayEntry('skillBonuses', { skill: '', bonus: 1 });
+    await this.#addArrayEntry('skillBonuses', { skill: 'axe', bonus: 1 });
   }
 
   static async #addAbility(event, target) {

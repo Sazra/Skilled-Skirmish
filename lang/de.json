@@ -1,5 +1,15 @@
 {
     "SKSK": {
+        "Settings": {
+            "SkillPointsLevel5": {
+                "Name": "Notwendige Punkte für Stufe 5 Fertigkeiten",
+                "Hint": "Fertigkeitspunkte, die für Stufe 1 einer 5-stufigen Fertigkeit nötig sind. Verdoppelt sich für jede weitere Stufe."
+            },
+            "SkillPointsLevel10": {
+                "Name": "Notwendige Punkte für Stufe 10 Fertigkeiten",
+                "Hint": "Fertigkeitspunkte, die für Stufe 1 einer 10-stufigen Fertigkeit nötig sind. Erhöht sich für jede weitere Stufe um diesen Betrag."
+            }
+        },
         "Attribute": {
             "Str": {
                 "long": "Stärke",
@@ -40,7 +50,193 @@
             "Resources": "Ressourcen",
             "Attributes": "Attribute",
             "Species": "Spezies",
-            "Class": "Klasse"
+            "Class": "Klasse",
+            "Skills": "Fertigkeiten"
+        },
+        "Skill": {
+            "Weapon": {
+                "Axe": "Axt",
+                "Bow": "Bogen",
+                "BluntWeapon": "Stumpfe Waffe",
+                "Dagger": "Dolch",
+                "Firearms": "Feuerwaffen",
+                "MartialArts": "Kampfkunst",
+                "Polearm": "Stangenwaffe",
+                "Sword": "Schwert"
+            },
+            "Armor": {
+                "HeavyArmor": "Schwere Rüstung",
+                "LightArmor": "Leichte Rüstung",
+                "Shield": "Schild"
+            },
+            "Crafting": {
+                "Alchemy": "Alchemie",
+                "Crafting": "Handwerk",
+                "Cooking": "Kochen",
+                "Enchanting": "Verzauberung"
+            },
+            "Rogue": {
+                "Assassination": "Meucheln",
+                "Traps": "Fallen",
+                "Stealth": "Heimlichkeit",
+                "SleightOfHand": "Taschenspielerei"
+            },
+            "MagicSchool": {
+                "Fire": "Feuer",
+                "Water": "Wasser",
+                "Earth": "Erde",
+                "Air": "Luft",
+                "Light": "Licht",
+                "Dark": "Dunkelheit",
+                "Life": "Leben",
+                "Death": "Tod",
+                "Trickery": "Täuschung",
+                "Nature": "Natur",
+                "Bardic": "Barde",
+                "Divination": "Wahrsagerei",
+                "Space": "Raum",
+                "Time": "Zeit",
+                "Blood": "Blut"
+            },
+            "Magic": {
+                "Concentration": "Konzentration",
+                "Meditation": "Meditation",
+                "Summoning": "Beschwörung",
+                "Control": "Magiekontrolle",
+                "ManaCapacity": "Manakapazität",
+                "ManaRegeneration": "Manaregeneration",
+                "ManaCore": "Manakern",
+                "Ritualism": "Ritualismus",
+                "ChantShortening": "Formelverkürzung",
+                "Overcharge": "Überladung",
+                "SourceBound": "Quellengebunden",
+                "EtherBound": "Äthergebunden",
+                "Chantless": "Formellos"
+            },
+            "Fighter": {
+                "Health": "Gesundheit",
+                "Stamina": "Ausdauer",
+                "Technique": "Technik",
+                "Reflexes": "Reflexe",
+                "Precision": "Präzision",
+                "Brutality": "Brutalität",
+                "Adrenalin": "Adrenalin",
+                "Ambidextrous": "Beidhändigkeit"
+            },
+            "Misc": {
+                "Observation": "Beobachtung",
+                "Faith": "Glaube",
+                "Rhetoric": "Rhetorik",
+                "Healer": "Heiler",
+                "Singing": "Gesang",
+                "Tactic": "Taktik",
+                "Survival": "Überleben",
+                "Disguise": "Verkleidung",
+                "Intimidation": "Einschüchterung",
+                "Inspiration": "Inspiration",
+                "Totem": "Totem",
+                "Tenacity": "Zähigkeit"
+            },
+            "Attribute": {
+                "UnlimitedStrength": "Unbegrenzte Stärke",
+                "UnlimitedDexterity": "Unbegrenzte Geschicklichkeit",
+                "UnlimitedConstitution": "Unbegrenzter Widerstand",
+                "UnlimitedPerception": "Unbegrenzte Wahrnehmung",
+                "UnlimitedWillpower": "Unbegrenzte Willenskraft",
+                "UnlimitedAura": "Unbegrenzte Aura",
+                "UnlimitedCharisma": "Unbegrenztes Charisma",
+                "UnlimitedAppearance": "Unbegrenztes Aussehen",
+                "Unlimited": "Unlimitiert"
+            },
+            "Resistance": {
+                "FireResistance": "Feuerresistenz",
+                "WaterResistance": "Wasserresistenz",
+                "EarthResistance": "Erdresistenz",
+                "AirResistance": "Luftresistenz",
+                "LightResistance": "Lichtresistenz",
+                "DarkResistance": "Dunkelresistenz",
+                "LifeResistance": "Lebensresistenz",
+                "DeathResistance": "Todesresistenz",
+                "MentalResistance": "Mentale Resistenz",
+                "NatureResistance": "Naturresistenz",
+                "ColdResistance": "Kälteresistenz",
+                "HeatResistance": "Hitzeresistenz",
+                "BluntResistance": "Wuchtresistenz",
+                "SharpResistance": "Klingenresistenz",
+                "PiercingResistance": "Stichresistenz",
+                "PoisonResistance": "Giftresistenz",
+                "AcidResistance": "Säureresistenz",
+                "ElectricityResistance": "Elektrizitätsresistenz",
+                "IceResistance": "Eisresistenz",
+                "DiseaseResistance": "Krankheitsresistenz"
+            },
+            "Immunity": {
+                "FireImmunity": "Feuerimmunität",
+                "WaterImmunity": "Wasserimmunität",
+                "EarthImmunity": "Erdimmunität",
+                "AirImmunity": "Luftimmunität",
+                "LightImmunity": "Lichtimmunität",
+                "DarkImmunity": "Dunkelimmunität",
+                "LifeImmunity": "Lebensimmunität",
+                "DeathImmunity": "Todesimmunität",
+                "MentalImmunity": "Mentale Immunität",
+                "NatureImmunity": "Naturimmunität",
+                "ColdImmunity": "Kälteimmunität",
+                "HeatImmunity": "Hitzeimmunität",
+                "BluntImmunity": "Wuchtimmunität",
+                "SharpImmunity": "Klingenimmunität",
+                "PiercingImmunity": "Stichimmunität",
+                "PoisonImmunity": "Giftimmunität",
+                "AcidImmunity": "Säureimmunität",
+                "ElectricityImmunity": "Elektrizitätsimmunität",
+                "IceImmunity": "Eisimmunität",
+                "DiseaseImmunity": "Krankheitsimmunität"
+            },
+            "Absorb": {
+                "FireAbsorption": "Feuerabsorption",
+                "WaterAbsorption": "Wasserabsorption",
+                "EarthAbsorption": "Erdabsorption",
+                "AirAbsorption": "Luftabsorption",
+                "LightAbsorption": "Lichtabsorption",
+                "DarkAbsorption": "Dunkelabsorption",
+                "LifeAbsorption": "Lebensabsorption",
+                "DeathAbsorption": "Todesabsorption",
+                "MentalAbsorption": "Mentale Absorption",
+                "NatureAbsorption": "Naturabsorption",
+                "ColdAbsorption": "Kälteabsorption",
+                "HeatAbsorption": "Hitzeabsorption",
+                "BluntAbsorption": "Wuchtabsorption",
+                "SharpAbsorption": "Klingenabsorption",
+                "PiercingAbsorption": "Stichabsorption",
+                "PoisonAbsorption": "Giftabsorption",
+                "AcidAbsorption": "Säureabsorption",
+                "ElectricityAbsorption": "Elektrizitätsabsorption",
+                "IceAbsorption": "Eisabsorption"
+            },
+            "Special": {
+                "Luck": "Glück",
+                "Massacre": "Gemetzel",
+                "SoulForce": "Seelenkraft",
+                "HitCorrection": "Trefferkorrektur",
+                "DefenseCorrection": "Verteidigungskorrektur",
+                "CorpusImmortalis": "Corpus Immortalis",
+                "Immortal": "Unsterblich"
+            }
+        },
+        "SkillCategory": {
+            "Weapons": "Waffenfertigkeiten",
+            "Armors": "Rüstungsfertigkeiten",
+            "Production": "Herstellungsfertigkeiten",
+            "Rogue": "Schurkenfertigkeiten",
+            "MagicSchools": "Magieschulen",
+            "Magic": "Magiefertigkeiten",
+            "Fighter": "Kämpferfertigkeiten",
+            "Misc": "Nutzungsfertigkeiten",
+            "Attribute": "Attributsfertigkeiten",
+            "Resistances": "Resistenzfertigkeiten",
+            "Immunity": "Immunitäten",
+            "Absorb": "Absorbierung",
+            "Special": "Spezielle Fertigkeiten"
         },
         "Species": {
             "Type": {
@@ -54,7 +250,10 @@
                 "Second": "Zweite Klasse",
                 "Third": "Dritte Klasse",
                 "Advanced": "Erweiterte Klasse"
-            }
+            },
+            "SkillBonuses": "Skill-Boni",
+            "SkillPrerequisites": "Skill-Voraussetzung",
+            "RequiredLevel": "Erforderliches Level"
         },
         "Talent": {
             "Type": {

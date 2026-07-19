@@ -50,8 +50,8 @@
     <label class="resource-label">Skill Bonuses</label>
     <ol class="items-list">
       <li class="item flexrow items-header">
-        <div class="item-name">Skill (placeholder)</div>
-        <div class="item-name">Bonus</div>
+        <div class="item-name">Skill</div>
+        <div class="item-name">Level</div>
         <div class="item-controls">
           <a class="item-control item-create" data-action="addSkillBonus" title="Add skill bonus">
             <i class="fas fa-plus"></i>
@@ -61,8 +61,9 @@
       {{#each system.skillBonuses as |entry index|}}
       <li class="item flexrow">
         <div class="item-name">
-          <input type="text" name="system.skillBonuses.{{index}}.skill" value="{{entry.skill}}"
-            placeholder="Skill name" />
+          <select name="system.skillBonuses.{{index}}.skill">
+            {{selectOptions ../skillBonusChoices selected=entry.skill localize=true}}
+          </select>
         </div>
         <div class="item-name">
           <input type="text" name="system.skillBonuses.{{index}}.bonus" value="{{entry.bonus}}"

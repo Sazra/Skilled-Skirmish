@@ -4,6 +4,7 @@ import { SKSKActorSheet } from './sheets/actor-sheet.mjs';
 import { SKSKItemSheet } from './sheets/item-sheet.mjs';
 import { preloadHandlebarsTemplates } from './helpers/templates.mjs';
 import { SKSK } from './helpers/config.mjs';
+import { registerSettings } from './helpers/settings.mjs';
 import * as models from './data/_module.mjs';
 
 Hooks.once('init', function () {
@@ -14,6 +15,8 @@ Hooks.once('init', function () {
   };
 
   CONFIG.SKSK = SKSK;
+
+  registerSettings();
 
   CONFIG.Combat.initiative = {
     formula: '1d20 + @abilities.dex.mod',

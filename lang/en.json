@@ -1,5 +1,15 @@
 {
   "SKSK": {
+    "Settings": {
+      "SkillPointsLevel5": {
+        "Name": "Skill Points for Level 5 Skills",
+        "Hint": "Skill points required to reach level 1 of a 5-level skill. The requirement doubles for each subsequent level."
+      },
+      "SkillPointsLevel10": {
+        "Name": "Skill Points for Level 10 Skills",
+        "Hint": "Skill points required to reach level 1 of a 10-level skill. The requirement increases by this amount for each subsequent level."
+      }
+    },
     "Attribute": {
       "Str": {
         "long": "Strength",
@@ -45,18 +55,179 @@
         "Polearm": "Polearm",
         "Sword": "Sword"
       },
-      "Armor": {},
-      "Production": {},
-      "Rogue": {},
-      "MagicSchool": {},
-      "Magic": {},
-      "Fighter": {},
-      "Misc": {},
-      "Attribute": {},
-      "Resistance": {},
-      "Immunity": {},
-      "Absorb": {},
-      "Special": {}
+      "Armor": {
+        "HeavyArmor": "Heavy Armor",
+        "LightArmor": "Light Armor",
+        "Shield": "Shield"
+      },
+      "Crafting": {
+        "Alchemy": "Alchemy",
+        "Crafting": "Crafting",
+        "Cooking": "Cooking",
+        "Enchanting": "Enchanting"
+      },
+      "Rogue": {
+        "Assassination": "Assassination",
+        "Traps": "Traps",
+        "Stealth": "Stealth",
+        "SleightOfHand": "Sleight of Hand"
+      },
+      "MagicSchool": {
+        "Fire": "Fire",
+        "Water": "Water",
+        "Earth": "Earth",
+        "Air": "Air",
+        "Light": "Light",
+        "Dark": "Dark",
+        "Life": "Life",
+        "Death": "Death",
+        "Trickery": "Trickery",
+        "Nature": "Nature",
+        "Bardic": "Bardic",
+        "Divination": "Divination",
+        "Space": "Space",
+        "Time": "Time",
+        "Blood": "Blood"
+      },
+      "Magic": {
+        "Concentration": "Concentration",
+        "Meditation": "Meditation",
+        "Summoning": "Summoning",
+        "Control": "Magic Control",
+        "ManaCapacity": "Mana Capacity",
+        "ManaRegeneration": "Mana Regeneration",
+        "ManaCore": "Mana Core",
+        "Ritualism": "Ritualism",
+        "ChantShortening": "Chant Shortening",
+        "Overcharge": "Overcharge",
+        "SourceBound": "Source Bound",
+        "EtherBound": "Ether Bound",
+        "Chantless": "Chantless"
+      },
+      "Fighter": {
+        "Health": "Health",
+        "Stamina": "Stamina",
+        "Technique": "Technique",
+        "Reflexes": "Reflexes",
+        "Precision": "Precision",
+        "Brutality": "Brutality",
+        "Adrenalin": "Adrenalin",
+        "Ambidextrous": "Ambidextrous"
+      },
+      "Misc": {
+        "Observation": "Observation",
+        "Faith": "Faith",
+        "Rhetoric": "Rhetoric",
+        "Healer": "Healer",
+        "Singing": "Singing",
+        "Tactic": "Tactic",
+        "Survival": "Survival",
+        "Disguise": "Disguise",
+        "Intimidation": "Intimidation",
+        "Inspiration": "Inspiration",
+        "Totem": "Totem",
+        "Tenacity": "Tenacity"
+      },
+      "Attribute": {
+        "UnlimitedStrength": "Unlimited Strength",
+        "UnlimitedDexterity": "Unlimited Dexterity",
+        "UnlimitedConstitution": "Unlimited Constitution",
+        "UnlimitedPerception": "Unlimited Perception",
+        "UnlimitedWillpower": "Unlimited Willpower",
+        "UnlimitedAura": "Unlimited Aura",
+        "UnlimitedCharisma": "Unlimited Charisma",
+        "UnlimitedAppearance": "Unlimited Appearance",
+        "Unlimited": "Unlimited"
+      },
+      "Resistance": {
+        "FireResistance": "Fire Resistance",
+        "WaterResistance": "Water Resistance",
+        "EarthResistance": "Earth Resistance",
+        "AirResistance": "Air Resistance",
+        "LightResistance": "Light Resistance",
+        "DarkResistance": "Dark Resistance",
+        "LifeResistance": "Life Resistance",
+        "DeathResistance": "Death Resistance",
+        "MentalResistance": "Mental Resistance",
+        "NatureResistance": "Nature Resistance",
+        "ColdResistance": "Cold Resistance",
+        "HeatResistance": "Heat Resistance",
+        "BluntResistance": "Blunt Resistance",
+        "SharpResistance": "Sharp Resistance",
+        "PiercingResistance": "Piercing Resistance",
+        "PoisonResistance": "Poison Resistance",
+        "AcidResistance": "Acid Resistance",
+        "ElectricityResistance": "Electricity Resistance",
+        "IceResistance": "Ice Resistance",
+        "DiseaseResistance": "Disease Resistance"
+      },
+      "Immunity": {
+        "FireImmunity": "Fire Immunity",
+        "WaterImmunity": "Water Immunity",
+        "EarthImmunity": "Earth Immunity",
+        "AirImmunity": "Air Immunity",
+        "LightImmunity": "Light Immunity",
+        "DarkImmunity": "Dark Immunity",
+        "LifeImmunity": "Life Immunity",
+        "DeathImmunity": "Death Immunity",
+        "MentalImmunity": "Mental Immunity",
+        "NatureImmunity": "Nature Immunity",
+        "ColdImmunity": "Cold Immunity",
+        "HeatImmunity": "Heat Immunity",
+        "BluntImmunity": "Blunt Immunity",
+        "SharpImmunity": "Sharp Immunity",
+        "PiercingImmunity": "Piercing Immunity",
+        "PoisonImmunity": "Poison Immunity",
+        "AcidImmunity": "Acid Immunity",
+        "ElectricityImmunity": "Electricity Immunity",
+        "IceImmunity": "Ice Immunity",
+        "DiseaseImmunity": "Disease Immunity"
+      },
+      "Absorb": {
+        "FireAbsorption": "Fire Absorption",
+        "WaterAbsorption": "Water Absorption",
+        "EarthAbsorption": "Earth Absorption",
+        "AirAbsorption": "Air Absorption",
+        "LightAbsorption": "Light Absorption",
+        "DarkAbsorption": "Dark Absorption",
+        "LifeAbsorption": "Life Absorption",
+        "DeathAbsorption": "Death Absorption",
+        "MentalAbsorption": "Mental Absorption",
+        "NatureAbsorption": "Nature Absorption",
+        "ColdAbsorption": "Cold Absorption",
+        "HeatAbsorption": "Heat Absorption",
+        "BluntAbsorption": "Blunt Absorption",
+        "SharpAbsorption": "Sharp Absorption",
+        "PiercingAbsorption": "Piercing Absorption",
+        "PoisonAbsorption": "Poison Absorption",
+        "AcidAbsorption": "Acid Absorption",
+        "ElectricityAbsorption": "Electricity Absorption",
+        "IceAbsorption": "Ice Absorption"
+      },
+      "Special": {
+        "Luck": "Luck",
+        "Massacre": "Massacre",
+        "SoulForce": "Soul Force",
+        "HitCorrection": "Hit Correction",
+        "DefenseCorrection": "Defense Correction",
+        "CorpusImmortalis": "Corpus Immortalis",
+        "Immortal": "Immortal"
+      }
+    },
+    "SkillCategory": {
+      "Weapons": "Weapon Skills",
+      "Armors": "Armor Skills",
+      "Production": "Production Skills",
+      "Rogue": "Rogue Skills",
+      "MagicSchools": "Magic Schools",
+      "Magic": "Magic Skills",
+      "Fighter": "Fighter Skills",
+      "Misc": "Utility Skills",
+      "Attribute": "Attribute Skills",
+      "Resistances": "Resistance Skills",
+      "Immunity": "Immunities",
+      "Absorb": "Absorption",
+      "Special": "Special Skills"
     },
     "SheetLabels": {
       "Actor": "SKSK Actor Sheet",
@@ -64,7 +235,8 @@
       "Resources": "Resources",
       "Attributes": "Attributes",
       "Species": "Species",
-      "Class": "Class"
+      "Class": "Class",
+      "Skills": "Skills"
     },
     "Species": {
       "Type": {
@@ -78,7 +250,10 @@
         "Second": "Second Class",
         "Third": "Third Class",
         "Advanced": "Advanced Class"
-      }
+      },
+      "SkillBonuses": "Skill Bonuses",
+      "SkillPrerequisites": "Skill Prerequisites",
+      "RequiredLevel": "Required Level"
     },
     "Talent": {
       "Type": {

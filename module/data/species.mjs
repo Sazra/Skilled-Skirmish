@@ -24,10 +24,12 @@ export default class SKSKSpecies extends SKSKItemBase {
       bonus: new fields.NumberField({ ...requiredInteger, initial: 1 })
     }));
 
-    // Starting bonuses to skills. Player-extensible list; free-text skill
-    // name for now since the skill system doesn't exist yet.
+    // Starting bonuses to skills, always granted. Player-extensible list;
+    // "skill" holds a key from CONFIG.SKSK.skills (multi-level skills only).
+    // "bonus" is a number of whole skill LEVELS granted (e.g. bonus 1 on
+    // Axe grants Axe at level 1), not skill points.
     schema.skillBonuses = new fields.ArrayField(new fields.SchemaField({
-      skill: new fields.StringField({ required: true, blank: true }),
+      skill: new fields.StringField({ required: true, blank: false, initial: "axe" }),
       bonus: new fields.NumberField({ ...requiredInteger, initial: 1 })
     }));
 

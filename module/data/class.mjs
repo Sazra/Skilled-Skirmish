@@ -15,10 +15,14 @@ export default class SKSKClass extends SKSKItemBase {
     // values added together, multiplied by level.
     schema.life = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
 
-    // Starting bonuses to skills. Player-extensible list; free-text skill
-    // name for now since the skill system doesn't exist yet.
+    // Starting bonuses to skills. Player-extensible list; "skill" holds a
+    // key from CONFIG.SKSK.skills (multi-level skills only). "bonus" is a
+    // number of whole skill LEVELS granted (e.g. bonus 1 on Axe grants Axe
+    // at level 1), not skill points. Only granted when classType is "first"
+    // - for second/third/advanced classes the sheet instead presents this
+    // same list as skill prerequisites.
     schema.skillBonuses = new fields.ArrayField(new fields.SchemaField({
-      skill: new fields.StringField({ required: true, blank: true }),
+      skill: new fields.StringField({ required: true, blank: false, initial: "axe" }),
       bonus: new fields.NumberField({ ...requiredInteger, initial: 1 })
     }));
 

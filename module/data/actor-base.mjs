@@ -55,6 +55,23 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     }
     schema.attributes = new fields.SchemaField(attributesSchema);
 
+    // One entry per skill, flattened across every category in
+    // CONFIG.SKSK.skills (skill keys are unique across categories).
+    // Characters enter points/toggle directly; NPCs instead get a formula
+    // (points-per-level for multi-level skills, or a 1-means-unlocked
+    // formula for binary/1-level skills) so a template scales with level.
+    const skillsSchema = {};
+    for (const category of Object.values(CONFIG.SKSK.skills)) {
+      for (const key of Object.keys(category)) {
+        skillsSchema[key] = new fields.SchemaField({
+          points: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+          toggle: new fields.BooleanField({ initial: false }),
+          formula: new fields.StringField({ required: true, blank: true }),
+        });
+      }
+    }
+    schema.skills = new fields.SchemaField(skillsSchema);
+
     return schema;
   }
 
