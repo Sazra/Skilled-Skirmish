@@ -273,18 +273,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     const classes = [];
     const species = [];
     const talents = [];
-    const spells = {
-      0: [],
-      1: [],
-      2: [],
-      3: [],
-      4: [],
-      5: [],
-      6: [],
-      7: [],
-      8: [],
-      9: [],
-    };
+    const spells = [];
 
     const actorLevel = context.system.resources?.level?.value ?? 1;
 
@@ -375,9 +364,8 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       }
       // Append to spells.
       else if (i.type === 'spell') {
-        if (i.system.spellLevel != undefined) {
-          spells[i.system.spellLevel].push(i);
-        }
+        i.typeLabel = game.i18n.localize(CONFIG.SKSK.spellTypes[i.system.spellType]);
+        spells.push(i);
       }
     }
 

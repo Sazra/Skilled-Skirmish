@@ -1,0 +1,143 @@
+<section class="tab {{tab.cssClass}}" data-group="primary" data-tab="attributes">
+
+  <div class="resource">
+    <label class="resource-label">Spell Type</label>
+    <select name="system.spellType">
+      {{selectOptions spellTypeChoices selected=system.spellType localize=true}}
+    </select>
+  </div>
+
+  {{#if showMagicSchool}}
+  <div class="resource">
+    <label class="resource-label">Magic School</label>
+    <select name="system.magicSchool">
+      {{selectOptions magicSchoolChoices selected=system.magicSchool localize=true}}
+    </select>
+  </div>
+  {{/if}}
+
+  {{#if isCombinedSpell}}
+  <div class="resource">
+    <label class="resource-label">Required Skills</label>
+    <ol class="items-list">
+      <li class="item flexrow items-header">
+        <div class="item-name">Skill</div>
+        <div class="item-name">Level</div>
+        <div class="item-controls">
+          <a class="item-control item-create" data-action="addCombinedSkill" title="Add required skill">
+            <i class="fas fa-plus"></i>
+          </a>
+        </div>
+      </li>
+      {{#each system.combinedSkills as |entry index|}}
+      <li class="item flexrow">
+        <div class="item-name">
+          <select name="system.combinedSkills.{{index}}.skill">
+            {{selectOptions ../combinedSkillChoices selected=entry.skill localize=true}}
+          </select>
+        </div>
+        <div class="item-name">
+          <input type="text" name="system.combinedSkills.{{index}}.level" value="{{entry.level}}"
+            data-dtype="Number" />
+        </div>
+        <div class="item-controls">
+          <a class="item-control item-delete" data-action="removeArrayEntry" data-field="combinedSkills"
+            data-index="{{index}}" title="Remove">
+            <i class="fas fa-trash"></i>
+          </a>
+        </div>
+      </li>
+      {{/each}}
+    </ol>
+  </div>
+  {{/if}}
+
+  <div class="grid grid-2col">
+    <div class="resource">
+      <label class="resource-label">Mana Cost</label>
+      <input type="text" name="system.manaCost" value="{{system.manaCost}}" data-dtype="Number" />
+    </div>
+    <div class="resource">
+      <label class="resource-label">AP Cost</label>
+      <input type="text" name="system.apCost" value="{{system.apCost}}" data-dtype="Number" />
+    </div>
+  </div>
+
+  <div class="resource">
+    <label class="resource-label">Ranges</label>
+    <ol class="items-list">
+      <li class="item flexrow items-header">
+        <div class="item-name">Distance (m)</div>
+        <div class="item-name">Indicator</div>
+        <div class="item-controls">
+          <a class="item-control item-create" data-action="addRange" title="Add range">
+            <i class="fas fa-plus"></i>
+          </a>
+        </div>
+      </li>
+      {{#each system.ranges as |entry index|}}
+      <li class="item flexrow">
+        <div class="item-name">
+          <input type="text" name="system.ranges.{{index}}.distance" value="{{entry.distance}}"
+            data-dtype="Number" />
+        </div>
+        <div class="item-name">
+          <select name="system.ranges.{{index}}.indicator">
+            {{selectOptions ../rangeIndicatorChoices selected=entry.indicator localize=true}}
+          </select>
+        </div>
+        <div class="item-controls">
+          {{#if ../canRemoveRange}}
+          <a class="item-control item-delete" data-action="removeArrayEntry" data-field="ranges"
+            data-index="{{index}}" title="Remove">
+            <i class="fas fa-trash"></i>
+          </a>
+          {{/if}}
+        </div>
+      </li>
+      {{/each}}
+    </ol>
+  </div>
+
+  <div class="resource">
+    <label class="resource-label">Duration (optional)</label>
+    <input type="text" name="system.duration" value="{{system.duration}}"
+      placeholder="e.g. 3 rounds, 10 minutes, permanent" />
+  </div>
+
+  <div class="resource">
+    <label class="resource-label">Casting Methods</label>
+    <div class="casting-methods">
+      {{#each castingMethodChoices as |label key|}}
+      <label class="casting-method-option">
+        <input type="checkbox" name="system.castingMethods.{{key}}" {{checked (lookup ../system.castingMethods key)}} />
+        {{localize label}}
+      </label>
+      {{/each}}
+    </div>
+  </div>
+
+  {{#if system.castingMethods.sacrifice}}
+  <div class="resource">
+    <label class="resource-label">Sacrifice</label>
+    <input type="text" name="system.sacrificeDescription" value="{{system.sacrificeDescription}}"
+      placeholder="What is sacrificed?" />
+  </div>
+  {{/if}}
+
+  {{#if system.castingMethods.medium}}
+  <div class="resource">
+    <label class="resource-label">Medium</label>
+    <input type="text" name="system.mediumDescription" value="{{system.mediumDescription}}"
+      placeholder="What is the medium?" />
+  </div>
+  {{/if}}
+
+  <div class="resource">
+    <label class="resource-label casting-method-option">
+      <input type="checkbox" name="system.mastered" {{checked system.mastered}} />
+      Mastered
+    </label>
+  </div>
+
+</section>

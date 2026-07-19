@@ -29,6 +29,8 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       addAbility: SKSKItemSheet.#addAbility,
       removeArrayEntry: SKSKItemSheet.#removeArrayEntry,
       addAbilityEffect: SKSKItemSheet.#addAbilityEffect,
+      addRange: SKSKItemSheet.#addRange,
+      addCombinedSkill: SKSKItemSheet.#addCombinedSkill,
     }
   };
 
@@ -98,6 +100,12 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       // Talents have a single ability; its Active Effects are shown inline
       // rather than in a separate item-level effects tab.
       delete parts.effects;
+    } else if (itemType === 'spell') {
+      parts.header.template = `systems/sksk/templates/item/parts/header-spell.hbs`;
+      parts.attributes.template = `systems/sksk/templates/item/parts/spell.hbs`;
+      // Spells have no abilities substructure, so the standard item-level
+      // effects tab (kept, unlike species/class/talent) is where any
+      // on-cast Active Effects belong.
     }
 
     return parts;
@@ -115,6 +123,8 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
     } else if (group === 'primary' && this.item.type === 'talent') {
       tabs.attributes.label = 'TYPES.Item.talent';
       delete tabs.effects;
+    } else if (group === 'primary' && this.item.type === 'spell') {
+      tabs.attributes.label = 'TYPES.Item.spell';
     }
     return tabs;
   }
@@ -196,6 +206,18 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       );
     }
 
+    if (item.type === 'spell') {
+      context.spellTypeChoices = CONFIG.SKSK.spellTypes;
+      const isAdvancedSpell = item.system.spellType === 'advanced';
+      context.isCombinedSpell = item.system.spellType === 'combined';
+      context.showMagicSchool = item.system.spellType === 'simple' || isAdvancedSpell;
+      context.magicSchoolChoices = isAdvancedSpell ? CONFIG.SKSK.advancedMagicSchools : CONFIG.SKSK.simpleMagicSchools;
+      context.combinedSkillChoices = getSkillBonusChoices();
+      context.rangeIndicatorChoices = CONFIG.SKSK.rangeIndicators;
+      context.castingMethodChoices = CONFIG.SKSK.castingMethods;
+      context.canRemoveRange = (item.system.ranges?.length ?? 0) > 1;
+    }
+
     return context;
   }
 
@@ -262,6 +284,14 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
   static async #addAbility(event, target) {
     if ((this.item.system.abilities?.length ?? 0) >= 3) return;
     await this.#addArrayEntry('abilities', { name: '', description: '' });
+  }
+
+  static async #addRange(event, target) {
+    await this.#addArrayEntry('ranges', { distance: 10, indicator: 'projectile' });
+  }
+
+  static async #addCombinedSkill(event, target) {
+    await this.#addArrayEntry('combinedSkills', { skill: 'axe', level: 1 });
   }
 
   /**

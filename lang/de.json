@@ -289,10 +289,31 @@
                 "Bloodline": "Blutlinie"
             }
         },
-        "Item": {
-            "Spell": {
-                "SpellLVL": "Level {level} Spells",
-                "AddLVL": "Add LVL {level}"
+        "Spell": {
+            "Type": {
+                "Simple": "Einfache Magie",
+                "Advanced": "Erweiterte Magie",
+                "Combined": "Kombinierte Magie",
+                "Systemless": "Systemlose Magie"
+            },
+            "RangeIndicator": {
+                "Self": "Selbst",
+                "Touch": "Berührung",
+                "Targeted": "Gezielt",
+                "Projectile": "Projektil",
+                "Line": "Linie",
+                "Radius": "Radius",
+                "Cone": "Kegel",
+                "Square": "Quadrat"
+            },
+            "CastingMethod": {
+                "Vocal": "Vokal",
+                "Runes": "Runenzeichen",
+                "Movement": "Bewegung",
+                "Sacrifice": "Opfer",
+                "Medium": "Medium",
+                "Ritual": "Ritual",
+                "Concentration": "Konzentration"
             }
         },
         "Effect": {

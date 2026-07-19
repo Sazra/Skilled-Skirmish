@@ -593,6 +593,19 @@
   text-overflow: ellipsis;
 }
 
+.sksk .casting-methods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+
+.sksk .casting-method-option {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: normal;
+}
+
 .sksk .items-list .item-description {
   flex: 2;
   margin: 0 8px;
