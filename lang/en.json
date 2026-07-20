@@ -290,6 +290,12 @@
       }
     },
     "Spell": {
+      "Section": {
+        "General": "General",
+        "SavingThrows": "Saving Throws",
+        "Damage": "Damage",
+        "StatusEffects": "Status Effects"
+      },
       "Type": {
         "Simple": "Simple Magic",
         "Advanced": "Advanced Magic",

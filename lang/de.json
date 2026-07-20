@@ -290,6 +290,12 @@
             }
         },
         "Spell": {
+            "Section": {
+                "General": "Allgemein",
+                "SavingThrows": "Rettungswürfe",
+                "Damage": "Schaden",
+                "StatusEffects": "Statuseffekte"
+            },
             "Type": {
                 "Simple": "Einfache Magie",
                 "Advanced": "Erweiterte Magie",

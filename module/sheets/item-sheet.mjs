@@ -51,6 +51,17 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       ],
       initial: "description",
     },
+    // Sub-tabs shown inside the Spell tab, keeping the (fairly long) set of
+    // spell fields from turning into one giant scroll.
+    spellSections: {
+      tabs: [
+        { id: "general", label: "SKSK.Spell.Section.General" },
+        { id: "savingThrows", label: "SKSK.Spell.Section.SavingThrows" },
+        { id: "damage", label: "SKSK.Spell.Section.Damage" },
+        { id: "statusEffects", label: "SKSK.Spell.Section.StatusEffects" },
+      ],
+      initial: "general",
+    },
   };
 
   /** @override */
@@ -160,6 +171,12 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
     const context = await super._prepareContext(options);
     const item = context.document;
 
+    // With more than one tab group declared (spellSections, for spells),
+    // the base _prepareContext no longer auto-populates context.tabs for
+    // "primary" - prepare it ourselves so every item type's tab nav still
+    // renders.
+    context.tabs = this._prepareTabs('primary');
+
     // Use a safe clone of the item data for further operations.
     const itemData = item.toObject();
 
@@ -214,6 +231,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
     }
 
     if (item.type === 'spell') {
+      context.spellSectionTabs = Object.values(this._prepareTabs('spellSections'));
       context.spellTypeChoices = CONFIG.SKSK.spellTypes;
       const isAdvancedSpell = item.system.spellType === 'advanced';
       context.isCombinedSpell = item.system.spellType === 'combined';
@@ -256,6 +274,14 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       ?? this.constructor.TABS.primary.initial;
     if (activeTab && this.element.querySelector(`.tab[data-group="primary"][data-tab="${activeTab}"]`)) {
       this.changeTab(activeTab, "primary", { force: true, updatePosition: false });
+    }
+
+    if (this.item.type === 'spell') {
+      const activeSection = this.tabGroups?.spellSections
+        ?? this.constructor.TABS.spellSections.initial;
+      if (activeSection && this.element.querySelector(`.tab[data-group="spellSections"][data-tab="${activeSection}"]`)) {
+        this.changeTab(activeSection, "spellSections", { force: true, updatePosition: false });
+      }
     }
   }
 

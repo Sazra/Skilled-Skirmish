@@ -606,6 +606,65 @@
   font-weight: normal;
 }
 
+/* Sacrifice/Medium: each checkbox sits directly above its own conditional
+   text field, and the whole pair is set apart (border) from the plain
+   Vocal/Runes/Movement/Ritual/Concentration row above. */
+.sksk .casting-methods-triggered {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border-light-primary, #c9c7b8);
+}
+
+.sksk .casting-method-trigger {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Deliberately not styled like .casting-method-option, so Mastered can't
+   be mistaken for one more casting method in the row above it. */
+.sksk .mastered-toggle {
+  margin-top: 10px;
+  padding: 6px 8px;
+  border: 1px solid var(--color-border-light-primary, #c9c7b8);
+  border-radius: 3px;
+  background: var(--sksk-side-tab-bg, rgba(0, 0, 0, 0.05));
+}
+
+.sksk .mastered-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: normal;
+}
+
+/* Sub-tab navigation for the Spell tab's General/Saving Throws/Damage/
+   Status Effects sections - same treatment as the Skills tab's category
+   tabs, just under a different class so the two aren't coupled. */
+.sksk .spell-section-tabs {
+  flex-wrap: wrap;
+  gap: 2px;
+  border: 1px solid var(--color-border-light-primary, #c9c7b8);
+  margin: 0 0 8px;
+  padding: 4px;
+}
+
+.sksk .spell-section-tabs a {
+  padding: 2px 8px;
+  font-size: 11px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+}
+
+.sksk .spell-section-tabs a.active {
+  border-color: var(--color-border-dark-primary, #191813);
+  background: var(--sksk-side-tab-bg, rgba(0, 0, 0, 0.05));
+  font-weight: bold;
+}
+
 .sksk .items-list .item.saving-throw {
   display: block;
   padding: 6px 2px;
