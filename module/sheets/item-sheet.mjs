@@ -5,6 +5,7 @@ import {
   prepareActiveEffectCategories,
 } from '../helpers/effects.mjs';
 import { getSkillBonusChoices } from '../helpers/skills.mjs';
+import { computeSavingThrowValue } from '../helpers/spells.mjs';
 
 /**
  * Extend the basic ItemSheet with some very simple modifications
@@ -31,6 +32,12 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       addAbilityEffect: SKSKItemSheet.#addAbilityEffect,
       addRange: SKSKItemSheet.#addRange,
       addCombinedSkill: SKSKItemSheet.#addCombinedSkill,
+      addSavingThrow: SKSKItemSheet.#addSavingThrow,
+      addSavingThrowAttributeBonus: SKSKItemSheet.#addSavingThrowAttributeBonus,
+      addSavingThrowSkillBonus: SKSKItemSheet.#addSavingThrowSkillBonus,
+      removeNestedArrayEntry: SKSKItemSheet.#removeNestedArrayEntry,
+      addDamage: SKSKItemSheet.#addDamage,
+      addStatusEffect: SKSKItemSheet.#addStatusEffect,
     }
   };
 
@@ -216,6 +223,24 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       context.rangeIndicatorChoices = CONFIG.SKSK.rangeIndicators;
       context.castingMethodChoices = CONFIG.SKSK.castingMethods;
       context.canRemoveRange = (item.system.ranges?.length ?? 0) > 1;
+
+      context.attributeChoices = CONFIG.SKSK.attributes;
+      context.damageTypeChoices = CONFIG.SKSK.damageTypes;
+      context.spellTriggerChoices = CONFIG.SKSK.spellTriggers;
+      // Choices for the "which saving throw" selector on Damage/Status
+      // Effect entries whose trigger is "save"; falls back to a numbered
+      // label when the saving throw itself has none set.
+      context.savingThrowChoices = (item.system.savingThrows ?? []).map((entry, index) => ({
+        value: index,
+        label: entry.label || game.i18n.format('SKSK.Spell.SavingThrow.Numbered', { number: index + 1 }),
+      }));
+      // Only meaningful when the spell is owned by an actor - otherwise
+      // there's no caster to derive attribute/skill values from.
+      if (item.actor) {
+        context.savingThrowValues = (item.system.savingThrows ?? []).map(
+          entry => computeSavingThrowValue(entry, item.actor)
+        );
+      }
     }
 
     return context;
@@ -292,6 +317,75 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
 
   static async #addCombinedSkill(event, target) {
     await this.#addArrayEntry('combinedSkills', { skill: 'axe', level: 1 });
+  }
+
+  static async #addSavingThrow(event, target) {
+    await this.#addArrayEntry('savingThrows', {
+      label: '', baseValue: 10, attributeBonuses: [], skillBonuses: [],
+    });
+  }
+
+  static async #addDamage(event, target) {
+    await this.#addArrayEntry('damages', {
+      formula: '1d6', damageType: 'fire', trigger: 'unconditional', savingThrowIndex: null,
+    });
+  }
+
+  static async #addStatusEffect(event, target) {
+    await this.#addArrayEntry('statusEffects', {
+      description: '', trigger: 'unconditional', savingThrowIndex: null,
+    });
+  }
+
+  /**
+   * Append a blank entry to an array nested inside one element of a
+   * top-level array-valued system field, e.g. a saving throw's
+   * attributeBonuses/skillBonuses.
+   * @param {string} parentField  The top-level system field, e.g. "savingThrows".
+   * @param {number} parentIndex  Index of the element within that array.
+   * @param {string} childField   The nested array field on that element.
+   * @param {object} entry        The blank entry to append.
+   * @private
+   */
+  async #addNestedArrayEntry(parentField, parentIndex, childField, entry) {
+    const parent = foundry.utils.deepClone(this.item.system[parentField] ?? []);
+    const child = foundry.utils.deepClone(parent[parentIndex]?.[childField] ?? []);
+    child.push(entry);
+    parent[parentIndex][childField] = child;
+    await this.item.update({ [`system.${parentField}`]: parent });
+  }
+
+  static async #addSavingThrowAttributeBonus(event, target) {
+    const parentIndex = Number(target.dataset.index);
+    await this.#addNestedArrayEntry('savingThrows', parentIndex, 'attributeBonuses', {
+      attribute: 'wil', useModifier: true, formula: '@value',
+    });
+  }
+
+  static async #addSavingThrowSkillBonus(event, target) {
+    const parentIndex = Number(target.dataset.index);
+    await this.#addNestedArrayEntry('savingThrows', parentIndex, 'skillBonuses', {
+      skill: 'magicControl', formula: '@value',
+    });
+  }
+
+  /**
+   * Remove an entry from an array nested inside one element of a
+   * top-level array-valued system field (the counterpart to
+   * #addNestedArrayEntry above).
+   * @param {PointerEvent} event   The originating click event.
+   * @param {HTMLElement} target   The capturing HTML element, carrying
+   *                               data-parent-field, data-parent-index,
+   *                               data-field and data-index.
+   * @private
+   */
+  static async #removeNestedArrayEntry(event, target) {
+    const { parentField, parentIndex, field, index } = target.dataset;
+    const parent = foundry.utils.deepClone(this.item.system[parentField] ?? []);
+    const child = foundry.utils.deepClone(parent[Number(parentIndex)]?.[field] ?? []);
+    child.splice(Number(index), 1);
+    parent[Number(parentIndex)][field] = child;
+    await this.item.update({ [`system.${parentField}`]: parent });
   }
 
   /**

@@ -4,7 +4,7 @@ import {
   onManageActiveEffect,
   prepareActiveEffectCategories,
 } from '../helpers/effects.mjs';
-import { getSkillLevel, evaluateSkillFormula, computeSkillBonusTotals } from '../helpers/skills.mjs';
+import { evaluateSkillFormula, computeSkillBonusTotals, getActorSkillLevel } from '../helpers/skills.mjs';
 
 /**
  * Extend the basic ActorSheet with some very simple modifications
@@ -428,12 +428,12 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
             row.unlocked = formulaResult === 1;
           } else {
             row.points = formulaResult;
-            row.level = Math.min(def.maxLevel, getSkillLevel(row.points, def.maxLevel) + row.bonus);
+            row.level = getActorSkillLevel(actor, key);
           }
         } else if (row.isBinary) {
           row.unlocked = row.toggle;
         } else {
-          row.level = Math.min(def.maxLevel, getSkillLevel(row.points, def.maxLevel) + row.bonus);
+          row.level = getActorSkillLevel(actor, key);
         }
 
         return row;

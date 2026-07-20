@@ -101,6 +101,40 @@ SKSK.castingMethods = {
   concentration: 'SKSK.Spell.CastingMethod.Concentration',
 };
 
+// The elements a spell's Damage entries can deal - the same 20 elements
+// used by the Resistance/Weakness/Immunity/Absorb skill categories, so a
+// spell's damage type always lines up with an actor's defenses.
+SKSK.damageTypes = {
+  fire: 'SKSK.DamageType.Fire',
+  water: 'SKSK.DamageType.Water',
+  earth: 'SKSK.DamageType.Earth',
+  air: 'SKSK.DamageType.Air',
+  light: 'SKSK.DamageType.Light',
+  dark: 'SKSK.DamageType.Dark',
+  life: 'SKSK.DamageType.Life',
+  death: 'SKSK.DamageType.Death',
+  mental: 'SKSK.DamageType.Mental',
+  nature: 'SKSK.DamageType.Nature',
+  cold: 'SKSK.DamageType.Cold',
+  heat: 'SKSK.DamageType.Heat',
+  blunt: 'SKSK.DamageType.Blunt',
+  sharp: 'SKSK.DamageType.Sharp',
+  piercing: 'SKSK.DamageType.Piercing',
+  poison: 'SKSK.DamageType.Poison',
+  acid: 'SKSK.DamageType.Acid',
+  electricity: 'SKSK.DamageType.Electricity',
+  ice: 'SKSK.DamageType.Ice',
+  disease: 'SKSK.DamageType.Disease',
+};
+
+// What a spell's Damage/Status Effect entries can be coupled to: the
+// attack roll, one specific saving throw, or nothing at all.
+SKSK.spellTriggers = {
+  attack: 'SKSK.Spell.Trigger.Attack',
+  save: 'SKSK.Spell.Trigger.Save',
+  unconditional: 'SKSK.Spell.Trigger.Unconditional',
+};
+
 SKSK.talentTypes = {
   level6: 'SKSK.Talent.Type.Level6',
   level12: 'SKSK.Talent.Type.Level12',
