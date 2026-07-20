@@ -1,0 +1,39 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Derive version from tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Stamp system.json with release version and download URL
+        run: |
+          jq --arg version "${{ steps.version.outputs.version }}" \
+             --arg download "https://github.com/${{ github.repository }}/releases/download/${GITHUB_REF_NAME}/system.zip" \
+             '.version = $version | .download = $download' \
+             system.json > system.json.tmp
+          mv system.json.tmp system.json
+
+      - name: Build system.zip
+        run: zip -r system.zip system.json module templates css lang assets
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            system.zip
+            system.json
