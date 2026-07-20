@@ -289,11 +289,62 @@
         "Bloodline": "Bloodline"
       }
     },
-    "Item": {
-      "Spell": {
-        "SpellLVL": "Level {level} Spells",
-        "AddLVL": "Add LVL {level}"
+    "Spell": {
+      "Type": {
+        "Simple": "Simple Magic",
+        "Advanced": "Advanced Magic",
+        "Combined": "Combined Magic",
+        "Systemless": "Systemless Magic"
+      },
+      "RangeIndicator": {
+        "Self": "Self",
+        "Touch": "Touch",
+        "Targeted": "Targeted",
+        "Projectile": "Projectile",
+        "Line": "Line",
+        "Radius": "Radius",
+        "Cone": "Cone",
+        "Square": "Square"
+      },
+      "CastingMethod": {
+        "Vocal": "Vocal",
+        "Runes": "Runes",
+        "Movement": "Movement",
+        "Sacrifice": "Sacrifice",
+        "Medium": "Medium",
+        "Ritual": "Ritual",
+        "Concentration": "Concentration"
+      },
+      "Trigger": {
+        "Attack": "Attack Roll",
+        "Save": "Saving Throw",
+        "Unconditional": "Unconditional"
+      },
+      "SavingThrow": {
+        "Numbered": "Saving Throw {number}"
       }
+    },
+    "DamageType": {
+      "Fire": "Fire",
+      "Water": "Water",
+      "Earth": "Earth",
+      "Air": "Air",
+      "Light": "Light",
+      "Dark": "Dark",
+      "Life": "Life",
+      "Death": "Death",
+      "Mental": "Mental",
+      "Nature": "Nature",
+      "Cold": "Cold",
+      "Heat": "Heat",
+      "Blunt": "Blunt",
+      "Sharp": "Sharp",
+      "Piercing": "Piercing",
+      "Poison": "Poison",
+      "Acid": "Acid",
+      "Electricity": "Electricity",
+      "Ice": "Ice",
+      "Disease": "Disease"
     },
     "Effect": {
       "Source": "Source",

@@ -167,3 +167,56 @@ export function evaluateSkillFormula(formula, rollData) {
     return 0;
   }
 }
+
+/**
+ * Evaluate a bonus-scaling formula where "@value" stands for the
+ * underlying number being scaled (an attribute's value/modifier, or a
+ * skill's current level) - e.g. "@value / 2" for half that number.
+ * @param {string} formula
+ * @param {number} value
+ * @return {number} The numeric result, or 0 if the formula is empty/invalid.
+ */
+export function evaluateBonusFormula(formula, value) {
+  if (!formula) return 0;
+  try {
+    return evaluateArithmetic(formula.replace(/@value/g, String(value)));
+  } catch (e) {
+    return 0;
+  }
+}
+
+/**
+ * Look up a skill's definition (label/maxLevel/stackable) by key across
+ * every category in CONFIG.SKSK.skills.
+ * @param {string} skillKey
+ * @return {object|null}
+ */
+function findSkillDefinition(skillKey) {
+  for (const category of Object.values(CONFIG.SKSK.skills)) {
+    if (category[skillKey]) return category[skillKey];
+  }
+  return null;
+}
+
+/**
+ * Current level of a single multi-level skill on an actor, including
+ * starting bonuses from equipped Species/Class items - the same
+ * derivation the actor sheet's Skills tab uses per row. Only meaningful
+ * for 5- or 10-level skills; binary or stackable skills have no "level"
+ * and always return 0.
+ * @param {Actor} actor
+ * @param {string} skillKey
+ * @return {number}
+ */
+export function getActorSkillLevel(actor, skillKey) {
+  const def = findSkillDefinition(skillKey);
+  if (!def || (def.maxLevel !== 5 && def.maxLevel !== 10)) return 0;
+
+  const data = actor.system.skills?.[skillKey] ?? {};
+  const bonus = computeSkillBonusTotals(actor)[skillKey] ?? 0;
+  const points = actor.type === 'npc'
+    ? evaluateSkillFormula(data.formula ?? '', actor.getRollData())
+    : (data.points ?? 0);
+
+  return Math.min(def.maxLevel, getSkillLevel(points, def.maxLevel) + bonus);
+}

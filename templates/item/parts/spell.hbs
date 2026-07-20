@@ -1,0 +1,356 @@
+<section class="tab {{tab.cssClass}}" data-group="primary" data-tab="attributes">
+
+  <div class="resource">
+    <label class="resource-label">Spell Type</label>
+    <select name="system.spellType">
+      {{selectOptions spellTypeChoices selected=system.spellType localize=true}}
+    </select>
+  </div>
+
+  {{#if showMagicSchool}}
+  <div class="resource">
+    <label class="resource-label">Magic School</label>
+    <select name="system.magicSchool">
+      {{selectOptions magicSchoolChoices selected=system.magicSchool localize=true}}
+    </select>
+  </div>
+  {{/if}}
+
+  {{#if isCombinedSpell}}
+  <div class="resource">
+    <label class="resource-label">Required Skills</label>
+    <ol class="items-list">
+      <li class="item flexrow items-header">
+        <div class="item-name">Skill</div>
+        <div class="item-name">Level</div>
+        <div class="item-controls">
+          <a class="item-control item-create" data-action="addCombinedSkill" title="Add required skill">
+            <i class="fas fa-plus"></i>
+          </a>
+        </div>
+      </li>
+      {{#each system.combinedSkills as |entry index|}}
+      <li class="item flexrow">
+        <div class="item-name">
+          <select name="system.combinedSkills.{{index}}.skill">
+            {{selectOptions ../combinedSkillChoices selected=entry.skill localize=true}}
+          </select>
+        </div>
+        <div class="item-name">
+          <input type="text" name="system.combinedSkills.{{index}}.level" value="{{entry.level}}"
+            data-dtype="Number" />
+        </div>
+        <div class="item-controls">
+          <a class="item-control item-delete" data-action="removeArrayEntry" data-field="combinedSkills"
+            data-index="{{index}}" title="Remove">
+            <i class="fas fa-trash"></i>
+          </a>
+        </div>
+      </li>
+      {{/each}}
+    </ol>
+  </div>
+  {{/if}}
+
+  <div class="grid grid-2col">
+    <div class="resource">
+      <label class="resource-label">Mana Cost</label>
+      <input type="text" name="system.manaCost" value="{{system.manaCost}}" data-dtype="Number" />
+    </div>
+    <div class="resource">
+      <label class="resource-label">AP Cost</label>
+      <input type="text" name="system.apCost" value="{{system.apCost}}" data-dtype="Number" />
+    </div>
+  </div>
+
+  <div class="resource">
+    <label class="resource-label">Ranges</label>
+    <ol class="items-list">
+      <li class="item flexrow items-header">
+        <div class="item-name">Distance (m)</div>
+        <div class="item-name">Indicator</div>
+        <div class="item-controls">
+          <a class="item-control item-create" data-action="addRange" title="Add range">
+            <i class="fas fa-plus"></i>
+          </a>
+        </div>
+      </li>
+      {{#each system.ranges as |entry index|}}
+      <li class="item flexrow">
+        <div class="item-name">
+          <input type="text" name="system.ranges.{{index}}.distance" value="{{entry.distance}}"
+            data-dtype="Number" />
+        </div>
+        <div class="item-name">
+          <select name="system.ranges.{{index}}.indicator">
+            {{selectOptions ../rangeIndicatorChoices selected=entry.indicator localize=true}}
+          </select>
+        </div>
+        <div class="item-controls">
+          {{#if ../canRemoveRange}}
+          <a class="item-control item-delete" data-action="removeArrayEntry" data-field="ranges"
+            data-index="{{index}}" title="Remove">
+            <i class="fas fa-trash"></i>
+          </a>
+          {{/if}}
+        </div>
+      </li>
+      {{/each}}
+    </ol>
+  </div>
+
+  <div class="resource">
+    <label class="resource-label">Duration (optional)</label>
+    <input type="text" name="system.duration" value="{{system.duration}}"
+      placeholder="e.g. 3 rounds, 10 minutes, permanent" />
+  </div>
+
+  <div class="resource">
+    <label class="resource-label">Casting Methods</label>
+    <div class="casting-methods">
+      {{#each castingMethodChoices as |label key|}}
+      <label class="casting-method-option">
+        <input type="checkbox" name="system.castingMethods.{{key}}" {{checked (lookup ../system.castingMethods key)}} />
+        {{localize label}}
+      </label>
+      {{/each}}
+    </div>
+  </div>
+
+  {{#if system.castingMethods.sacrifice}}
+  <div class="resource">
+    <label class="resource-label">Sacrifice</label>
+    <input type="text" name="system.sacrificeDescription" value="{{system.sacrificeDescription}}"
+      placeholder="What is sacrificed?" />
+  </div>
+  {{/if}}
+
+  {{#if system.castingMethods.medium}}
+  <div class="resource">
+    <label class="resource-label">Medium</label>
+    <input type="text" name="system.mediumDescription" value="{{system.mediumDescription}}"
+      placeholder="What is the medium?" />
+  </div>
+  {{/if}}
+
+  <div class="resource">
+    <label class="resource-label casting-method-option">
+      <input type="checkbox" name="system.mastered" {{checked system.mastered}} />
+      Mastered
+    </label>
+  </div>
+
+  <div class="resource">
+    <label class="resource-label casting-method-option">
+      <input type="checkbox" name="system.attackRoll.enabled" {{checked system.attackRoll.enabled}} />
+      Requires Attack Roll
+    </label>
+  </div>
+
+  {{#if system.attackRoll.enabled}}
+  <div class="resource">
+    <label class="resource-label">Number of Attacks</label>
+    <input type="text" name="system.attackRoll.count" value="{{system.attackRoll.count}}" data-dtype="Number" />
+  </div>
+  {{/if}}
+
+  <div class="resource">
+    <label class="resource-label">Saving Throws</label>
+    <ol class="items-list">
+      <li class="item flexrow items-header">
+        <div class="item-name">Label</div>
+        <div class="item-name">Base</div>
+        <div class="item-controls">
+          <a class="item-control item-create" data-action="addSavingThrow" title="Add saving throw">
+            <i class="fas fa-plus"></i>
+          </a>
+        </div>
+      </li>
+      {{#each system.savingThrows as |save index|}}
+      <li class="item saving-throw">
+        <div class="flexrow">
+          <div class="item-name">
+            <input type="text" name="system.savingThrows.{{index}}.label" value="{{save.label}}"
+              placeholder="e.g. Reflex" />
+          </div>
+          <div class="item-name">
+            <input type="text" name="system.savingThrows.{{index}}.baseValue" value="{{save.baseValue}}"
+              data-dtype="Number" />
+          </div>
+          {{#if ../savingThrowValues}}
+          <div class="item-name saving-throw-total">= {{lookup ../savingThrowValues index}}</div>
+          {{/if}}
+          <div class="item-controls">
+            <a class="item-control item-delete" data-action="removeArrayEntry" data-field="savingThrows"
+              data-index="{{index}}" title="Remove">
+              <i class="fas fa-trash"></i>
+            </a>
+          </div>
+        </div>
+
+        <div class="saving-throw-bonuses">
+          <div class="saving-throw-bonus-group">
+            <label class="resource-label">Attribute Bonuses</label>
+            <ol class="items-list">
+              {{#each save.attributeBonuses as |bonus bonusIndex|}}
+              <li class="item flexrow">
+                <div class="item-name">
+                  <select name="system.savingThrows.{{index}}.attributeBonuses.{{bonusIndex}}.attribute">
+                    {{selectOptions ../../attributeChoices selected=bonus.attribute localize=true}}
+                  </select>
+                </div>
+                <div class="item-name">
+                  <label class="casting-method-option">
+                    <input type="checkbox"
+                      name="system.savingThrows.{{index}}.attributeBonuses.{{bonusIndex}}.useModifier"
+                      {{checked bonus.useModifier}} />
+                    Modifier
+                  </label>
+                </div>
+                <div class="item-name">
+                  <input type="text" name="system.savingThrows.{{index}}.attributeBonuses.{{bonusIndex}}.formula"
+                    value="{{bonus.formula}}" placeholder="@value" />
+                </div>
+                <div class="item-controls">
+                  <a class="item-control item-delete" data-action="removeNestedArrayEntry"
+                    data-parent-field="savingThrows" data-parent-index="{{index}}" data-field="attributeBonuses"
+                    data-index="{{bonusIndex}}" title="Remove">
+                    <i class="fas fa-trash"></i>
+                  </a>
+                </div>
+              </li>
+              {{/each}}
+              <li class="item flexrow">
+                <div class="item-controls">
+                  <a class="item-control item-create" data-action="addSavingThrowAttributeBonus" data-index="{{index}}"
+                    title="Add attribute bonus">
+                    <i class="fas fa-plus"></i> Add Attribute Bonus
+                  </a>
+                </div>
+              </li>
+            </ol>
+          </div>
+
+          <div class="saving-throw-bonus-group">
+            <label class="resource-label">Skill Bonuses</label>
+            <ol class="items-list">
+              {{#each save.skillBonuses as |bonus bonusIndex|}}
+              <li class="item flexrow">
+                <div class="item-name">
+                  <select name="system.savingThrows.{{index}}.skillBonuses.{{bonusIndex}}.skill">
+                    {{selectOptions ../../combinedSkillChoices selected=bonus.skill localize=true}}
+                  </select>
+                </div>
+                <div class="item-name">
+                  <input type="text" name="system.savingThrows.{{index}}.skillBonuses.{{bonusIndex}}.formula"
+                    value="{{bonus.formula}}" placeholder="@value" />
+                </div>
+                <div class="item-controls">
+                  <a class="item-control item-delete" data-action="removeNestedArrayEntry"
+                    data-parent-field="savingThrows" data-parent-index="{{index}}" data-field="skillBonuses"
+                    data-index="{{bonusIndex}}" title="Remove">
+                    <i class="fas fa-trash"></i>
+                  </a>
+                </div>
+              </li>
+              {{/each}}
+              <li class="item flexrow">
+                <div class="item-controls">
+                  <a class="item-control item-create" data-action="addSavingThrowSkillBonus" data-index="{{index}}"
+                    title="Add skill bonus">
+                    <i class="fas fa-plus"></i> Add Skill Bonus
+                  </a>
+                </div>
+              </li>
+            </ol>
+          </div>
+        </div>
+      </li>
+      {{/each}}
+    </ol>
+  </div>
+
+  <div class="resource">
+    <label class="resource-label">Damage</label>
+    <ol class="items-list">
+      <li class="item flexrow items-header">
+        <div class="item-name">Formula</div>
+        <div class="item-name">Type</div>
+        <div class="item-name">Trigger</div>
+        <div class="item-controls">
+          <a class="item-control item-create" data-action="addDamage" title="Add damage">
+            <i class="fas fa-plus"></i>
+          </a>
+        </div>
+      </li>
+      {{#each system.damages as |dmg index|}}
+      <li class="item flexrow">
+        <div class="item-name">
+          <input type="text" name="system.damages.{{index}}.formula" value="{{dmg.formula}}" />
+        </div>
+        <div class="item-name">
+          <select name="system.damages.{{index}}.damageType">
+            {{selectOptions ../damageTypeChoices selected=dmg.damageType localize=true}}
+          </select>
+        </div>
+        <div class="item-name">
+          <select name="system.damages.{{index}}.trigger">
+            {{selectOptions ../spellTriggerChoices selected=dmg.trigger localize=true}}
+          </select>
+          {{#if (eq dmg.trigger "save")}}
+          <select name="system.damages.{{index}}.savingThrowIndex">
+            {{selectOptions ../savingThrowChoices selected=dmg.savingThrowIndex}}
+          </select>
+          {{/if}}
+        </div>
+        <div class="item-controls">
+          <a class="item-control item-delete" data-action="removeArrayEntry" data-field="damages"
+            data-index="{{index}}" title="Remove">
+            <i class="fas fa-trash"></i>
+          </a>
+        </div>
+      </li>
+      {{/each}}
+    </ol>
+  </div>
+
+  <div class="resource">
+    <label class="resource-label">Status Effects (Placeholder)</label>
+    <ol class="items-list">
+      <li class="item flexrow items-header">
+        <div class="item-name">Description</div>
+        <div class="item-name">Trigger</div>
+        <div class="item-controls">
+          <a class="item-control item-create" data-action="addStatusEffect" title="Add status effect">
+            <i class="fas fa-plus"></i>
+          </a>
+        </div>
+      </li>
+      {{#each system.statusEffects as |fx index|}}
+      <li class="item flexrow">
+        <div class="item-name">
+          <input type="text" name="system.statusEffects.{{index}}.description" value="{{fx.description}}"
+            placeholder="e.g. Poisoned for 3 rounds" />
+        </div>
+        <div class="item-name">
+          <select name="system.statusEffects.{{index}}.trigger">
+            {{selectOptions ../spellTriggerChoices selected=fx.trigger localize=true}}
+          </select>
+          {{#if (eq fx.trigger "save")}}
+          <select name="system.statusEffects.{{index}}.savingThrowIndex">
+            {{selectOptions ../savingThrowChoices selected=fx.savingThrowIndex}}
+          </select>
+          {{/if}}
+        </div>
+        <div class="item-controls">
+          <a class="item-control item-delete" data-action="removeArrayEntry" data-field="statusEffects"
+            data-index="{{index}}" title="Remove">
+            <i class="fas fa-trash"></i>
+          </a>
+        </div>
+      </li>
+      {{/each}}
+    </ol>
+  </div>
+
+</section>

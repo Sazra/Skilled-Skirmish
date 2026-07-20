@@ -44,6 +44,97 @@ SKSK.skillCategories = {
   special: 'SKSK.SkillCategory.Special',
 };
 
+SKSK.spellTypes = {
+  simple: 'SKSK.Spell.Type.Simple',
+  advanced: 'SKSK.Spell.Type.Advanced',
+  combined: 'SKSK.Spell.Type.Combined',
+  systemless: 'SKSK.Spell.Type.Systemless',
+};
+
+// Simple/Advanced spells belong to exactly one magic school. These reuse
+// the same skill keys/labels as CONFIG.SKSK.skills (magicSchools category,
+// plus martialArts from weapons for Kampfkunst's dual role), so a spell's
+// school always lines up with an actual skill for later level checks.
+SKSK.simpleMagicSchools = {
+  fire: 'SKSK.Skill.MagicSchool.Fire',
+  water: 'SKSK.Skill.MagicSchool.Water',
+  earth: 'SKSK.Skill.MagicSchool.Earth',
+  air: 'SKSK.Skill.MagicSchool.Air',
+  life: 'SKSK.Skill.MagicSchool.Life',
+  death: 'SKSK.Skill.MagicSchool.Death',
+  light: 'SKSK.Skill.MagicSchool.Light',
+  nature: 'SKSK.Skill.MagicSchool.Nature',
+  dark: 'SKSK.Skill.MagicSchool.Dark',
+  trickery: 'SKSK.Skill.MagicSchool.Trickery',
+};
+
+SKSK.advancedMagicSchools = {
+  martialArts: 'SKSK.Skill.Weapon.MartialArts',
+  bardic: 'SKSK.Skill.MagicSchool.Bardic',
+  space: 'SKSK.Skill.MagicSchool.Space',
+  time: 'SKSK.Skill.MagicSchool.Time',
+  blood: 'SKSK.Skill.MagicSchool.Blood',
+  divination: 'SKSK.Skill.MagicSchool.Divination',
+};
+
+// The indicator paired with each of a spell's ranges - e.g. a fireball is
+// a 30m Projectile followed by a 6m Radius explosion.
+SKSK.rangeIndicators = {
+  self: 'SKSK.Spell.RangeIndicator.Self',
+  touch: 'SKSK.Spell.RangeIndicator.Touch',
+  targeted: 'SKSK.Spell.RangeIndicator.Targeted',
+  projectile: 'SKSK.Spell.RangeIndicator.Projectile',
+  line: 'SKSK.Spell.RangeIndicator.Line',
+  radius: 'SKSK.Spell.RangeIndicator.Radius',
+  cone: 'SKSK.Spell.RangeIndicator.Cone',
+  square: 'SKSK.Spell.RangeIndicator.Square',
+};
+
+// How a spell can be cast; a spell may use multiple of these at once.
+SKSK.castingMethods = {
+  vocal: 'SKSK.Spell.CastingMethod.Vocal',
+  runes: 'SKSK.Spell.CastingMethod.Runes',
+  movement: 'SKSK.Spell.CastingMethod.Movement',
+  sacrifice: 'SKSK.Spell.CastingMethod.Sacrifice',
+  medium: 'SKSK.Spell.CastingMethod.Medium',
+  ritual: 'SKSK.Spell.CastingMethod.Ritual',
+  concentration: 'SKSK.Spell.CastingMethod.Concentration',
+};
+
+// The elements a spell's Damage entries can deal - the same 20 elements
+// used by the Resistance/Weakness/Immunity/Absorb skill categories, so a
+// spell's damage type always lines up with an actor's defenses.
+SKSK.damageTypes = {
+  fire: 'SKSK.DamageType.Fire',
+  water: 'SKSK.DamageType.Water',
+  earth: 'SKSK.DamageType.Earth',
+  air: 'SKSK.DamageType.Air',
+  light: 'SKSK.DamageType.Light',
+  dark: 'SKSK.DamageType.Dark',
+  life: 'SKSK.DamageType.Life',
+  death: 'SKSK.DamageType.Death',
+  mental: 'SKSK.DamageType.Mental',
+  nature: 'SKSK.DamageType.Nature',
+  cold: 'SKSK.DamageType.Cold',
+  heat: 'SKSK.DamageType.Heat',
+  blunt: 'SKSK.DamageType.Blunt',
+  sharp: 'SKSK.DamageType.Sharp',
+  piercing: 'SKSK.DamageType.Piercing',
+  poison: 'SKSK.DamageType.Poison',
+  acid: 'SKSK.DamageType.Acid',
+  electricity: 'SKSK.DamageType.Electricity',
+  ice: 'SKSK.DamageType.Ice',
+  disease: 'SKSK.DamageType.Disease',
+};
+
+// What a spell's Damage/Status Effect entries can be coupled to: the
+// attack roll, one specific saving throw, or nothing at all.
+SKSK.spellTriggers = {
+  attack: 'SKSK.Spell.Trigger.Attack',
+  save: 'SKSK.Spell.Trigger.Save',
+  unconditional: 'SKSK.Spell.Trigger.Unconditional',
+};
+
 SKSK.talentTypes = {
   level6: 'SKSK.Talent.Type.Level6',
   level12: 'SKSK.Talent.Type.Level12',
