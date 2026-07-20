@@ -15,7 +15,7 @@
   "bugs": "https://github.com/Sazra/Skilled-Skirmish/issues",
   "changelog": "",
   "manifest": "https://github.com/Sazra/Skilled-Skirmish/releases/latest/download/system.json",
-  "download": "https://github.com/Sazra/Skilled-Skirmish/releases/download/v0.1.0/system.zip",
+  "download": "https://github.com/Sazra/Skilled-Skirmish/releases/download/v0.2.0/system.zip",
   "media": [
     {
       "type": "setup",
@@ -23,7 +23,7 @@
       "thumbnail": "systems/sksk/assets/anvil-impact.png"
     }
   ],
-  "version": "0.1.0",
+  "version": "0.2.0",
   "compatibility": {
     "minimum": "14",
     "verified": "14",
