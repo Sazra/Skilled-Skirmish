@@ -293,6 +293,7 @@
       "ManaCost": "Mana",
       "APCost": "AP",
       "Ranges": "Range",
+      "PrerequisiteNotMet": "Prerequisite not met: {details}",
       "Section": {
         "General": "General",
         "SavingThrows": "Saving Throws",

@@ -941,6 +941,19 @@
   color: var(--color-text-dark-secondary, #7a7971);
 }
 
+/* A combined spell whose own combinedSkills prerequisite isn't met, and
+   isn't bypassed by any Class/Species/Talent combinedSchoolOverrides
+   grant (see helpers/spells.mjs#checkCombinedSpellPrerequisite). */
+.sksk .spell-uncastable {
+  opacity: 0.5;
+}
+
+.sksk .spell-prerequisite-warning {
+  margin-left: 4px;
+  font-size: 11px;
+  color: var(--color-level-warning, #ff8800);
+}
+
 /* Spell cast chat cards - unscoped (not nested under .sksk) since chat
    messages render in the sidebar, outside any system sheet element. */
 .sksk-chat-card {

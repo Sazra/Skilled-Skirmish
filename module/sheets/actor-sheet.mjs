@@ -5,6 +5,7 @@ import {
   prepareActiveEffectCategories,
 } from '../helpers/effects.mjs';
 import { evaluateSkillFormula, computeSkillBonusTotals, getActorSkillLevel } from '../helpers/skills.mjs';
+import { checkCombinedSpellPrerequisite } from '../helpers/spells.mjs';
 
 /**
  * Extend the basic ActorSheet with some very simple modifications
@@ -448,6 +449,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
    * @return {undefined}
    */
   _prepareSpells(context) {
+    const actor = this.actor;
     const spells = context.items.filter(i => i.type === 'spell');
 
     const sortSpells = (list) => list.slice().sort((a, b) => {
@@ -474,6 +476,17 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     context.spellsByCombinedSchool = groupBy(
       spells.filter(i => i.system.spellType === 'combined'), i => i.system.combinedSchool
     );
+    // Combined spells can have their own combinedSkills prerequisite
+    // overridden by a Class/Species/Talent's combinedSchoolOverrides (see
+    // helpers/spells.mjs) - flag the ones the actor currently can't cast so
+    // the Spells tab can gray them out.
+    for (const list of Object.values(context.spellsByCombinedSchool)) {
+      for (const item of list) {
+        const { castable, missingLabel } = checkCombinedSpellPrerequisite(item.system, actor);
+        item.combinedCastable = castable;
+        item.combinedMissingLabel = missingLabel;
+      }
+    }
     context.spellsBySystemlessCategory = groupBy(
       spells.filter(i => i.system.spellType === 'systemless'), i => i.system.systemlessCategory
     );

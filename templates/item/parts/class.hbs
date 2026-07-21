@@ -92,4 +92,124 @@
     </ol>
   </div>
 
+  <div class="resource">
+    <label class="resource-label">Combined School Overrides</label>
+    <ol class="items-list items-list-compact">
+      <li class="item flexrow items-header">
+        <div class="item-name">School</div>
+        <div class="item-name">Base Formula</div>
+        <div class="item-controls">
+          <a class="item-control item-create" data-action="addCombinedSchoolOverride"
+            title="Add combined school override">
+            <i class="fas fa-plus"></i>
+          </a>
+        </div>
+      </li>
+      {{#each system.combinedSchoolOverrides as |entry index|}}
+      <li class="item expandable-item">
+        <div class="flexrow">
+          <div class="item-name">
+            <select name="system.combinedSchoolOverrides.{{index}}.combinedSchool">
+              {{selectOptions ../combinedSchoolChoices selected=entry.combinedSchool localize=true}}
+            </select>
+          </div>
+          <div class="item-name">
+            <input type="text" name="system.combinedSchoolOverrides.{{index}}.baseFormula"
+              value="{{entry.baseFormula}}" placeholder="e.g. L / 2" />
+          </div>
+          {{#if ../combinedSchoolOverrideValues}}
+          <div class="item-name computed-total">= {{lookup ../combinedSchoolOverrideValues index}}</div>
+          {{/if}}
+          <div class="item-controls">
+            <a class="item-control item-delete" data-action="removeArrayEntry" data-field="combinedSchoolOverrides"
+              data-index="{{index}}" title="Remove">
+              <i class="fas fa-trash"></i>
+            </a>
+          </div>
+        </div>
+
+        <div class="bonus-groups">
+          <div class="bonus-group">
+            <label class="resource-label">Attribute Bonuses</label>
+            <ol class="items-list items-list-compact">
+              {{#each entry.attributeBonuses as |bonus bonusIndex|}}
+              <li class="item flexrow">
+                <div class="item-name">
+                  <select name="system.combinedSchoolOverrides.{{index}}.attributeBonuses.{{bonusIndex}}.attribute">
+                    {{selectOptions ../../attributeChoices selected=bonus.attribute localize=true}}
+                  </select>
+                </div>
+                <div class="item-name">
+                  <label class="casting-method-option">
+                    <input type="checkbox"
+                      name="system.combinedSchoolOverrides.{{index}}.attributeBonuses.{{bonusIndex}}.useModifier"
+                      {{checked bonus.useModifier}} />
+                    Modifier
+                  </label>
+                </div>
+                <div class="item-name">
+                  <input type="text"
+                    name="system.combinedSchoolOverrides.{{index}}.attributeBonuses.{{bonusIndex}}.formula"
+                    value="{{bonus.formula}}" placeholder="@value" />
+                </div>
+                <div class="item-controls">
+                  <a class="item-control item-delete" data-action="removeNestedArrayEntry"
+                    data-parent-field="combinedSchoolOverrides" data-parent-index="{{index}}"
+                    data-field="attributeBonuses" data-index="{{bonusIndex}}" title="Remove">
+                    <i class="fas fa-trash"></i>
+                  </a>
+                </div>
+              </li>
+              {{/each}}
+              <li class="item flexrow">
+                <div class="item-controls">
+                  <a class="item-control item-create" data-action="addCombinedSchoolOverrideAttributeBonus"
+                    data-index="{{index}}" title="Add attribute bonus">
+                    <i class="fas fa-plus"></i> Add
+                  </a>
+                </div>
+              </li>
+            </ol>
+          </div>
+
+          <div class="bonus-group">
+            <label class="resource-label">Skill Bonuses</label>
+            <ol class="items-list items-list-compact">
+              {{#each entry.skillBonuses as |bonus bonusIndex|}}
+              <li class="item flexrow">
+                <div class="item-name">
+                  <select name="system.combinedSchoolOverrides.{{index}}.skillBonuses.{{bonusIndex}}.skill">
+                    {{selectOptions ../../skillBonusChoices selected=bonus.skill localize=true}}
+                  </select>
+                </div>
+                <div class="item-name">
+                  <input type="text"
+                    name="system.combinedSchoolOverrides.{{index}}.skillBonuses.{{bonusIndex}}.formula"
+                    value="{{bonus.formula}}" placeholder="@value" />
+                </div>
+                <div class="item-controls">
+                  <a class="item-control item-delete" data-action="removeNestedArrayEntry"
+                    data-parent-field="combinedSchoolOverrides" data-parent-index="{{index}}"
+                    data-field="skillBonuses" data-index="{{bonusIndex}}" title="Remove">
+                    <i class="fas fa-trash"></i>
+                  </a>
+                </div>
+              </li>
+              {{/each}}
+              <li class="item flexrow">
+                <div class="item-controls">
+                  <a class="item-control item-create" data-action="addCombinedSchoolOverrideSkillBonus"
+                    data-index="{{index}}" title="Add skill bonus">
+                    <i class="fas fa-plus"></i> Add
+                  </a>
+                </div>
+              </li>
+            </ol>
+          </div>
+        </div>
+      </li>
+      {{/each}}
+    </ol>
+  </div>
+
 </section>

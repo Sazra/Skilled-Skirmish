@@ -5,7 +5,7 @@ import {
   prepareActiveEffectCategories,
 } from '../helpers/effects.mjs';
 import { getSkillBonusChoices } from '../helpers/skills.mjs';
-import { computeSavingThrowValue, computeDamageBonus } from '../helpers/spells.mjs';
+import { computeSavingThrowValue, computeDamageBonus, computeCombinedSchoolOverrideLevel } from '../helpers/spells.mjs';
 
 /**
  * Extend the basic ItemSheet with some very simple modifications
@@ -41,6 +41,9 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       addDamageAttributeBonus: SKSKItemSheet.#addDamageAttributeBonus,
       addDamageSkillBonus: SKSKItemSheet.#addDamageSkillBonus,
       addStatusEffect: SKSKItemSheet.#addStatusEffect,
+      addCombinedSchoolOverride: SKSKItemSheet.#addCombinedSchoolOverride,
+      addCombinedSchoolOverrideAttributeBonus: SKSKItemSheet.#addCombinedSchoolOverrideAttributeBonus,
+      addCombinedSchoolOverrideSkillBonus: SKSKItemSheet.#addCombinedSchoolOverrideSkillBonus,
     }
   };
 
@@ -217,13 +220,27 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       context.isFirstClass = item.system.classType === 'first';
     }
 
-    if (item.type === 'species' || item.type === 'class') {
+    if (item.type === 'species' || item.type === 'class' || item.type === 'talent') {
       context.skillBonusChoices = getSkillBonusChoices();
     }
 
     if (item.type === 'talent') {
       context.talentTypeChoices = CONFIG.SKSK.talentTypes;
+    }
+
+    // Combined-school override entries (Class/Species/Talent granting the
+    // ability to cast a specific combined magic school up to a computed
+    // max level - see helpers/spells.mjs#getCombinedSchoolOverrideLevel)
+    // share the same attribute/skill-bonus UI and choices across all three
+    // item types.
+    if (item.type === 'species' || item.type === 'class' || item.type === 'talent') {
       context.attributeChoices = CONFIG.SKSK.attributes;
+      context.combinedSchoolChoices = CONFIG.SKSK.combinedMagicSchools;
+      if (item.actor) {
+        context.combinedSchoolOverrideValues = (item.system.combinedSchoolOverrides ?? []).map(
+          entry => computeCombinedSchoolOverrideLevel(entry, item.actor)
+        );
+      }
     }
 
     if (item.type === 'species' || item.type === 'class') {
@@ -395,6 +412,12 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
     });
   }
 
+  static async #addCombinedSchoolOverride(event, target) {
+    await this.#addArrayEntry('combinedSchoolOverrides', {
+      combinedSchool: 'stormancy', baseFormula: '0', attributeBonuses: [], skillBonuses: [],
+    });
+  }
+
   /**
    * Append a blank entry to an array nested inside one element of a
    * top-level array-valued system field, e.g. a saving throw's
@@ -443,6 +466,20 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
     const parentIndex = Number(target.dataset.index);
     await this.#addNestedArrayEntry('damages', parentIndex, 'skillBonuses', {
       skill: 'axe', formula: '@value',
+    });
+  }
+
+  static async #addCombinedSchoolOverrideAttributeBonus(event, target) {
+    const parentIndex = Number(target.dataset.index);
+    await this.#addNestedArrayEntry('combinedSchoolOverrides', parentIndex, 'attributeBonuses', {
+      attribute: 'wil', useModifier: true, formula: '@value',
+    });
+  }
+
+  static async #addCombinedSchoolOverrideSkillBonus(event, target) {
+    const parentIndex = Number(target.dataset.index);
+    await this.#addNestedArrayEntry('combinedSchoolOverrides', parentIndex, 'skillBonuses', {
+      skill: 'magicControl', formula: '@value',
     });
   }
 

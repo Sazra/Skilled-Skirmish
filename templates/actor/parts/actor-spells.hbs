@@ -197,7 +197,7 @@
               </div>
             </li>
             {{#each (lookup ../spellsByCombinedSchool s.id) as |item|}}
-            <li class="item flexrow" data-item-id="{{item._id}}">
+            <li class="item flexrow {{#unless item.combinedCastable}}spell-uncastable{{/unless}}" data-item-id="{{item._id}}">
               <div class="spell-level">{{item.system.spellLevel}}</div>
               <div class="item-name flexrow">
                 <div class="item-image">
@@ -206,6 +206,10 @@
                   </a>
                 </div>
                 <h4>{{item.name}}</h4>
+                {{#unless item.combinedCastable}}
+                <i class="fas fa-exclamation-triangle spell-prerequisite-warning"
+                  title="{{localize 'SKSK.Spell.PrerequisiteNotMet' details=item.combinedMissingLabel}}"></i>
+                {{/unless}}
               </div>
               <div class="spell-cost" title="{{localize 'SKSK.Spell.ManaCost'}} / {{localize 'SKSK.Spell.APCost'}}">
                 <span class="spell-cost-line"><i class="fas fa-tint"></i>{{item.system.manaCost}}</span>
