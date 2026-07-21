@@ -297,10 +297,10 @@
         "StatusEffects": "Status Effects"
       },
       "Type": {
-        "Simple": "Simple Magic",
-        "Advanced": "Advanced Magic",
-        "Combined": "Combined Magic",
-        "Systemless": "Systemless Magic"
+        "Simple": "Simple",
+        "Advanced": "Advanced",
+        "Combined": "Combined",
+        "Systemless": "Systemless"
       },
       "CombinedSchool": {
         "Stormancy": "Stormancy",
