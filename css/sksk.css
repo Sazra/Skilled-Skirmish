@@ -417,11 +417,18 @@
 .sksk .spell-type-tabs {
   flex: 0 0 28px;
   flex-direction: column;
+  /* Foundry's own .sheet-tabs already sets align-items to something
+     content-sized (for ordinary icon+label horizontal tabs) - overridden
+     back to stretch so each tab actually fills the strip's full width
+     instead of only its label's own (post-rotation) width, which is what
+     was throwing the centering off. */
+  align-items: stretch;
   border: 1px solid var(--color-border-light-primary, #c9c7b8);
 }
 
 .sksk .spell-type-tabs a {
-  height: 100px;
+  height: 92px;
+  width: 100%;
   padding: 0;
   display: flex;
   align-items: center;
@@ -437,6 +444,12 @@
   writing-mode: vertical-rl;
   transform: rotate(180deg);
   white-space: nowrap;
+  /* Without this, the inherited (horizontal-tab) line-height massively
+     overshoots the font size, and - since vertical-rl treats line-height
+     as the line's cross-axis (here: left/right, i.e. top/bottom once
+     rotated) measure - the label ends up exactly as wide as its parent
+     with no room left for flex centering to actually do anything. */
+  line-height: 1;
 }
 
 .sksk .spell-type-tabs a.active {
