@@ -238,8 +238,11 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       context.spellTypeChoices = CONFIG.SKSK.spellTypes;
       const isAdvancedSpell = item.system.spellType === 'advanced';
       context.isCombinedSpell = item.system.spellType === 'combined';
+      context.isSystemlessSpell = item.system.spellType === 'systemless';
       context.showMagicSchool = item.system.spellType === 'simple' || isAdvancedSpell;
       context.magicSchoolChoices = isAdvancedSpell ? CONFIG.SKSK.advancedMagicSchools : CONFIG.SKSK.simpleMagicSchools;
+      context.combinedSchoolChoices = CONFIG.SKSK.combinedMagicSchools;
+      context.systemlessCategoryChoices = CONFIG.SKSK.systemlessMagicCategories;
       context.combinedSkillChoices = getSkillBonusChoices();
       context.rangeIndicatorChoices = CONFIG.SKSK.rangeIndicators;
       context.castingMethodChoices = CONFIG.SKSK.castingMethods;

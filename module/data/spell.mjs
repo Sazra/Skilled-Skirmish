@@ -16,6 +16,10 @@ export default class SKSKSpell extends SKSKItemBase {
       choices: ["simple", "advanced", "combined", "systemless"]
     });
 
+    // Drives sort order on the actor sheet's Spells tab (level first, then
+    // alphabetically) - not tied to character level or anything else.
+    schema.spellLevel = new fields.NumberField({ ...requiredInteger, initial: 1, min: 1, max: 10 });
+
     // Only meaningful for spellType "simple" or "advanced" - a skill key
     // from that tier's magic-school list.
     schema.magicSchool = new fields.StringField({ required: true, blank: false, initial: "fire" });
@@ -26,6 +30,15 @@ export default class SKSKSpell extends SKSKItemBase {
       skill: new fields.StringField({ required: true, blank: false, initial: "axe" }),
       level: new fields.NumberField({ ...requiredInteger, initial: 1, min: 1 })
     }));
+
+    // Only meaningful for spellType "combined" - one of CONFIG.SKSK.
+    // combinedMagicSchools, purely for organizing the actor sheet's Spells
+    // tab (independent of the actual combinedSkills requirements above).
+    schema.combinedSchool = new fields.StringField({ required: true, blank: false, initial: "stormancy" });
+
+    // Only meaningful for spellType "systemless" - one of CONFIG.SKSK.
+    // systemlessMagicCategories, likewise only for actor-sheet organization.
+    schema.systemlessCategory = new fields.StringField({ required: true, blank: false, initial: "general" });
 
     schema.manaCost = new fields.NumberField({ ...requiredInteger, initial: 1, min: 0 });
     schema.apCost = new fields.NumberField({ ...requiredInteger, initial: 1, min: 1 });

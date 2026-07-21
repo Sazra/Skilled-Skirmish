@@ -1,32 +1,208 @@
-<ol class='items-list'>
-  <li class='item flexrow items-header'>
-    <div class='item-name'>{{localize 'Name'}}</div>
-    <div class='item-source'>Type</div>
-    <div class='item-controls'>
-      <a class='item-control item-create' data-action='createItem' title='{{localize "DOCUMENT.New" type="spell"}}'
-        data-type='spell'>
-        <i class='fas fa-plus'></i>
+<section class="tab {{tab.cssClass}}" data-group="primary" data-tab="spells">
+
+  <div class="spells-layout">
+
+    <nav class="sheet-tabs tabs spell-type-tabs" data-group="spellTypes">
+      {{#each spellTypeTabs as |t|}}
+      <a class="{{t.cssClass}}" data-action="tab" data-group="spellTypes" data-tab="{{t.id}}">
+        <label>{{localize t.label}}</label>
       </a>
+      {{/each}}
+    </nav>
+
+    <div class="spell-type-body">
+
+      <section class="tab" data-group="spellTypes" data-tab="simple">
+        <nav class="sheet-tabs tabs spell-school-tabs" data-group="spellSimpleSchools">
+          {{#each spellSimpleSchoolTabs as |s|}}
+          <a class="{{s.cssClass}}" data-action="tab" data-group="spellSimpleSchools" data-tab="{{s.id}}">
+            <label>{{localize s.label}}</label>
+          </a>
+          {{/each}}
+        </nav>
+        {{#each spellSimpleSchoolTabs as |s|}}
+        <section class="tab" data-group="spellSimpleSchools" data-tab="{{s.id}}">
+          <ol class="items-list">
+            <li class="item flexrow items-header">
+              <div class="spell-level">Lvl</div>
+              <div class="item-name">{{localize "Name"}}</div>
+              <div class="item-controls">
+                <a class="item-control item-create" data-action="createItem" data-type="spell" data-spell-type="simple"
+                  data-magic-school="{{s.id}}" title="{{localize 'DOCUMENT.New' type='spell'}}">
+                  <i class="fas fa-plus"></i>
+                </a>
+              </div>
+            </li>
+            {{#each (lookup ../spellsBySimpleSchool s.id) as |item|}}
+            <li class="item flexrow" data-item-id="{{item._id}}">
+              <div class="spell-level">{{item.system.spellLevel}}</div>
+              <div class="item-name flexrow">
+                <div class="item-image">
+                  <a class="rollable" data-action="roll" data-roll-type="item">
+                    <img src="{{item.img}}" title="{{item.name}}" width="24" height="24" />
+                  </a>
+                </div>
+                <h4>{{item.name}}</h4>
+              </div>
+              <div class="item-controls">
+                <a class="item-control item-edit" data-action="editItem" title="{{localize 'DOCUMENT.Update' type='Item'}}">
+                  <i class="fas fa-edit"></i>
+                </a>
+                <a class="item-control item-delete" data-action="deleteItem" title="{{localize 'DOCUMENT.Delete' type='Item'}}">
+                  <i class="fas fa-trash"></i>
+                </a>
+              </div>
+            </li>
+            {{/each}}
+          </ol>
+        </section>
+        {{/each}}
+      </section>
+
+      <section class="tab" data-group="spellTypes" data-tab="advanced">
+        <nav class="sheet-tabs tabs spell-school-tabs" data-group="spellAdvancedSchools">
+          {{#each spellAdvancedSchoolTabs as |s|}}
+          <a class="{{s.cssClass}}" data-action="tab" data-group="spellAdvancedSchools" data-tab="{{s.id}}">
+            <label>{{localize s.label}}</label>
+          </a>
+          {{/each}}
+        </nav>
+        {{#each spellAdvancedSchoolTabs as |s|}}
+        <section class="tab" data-group="spellAdvancedSchools" data-tab="{{s.id}}">
+          <ol class="items-list">
+            <li class="item flexrow items-header">
+              <div class="spell-level">Lvl</div>
+              <div class="item-name">{{localize "Name"}}</div>
+              <div class="item-controls">
+                <a class="item-control item-create" data-action="createItem" data-type="spell"
+                  data-spell-type="advanced" data-magic-school="{{s.id}}" title="{{localize 'DOCUMENT.New' type='spell'}}">
+                  <i class="fas fa-plus"></i>
+                </a>
+              </div>
+            </li>
+            {{#each (lookup ../spellsByAdvancedSchool s.id) as |item|}}
+            <li class="item flexrow" data-item-id="{{item._id}}">
+              <div class="spell-level">{{item.system.spellLevel}}</div>
+              <div class="item-name flexrow">
+                <div class="item-image">
+                  <a class="rollable" data-action="roll" data-roll-type="item">
+                    <img src="{{item.img}}" title="{{item.name}}" width="24" height="24" />
+                  </a>
+                </div>
+                <h4>{{item.name}}</h4>
+              </div>
+              <div class="item-controls">
+                <a class="item-control item-edit" data-action="editItem" title="{{localize 'DOCUMENT.Update' type='Item'}}">
+                  <i class="fas fa-edit"></i>
+                </a>
+                <a class="item-control item-delete" data-action="deleteItem" title="{{localize 'DOCUMENT.Delete' type='Item'}}">
+                  <i class="fas fa-trash"></i>
+                </a>
+              </div>
+            </li>
+            {{/each}}
+          </ol>
+        </section>
+        {{/each}}
+      </section>
+
+      <section class="tab" data-group="spellTypes" data-tab="combined">
+        <nav class="sheet-tabs tabs spell-school-tabs" data-group="spellCombinedSchools">
+          {{#each spellCombinedSchoolTabs as |s|}}
+          <a class="{{s.cssClass}}" data-action="tab" data-group="spellCombinedSchools" data-tab="{{s.id}}">
+            <label>{{localize s.label}}</label>
+          </a>
+          {{/each}}
+        </nav>
+        {{#each spellCombinedSchoolTabs as |s|}}
+        <section class="tab" data-group="spellCombinedSchools" data-tab="{{s.id}}">
+          <ol class="items-list">
+            <li class="item flexrow items-header">
+              <div class="spell-level">Lvl</div>
+              <div class="item-name">{{localize "Name"}}</div>
+              <div class="item-controls">
+                <a class="item-control item-create" data-action="createItem" data-type="spell"
+                  data-spell-type="combined" data-combined-school="{{s.id}}" title="{{localize 'DOCUMENT.New' type='spell'}}">
+                  <i class="fas fa-plus"></i>
+                </a>
+              </div>
+            </li>
+            {{#each (lookup ../spellsByCombinedSchool s.id) as |item|}}
+            <li class="item flexrow" data-item-id="{{item._id}}">
+              <div class="spell-level">{{item.system.spellLevel}}</div>
+              <div class="item-name flexrow">
+                <div class="item-image">
+                  <a class="rollable" data-action="roll" data-roll-type="item">
+                    <img src="{{item.img}}" title="{{item.name}}" width="24" height="24" />
+                  </a>
+                </div>
+                <h4>{{item.name}}</h4>
+              </div>
+              <div class="item-controls">
+                <a class="item-control item-edit" data-action="editItem" title="{{localize 'DOCUMENT.Update' type='Item'}}">
+                  <i class="fas fa-edit"></i>
+                </a>
+                <a class="item-control item-delete" data-action="deleteItem" title="{{localize 'DOCUMENT.Delete' type='Item'}}">
+                  <i class="fas fa-trash"></i>
+                </a>
+              </div>
+            </li>
+            {{/each}}
+          </ol>
+        </section>
+        {{/each}}
+      </section>
+
+      <section class="tab" data-group="spellTypes" data-tab="systemless">
+        <nav class="sheet-tabs tabs spell-school-tabs" data-group="spellSystemlessCategories">
+          {{#each spellSystemlessCategoryTabs as |s|}}
+          <a class="{{s.cssClass}}" data-action="tab" data-group="spellSystemlessCategories" data-tab="{{s.id}}">
+            <label>{{localize s.label}}</label>
+          </a>
+          {{/each}}
+        </nav>
+        {{#each spellSystemlessCategoryTabs as |s|}}
+        <section class="tab" data-group="spellSystemlessCategories" data-tab="{{s.id}}">
+          <ol class="items-list">
+            <li class="item flexrow items-header">
+              <div class="spell-level">Lvl</div>
+              <div class="item-name">{{localize "Name"}}</div>
+              <div class="item-controls">
+                <a class="item-control item-create" data-action="createItem" data-type="spell"
+                  data-spell-type="systemless" data-systemless-category="{{s.id}}"
+                  title="{{localize 'DOCUMENT.New' type='spell'}}">
+                  <i class="fas fa-plus"></i>
+                </a>
+              </div>
+            </li>
+            {{#each (lookup ../spellsBySystemlessCategory s.id) as |item|}}
+            <li class="item flexrow" data-item-id="{{item._id}}">
+              <div class="spell-level">{{item.system.spellLevel}}</div>
+              <div class="item-name flexrow">
+                <div class="item-image">
+                  <a class="rollable" data-action="roll" data-roll-type="item">
+                    <img src="{{item.img}}" title="{{item.name}}" width="24" height="24" />
+                  </a>
+                </div>
+                <h4>{{item.name}}</h4>
+              </div>
+              <div class="item-controls">
+                <a class="item-control item-edit" data-action="editItem" title="{{localize 'DOCUMENT.Update' type='Item'}}">
+                  <i class="fas fa-edit"></i>
+                </a>
+                <a class="item-control item-delete" data-action="deleteItem" title="{{localize 'DOCUMENT.Delete' type='Item'}}">
+                  <i class="fas fa-trash"></i>
+                </a>
+              </div>
+            </li>
+            {{/each}}
+          </ol>
+        </section>
+        {{/each}}
+      </section>
+
     </div>
-  </li>
-  {{#each spells as |item id|}}
-  <li class='item flexrow' data-item-id='{{item._id}}'>
-    <div class='item-name flexrow'>
-      <div class='item-image'>
-        <a class='rollable' data-action='roll' data-roll-type='item'><img src='{{item.img}}' title='{{item.name}}'
-            width='24' height='24' /></a>
-      </div>
-      <h4>{{item.name}}</h4>
-    </div>
-    <div class='item-source'>{{item.typeLabel}}</div>
-    <div class='item-controls'>
-      <a class='item-control item-edit' data-action='editItem' title='{{localize "DOCUMENT.Update" type="Item"}}'>
-        <i class='fas fa-edit'></i>
-      </a>
-      <a class='item-control item-delete' data-action='deleteItem' title='{{localize "DOCUMENT.Delete" type="Item"}}'>
-        <i class='fas fa-trash'></i>
-      </a>
-    </div>
-  </li>
-  {{/each}}
-</ol>
+
+  </div>
+
+</section>

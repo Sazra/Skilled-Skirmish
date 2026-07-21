@@ -400,6 +400,72 @@
   justify-content: center;
 }
 
+/* Spells tab: a vertical strip of 4 spell-type tabs (Simple/Advanced/
+   Combined/Systemless) on the left, with each type's own school/category
+   sub-nav + spell list to the right. */
+.sksk .spells-layout {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.sksk .spell-type-tabs {
+  flex: 0 0 100px;
+  flex-direction: column;
+  border: 1px solid var(--color-border-light-primary, #c9c7b8);
+}
+
+.sksk .spell-type-tabs a {
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--color-border-light-primary, #c9c7b8);
+  text-align: left;
+}
+
+.sksk .spell-type-tabs a:last-child {
+  border-bottom: none;
+}
+
+.sksk .spell-type-tabs a.active {
+  background: var(--sksk-side-tab-bg, rgba(0, 0, 0, 0.05));
+  font-weight: bold;
+}
+
+.sksk .spell-type-body {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Second-level school/category tabs - same treatment as the Skills tab's
+   category sub-nav, just wrapping instead of a fixed-width vertical strip
+   since there can be up to 11 of them (Combined magic). */
+.sksk .spell-school-tabs {
+  flex-wrap: wrap;
+  gap: 2px;
+  border: 1px solid var(--color-border-light-primary, #c9c7b8);
+  margin: 0 0 6px;
+  padding: 4px;
+}
+
+.sksk .spell-school-tabs a {
+  padding: 2px 6px;
+  font-size: 11px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+}
+
+.sksk .spell-school-tabs a.active {
+  border-color: var(--color-border-dark-primary, #191813);
+  background: var(--sksk-side-tab-bg, rgba(0, 0, 0, 0.05));
+  font-weight: bold;
+}
+
+.sksk .spell-level {
+  flex: 0 0 26px;
+  text-align: center;
+  font-weight: bold;
+  color: var(--color-text-dark-secondary, #7a7971);
+}
+
 /* Side tabs: resources (left) and attributes (right). Taken out of flow
    entirely, so they never influence the sheet's (auto) height. They hug
    their own content and are allowed to protrude past the window's edge

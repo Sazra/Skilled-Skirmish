@@ -302,6 +302,25 @@
                 "Combined": "Kombinierte Magie",
                 "Systemless": "Systemlose Magie"
             },
+            "CombinedSchool": {
+                "Stormancy": "Sturmmagie",
+                "Chaomancy": "Chaos Magie",
+                "Demomancy": "Dämonische Magie",
+                "Drakomancy": "Drakonische Magie",
+                "Necromancy": "Nekromantie",
+                "Miracles": "Wunder",
+                "Feymancy": "Fey-Magie",
+                "Geomancy": "Geomantie",
+                "Biomancy": "Biomantie",
+                "Cryomancy": "Cryomantie",
+                "Witchery": "Hexerei"
+            },
+            "SystemlessCategory": {
+                "Household": "Haushaltsmagie",
+                "Special": "Spezielles",
+                "MagicalBody": "Magischer Körper",
+                "General": "Allgemeines"
+            },
             "RangeIndicator": {
                 "Self": "Selbst",
                 "Touch": "Berührung",

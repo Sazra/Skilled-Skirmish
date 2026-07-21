@@ -69,17 +69,74 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       ],
       initial: "weapons",
     },
+    // Top-level sub-tabs shown inside the Spells tab, one per spell type.
+    // Vertical along the left edge (see .spell-type-tabs in the stylesheet)
+    // since there are only 4 - unlike the school/category tabs below,
+    // which get a horizontal wrapping row like the Skills tab's categories.
+    spellTypes: {
+      tabs: [
+        { id: "simple", label: "SKSK.Spell.Type.Simple" },
+        { id: "advanced", label: "SKSK.Spell.Type.Advanced" },
+        { id: "combined", label: "SKSK.Spell.Type.Combined" },
+        { id: "systemless", label: "SKSK.Spell.Type.Systemless" },
+      ],
+      initial: "simple",
+    },
+    // Second-level sub-tabs, one set per spell type; only the set matching
+    // the active spellTypes tab is ever visible. Hardcoded rather than
+    // derived from CONFIG.SKSK for the same reason as skillCategories above.
+    spellSimpleSchools: {
+      tabs: [
+        { id: "fire", label: "SKSK.Skill.MagicSchool.Fire" },
+        { id: "water", label: "SKSK.Skill.MagicSchool.Water" },
+        { id: "earth", label: "SKSK.Skill.MagicSchool.Earth" },
+        { id: "air", label: "SKSK.Skill.MagicSchool.Air" },
+        { id: "life", label: "SKSK.Skill.MagicSchool.Life" },
+        { id: "death", label: "SKSK.Skill.MagicSchool.Death" },
+        { id: "light", label: "SKSK.Skill.MagicSchool.Light" },
+        { id: "nature", label: "SKSK.Skill.MagicSchool.Nature" },
+        { id: "dark", label: "SKSK.Skill.MagicSchool.Dark" },
+        { id: "trickery", label: "SKSK.Skill.MagicSchool.Trickery" },
+      ],
+      initial: "fire",
+    },
+    spellAdvancedSchools: {
+      tabs: [
+        { id: "martialArts", label: "SKSK.Skill.Weapon.MartialArts" },
+        { id: "bardic", label: "SKSK.Skill.MagicSchool.Bardic" },
+        { id: "space", label: "SKSK.Skill.MagicSchool.Space" },
+        { id: "time", label: "SKSK.Skill.MagicSchool.Time" },
+        { id: "blood", label: "SKSK.Skill.MagicSchool.Blood" },
+        { id: "divination", label: "SKSK.Skill.MagicSchool.Divination" },
+      ],
+      initial: "martialArts",
+    },
+    spellCombinedSchools: {
+      tabs: [
+        { id: "stormancy", label: "SKSK.Spell.CombinedSchool.Stormancy" },
+        { id: "chaomancy", label: "SKSK.Spell.CombinedSchool.Chaomancy" },
+        { id: "demomancy", label: "SKSK.Spell.CombinedSchool.Demomancy" },
+        { id: "drakomancy", label: "SKSK.Spell.CombinedSchool.Drakomancy" },
+        { id: "necromancy", label: "SKSK.Spell.CombinedSchool.Necromancy" },
+        { id: "miracles", label: "SKSK.Spell.CombinedSchool.Miracles" },
+        { id: "feymancy", label: "SKSK.Spell.CombinedSchool.Feymancy" },
+        { id: "geomancy", label: "SKSK.Spell.CombinedSchool.Geomancy" },
+        { id: "biomancy", label: "SKSK.Spell.CombinedSchool.Biomancy" },
+        { id: "cryomancy", label: "SKSK.Spell.CombinedSchool.Cryomancy" },
+        { id: "witchery", label: "SKSK.Spell.CombinedSchool.Witchery" },
+      ],
+      initial: "stormancy",
+    },
+    spellSystemlessCategories: {
+      tabs: [
+        { id: "household", label: "SKSK.Spell.SystemlessCategory.Household" },
+        { id: "special", label: "SKSK.Spell.SystemlessCategory.Special" },
+        { id: "magicalBody", label: "SKSK.Spell.SystemlessCategory.MagicalBody" },
+        { id: "general", label: "SKSK.Spell.SystemlessCategory.General" },
+      ],
+      initial: "household",
+    },
   };
-
-  /** @override */
-  _prepareTabs(group) {
-    const tabs = super._prepareTabs(group);
-    if (group === "primary" && this.actor.type === 'npc') {
-      // NPCs don't have a spells tab
-      delete tabs.spells;
-    }
-    return tabs;
-  }
 
   /** @override */
   static PARTS = {
@@ -131,8 +188,6 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     if (actorType === 'npc') {
       parts.header.template = `systems/sksk/templates/actor/parts/header-npc.hbs`;
       parts.resources.template = `systems/sksk/templates/actor/parts/resources-npc.hbs`;
-      // NPCs don't have a spells tab
-      delete parts.spells;
     } else {
       parts.header.template = `systems/sksk/templates/actor/parts/header.hbs`;
       parts.resources.template = `systems/sksk/templates/actor/parts/resources.hbs`;
@@ -202,6 +257,11 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     // longer auto-populates context.tabs - prepare both groups ourselves.
     context.tabs = this._prepareTabs('primary');
     context.skillTabs = Object.values(this._prepareTabs('skillCategories'));
+    context.spellTypeTabs = Object.values(this._prepareTabs('spellTypes'));
+    context.spellSimpleSchoolTabs = Object.values(this._prepareTabs('spellSimpleSchools'));
+    context.spellAdvancedSchoolTabs = Object.values(this._prepareTabs('spellAdvancedSchools'));
+    context.spellCombinedSchoolTabs = Object.values(this._prepareTabs('spellCombinedSchools'));
+    context.spellSystemlessCategoryTabs = Object.values(this._prepareTabs('spellSystemlessCategories'));
 
     // Add the actor's data to context for easier access, as well as flags.
     context.actor = actor;
@@ -229,6 +289,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     }
 
     this._prepareSkills(context);
+    this._prepareSpells(context);
 
     // Add roll data for TinyMCE editors.
     context.rollData = actor.getRollData();
@@ -273,7 +334,6 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     const classes = [];
     const species = [];
     const talents = [];
-    const spells = [];
 
     const actorLevel = context.system.resources?.level?.value ?? 1;
 
@@ -362,11 +422,8 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
         species.push(i);
         collectSpeciesAbilities(i);
       }
-      // Append to spells.
-      else if (i.type === 'spell') {
-        i.typeLabel = game.i18n.localize(CONFIG.SKSK.spellTypes[i.system.spellType]);
-        spells.push(i);
-      }
+      // Spells are handled separately by _prepareSpells - they're grouped
+      // and sorted rather than shown as one flat list.
     }
 
     // Assign and return
@@ -375,8 +432,51 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     context.talents = talents;
     context.classes = classes;
     context.species = species;
-    context.spells = spells;
     context.classAndSpeciesAbilities = classAndSpeciesAbilities;
+  }
+
+  /**
+   * Group the actor's spells for the Spells tab: first by spell type
+   * (Simple/Advanced/Combined/Systemless), then by that type's own
+   * category (magic school for Simple/Advanced, the Combined school, or
+   * the Systemless category). Spells within each leaf are sorted by their
+   * level, then alphabetically - e.g. a level 2 spell always precedes a
+   * level 3 one regardless of name, but two level-3 spells sort by name.
+   *
+   * @param {Object} context The context to prepare.
+   *
+   * @return {undefined}
+   */
+  _prepareSpells(context) {
+    const spells = context.items.filter(i => i.type === 'spell');
+
+    const sortSpells = (list) => list.slice().sort((a, b) => {
+      const levelDiff = (a.system.spellLevel ?? 1) - (b.system.spellLevel ?? 1);
+      return levelDiff !== 0 ? levelDiff : a.name.localeCompare(b.name);
+    });
+
+    const groupBy = (list, keyFn) => {
+      const groups = {};
+      for (const item of list) {
+        const key = keyFn(item);
+        (groups[key] ??= []).push(item);
+      }
+      for (const key of Object.keys(groups)) groups[key] = sortSpells(groups[key]);
+      return groups;
+    };
+
+    context.spellsBySimpleSchool = groupBy(
+      spells.filter(i => i.system.spellType === 'simple'), i => i.system.magicSchool
+    );
+    context.spellsByAdvancedSchool = groupBy(
+      spells.filter(i => i.system.spellType === 'advanced'), i => i.system.magicSchool
+    );
+    context.spellsByCombinedSchool = groupBy(
+      spells.filter(i => i.system.spellType === 'combined'), i => i.system.combinedSchool
+    );
+    context.spellsBySystemlessCategory = groupBy(
+      spells.filter(i => i.system.spellType === 'systemless'), i => i.system.systemlessCategory
+    );
   }
 
   /**
@@ -515,14 +615,17 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
   async _onRender(context, options) {
     await super._onRender(context, options);
 
-    const activeTab = this.tabGroups?.primary ?? this.constructor.TABS.primary.initial;
-    if (activeTab && this.element.querySelector(`.tab[data-group="primary"][data-tab="${activeTab}"]`)) {
-      this.changeTab(activeTab, "primary", { force: true, updatePosition: false });
-    }
-
-    const activeSkillTab = this.tabGroups?.skillCategories ?? this.constructor.TABS.skillCategories.initial;
-    if (activeSkillTab && this.element.querySelector(`.tab[data-group="skillCategories"][data-tab="${activeSkillTab}"]`)) {
-      this.changeTab(activeSkillTab, "skillCategories", { force: true, updatePosition: false });
+    // Every declared tab group needs its active tab force-applied on first
+    // render (Foundry only wires up clicks after that, it doesn't apply an
+    // initial state to nested groups on its own).
+    for (const group of [
+      'primary', 'skillCategories', 'spellTypes',
+      'spellSimpleSchools', 'spellAdvancedSchools', 'spellCombinedSchools', 'spellSystemlessCategories',
+    ]) {
+      const active = this.tabGroups?.[group] ?? this.constructor.TABS[group].initial;
+      if (active && this.element.querySelector(`.tab[data-group="${group}"][data-tab="${active}"]`)) {
+        this.changeTab(active, group, { force: true, updatePosition: false });
+      }
     }
 
     // Drag events for macros.
@@ -581,8 +684,13 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
    */
   static async #createItem(event, target) {
     event.preventDefault();
-    const type = target.dataset.type;
-    const data = foundry.utils.deepClone(target.dataset);
+    // target.dataset is a DOMStringMap, not a plain object - deepClone
+    // preserves that prototype, and foundry.utils.isPlainObject then
+    // rejects it while cleaning the creation data, silently dropping every
+    // field beyond the top-level type/name. Spreading it first yields a
+    // genuine plain object.
+    const data = { ...target.dataset };
+    const type = data.type;
     const name = `New ${type.capitalize()}`;
     const itemData = {
       name: name,

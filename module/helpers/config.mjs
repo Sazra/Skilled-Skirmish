@@ -77,6 +77,33 @@ SKSK.advancedMagicSchools = {
   divination: 'SKSK.Skill.MagicSchool.Divination',
 };
 
+// Combined spells don't belong to a Simple/Advanced magic school (they're
+// defined by a combination of required skills instead - see
+// SKSKSpell#combinedSkills), but still need a category of their own for
+// organizing the actor sheet's Spells tab.
+SKSK.combinedMagicSchools = {
+  stormancy: 'SKSK.Spell.CombinedSchool.Stormancy',
+  chaomancy: 'SKSK.Spell.CombinedSchool.Chaomancy',
+  demomancy: 'SKSK.Spell.CombinedSchool.Demomancy',
+  drakomancy: 'SKSK.Spell.CombinedSchool.Drakomancy',
+  necromancy: 'SKSK.Spell.CombinedSchool.Necromancy',
+  miracles: 'SKSK.Spell.CombinedSchool.Miracles',
+  feymancy: 'SKSK.Spell.CombinedSchool.Feymancy',
+  geomancy: 'SKSK.Spell.CombinedSchool.Geomancy',
+  biomancy: 'SKSK.Spell.CombinedSchool.Biomancy',
+  cryomancy: 'SKSK.Spell.CombinedSchool.Cryomancy',
+  witchery: 'SKSK.Spell.CombinedSchool.Witchery',
+};
+
+// Systemless spells belong to no magic school at all, but are still
+// organized into one of these categories on the actor sheet's Spells tab.
+SKSK.systemlessMagicCategories = {
+  household: 'SKSK.Spell.SystemlessCategory.Household',
+  special: 'SKSK.Spell.SystemlessCategory.Special',
+  magicalBody: 'SKSK.Spell.SystemlessCategory.MagicalBody',
+  general: 'SKSK.Spell.SystemlessCategory.General',
+};
+
 // The indicator paired with each of a spell's ranges - e.g. a fireball is
 // a 30m Projectile followed by a 6m Radius explosion.
 SKSK.rangeIndicators = {
