@@ -949,6 +949,12 @@
 }
 
 .sksk .spell-prerequisite-warning {
+  /* Foundry core's ".flexrow > *" rule sets flex:1 on every direct child
+     of .item-name (which carries both "item-name" and "flexrow") - without
+     this override the icon grows to match the spell name's flex-basis
+     exactly, stealing that same amount of width from the name and
+     truncating it far earlier than necessary. */
+  flex: 0 0 auto;
   margin: 0 1px;
   font-size: 11px;
   color: var(--color-level-warning, #ff8800);
