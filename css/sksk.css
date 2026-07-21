@@ -423,6 +423,13 @@
      instead of only its label's own (post-rotation) width, which is what
      was throwing the centering off. */
   align-items: stretch;
+  /* Foundry's core .tabs class also sets a gap meant to space out
+     horizontal icon+label tabs. In this column layout it just inserts
+     extra vertical space between tabs, which is unwanted here (the
+     box-shadow divider below already marks the boundary) and, since
+     labels are centered per-tab, can throw off the fixed height each
+     tab needs to stay uniform and correctly centered. */
+  gap: 0;
   border: 1px solid var(--color-border-light-primary, #c9c7b8);
 }
 
