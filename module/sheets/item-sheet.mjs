@@ -358,10 +358,31 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
     });
   }
 
+  /**
+   * A new Damage entry starts pre-filled with the standard scaling most
+   * spells use - the Willpower modifier, the skill(s) tied to how the
+   * spell is cast (its magic school for Simple/Advanced, every required
+   * skill for Combined), and Magic Control. All of it is just a starting
+   * point the player can freely remove or change afterward.
+   */
   static async #addDamage(event, target) {
+    const system = this.item.system;
+    const attributeBonuses = [
+      { attribute: 'wil', useModifier: true, formula: '@value' },
+    ];
+    const skillBonuses = [];
+    if (system.spellType === 'simple' || system.spellType === 'advanced') {
+      skillBonuses.push({ skill: system.magicSchool, formula: '@value' });
+    } else if (system.spellType === 'combined') {
+      for (const entry of system.combinedSkills ?? []) {
+        if (entry.skill) skillBonuses.push({ skill: entry.skill, formula: '@value' });
+      }
+    }
+    skillBonuses.push({ skill: 'magicControl', formula: '@value' });
+
     await this.#addArrayEntry('damages', {
       formula: '1d6', damageType: 'fire', trigger: 'unconditional', savingThrowIndex: null,
-      attributeBonuses: [], skillBonuses: [],
+      attributeBonuses, skillBonuses,
     });
   }
 
