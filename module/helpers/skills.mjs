@@ -199,6 +199,15 @@ function findSkillDefinition(skillKey) {
 }
 
 /**
+ * A skill's localization key by its key, e.g. for display in chat cards.
+ * @param {string} skillKey
+ * @return {string}
+ */
+export function getSkillLabel(skillKey) {
+  return findSkillDefinition(skillKey)?.label ?? skillKey;
+}
+
+/**
  * Current level of a single multi-level skill on an actor, including
  * starting bonuses from equipped Species/Class items - the same
  * derivation the actor sheet's Skills tab uses per row. Only meaningful

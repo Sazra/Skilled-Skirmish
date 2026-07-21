@@ -347,6 +347,16 @@
       },
       "SavingThrow": {
         "Numbered": "Saving Throw {number}"
+      },
+      "Roll": {
+        "Attack": "Attack {number}",
+        "Damage": "Damage",
+        "StatusEffect": "Status Effect",
+        "Vs": "vs",
+        "Success": "Success",
+        "Failure": "Failure",
+        "NoCharacter": "You have no character assigned - cannot roll.",
+        "ItemNotFound": "Could not find the spell for this saving throw."
       }
     },
     "DamageType": {

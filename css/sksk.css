@@ -841,3 +841,31 @@
 .sksk .effects .item .effect-controls {
   border: none;
 }
+
+/* Spell cast chat cards - unscoped (not nested under .sksk) since chat
+   messages render in the sidebar, outside any system sheet element. */
+.sksk-chat-card {
+  font-size: 12px;
+}
+
+.sksk-chat-card .sksk-roll-description {
+  margin-bottom: 6px;
+}
+
+.sksk-chat-card .sksk-roll-attack,
+.sksk-chat-card .sksk-roll-line {
+  margin: 6px 0 2px;
+}
+
+.sksk-chat-card .sksk-roll-saves {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 4px 0;
+}
+
+.sksk-chat-card .sksk-roll-save {
+  flex: 0 0 auto;
+  width: auto;
+  line-height: normal;
+}

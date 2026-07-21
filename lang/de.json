@@ -347,6 +347,16 @@
             },
             "SavingThrow": {
                 "Numbered": "Rettungswurf {number}"
+            },
+            "Roll": {
+                "Attack": "Angriff {number}",
+                "Damage": "Schaden",
+                "StatusEffect": "Statuseffekt",
+                "Vs": "gegen",
+                "Success": "Erfolg",
+                "Failure": "Misserfolg",
+                "NoCharacter": "Dir ist kein Charakter zugewiesen - kann nicht würfeln.",
+                "ItemNotFound": "Zauber für diesen Rettungswurf nicht gefunden."
             }
         },
         "DamageType": {

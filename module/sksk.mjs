@@ -5,6 +5,7 @@ import { SKSKItemSheet } from './sheets/item-sheet.mjs';
 import { preloadHandlebarsTemplates } from './helpers/templates.mjs';
 import { SKSK } from './helpers/config.mjs';
 import { registerSettings } from './helpers/settings.mjs';
+import { rollSavingThrowFromChat } from './helpers/spell-rolls.mjs';
 import * as models from './data/_module.mjs';
 
 Hooks.once('init', function () {
@@ -65,6 +66,15 @@ Handlebars.registerHelper('eq', function (a, b) {
 
 Hooks.once('ready', function () {
   Hooks.on('hotbarDrop', (bar, data, slot) => createItemMacro(data, slot));
+
+  // Delegated (not per-message-render) so it keeps working for every chat
+  // card regardless of how/when each one gets rendered.
+  document.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-action="rollSavingThrow"]');
+    if (!button) return;
+    event.preventDefault();
+    rollSavingThrowFromChat(button.dataset.itemUuid, Number(button.dataset.saveIndex));
+  });
 });
 
 async function createItemMacro(data, slot) {
