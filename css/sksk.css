@@ -949,7 +949,7 @@
 }
 
 .sksk .spell-prerequisite-warning {
-  margin-left: 4px;
+  margin: 0 1px;
   font-size: 11px;
   color: var(--color-level-warning, #ff8800);
 }
