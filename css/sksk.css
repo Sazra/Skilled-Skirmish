@@ -888,6 +888,18 @@
   color: var(--color-text-dark-secondary, #7a7971);
 }
 
+/* Mana and AP cost each get their own line so the icon can't wrap away
+   from its number when the column is too narrow to fit both inline. */
+.sksk .spell-cost {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.sksk .spell-cost-line {
+  white-space: nowrap;
+}
+
 .sksk .spell-cost i {
   margin: 0 1px 0 4px;
 }
