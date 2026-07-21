@@ -290,6 +290,9 @@
             }
         },
         "Spell": {
+            "ManaCost": "Mana",
+            "APCost": "AP",
+            "Ranges": "Reichweite",
             "Section": {
                 "General": "Allgemein",
                 "SavingThrows": "Rettungswürfe",

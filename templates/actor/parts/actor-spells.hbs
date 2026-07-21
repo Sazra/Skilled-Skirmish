@@ -26,6 +26,9 @@
             <li class="item flexrow items-header">
               <div class="spell-level">Lvl</div>
               <div class="item-name">{{localize "Name"}}</div>
+              <div class="spell-cost">{{localize 'SKSK.Spell.ManaCost'}}/{{localize 'SKSK.Spell.APCost'}}</div>
+              <div class="spell-range">{{localize 'SKSK.Spell.Ranges'}}</div>
+              <div class="spell-methods"></div>
               <div class="item-controls">
                 <a class="item-control item-create" data-action="createItem" data-type="spell" data-spell-type="simple"
                   data-magic-school="{{s.id}}" title="{{localize 'DOCUMENT.New' type='spell'}}">
@@ -43,6 +46,36 @@
                   </a>
                 </div>
                 <h4>{{item.name}}</h4>
+              </div>
+              <div class="spell-cost" title="{{localize 'SKSK.Spell.ManaCost'}} / {{localize 'SKSK.Spell.APCost'}}">
+                <i class="fas fa-tint"></i>{{item.system.manaCost}}
+                <i class="fas fa-bolt"></i>{{item.system.apCost}}
+              </div>
+              <div class="spell-range" title="{{localize 'SKSK.Spell.Ranges'}}">
+                {{#each item.system.ranges as |range|}}{{#unless @first}}/{{/unless}}{{range.distance}}m{{/each}}
+              </div>
+              <div class="spell-methods">
+                {{#if item.system.castingMethods.vocal}}
+                <span class="spell-method-letter" title="{{localize 'SKSK.Spell.CastingMethod.Vocal'}}">{{firstLetter (localize "SKSK.Spell.CastingMethod.Vocal")}}</span>
+                {{/if}}
+                {{#if item.system.castingMethods.runes}}
+                <span class="spell-method-letter" title="{{localize 'SKSK.Spell.CastingMethod.Runes'}}">{{firstLetter (localize "SKSK.Spell.CastingMethod.Runes")}}</span>
+                {{/if}}
+                {{#if item.system.castingMethods.movement}}
+                <span class="spell-method-letter" title="{{localize 'SKSK.Spell.CastingMethod.Movement'}}">{{firstLetter (localize "SKSK.Spell.CastingMethod.Movement")}}</span>
+                {{/if}}
+                {{#if item.system.castingMethods.concentration}}
+                <span class="spell-method-letter" title="{{localize 'SKSK.Spell.CastingMethod.Concentration'}}">{{firstLetter (localize "SKSK.Spell.CastingMethod.Concentration")}}</span>
+                {{/if}}
+                {{#if item.system.castingMethods.sacrifice}}
+                <i class="fas fa-circle spell-method-icon" title="{{localize 'SKSK.Spell.CastingMethod.Sacrifice'}}"></i>
+                {{/if}}
+                {{#if item.system.castingMethods.medium}}
+                <i class="fas fa-square spell-method-icon" title="{{localize 'SKSK.Spell.CastingMethod.Medium'}}"></i>
+                {{/if}}
+                {{#if item.system.castingMethods.ritual}}
+                <i class="fas fa-star spell-method-icon" title="{{localize 'SKSK.Spell.CastingMethod.Ritual'}}"></i>
+                {{/if}}
               </div>
               <div class="item-controls">
                 <a class="item-control item-edit" data-action="editItem" title="{{localize 'DOCUMENT.Update' type='Item'}}">
@@ -73,6 +106,9 @@
             <li class="item flexrow items-header">
               <div class="spell-level">Lvl</div>
               <div class="item-name">{{localize "Name"}}</div>
+              <div class="spell-cost">{{localize 'SKSK.Spell.ManaCost'}}/{{localize 'SKSK.Spell.APCost'}}</div>
+              <div class="spell-range">{{localize 'SKSK.Spell.Ranges'}}</div>
+              <div class="spell-methods"></div>
               <div class="item-controls">
                 <a class="item-control item-create" data-action="createItem" data-type="spell"
                   data-spell-type="advanced" data-magic-school="{{s.id}}" title="{{localize 'DOCUMENT.New' type='spell'}}">
@@ -90,6 +126,36 @@
                   </a>
                 </div>
                 <h4>{{item.name}}</h4>
+              </div>
+              <div class="spell-cost" title="{{localize 'SKSK.Spell.ManaCost'}} / {{localize 'SKSK.Spell.APCost'}}">
+                <i class="fas fa-tint"></i>{{item.system.manaCost}}
+                <i class="fas fa-bolt"></i>{{item.system.apCost}}
+              </div>
+              <div class="spell-range" title="{{localize 'SKSK.Spell.Ranges'}}">
+                {{#each item.system.ranges as |range|}}{{#unless @first}}/{{/unless}}{{range.distance}}m{{/each}}
+              </div>
+              <div class="spell-methods">
+                {{#if item.system.castingMethods.vocal}}
+                <span class="spell-method-letter" title="{{localize 'SKSK.Spell.CastingMethod.Vocal'}}">{{firstLetter (localize "SKSK.Spell.CastingMethod.Vocal")}}</span>
+                {{/if}}
+                {{#if item.system.castingMethods.runes}}
+                <span class="spell-method-letter" title="{{localize 'SKSK.Spell.CastingMethod.Runes'}}">{{firstLetter (localize "SKSK.Spell.CastingMethod.Runes")}}</span>
+                {{/if}}
+                {{#if item.system.castingMethods.movement}}
+                <span class="spell-method-letter" title="{{localize 'SKSK.Spell.CastingMethod.Movement'}}">{{firstLetter (localize "SKSK.Spell.CastingMethod.Movement")}}</span>
+                {{/if}}
+                {{#if item.system.castingMethods.concentration}}
+                <span class="spell-method-letter" title="{{localize 'SKSK.Spell.CastingMethod.Concentration'}}">{{firstLetter (localize "SKSK.Spell.CastingMethod.Concentration")}}</span>
+                {{/if}}
+                {{#if item.system.castingMethods.sacrifice}}
+                <i class="fas fa-circle spell-method-icon" title="{{localize 'SKSK.Spell.CastingMethod.Sacrifice'}}"></i>
+                {{/if}}
+                {{#if item.system.castingMethods.medium}}
+                <i class="fas fa-square spell-method-icon" title="{{localize 'SKSK.Spell.CastingMethod.Medium'}}"></i>
+                {{/if}}
+                {{#if item.system.castingMethods.ritual}}
+                <i class="fas fa-star spell-method-icon" title="{{localize 'SKSK.Spell.CastingMethod.Ritual'}}"></i>
+                {{/if}}
               </div>
               <div class="item-controls">
                 <a class="item-control item-edit" data-action="editItem" title="{{localize 'DOCUMENT.Update' type='Item'}}">
@@ -120,6 +186,9 @@
             <li class="item flexrow items-header">
               <div class="spell-level">Lvl</div>
               <div class="item-name">{{localize "Name"}}</div>
+              <div class="spell-cost">{{localize 'SKSK.Spell.ManaCost'}}/{{localize 'SKSK.Spell.APCost'}}</div>
+              <div class="spell-range">{{localize 'SKSK.Spell.Ranges'}}</div>
+              <div class="spell-methods"></div>
               <div class="item-controls">
                 <a class="item-control item-create" data-action="createItem" data-type="spell"
                   data-spell-type="combined" data-combined-school="{{s.id}}" title="{{localize 'DOCUMENT.New' type='spell'}}">
@@ -137,6 +206,36 @@
                   </a>
                 </div>
                 <h4>{{item.name}}</h4>
+              </div>
+              <div class="spell-cost" title="{{localize 'SKSK.Spell.ManaCost'}} / {{localize 'SKSK.Spell.APCost'}}">
+                <i class="fas fa-tint"></i>{{item.system.manaCost}}
+                <i class="fas fa-bolt"></i>{{item.system.apCost}}
+              </div>
+              <div class="spell-range" title="{{localize 'SKSK.Spell.Ranges'}}">
+                {{#each item.system.ranges as |range|}}{{#unless @first}}/{{/unless}}{{range.distance}}m{{/each}}
+              </div>
+              <div class="spell-methods">
+                {{#if item.system.castingMethods.vocal}}
+                <span class="spell-method-letter" title="{{localize 'SKSK.Spell.CastingMethod.Vocal'}}">{{firstLetter (localize "SKSK.Spell.CastingMethod.Vocal")}}</span>
+                {{/if}}
+                {{#if item.system.castingMethods.runes}}
+                <span class="spell-method-letter" title="{{localize 'SKSK.Spell.CastingMethod.Runes'}}">{{firstLetter (localize "SKSK.Spell.CastingMethod.Runes")}}</span>
+                {{/if}}
+                {{#if item.system.castingMethods.movement}}
+                <span class="spell-method-letter" title="{{localize 'SKSK.Spell.CastingMethod.Movement'}}">{{firstLetter (localize "SKSK.Spell.CastingMethod.Movement")}}</span>
+                {{/if}}
+                {{#if item.system.castingMethods.concentration}}
+                <span class="spell-method-letter" title="{{localize 'SKSK.Spell.CastingMethod.Concentration'}}">{{firstLetter (localize "SKSK.Spell.CastingMethod.Concentration")}}</span>
+                {{/if}}
+                {{#if item.system.castingMethods.sacrifice}}
+                <i class="fas fa-circle spell-method-icon" title="{{localize 'SKSK.Spell.CastingMethod.Sacrifice'}}"></i>
+                {{/if}}
+                {{#if item.system.castingMethods.medium}}
+                <i class="fas fa-square spell-method-icon" title="{{localize 'SKSK.Spell.CastingMethod.Medium'}}"></i>
+                {{/if}}
+                {{#if item.system.castingMethods.ritual}}
+                <i class="fas fa-star spell-method-icon" title="{{localize 'SKSK.Spell.CastingMethod.Ritual'}}"></i>
+                {{/if}}
               </div>
               <div class="item-controls">
                 <a class="item-control item-edit" data-action="editItem" title="{{localize 'DOCUMENT.Update' type='Item'}}">
@@ -167,6 +266,9 @@
             <li class="item flexrow items-header">
               <div class="spell-level">Lvl</div>
               <div class="item-name">{{localize "Name"}}</div>
+              <div class="spell-cost">{{localize 'SKSK.Spell.ManaCost'}}/{{localize 'SKSK.Spell.APCost'}}</div>
+              <div class="spell-range">{{localize 'SKSK.Spell.Ranges'}}</div>
+              <div class="spell-methods"></div>
               <div class="item-controls">
                 <a class="item-control item-create" data-action="createItem" data-type="spell"
                   data-spell-type="systemless" data-systemless-category="{{s.id}}"
@@ -185,6 +287,36 @@
                   </a>
                 </div>
                 <h4>{{item.name}}</h4>
+              </div>
+              <div class="spell-cost" title="{{localize 'SKSK.Spell.ManaCost'}} / {{localize 'SKSK.Spell.APCost'}}">
+                <i class="fas fa-tint"></i>{{item.system.manaCost}}
+                <i class="fas fa-bolt"></i>{{item.system.apCost}}
+              </div>
+              <div class="spell-range" title="{{localize 'SKSK.Spell.Ranges'}}">
+                {{#each item.system.ranges as |range|}}{{#unless @first}}/{{/unless}}{{range.distance}}m{{/each}}
+              </div>
+              <div class="spell-methods">
+                {{#if item.system.castingMethods.vocal}}
+                <span class="spell-method-letter" title="{{localize 'SKSK.Spell.CastingMethod.Vocal'}}">{{firstLetter (localize "SKSK.Spell.CastingMethod.Vocal")}}</span>
+                {{/if}}
+                {{#if item.system.castingMethods.runes}}
+                <span class="spell-method-letter" title="{{localize 'SKSK.Spell.CastingMethod.Runes'}}">{{firstLetter (localize "SKSK.Spell.CastingMethod.Runes")}}</span>
+                {{/if}}
+                {{#if item.system.castingMethods.movement}}
+                <span class="spell-method-letter" title="{{localize 'SKSK.Spell.CastingMethod.Movement'}}">{{firstLetter (localize "SKSK.Spell.CastingMethod.Movement")}}</span>
+                {{/if}}
+                {{#if item.system.castingMethods.concentration}}
+                <span class="spell-method-letter" title="{{localize 'SKSK.Spell.CastingMethod.Concentration'}}">{{firstLetter (localize "SKSK.Spell.CastingMethod.Concentration")}}</span>
+                {{/if}}
+                {{#if item.system.castingMethods.sacrifice}}
+                <i class="fas fa-circle spell-method-icon" title="{{localize 'SKSK.Spell.CastingMethod.Sacrifice'}}"></i>
+                {{/if}}
+                {{#if item.system.castingMethods.medium}}
+                <i class="fas fa-square spell-method-icon" title="{{localize 'SKSK.Spell.CastingMethod.Medium'}}"></i>
+                {{/if}}
+                {{#if item.system.castingMethods.ritual}}
+                <i class="fas fa-star spell-method-icon" title="{{localize 'SKSK.Spell.CastingMethod.Ritual'}}"></i>
+                {{/if}}
               </div>
               <div class="item-controls">
                 <a class="item-control item-edit" data-action="editItem" title="{{localize 'DOCUMENT.Update' type='Item'}}">

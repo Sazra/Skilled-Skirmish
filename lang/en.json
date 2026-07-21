@@ -290,6 +290,9 @@
       }
     },
     "Spell": {
+      "ManaCost": "Mana",
+      "APCost": "AP",
+      "Ranges": "Range",
       "Section": {
         "General": "General",
         "SavingThrows": "Saving Throws",

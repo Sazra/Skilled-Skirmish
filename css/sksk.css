@@ -842,6 +842,52 @@
   border: none;
 }
 
+/* Compact per-spell stats shown in the Spells tab's list rows: costs,
+   range(s), and casting-method indicators (letters for the four talked/
+   moved/focused ones, placeholder shape icons for the rest until real
+   icons exist). */
+.sksk .spell-cost,
+.sksk .spell-range {
+  flex: 0 0 46px;
+  font-size: 11px;
+  text-align: center;
+  color: var(--color-text-dark-secondary, #7a7971);
+}
+
+.sksk .spell-cost i {
+  margin: 0 1px 0 4px;
+}
+
+.sksk .spell-cost i:first-child {
+  margin-left: 0;
+}
+
+.sksk .spell-methods {
+  flex: 0 0 84px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  justify-content: center;
+  align-items: center;
+}
+
+.sksk .spell-method-letter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  font-size: 10px;
+  font-weight: bold;
+  border: 1px solid var(--color-border-light-primary, #c9c7b8);
+  border-radius: 3px;
+}
+
+.sksk .spell-method-icon {
+  font-size: 11px;
+  color: var(--color-text-dark-secondary, #7a7971);
+}
+
 /* Spell cast chat cards - unscoped (not nested under .sksk) since chat
    messages render in the sidebar, outside any system sheet element. */
 .sksk-chat-card {
