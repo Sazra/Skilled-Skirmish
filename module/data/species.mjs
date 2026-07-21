@@ -64,6 +64,23 @@ export default class SKSKSpecies extends SKSKItemBase {
       })),
     }));
 
+    // Zero or more mana-cost discounts for a specific magic school (of any
+    // spellType) - e.g. a Priest of Light's flat "character level" discount
+    // on Light spells and Miracles, or a Necromancer's 50% discount on
+    // Necromancy. percent stacks additively with every other source
+    // (including the caster's own Magic Control/Ritualism-based discount);
+    // flatFormula supports "L" for the actor's level. See
+    // helpers/spells.mjs#computeSpellManaCost.
+    schema.manaCostReductions = new fields.ArrayField(new fields.SchemaField({
+      spellType: new fields.StringField({
+        required: true, blank: false, initial: "simple",
+        choices: ["simple", "advanced", "combined", "systemless"]
+      }),
+      school: new fields.StringField({ required: true, blank: false, initial: "fire" }),
+      percent: new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0, max: 100 }),
+      flatFormula: new fields.StringField({ required: true, blank: true, initial: "0" }),
+    }));
+
     return schema;
   }
 }

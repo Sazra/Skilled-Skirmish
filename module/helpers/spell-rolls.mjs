@@ -1,4 +1,4 @@
-import { computeDamageBonus, computeSavingThrowValue } from './spells.mjs';
+import { computeDamageBonus, computeSavingThrowValue, computeSpellManaCost } from './spells.mjs';
 import { getActorSkillLevel, getSkillLabel } from './skills.mjs';
 
 /**
@@ -63,6 +63,11 @@ export async function rollSpellItem(item) {
     system.description ?? '', { relativeTo: item, secrets: item.isOwner }
   );
   parts.push(`<div class="sksk-roll-description">${descriptionHTML}</div>`);
+
+  if (actor) {
+    const manaCost = computeSpellManaCost(system, actor);
+    parts.push(`<div class="sksk-roll-mana-cost"><strong>${game.i18n.localize('SKSK.Spell.ManaCost')}:</strong> ${manaCost}</div>`);
+  }
 
   if (system.attackRoll.enabled) {
     const attackDamages = system.damages.filter(d => d.trigger === 'attack');

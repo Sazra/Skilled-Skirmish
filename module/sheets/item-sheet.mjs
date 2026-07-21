@@ -44,6 +44,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       addCombinedSchoolOverride: SKSKItemSheet.#addCombinedSchoolOverride,
       addCombinedSchoolOverrideAttributeBonus: SKSKItemSheet.#addCombinedSchoolOverrideAttributeBonus,
       addCombinedSchoolOverrideSkillBonus: SKSKItemSheet.#addCombinedSchoolOverrideSkillBonus,
+      addManaCostReduction: SKSKItemSheet.#addManaCostReduction,
     }
   };
 
@@ -130,6 +131,12 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       // Spells have no abilities substructure, so the standard item-level
       // effects tab (kept, unlike species/class/talent) is where any
       // on-cast Active Effects belong.
+    } else if (itemType === 'item') {
+      parts.attributes.template = `systems/sksk/templates/item/parts/item-gear.hbs`;
+    } else if (itemType === 'armor') {
+      parts.attributes.template = `systems/sksk/templates/item/parts/armor.hbs`;
+    } else if (itemType === 'weapon') {
+      parts.attributes.template = `systems/sksk/templates/item/parts/weapon.hbs`;
     }
 
     return parts;
@@ -241,6 +248,18 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
           entry => computeCombinedSchoolOverrideLevel(entry, item.actor)
         );
       }
+    }
+
+    // Mana-cost reduction entries (Talent/Class/Species/Item/Armor/Weapon
+    // discounting a specific magic school's mana cost - see
+    // helpers/spells.mjs#computeSpellManaCost) share the same per-entry
+    // spellType+school choices across all six item types.
+    if (['talent', 'class', 'species', 'item', 'armor', 'weapon'].includes(item.type)) {
+      context.spellTypeChoices = CONFIG.SKSK.spellTypes;
+      context.simpleMagicSchoolChoices = CONFIG.SKSK.simpleMagicSchools;
+      context.advancedMagicSchoolChoices = CONFIG.SKSK.advancedMagicSchools;
+      context.combinedSchoolChoices = CONFIG.SKSK.combinedMagicSchools;
+      context.systemlessCategoryChoices = CONFIG.SKSK.systemlessMagicCategories;
     }
 
     if (item.type === 'species' || item.type === 'class') {
@@ -415,6 +434,12 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
   static async #addCombinedSchoolOverride(event, target) {
     await this.#addArrayEntry('combinedSchoolOverrides', {
       combinedSchool: 'stormancy', baseFormula: '0', attributeBonuses: [], skillBonuses: [],
+    });
+  }
+
+  static async #addManaCostReduction(event, target) {
+    await this.#addArrayEntry('manaCostReductions', {
+      spellType: 'simple', school: 'fire', percent: 0, flatFormula: '0',
     });
   }
 

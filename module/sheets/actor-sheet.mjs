@@ -5,7 +5,11 @@ import {
   prepareActiveEffectCategories,
 } from '../helpers/effects.mjs';
 import { evaluateSkillFormula, computeSkillBonusTotals, getActorSkillLevel } from '../helpers/skills.mjs';
-import { checkCombinedSpellPrerequisite } from '../helpers/spells.mjs';
+import {
+  checkCombinedSpellPrerequisite,
+  checkSimpleOrAdvancedSpellPrerequisite,
+  computeSpellManaCost,
+} from '../helpers/spells.mjs';
 
 /**
  * Extend the basic ActorSheet with some very simple modifications
@@ -452,6 +456,25 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     const actor = this.actor;
     const spells = context.items.filter(i => i.type === 'spell');
 
+    // Every spell's actual mana cost (see helpers/spells.mjs#
+    // computeSpellManaCost) and, for Simple/Advanced/Combined spells,
+    // whether the actor can currently cast it at all (Systemless spells
+    // have no prerequisite and are always castable) - both attached
+    // directly on the item so the Spells tab can gray out uncastable
+    // spells and show their real (possibly penalized/discounted) cost.
+    for (const item of spells) {
+      item.effectiveManaCost = computeSpellManaCost(item.system, actor);
+      if (item.system.spellType === 'simple' || item.system.spellType === 'advanced') {
+        const { castable, missingLabel } = checkSimpleOrAdvancedSpellPrerequisite(item.system, actor);
+        item.castable = castable;
+        item.missingLabel = missingLabel;
+      } else if (item.system.spellType === 'combined') {
+        const { castable, missingLabel } = checkCombinedSpellPrerequisite(item.system, actor);
+        item.castable = castable;
+        item.missingLabel = missingLabel;
+      }
+    }
+
     const sortSpells = (list) => list.slice().sort((a, b) => {
       const levelDiff = (a.system.spellLevel ?? 1) - (b.system.spellLevel ?? 1);
       return levelDiff !== 0 ? levelDiff : a.name.localeCompare(b.name);
@@ -476,17 +499,6 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     context.spellsByCombinedSchool = groupBy(
       spells.filter(i => i.system.spellType === 'combined'), i => i.system.combinedSchool
     );
-    // Combined spells can have their own combinedSkills prerequisite
-    // overridden by a Class/Species/Talent's combinedSchoolOverrides (see
-    // helpers/spells.mjs) - flag the ones the actor currently can't cast so
-    // the Spells tab can gray them out.
-    for (const list of Object.values(context.spellsByCombinedSchool)) {
-      for (const item of list) {
-        const { castable, missingLabel } = checkCombinedSpellPrerequisite(item.system, actor);
-        item.combinedCastable = castable;
-        item.combinedMissingLabel = missingLabel;
-      }
-    }
     context.spellsBySystemlessCategory = groupBy(
       spells.filter(i => i.system.spellType === 'systemless'), i => i.system.systemlessCategory
     );

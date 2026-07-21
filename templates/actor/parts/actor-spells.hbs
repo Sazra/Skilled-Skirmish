@@ -37,7 +37,7 @@
               </div>
             </li>
             {{#each (lookup ../spellsBySimpleSchool s.id) as |item|}}
-            <li class="item flexrow" data-item-id="{{item._id}}">
+            <li class="item flexrow {{#unless item.castable}}spell-uncastable{{/unless}}" data-item-id="{{item._id}}">
               <div class="spell-level">{{item.system.spellLevel}}</div>
               <div class="item-name flexrow">
                 <div class="item-image">
@@ -46,9 +46,13 @@
                   </a>
                 </div>
                 <h4>{{item.name}}</h4>
+                {{#unless item.castable}}
+                <i class="fas fa-exclamation-triangle spell-prerequisite-warning"
+                  title="{{localize 'SKSK.Spell.PrerequisiteNotMet' details=item.missingLabel}}"></i>
+                {{/unless}}
               </div>
               <div class="spell-cost" title="{{localize 'SKSK.Spell.ManaCost'}} / {{localize 'SKSK.Spell.APCost'}}">
-                <span class="spell-cost-line"><i class="fas fa-tint"></i>{{item.system.manaCost}}</span>
+                <span class="spell-cost-line"><i class="fas fa-tint"></i>{{item.effectiveManaCost}}</span>
                 <span class="spell-cost-line"><i class="fas fa-bolt"></i>{{item.system.apCost}}</span>
               </div>
               <div class="spell-range" title="{{localize 'SKSK.Spell.Ranges'}}">
@@ -117,7 +121,7 @@
               </div>
             </li>
             {{#each (lookup ../spellsByAdvancedSchool s.id) as |item|}}
-            <li class="item flexrow" data-item-id="{{item._id}}">
+            <li class="item flexrow {{#unless item.castable}}spell-uncastable{{/unless}}" data-item-id="{{item._id}}">
               <div class="spell-level">{{item.system.spellLevel}}</div>
               <div class="item-name flexrow">
                 <div class="item-image">
@@ -126,9 +130,13 @@
                   </a>
                 </div>
                 <h4>{{item.name}}</h4>
+                {{#unless item.castable}}
+                <i class="fas fa-exclamation-triangle spell-prerequisite-warning"
+                  title="{{localize 'SKSK.Spell.PrerequisiteNotMet' details=item.missingLabel}}"></i>
+                {{/unless}}
               </div>
               <div class="spell-cost" title="{{localize 'SKSK.Spell.ManaCost'}} / {{localize 'SKSK.Spell.APCost'}}">
-                <span class="spell-cost-line"><i class="fas fa-tint"></i>{{item.system.manaCost}}</span>
+                <span class="spell-cost-line"><i class="fas fa-tint"></i>{{item.effectiveManaCost}}</span>
                 <span class="spell-cost-line"><i class="fas fa-bolt"></i>{{item.system.apCost}}</span>
               </div>
               <div class="spell-range" title="{{localize 'SKSK.Spell.Ranges'}}">
@@ -197,7 +205,7 @@
               </div>
             </li>
             {{#each (lookup ../spellsByCombinedSchool s.id) as |item|}}
-            <li class="item flexrow {{#unless item.combinedCastable}}spell-uncastable{{/unless}}" data-item-id="{{item._id}}">
+            <li class="item flexrow {{#unless item.castable}}spell-uncastable{{/unless}}" data-item-id="{{item._id}}">
               <div class="spell-level">{{item.system.spellLevel}}</div>
               <div class="item-name flexrow">
                 <div class="item-image">
@@ -206,13 +214,13 @@
                   </a>
                 </div>
                 <h4>{{item.name}}</h4>
-                {{#unless item.combinedCastable}}
+                {{#unless item.castable}}
                 <i class="fas fa-exclamation-triangle spell-prerequisite-warning"
-                  title="{{localize 'SKSK.Spell.PrerequisiteNotMet' details=item.combinedMissingLabel}}"></i>
+                  title="{{localize 'SKSK.Spell.PrerequisiteNotMet' details=item.missingLabel}}"></i>
                 {{/unless}}
               </div>
               <div class="spell-cost" title="{{localize 'SKSK.Spell.ManaCost'}} / {{localize 'SKSK.Spell.APCost'}}">
-                <span class="spell-cost-line"><i class="fas fa-tint"></i>{{item.system.manaCost}}</span>
+                <span class="spell-cost-line"><i class="fas fa-tint"></i>{{item.effectiveManaCost}}</span>
                 <span class="spell-cost-line"><i class="fas fa-bolt"></i>{{item.system.apCost}}</span>
               </div>
               <div class="spell-range" title="{{localize 'SKSK.Spell.Ranges'}}">
@@ -293,7 +301,7 @@
                 <h4>{{item.name}}</h4>
               </div>
               <div class="spell-cost" title="{{localize 'SKSK.Spell.ManaCost'}} / {{localize 'SKSK.Spell.APCost'}}">
-                <span class="spell-cost-line"><i class="fas fa-tint"></i>{{item.system.manaCost}}</span>
+                <span class="spell-cost-line"><i class="fas fa-tint"></i>{{item.effectiveManaCost}}</span>
                 <span class="spell-cost-line"><i class="fas fa-bolt"></i>{{item.system.apCost}}</span>
               </div>
               <div class="spell-range" title="{{localize 'SKSK.Spell.Ranges'}}">
