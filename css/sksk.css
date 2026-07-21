@@ -706,6 +706,23 @@
   font-size: 11px;
 }
 
+/* Separates "what the target rolls to resist this" (above) from "what
+   scales the caster's DC" (below) within the same Saving Throw row - two
+   visually similar bonus-groups rows would otherwise blur together. */
+.sksk .tested-by-groups {
+  border-bottom: 1px dashed var(--color-border-light-primary, #c9c7b8);
+  padding-bottom: 6px;
+  margin-bottom: 2px;
+}
+
+.sksk .tested-by-groups .casting-methods {
+  gap: 2px 8px;
+}
+
+.sksk .tested-by-groups .casting-method-option {
+  font-size: 11px;
+}
+
 .sksk .items-list .item-description {
   flex: 2;
   margin: 0 8px;

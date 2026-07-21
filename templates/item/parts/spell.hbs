@@ -226,6 +226,84 @@
             </div>
           </div>
 
+          <div class="bonus-groups tested-by-groups">
+            <div class="bonus-group">
+              <label class="resource-label">Tested Attribute</label>
+              <div class="casting-methods">
+                <label class="casting-method-option">
+                  <input type="checkbox" name="system.savingThrows.{{index}}.testAttributes.str"
+                    {{checked save.testAttributes.str}} />
+                  {{localize "SKSK.Attribute.Str.abbr"}}
+                </label>
+                <label class="casting-method-option">
+                  <input type="checkbox" name="system.savingThrows.{{index}}.testAttributes.dex"
+                    {{checked save.testAttributes.dex}} />
+                  {{localize "SKSK.Attribute.Dex.abbr"}}
+                </label>
+                <label class="casting-method-option">
+                  <input type="checkbox" name="system.savingThrows.{{index}}.testAttributes.con"
+                    {{checked save.testAttributes.con}} />
+                  {{localize "SKSK.Attribute.Con.abbr"}}
+                </label>
+                <label class="casting-method-option">
+                  <input type="checkbox" name="system.savingThrows.{{index}}.testAttributes.per"
+                    {{checked save.testAttributes.per}} />
+                  {{localize "SKSK.Attribute.Per.abbr"}}
+                </label>
+                <label class="casting-method-option">
+                  <input type="checkbox" name="system.savingThrows.{{index}}.testAttributes.wil"
+                    {{checked save.testAttributes.wil}} />
+                  {{localize "SKSK.Attribute.Wil.abbr"}}
+                </label>
+                <label class="casting-method-option">
+                  <input type="checkbox" name="system.savingThrows.{{index}}.testAttributes.aur"
+                    {{checked save.testAttributes.aur}} />
+                  {{localize "SKSK.Attribute.Aur.abbr"}}
+                </label>
+                <label class="casting-method-option">
+                  <input type="checkbox" name="system.savingThrows.{{index}}.testAttributes.cha"
+                    {{checked save.testAttributes.cha}} />
+                  {{localize "SKSK.Attribute.Cha.abbr"}}
+                </label>
+                <label class="casting-method-option">
+                  <input type="checkbox" name="system.savingThrows.{{index}}.testAttributes.app"
+                    {{checked save.testAttributes.app}} />
+                  {{localize "SKSK.Attribute.App.abbr"}}
+                </label>
+              </div>
+            </div>
+
+            <div class="bonus-group">
+              <label class="resource-label">Tested Skill</label>
+              <ol class="items-list items-list-compact">
+                {{#each save.testSkills as |skill skillIndex|}}
+                <li class="item flexrow">
+                  <div class="item-name">
+                    <select name="system.savingThrows.{{index}}.testSkills.{{skillIndex}}">
+                      {{selectOptions ../../combinedSkillChoices selected=skill localize=true}}
+                    </select>
+                  </div>
+                  <div class="item-controls">
+                    <a class="item-control item-delete" data-action="removeNestedArrayEntry"
+                      data-parent-field="savingThrows" data-parent-index="{{index}}" data-field="testSkills"
+                      data-index="{{skillIndex}}" title="Remove">
+                      <i class="fas fa-trash"></i>
+                    </a>
+                  </div>
+                </li>
+                {{/each}}
+                <li class="item flexrow">
+                  <div class="item-controls">
+                    <a class="item-control item-create" data-action="addSavingThrowTestSkill" data-index="{{index}}"
+                      title="Add tested skill">
+                      <i class="fas fa-plus"></i> Add
+                    </a>
+                  </div>
+                </li>
+              </ol>
+            </div>
+          </div>
+
           <div class="bonus-groups">
             <div class="bonus-group">
               <label class="resource-label">Attribute Bonuses</label>

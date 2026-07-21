@@ -91,6 +91,22 @@ export default class SKSKSpell extends SKSKItemBase {
         skill: new fields.StringField({ required: true, blank: false, initial: "magicControl" }),
         formula: new fields.StringField({ required: true, blank: true, initial: "@value" }),
       })),
+      // What the TARGET rolls to resist this saving throw (d20 + that
+      // attribute's modifier, or that skill's level, vs. the value above).
+      // Any number of either may be set - the target may use whichever
+      // they have. Attributes are a fixed checkbox set (only 8); skills
+      // are an open list since there are 100+.
+      testAttributes: new fields.SchemaField({
+        str: new fields.BooleanField({ initial: false }),
+        dex: new fields.BooleanField({ initial: false }),
+        con: new fields.BooleanField({ initial: false }),
+        per: new fields.BooleanField({ initial: false }),
+        wil: new fields.BooleanField({ initial: false }),
+        aur: new fields.BooleanField({ initial: false }),
+        cha: new fields.BooleanField({ initial: false }),
+        app: new fields.BooleanField({ initial: false }),
+      }),
+      testSkills: new fields.ArrayField(new fields.StringField({ required: true, blank: false, initial: "stealth" })),
     }));
 
     // Zero or more damage instances. Each is independently tied to the

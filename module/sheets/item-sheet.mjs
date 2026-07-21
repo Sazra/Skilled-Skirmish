@@ -35,6 +35,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       addSavingThrow: SKSKItemSheet.#addSavingThrow,
       addSavingThrowAttributeBonus: SKSKItemSheet.#addSavingThrowAttributeBonus,
       addSavingThrowSkillBonus: SKSKItemSheet.#addSavingThrowSkillBonus,
+      addSavingThrowTestSkill: SKSKItemSheet.#addSavingThrowTestSkill,
       removeNestedArrayEntry: SKSKItemSheet.#removeNestedArrayEntry,
       addDamage: SKSKItemSheet.#addDamage,
       addDamageAttributeBonus: SKSKItemSheet.#addDamageAttributeBonus,
@@ -353,6 +354,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
   static async #addSavingThrow(event, target) {
     await this.#addArrayEntry('savingThrows', {
       label: '', baseValue: 10, attributeBonuses: [], skillBonuses: [],
+      testAttributes: {}, testSkills: [],
     });
   }
 
@@ -399,6 +401,11 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
     await this.#addNestedArrayEntry('savingThrows', parentIndex, 'skillBonuses', {
       skill: 'magicControl', formula: '@value',
     });
+  }
+
+  static async #addSavingThrowTestSkill(event, target) {
+    const parentIndex = Number(target.dataset.index);
+    await this.#addNestedArrayEntry('savingThrows', parentIndex, 'testSkills', 'stealth');
   }
 
   static async #addDamageAttributeBonus(event, target) {
