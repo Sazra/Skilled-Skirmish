@@ -409,20 +409,34 @@
   align-items: flex-start;
 }
 
+/* Tab labels are rotated 90° counter-clockwise (read bottom-to-top) so
+   the strip itself only needs to be as wide as one line of text, leaving
+   more horizontal room for the actual spell list. Every tab gets the same
+   fixed height regardless of label length, sized to fit the longest one
+   (Systemless/Systemlos, Combined/Kombiniert) in full. */
 .sksk .spell-type-tabs {
-  flex: 0 0 100px;
+  flex: 0 0 28px;
   flex-direction: column;
   border: 1px solid var(--color-border-light-primary, #c9c7b8);
 }
 
 .sksk .spell-type-tabs a {
-  padding: 4px 8px;
+  height: 100px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-bottom: 1px solid var(--color-border-light-primary, #c9c7b8);
-  text-align: left;
 }
 
 .sksk .spell-type-tabs a:last-child {
   border-bottom: none;
+}
+
+.sksk .spell-type-tabs a label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  white-space: nowrap;
 }
 
 .sksk .spell-type-tabs a.active {
