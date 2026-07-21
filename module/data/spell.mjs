@@ -71,7 +71,10 @@ export default class SKSKSpell extends SKSKItemBase {
     schema.sacrificeDescription = new fields.StringField({ required: true, blank: true });
     schema.mediumDescription = new fields.StringField({ required: true, blank: true });
 
-    // What "mastered" affects is implemented later.
+    // A Mastered spell bypasses every casting prerequisite outright - for
+    // Combined spells that means both its own combinedSkills requirement
+    // and any Class/Species/Talent combinedSchoolOverrides check (see
+    // helpers/spells.mjs#checkCombinedSpellPrerequisite).
     schema.mastered = new fields.BooleanField({ initial: false });
 
     // Whether the spell needs an attack roll at all (vs. the target's

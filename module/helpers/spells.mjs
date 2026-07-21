@@ -100,7 +100,8 @@ export function getCombinedSchoolOverrideLevel(actor, combinedSchool) {
 }
 
 /**
- * Whether an actor can currently cast a given combined spell: either some
+ * Whether an actor can currently cast a given combined spell: a Mastered
+ * spell bypasses every prerequisite outright; otherwise either some
  * override grants that school's casting up to (at least) the spell's own
  * level, or the spell's own combinedSkills requirement is fully met (every
  * listed skill at least at its required level). A spell with no
@@ -110,6 +111,10 @@ export function getCombinedSchoolOverrideLevel(actor, combinedSchool) {
  * @return {{castable: boolean, overrideLevel: number|null, missingLabel: string}}
  */
 export function checkCombinedSpellPrerequisite(spellSystem, actor) {
+  if (spellSystem.mastered) {
+    return { castable: true, overrideLevel: null, missingLabel: '' };
+  }
+
   const overrideLevel = getCombinedSchoolOverrideLevel(actor, spellSystem.combinedSchool);
   if (overrideLevel !== null && spellSystem.spellLevel <= overrideLevel) {
     return { castable: true, overrideLevel, missingLabel: '' };
