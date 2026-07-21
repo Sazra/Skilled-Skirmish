@@ -95,7 +95,10 @@ export default class SKSKSpell extends SKSKItemBase {
 
     // Zero or more damage instances. Each is independently tied to the
     // attack roll, to one specific saving throw (by index into
-    // savingThrows above), or applied unconditionally.
+    // savingThrows above), or applied unconditionally. attributeBonuses/
+    // skillBonuses scale the damage the same way a saving throw's bonuses
+    // scale its value - a flat number to add once the formula is actually
+    // rolled, each independently scaled by its own "@value" formula.
     schema.damages = new fields.ArrayField(new fields.SchemaField({
       formula: new fields.StringField({ required: true, blank: true, initial: "1d6" }),
       damageType: new fields.StringField({ required: true, blank: false, initial: "fire" }),
@@ -104,6 +107,15 @@ export default class SKSKSpell extends SKSKItemBase {
         choices: ["attack", "save", "unconditional"]
       }),
       savingThrowIndex: new fields.NumberField({ required: false, nullable: true, integer: true, initial: null }),
+      attributeBonuses: new fields.ArrayField(new fields.SchemaField({
+        attribute: new fields.StringField({ required: true, blank: false, initial: "str" }),
+        useModifier: new fields.BooleanField({ initial: true }),
+        formula: new fields.StringField({ required: true, blank: true, initial: "@value" }),
+      })),
+      skillBonuses: new fields.ArrayField(new fields.SchemaField({
+        skill: new fields.StringField({ required: true, blank: false, initial: "axe" }),
+        formula: new fields.StringField({ required: true, blank: true, initial: "@value" }),
+      })),
     }));
 
     // Zero or more status effects. Placeholder until the status-effect

@@ -5,7 +5,7 @@ import {
   prepareActiveEffectCategories,
 } from '../helpers/effects.mjs';
 import { getSkillBonusChoices } from '../helpers/skills.mjs';
-import { computeSavingThrowValue } from '../helpers/spells.mjs';
+import { computeSavingThrowValue, computeDamageBonus } from '../helpers/spells.mjs';
 
 /**
  * Extend the basic ItemSheet with some very simple modifications
@@ -37,6 +37,8 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       addSavingThrowSkillBonus: SKSKItemSheet.#addSavingThrowSkillBonus,
       removeNestedArrayEntry: SKSKItemSheet.#removeNestedArrayEntry,
       addDamage: SKSKItemSheet.#addDamage,
+      addDamageAttributeBonus: SKSKItemSheet.#addDamageAttributeBonus,
+      addDamageSkillBonus: SKSKItemSheet.#addDamageSkillBonus,
       addStatusEffect: SKSKItemSheet.#addStatusEffect,
     }
   };
@@ -258,6 +260,9 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
         context.savingThrowValues = (item.system.savingThrows ?? []).map(
           entry => computeSavingThrowValue(entry, item.actor)
         );
+        context.damageBonusValues = (item.system.damages ?? []).map(
+          entry => computeDamageBonus(entry, item.actor)
+        );
       }
     }
 
@@ -354,6 +359,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
   static async #addDamage(event, target) {
     await this.#addArrayEntry('damages', {
       formula: '1d6', damageType: 'fire', trigger: 'unconditional', savingThrowIndex: null,
+      attributeBonuses: [], skillBonuses: [],
     });
   }
 
@@ -392,6 +398,20 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
     const parentIndex = Number(target.dataset.index);
     await this.#addNestedArrayEntry('savingThrows', parentIndex, 'skillBonuses', {
       skill: 'magicControl', formula: '@value',
+    });
+  }
+
+  static async #addDamageAttributeBonus(event, target) {
+    const parentIndex = Number(target.dataset.index);
+    await this.#addNestedArrayEntry('damages', parentIndex, 'attributeBonuses', {
+      attribute: 'str', useModifier: true, formula: '@value',
+    });
+  }
+
+  static async #addDamageSkillBonus(event, target) {
+    const parentIndex = Number(target.dataset.index);
+    await this.#addNestedArrayEntry('damages', parentIndex, 'skillBonuses', {
+      skill: 'axe', formula: '@value',
     });
   }
 

@@ -559,6 +559,19 @@
   margin: 0 6px;
 }
 
+/* Narrower delete/add-icon column for lists that only ever carry a single
+   icon (Saving Throws, Damage, Status Effects and their nested bonus
+   rows) - the default 100px is sized for two icons (edit + delete) and
+   leaves distracting empty space here. */
+.sksk .items-list-compact .item-controls {
+  flex: 0 0 32px;
+  justify-content: center;
+}
+
+.sksk .items-list-compact .item-controls a {
+  margin: 0;
+}
+
 .sksk .items-list .item {
   align-items: center;
   padding: 0 2px;
@@ -665,28 +678,31 @@
   font-weight: bold;
 }
 
-.sksk .items-list .item.saving-throw {
+/* Shared by Saving Throw and Damage rows: a list item whose header row
+   (label/value/computed total/delete) expands into an indented section of
+   Attribute/Skill bonus sub-lists below it. */
+.sksk .items-list .item.expandable-item {
   display: block;
   padding: 6px 2px;
 }
 
-.sksk .saving-throw-total {
+.sksk .computed-total {
   flex: 0 0 auto;
   font-weight: bold;
   padding: 0 8px;
 }
 
-.sksk .saving-throw-bonuses {
+.sksk .bonus-groups {
   display: flex;
   gap: 16px;
   margin: 4px 0 4px 8px;
 }
 
-.sksk .saving-throw-bonus-group {
+.sksk .bonus-group {
   flex: 1;
 }
 
-.sksk .saving-throw-bonus-group .resource-label {
+.sksk .bonus-group .resource-label {
   font-size: 11px;
 }
 
