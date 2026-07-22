@@ -53,7 +53,7 @@
               </div>
               <div class="spell-cost" title="{{localize 'SKSK.Spell.ManaCost'}} / {{localize 'SKSK.Spell.APCost'}}">
                 <span class="spell-cost-line {{#if item.manaCostIncreased}}mana-cost-increased{{/if}}"><i class="fas fa-tint"></i>{{item.effectiveManaCost}}</span>
-                <span class="spell-cost-line"><i class="fas fa-bolt"></i>{{item.effectiveApCost}}</span>
+                <span class="spell-cost-line"><i class="fas fa-bolt {{#if item.apCostIconGood}}ap-cost-icon-good{{/if}}"></i><span class="{{#if item.castable}}ap-cost-text-good{{/if}}">{{item.effectiveApCost}}</span></span>
               </div>
               <div class="spell-range" title="{{localize 'SKSK.Spell.Ranges'}}">
                 {{#each item.system.ranges as |range|}}{{#unless @first}}/{{/unless}}{{range.distance}}m{{/each}}
@@ -137,7 +137,7 @@
               </div>
               <div class="spell-cost" title="{{localize 'SKSK.Spell.ManaCost'}} / {{localize 'SKSK.Spell.APCost'}}">
                 <span class="spell-cost-line {{#if item.manaCostIncreased}}mana-cost-increased{{/if}}"><i class="fas fa-tint"></i>{{item.effectiveManaCost}}</span>
-                <span class="spell-cost-line"><i class="fas fa-bolt"></i>{{item.effectiveApCost}}</span>
+                <span class="spell-cost-line"><i class="fas fa-bolt {{#if item.apCostIconGood}}ap-cost-icon-good{{/if}}"></i><span class="{{#if item.castable}}ap-cost-text-good{{/if}}">{{item.effectiveApCost}}</span></span>
               </div>
               <div class="spell-range" title="{{localize 'SKSK.Spell.Ranges'}}">
                 {{#each item.system.ranges as |range|}}{{#unless @first}}/{{/unless}}{{range.distance}}m{{/each}}
@@ -221,7 +221,7 @@
               </div>
               <div class="spell-cost" title="{{localize 'SKSK.Spell.ManaCost'}} / {{localize 'SKSK.Spell.APCost'}}">
                 <span class="spell-cost-line {{#if item.manaCostIncreased}}mana-cost-increased{{/if}}"><i class="fas fa-tint"></i>{{item.effectiveManaCost}}</span>
-                <span class="spell-cost-line"><i class="fas fa-bolt"></i>{{item.effectiveApCost}}</span>
+                <span class="spell-cost-line"><i class="fas fa-bolt {{#if item.apCostIconGood}}ap-cost-icon-good{{/if}}"></i><span class="{{#if item.castable}}ap-cost-text-good{{/if}}">{{item.effectiveApCost}}</span></span>
               </div>
               <div class="spell-range" title="{{localize 'SKSK.Spell.Ranges'}}">
                 {{#each item.system.ranges as |range|}}{{#unless @first}}/{{/unless}}{{range.distance}}m{{/each}}
@@ -302,7 +302,7 @@
               </div>
               <div class="spell-cost" title="{{localize 'SKSK.Spell.ManaCost'}} / {{localize 'SKSK.Spell.APCost'}}">
                 <span class="spell-cost-line {{#if item.manaCostIncreased}}mana-cost-increased{{/if}}"><i class="fas fa-tint"></i>{{item.effectiveManaCost}}</span>
-                <span class="spell-cost-line"><i class="fas fa-bolt"></i>{{item.effectiveApCost}}</span>
+                <span class="spell-cost-line"><i class="fas fa-bolt {{#if item.apCostIconGood}}ap-cost-icon-good{{/if}}"></i><span class="{{#if item.castable}}ap-cost-text-good{{/if}}">{{item.effectiveApCost}}</span></span>
               </div>
               <div class="spell-range" title="{{localize 'SKSK.Spell.Ranges'}}">
                 {{#each item.system.ranges as |range|}}{{#unless @first}}/{{/unless}}{{range.distance}}m{{/each}}

@@ -476,7 +476,14 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
         const { castable, missingLabel } = checkCombinedSpellPrerequisite(item.system, actor);
         item.castable = castable;
         item.missingLabel = missingLabel;
+      } else {
+        // Systemless spells have no prerequisite at all.
+        item.castable = true;
       }
+      // AP cost icon highlights blue when the spell isn't paying the mana
+      // shortfall surcharge (and is castable at all); its number turns
+      // green whenever the spell can be cast, regardless of mana state.
+      item.apCostIconGood = item.castable && !item.manaCostIncreased;
     }
 
     const sortSpells = (list) => list.slice().sort((a, b) => {
