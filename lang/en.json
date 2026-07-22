@@ -10,6 +10,32 @@
         "Hint": "Skill points required to reach level 1 of a 10-level skill. The requirement increases by this amount for each subsequent level."
       }
     },
+    "Movement": {
+      "All": "All",
+      "Walking": "Walking",
+      "Flying": "Flying",
+      "Hovering": "Hovering",
+      "Swimming": "Swimming",
+      "Climbing": "Climbing",
+      "Digging": "Digging"
+    },
+    "Size": {
+      "Tiny": "Tiny",
+      "Small": "Small",
+      "Medium": "Medium",
+      "Large": "Large",
+      "Huge": "Huge",
+      "Gigantic": "Gigantic",
+      "Titanic": "Titanic"
+    },
+    "General": {
+      "MovementSpeeds": "Movement Speeds",
+      "SizeCategory": "Size Category",
+      "FavoriteSkills": "Favorite Skills",
+      "NoFavoriteSkills": "No favorite skills yet - star one in the Skills tab.",
+      "AdditionalResources": "Additional Resources",
+      "AddResource": "Add resource"
+    },
     "Attribute": {
       "Str": {
         "long": "Strength",
@@ -259,7 +285,8 @@
       "Attributes": "Attributes",
       "Species": "Species",
       "Class": "Class",
-      "Skills": "Skills"
+      "Skills": "Skills",
+      "General": "General"
     },
     "Species": {
       "Type": {

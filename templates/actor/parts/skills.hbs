@@ -47,6 +47,9 @@
               {{skill.level}} / {{skill.maxLevel}}{{#if skill.bonus}} <span class="skill-bonus">(+{{skill.bonus}})</span>{{/if}}{{#if skill.weaknessStacks}} <span class="skill-weakness">(Weakness x{{skill.weaknessStacks}})</span>{{/if}}
             </div>
             <div class="item-controls">
+              <label class="skill-favorite-toggle" title="Favorite (show on the General tab)">
+                <input type="checkbox" name="system.skills.{{skill.key}}.favorite" {{checked skill.favorite}} />
+              </label>
               {{#if ../../isNpc}}
               <input type="text" name="system.skills.{{skill.key}}.formula" value="{{skill.formula}}"
                 placeholder="Formula (e.g. 2^L * 40)"

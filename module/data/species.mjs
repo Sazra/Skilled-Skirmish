@@ -18,6 +18,14 @@ export default class SKSKSpecies extends SKSKItemBase {
     // sum of this value from their main species and (if any) sub-species.
     schema.aura = new fields.NumberField({ ...requiredInteger, initial: 10, min: 8, max: 20 });
 
+    // The size category (CONFIG.SKSK.sizeCategories) a character of this
+    // species defaults to - only the main species' value is used (see
+    // helpers/movement.mjs#getActorSizeCategory), not any sub-species.
+    schema.sizeCategory = new fields.StringField({
+      required: true, blank: false, initial: "medium",
+      choices: ["tiny", "small", "medium", "large", "huge", "gigantic", "titanic"]
+    });
+
     // Bonuses to attributes other than Aura. Player-extensible list.
     schema.attributeBonuses = new fields.ArrayField(new fields.SchemaField({
       attribute: new fields.StringField({ required: true, blank: false, initial: "str" }),
@@ -98,6 +106,18 @@ export default class SKSKSpecies extends SKSKItemBase {
       }),
       school: new fields.StringField({ required: true, blank: false, initial: "fire" }),
       flatFormula: new fields.StringField({ required: true, blank: true, initial: "0" }),
+    }));
+
+    // Zero or more bonuses to a movement speed (CONFIG.SKSK.movementTypes),
+    // or to all of them at once via "all" - e.g. a Dragon's flying bonus,
+    // or a general speed bonus from a swift species. See
+    // helpers/movement.mjs#computeMovementSpeeds.
+    schema.movementBonuses = new fields.ArrayField(new fields.SchemaField({
+      movementType: new fields.StringField({
+        required: true, blank: false, initial: "all",
+        choices: ["all", "walking", "flying", "hovering", "swimming", "climbing", "digging"]
+      }),
+      bonus: new fields.NumberField({ required: true, nullable: false, initial: 0 }),
     }));
 
     return schema;

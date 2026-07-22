@@ -10,6 +10,32 @@
                 "Hint": "Fertigkeitspunkte, die für Stufe 1 einer 10-stufigen Fertigkeit nötig sind. Erhöht sich für jede weitere Stufe um diesen Betrag."
             }
         },
+        "Movement": {
+            "All": "Allgemein",
+            "Walking": "Laufend",
+            "Flying": "Fliegend",
+            "Hovering": "Schwebend",
+            "Swimming": "Schwimmend",
+            "Climbing": "Kletternd",
+            "Digging": "Grabend"
+        },
+        "Size": {
+            "Tiny": "Winzig",
+            "Small": "Klein",
+            "Medium": "Mittelgroß",
+            "Large": "Groß",
+            "Huge": "Riesig",
+            "Gigantic": "Gigantisch",
+            "Titanic": "Titanisch"
+        },
+        "General": {
+            "MovementSpeeds": "Bewegungsgeschwindigkeiten",
+            "SizeCategory": "Größenkategorie",
+            "FavoriteSkills": "Favorisierte Fertigkeiten",
+            "NoFavoriteSkills": "Noch keine favorisierten Fertigkeiten - im Fertigkeiten-Tab markieren.",
+            "AdditionalResources": "Zusätzliche Ressourcen",
+            "AddResource": "Ressource hinzufügen"
+        },
         "Attribute": {
             "Str": {
                 "long": "Stärke",
@@ -51,7 +77,8 @@
             "Attributes": "Attribute",
             "Species": "Spezies",
             "Class": "Klasse",
-            "Skills": "Fertigkeiten"
+            "Skills": "Fertigkeiten",
+            "General": "Allgemein"
         },
         "Skill": {
             "Weapon": {

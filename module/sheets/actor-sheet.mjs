@@ -11,6 +11,7 @@ import {
   computeSpellManaCost,
   computeSpellApCost,
 } from '../helpers/spells.mjs';
+import { computeMovementSpeeds, getActorSizeCategory } from '../helpers/movement.mjs';
 
 /**
  * Extend the basic ActorSheet with some very simple modifications
@@ -34,6 +35,8 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       delete: SKSKActorSheet.#onEffectAction,
       toggle: SKSKActorSheet.#onEffectAction,
       roll: SKSKActorSheet.#onRoll,
+      addResource: SKSKActorSheet.#addResource,
+      removeResource: SKSKActorSheet.#removeResource,
     },
     // Drop target for assigning existing Items (of any type) to this actor
     // by dragging them from the sidebar, a compendium, or another sheet.
@@ -45,6 +48,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     primary: {
       tabs: [
         { id: "description", label: "Description" },
+        { id: "general", label: "SKSK.SheetLabels.General" },
         { id: "items", label: "Items" },
         { id: "abilities", label: "Abilities" },
         { id: "skills", label: "SKSK.SheetLabels.Skills" },
@@ -160,6 +164,10 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     },
     description: {
       template: "systems/sksk/templates/actor/parts/description.hbs",
+      scrollable: [""],
+    },
+    general: {
+      template: "systems/sksk/templates/actor/parts/general.hbs",
       scrollable: [""],
     },
     items: {
@@ -296,6 +304,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
 
     this._prepareSkills(context);
     this._prepareSpells(context);
+    this._prepareGeneral(context);
 
     // Add roll data for TinyMCE editors.
     context.rollData = actor.getRollData();
@@ -550,6 +559,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
           toggle: data.toggle ?? false,
           formula: data.formula ?? '',
           bonus: skillBonusTotals[key] ?? 0,
+          favorite: data.favorite ?? false,
         };
 
         if (row.isStackable) {
@@ -599,6 +609,33 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
 
     context.skillCategories = skillCategories;
     context.isNpc = isNpc;
+  }
+
+  /**
+   * Build the General tab's data: movement speeds, size category,
+   * favorited skills (level only - see skills.hbs' favorite toggle), and
+   * the actor's user-extensible custom resources list. Must run after
+   * _prepareSkills, since it reuses its already-computed skillCategories
+   * rows to pull out the favorited ones.
+   *
+   * @param {Object} context The context to prepare.
+   *
+   * @return {undefined}
+   */
+  _prepareGeneral(context) {
+    const actor = this.actor;
+
+    const speeds = computeMovementSpeeds(actor);
+    context.movementSpeeds = Object.entries(CONFIG.SKSK.movementTypes).map(([key, label]) => ({
+      key, label, value: speeds[key],
+    }));
+
+    const sizeCategory = getActorSizeCategory(actor);
+    context.sizeCategoryLabel = CONFIG.SKSK.sizeCategories[sizeCategory] ?? sizeCategory;
+
+    context.favoriteSkills = Object.values(context.skillCategories ?? {})
+      .flat()
+      .filter(row => row.favorite);
   }
 
   /* -------------------------------------------- */
@@ -752,6 +789,30 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     // Use native DOM to hide the element
     li.style.display = 'none';
     this.render(false);
+  }
+
+  /**
+   * Append a blank entry to the actor's user-extensible custom resources
+   * list (General tab).
+   * @private
+   */
+  static async #addResource(event, target) {
+    const current = foundry.utils.deepClone(this.actor.system.customResources ?? []);
+    current.push({ name: '', value: 0, max: 0 });
+    await this.actor.update({ 'system.customResources': current });
+  }
+
+  /**
+   * Remove an entry from the actor's custom resources list.
+   * @param {PointerEvent} event   The originating click event.
+   * @param {HTMLElement} target   The capturing HTML element, carrying data-index.
+   * @private
+   */
+  static async #removeResource(event, target) {
+    const index = Number(target.dataset.index);
+    const current = foundry.utils.deepClone(this.actor.system.customResources ?? []);
+    current.splice(index, 1);
+    await this.actor.update({ 'system.customResources': current });
   }
 
   /**

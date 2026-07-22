@@ -13,6 +13,13 @@
   </div>
 
   <div class="resource">
+    <label class="resource-label">Size Category</label>
+    <select name="system.sizeCategory">
+      {{selectOptions sizeCategoryChoices selected=system.sizeCategory localize=true}}
+    </select>
+  </div>
+
+  <div class="resource">
     <label class="resource-label">Attribute Bonuses</label>
     <ol class="items-list">
       <li class="item flexrow items-header">
@@ -362,6 +369,40 @@
         </div>
         <div class="item-controls">
           <a class="item-control item-delete" data-action="removeArrayEntry" data-field="apCostReductions"
+            data-index="{{index}}" title="Remove">
+            <i class="fas fa-trash"></i>
+          </a>
+        </div>
+      </li>
+      {{/each}}
+    </ol>
+  </div>
+
+  <div class="resource">
+    <label class="resource-label">Movement Bonuses</label>
+    <ol class="items-list items-list-compact">
+      <li class="item flexrow items-header">
+        <div class="item-name">Type</div>
+        <div class="item-name">Bonus</div>
+        <div class="item-controls">
+          <a class="item-control item-create" data-action="addMovementBonus" title="Add movement bonus">
+            <i class="fas fa-plus"></i>
+          </a>
+        </div>
+      </li>
+      {{#each system.movementBonuses as |entry index|}}
+      <li class="item flexrow">
+        <div class="item-name">
+          <select name="system.movementBonuses.{{index}}.movementType">
+            {{selectOptions ../movementTypeChoices selected=entry.movementType localize=true}}
+          </select>
+        </div>
+        <div class="item-name">
+          <input type="text" name="system.movementBonuses.{{index}}.bonus" value="{{entry.bonus}}"
+            data-dtype="Number" />
+        </div>
+        <div class="item-controls">
+          <a class="item-control item-delete" data-action="removeArrayEntry" data-field="movementBonuses"
             data-index="{{index}}" title="Remove">
             <i class="fas fa-trash"></i>
           </a>

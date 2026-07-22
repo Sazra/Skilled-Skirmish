@@ -53,6 +53,17 @@ export default class SKSKItem extends SKSKItemBase {
       flatFormula: new fields.StringField({ required: true, blank: true, initial: "0" }),
     }));
 
+    // Zero or more bonuses to a movement speed (CONFIG.SKSK.movementTypes),
+    // or to all of them at once via "all" - e.g. Boots of Speed. See
+    // helpers/movement.mjs#computeMovementSpeeds.
+    schema.movementBonuses = new fields.ArrayField(new fields.SchemaField({
+      movementType: new fields.StringField({
+        required: true, blank: false, initial: "all",
+        choices: ["all", "walking", "flying", "hovering", "swimming", "climbing", "digging"]
+      }),
+      bonus: new fields.NumberField({ required: true, nullable: false, initial: 0 }),
+    }));
+
     return schema;
   }
 

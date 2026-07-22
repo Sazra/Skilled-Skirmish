@@ -44,6 +44,24 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       }),
     });
 
+    // User-extensible list of additional trackable resources (e.g. Rage,
+    // Ki points), shown on the General tab alongside Life/Mana/AP/etc.
+    schema.customResources = new fields.ArrayField(new fields.SchemaField({
+      name: new fields.StringField({ required: true, blank: true }),
+      value: new fields.NumberField({ ...requiredInteger, initial: 0 }),
+      max: new fields.NumberField({ ...requiredInteger, initial: 0 }),
+    }));
+
+    // Base movement speeds (in meters), one per CONFIG.SKSK.movementTypes -
+    // shown as a horizontal list on the General tab. See
+    // helpers/movement.mjs#computeMovementSpeeds for how item-granted
+    // bonuses (general or type-specific) stack on top of these.
+    const movementSchema = {};
+    for (const key of Object.keys(CONFIG.SKSK.movementTypes)) {
+      movementSchema[key] = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+    }
+    schema.movement = new fields.SchemaField(movementSchema);
+
     const attributeKeys = Object.keys(CONFIG.SKSK.attributes);
     const attributesSchema = {};
     for (const attribute of attributeKeys) {
@@ -67,6 +85,8 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
           points: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
           toggle: new fields.BooleanField({ initial: false }),
           formula: new fields.StringField({ required: true, blank: true }),
+          // Favorited skills show just their level on the General tab.
+          favorite: new fields.BooleanField({ initial: false }),
         });
       }
     }

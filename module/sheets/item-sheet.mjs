@@ -46,6 +46,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       addCombinedSchoolOverrideSkillBonus: SKSKItemSheet.#addCombinedSchoolOverrideSkillBonus,
       addManaCostReduction: SKSKItemSheet.#addManaCostReduction,
       addApCostReduction: SKSKItemSheet.#addApCostReduction,
+      addMovementBonus: SKSKItemSheet.#addMovementBonus,
     }
   };
 
@@ -221,6 +222,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
         Object.entries(CONFIG.SKSK.attributes).filter(([key]) => key !== 'aur')
       );
       context.canAddAbility = (item.system.abilities?.length ?? 0) < 3;
+      context.sizeCategoryChoices = CONFIG.SKSK.sizeCategories;
     }
 
     if (item.type === 'class') {
@@ -261,6 +263,8 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       context.advancedMagicSchoolChoices = CONFIG.SKSK.advancedMagicSchools;
       context.combinedSchoolChoices = CONFIG.SKSK.combinedMagicSchools;
       context.systemlessCategoryChoices = CONFIG.SKSK.systemlessMagicCategories;
+      // "all" (every movement type at once) plus each individual type.
+      context.movementTypeChoices = { all: 'SKSK.Movement.All', ...CONFIG.SKSK.movementTypes };
     }
 
     if (item.type === 'species' || item.type === 'class') {
@@ -448,6 +452,10 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
     await this.#addArrayEntry('apCostReductions', {
       spellType: 'simple', school: 'fire', flatFormula: '0',
     });
+  }
+
+  static async #addMovementBonus(event, target) {
+    await this.#addArrayEntry('movementBonuses', { movementType: 'all', bonus: 0 });
   }
 
   /**

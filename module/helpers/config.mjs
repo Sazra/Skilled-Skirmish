@@ -20,6 +20,35 @@ SKSK.speciesTypes = {
   sub: 'SKSK.Species.Type.Sub',
 };
 
+// The ways an actor can move, shown as a horizontal list on the General
+// tab. Items (of any equippable type) can grant a bonus to one specific
+// type, or to all of them at once via the special "all" entry below - see
+// helpers/movement.mjs#computeMovementSpeeds.
+SKSK.movementTypes = {
+  walking: 'SKSK.Movement.Walking',
+  flying: 'SKSK.Movement.Flying',
+  hovering: 'SKSK.Movement.Hovering',
+  swimming: 'SKSK.Movement.Swimming',
+  climbing: 'SKSK.Movement.Climbing',
+  digging: 'SKSK.Movement.Digging',
+};
+
+// A movement bonus entry's movementType field also accepts this, meaning
+// the bonus applies to every movement type at once rather than just one.
+SKSK.movementBonusAll = 'all';
+
+// A creature's size category - defaults per Species (see species.mjs),
+// shown as a simple readonly indicator on the General tab.
+SKSK.sizeCategories = {
+  tiny: 'SKSK.Size.Tiny',
+  small: 'SKSK.Size.Small',
+  medium: 'SKSK.Size.Medium',
+  large: 'SKSK.Size.Large',
+  huge: 'SKSK.Size.Huge',
+  gigantic: 'SKSK.Size.Gigantic',
+  titanic: 'SKSK.Size.Titanic',
+};
+
 SKSK.classTypes = {
   first: 'SKSK.Class.Type.First',
   second: 'SKSK.Class.Type.Second',
