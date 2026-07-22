@@ -915,16 +915,16 @@
   font-weight: bold;
 }
 
-/* AP cost icon: highlighted blue when the spell is castable and isn't
-   paying the mana shortfall surcharge; left at the default (gray) color
-   otherwise - including whenever the spell can't be cast at all. */
-.sksk .spell-cost-line .ap-cost-icon-good {
+/* Mana cost (icon+number): blue whenever the spell is castable without
+   that surcharge (see costGood in actor-sheet.mjs#_prepareSpells) - left
+   at the default (gray) color when it can't be cast at all. */
+.sksk .spell-cost-line.mana-cost-good {
   color: var(--color-level-info, #4da6ff);
+  font-weight: bold;
 }
 
-/* AP cost number: green whenever the spell can currently be cast,
-   regardless of its mana-cost state; left gray when it can't be cast. */
-.sksk .spell-cost-line .ap-cost-text-good {
+/* AP cost (icon+number): green under that same condition. */
+.sksk .spell-cost-line.ap-cost-good {
   color: var(--color-level-success, #3dd68c);
   font-weight: bold;
 }

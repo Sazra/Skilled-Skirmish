@@ -480,10 +480,11 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
         // Systemless spells have no prerequisite at all.
         item.castable = true;
       }
-      // AP cost icon highlights blue when the spell isn't paying the mana
-      // shortfall surcharge (and is castable at all); its number turns
-      // green whenever the spell can be cast, regardless of mana state.
-      item.apCostIconGood = item.castable && !item.manaCostIncreased;
+      // Whether the spell can be cast without the mana shortfall surcharge
+      // - mana cost (icon+number) turns blue and AP cost (icon+number)
+      // turns green in this case; mana cost turns red instead whenever the
+      // surcharge does apply (see manaCostIncreased above).
+      item.costGood = item.castable && !item.manaCostIncreased;
     }
 
     const sortSpells = (list) => list.slice().sort((a, b) => {
