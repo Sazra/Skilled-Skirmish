@@ -983,11 +983,11 @@
   font-weight: bold;
 }
 
-.sksk .spell-cost i {
+.sksk .spell-cost-line i {
   margin: 0 1px 0 4px;
 }
 
-.sksk .spell-cost i:first-child {
+.sksk .spell-cost-line i:first-child {
   margin-left: 0;
 }
 
@@ -1024,15 +1024,14 @@
   opacity: 0.5;
 }
 
+/* Replaces the mana/AP cost display entirely (see actor-spells.hbs) when a
+   spell can't be cast - e.g. its prerequisite skill/level isn't met. Its
+   own intrinsic (font-based) width means .spell-cost's flex stretch never
+   kicks in, so it needs an explicit auto/auto margin to actually center
+   within the column instead of sitting flush against one side. */
 .sksk .spell-prerequisite-warning {
-  /* Foundry core's ".flexrow > *" rule sets flex:1 on every direct child
-     of .item-name (which carries both "item-name" and "flexrow") - without
-     this override the icon grows to match the spell name's flex-basis
-     exactly, stealing that same amount of width from the name and
-     truncating it far earlier than necessary. */
-  flex: 0 0 auto;
-  margin: 0 1px;
-  font-size: 11px;
+  margin: 0 auto;
+  font-size: 13px;
   color: var(--color-level-warning, #ff8800);
 }
 

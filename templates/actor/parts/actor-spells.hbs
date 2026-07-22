@@ -46,14 +46,14 @@
                   </a>
                 </div>
                 <h4>{{item.name}}</h4>
-                {{#unless item.castable}}
-                <i class="fas fa-exclamation-triangle spell-prerequisite-warning"
-                  title="{{localize 'SKSK.Spell.PrerequisiteNotMet' details=item.missingLabel}}"></i>
-                {{/unless}}
               </div>
-              <div class="spell-cost" title="{{localize 'SKSK.Spell.ManaCost'}} / {{localize 'SKSK.Spell.APCost'}}">
+              <div class="spell-cost" title="{{#unless item.castable}}{{localize 'SKSK.Spell.PrerequisiteNotMet' details=item.missingLabel}}{{else}}{{localize 'SKSK.Spell.ManaCost'}} / {{localize 'SKSK.Spell.APCost'}}{{/unless}}">
+                {{#if item.castable}}
                 <span class="spell-cost-line {{#if item.manaCostIncreased}}mana-cost-increased{{else if item.costGood}}mana-cost-good{{/if}}"><i class="fas fa-tint"></i>{{item.effectiveManaCost}}</span>
                 <span class="spell-cost-line {{#if item.costGood}}ap-cost-good{{/if}}"><i class="fas fa-bolt"></i>{{item.effectiveApCost}}</span>
+                {{else}}
+                <i class="fas fa-exclamation-triangle spell-prerequisite-warning"></i>
+                {{/if}}
               </div>
               <div class="spell-range" title="{{localize 'SKSK.Spell.Ranges'}}">
                 {{#each item.system.ranges as |range|}}{{#unless @first}}/{{/unless}}{{range.distance}}m{{/each}}
@@ -130,14 +130,14 @@
                   </a>
                 </div>
                 <h4>{{item.name}}</h4>
-                {{#unless item.castable}}
-                <i class="fas fa-exclamation-triangle spell-prerequisite-warning"
-                  title="{{localize 'SKSK.Spell.PrerequisiteNotMet' details=item.missingLabel}}"></i>
-                {{/unless}}
               </div>
-              <div class="spell-cost" title="{{localize 'SKSK.Spell.ManaCost'}} / {{localize 'SKSK.Spell.APCost'}}">
+              <div class="spell-cost" title="{{#unless item.castable}}{{localize 'SKSK.Spell.PrerequisiteNotMet' details=item.missingLabel}}{{else}}{{localize 'SKSK.Spell.ManaCost'}} / {{localize 'SKSK.Spell.APCost'}}{{/unless}}">
+                {{#if item.castable}}
                 <span class="spell-cost-line {{#if item.manaCostIncreased}}mana-cost-increased{{else if item.costGood}}mana-cost-good{{/if}}"><i class="fas fa-tint"></i>{{item.effectiveManaCost}}</span>
                 <span class="spell-cost-line {{#if item.costGood}}ap-cost-good{{/if}}"><i class="fas fa-bolt"></i>{{item.effectiveApCost}}</span>
+                {{else}}
+                <i class="fas fa-exclamation-triangle spell-prerequisite-warning"></i>
+                {{/if}}
               </div>
               <div class="spell-range" title="{{localize 'SKSK.Spell.Ranges'}}">
                 {{#each item.system.ranges as |range|}}{{#unless @first}}/{{/unless}}{{range.distance}}m{{/each}}
@@ -214,14 +214,14 @@
                   </a>
                 </div>
                 <h4>{{item.name}}</h4>
-                {{#unless item.castable}}
-                <i class="fas fa-exclamation-triangle spell-prerequisite-warning"
-                  title="{{localize 'SKSK.Spell.PrerequisiteNotMet' details=item.missingLabel}}"></i>
-                {{/unless}}
               </div>
-              <div class="spell-cost" title="{{localize 'SKSK.Spell.ManaCost'}} / {{localize 'SKSK.Spell.APCost'}}">
+              <div class="spell-cost" title="{{#unless item.castable}}{{localize 'SKSK.Spell.PrerequisiteNotMet' details=item.missingLabel}}{{else}}{{localize 'SKSK.Spell.ManaCost'}} / {{localize 'SKSK.Spell.APCost'}}{{/unless}}">
+                {{#if item.castable}}
                 <span class="spell-cost-line {{#if item.manaCostIncreased}}mana-cost-increased{{else if item.costGood}}mana-cost-good{{/if}}"><i class="fas fa-tint"></i>{{item.effectiveManaCost}}</span>
                 <span class="spell-cost-line {{#if item.costGood}}ap-cost-good{{/if}}"><i class="fas fa-bolt"></i>{{item.effectiveApCost}}</span>
+                {{else}}
+                <i class="fas fa-exclamation-triangle spell-prerequisite-warning"></i>
+                {{/if}}
               </div>
               <div class="spell-range" title="{{localize 'SKSK.Spell.Ranges'}}">
                 {{#each item.system.ranges as |range|}}{{#unless @first}}/{{/unless}}{{range.distance}}m{{/each}}
