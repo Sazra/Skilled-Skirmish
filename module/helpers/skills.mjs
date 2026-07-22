@@ -1,7 +1,12 @@
 /**
- * Skill points required to REACH a given level of a skill.
- * 5-level skills: the level 1 cost doubles for every subsequent level.
- * 10-level skills: the level 1 cost is added again for every subsequent level.
+ * Skill points required to REACH a given level of a skill - cumulative,
+ * i.e. it always includes every earlier level's own cost too.
+ * 10-level skills: each new level's own cost rises linearly (level i costs
+ * base*i), so reaching level l costs base*(1+2+...+l) = base*l*(l+1)/2 -
+ * e.g. base 200 costs 200/600/1200 to reach level 1/2/3.
+ * 5-level skills: each new level's own cost doubles the previous one
+ * (level i costs base*2^(i-1)), so reaching level l costs
+ * base*(2^l - 1) - e.g. base 400 costs 400/1200/2800 to reach level 1/2/3.
  * @param {number} level     The level being checked (1-based).
  * @param {number} maxLevel  The skill's maximum level (5 or 10).
  * @return {number|null}     Points required, or null for binary (maxLevel 1) skills.
@@ -9,11 +14,11 @@
 export function getSkillPointThreshold(level, maxLevel) {
   if (maxLevel === 5) {
     const base = game.settings.get('sksk', 'skillPointsLevel5');
-    return base * Math.pow(2, level - 1);
+    return base * (Math.pow(2, level) - 1);
   }
   if (maxLevel === 10) {
     const base = game.settings.get('sksk', 'skillPointsLevel10');
-    return base * level;
+    return base * level * (level + 1) / 2;
   }
   return null;
 }

@@ -52,7 +52,7 @@
                 {{/unless}}
               </div>
               <div class="spell-cost" title="{{localize 'SKSK.Spell.ManaCost'}} / {{localize 'SKSK.Spell.APCost'}}">
-                <span class="spell-cost-line"><i class="fas fa-tint"></i>{{item.effectiveManaCost}}</span>
+                <span class="spell-cost-line {{#if item.manaCostIncreased}}mana-cost-increased{{/if}}"><i class="fas fa-tint"></i>{{item.effectiveManaCost}}</span>
                 <span class="spell-cost-line"><i class="fas fa-bolt"></i>{{item.system.apCost}}</span>
               </div>
               <div class="spell-range" title="{{localize 'SKSK.Spell.Ranges'}}">
@@ -136,7 +136,7 @@
                 {{/unless}}
               </div>
               <div class="spell-cost" title="{{localize 'SKSK.Spell.ManaCost'}} / {{localize 'SKSK.Spell.APCost'}}">
-                <span class="spell-cost-line"><i class="fas fa-tint"></i>{{item.effectiveManaCost}}</span>
+                <span class="spell-cost-line {{#if item.manaCostIncreased}}mana-cost-increased{{/if}}"><i class="fas fa-tint"></i>{{item.effectiveManaCost}}</span>
                 <span class="spell-cost-line"><i class="fas fa-bolt"></i>{{item.system.apCost}}</span>
               </div>
               <div class="spell-range" title="{{localize 'SKSK.Spell.Ranges'}}">
@@ -220,7 +220,7 @@
                 {{/unless}}
               </div>
               <div class="spell-cost" title="{{localize 'SKSK.Spell.ManaCost'}} / {{localize 'SKSK.Spell.APCost'}}">
-                <span class="spell-cost-line"><i class="fas fa-tint"></i>{{item.effectiveManaCost}}</span>
+                <span class="spell-cost-line {{#if item.manaCostIncreased}}mana-cost-increased{{/if}}"><i class="fas fa-tint"></i>{{item.effectiveManaCost}}</span>
                 <span class="spell-cost-line"><i class="fas fa-bolt"></i>{{item.system.apCost}}</span>
               </div>
               <div class="spell-range" title="{{localize 'SKSK.Spell.Ranges'}}">
@@ -301,7 +301,7 @@
                 <h4>{{item.name}}</h4>
               </div>
               <div class="spell-cost" title="{{localize 'SKSK.Spell.ManaCost'}} / {{localize 'SKSK.Spell.APCost'}}">
-                <span class="spell-cost-line"><i class="fas fa-tint"></i>{{item.effectiveManaCost}}</span>
+                <span class="spell-cost-line {{#if item.manaCostIncreased}}mana-cost-increased{{/if}}"><i class="fas fa-tint"></i>{{item.effectiveManaCost}}</span>
                 <span class="spell-cost-line"><i class="fas fa-bolt"></i>{{item.system.apCost}}</span>
               </div>
               <div class="spell-range" title="{{localize 'SKSK.Spell.Ranges'}}">

@@ -222,11 +222,15 @@ function computeMagicControlOrRitualismDiscountPercent(spellSystem, actor) {
  * has no caster to derive skill levels from.
  * @param {object} spellSystem   A spell's system data.
  * @param {Actor} actor          The would-be caster.
- * @return {number}
+ * @return {{cost: number, increased: boolean}}   increased is true only
+ *   when the level-shortfall surcharge applied (regardless of whether
+ *   other discounts brought the final number back below the base cost) -
+ *   the UI uses it to flag the cost in red.
  */
 export function computeSpellManaCost(spellSystem, actor) {
   let cost = spellSystem.manaCost ?? 0;
   let discountPercent = 0;
+  let increased = false;
   let school;
 
   if (spellSystem.spellType === 'simple' || spellSystem.spellType === 'advanced') {
@@ -234,6 +238,7 @@ export function computeSpellManaCost(spellSystem, actor) {
     const { diff } = checkSimpleOrAdvancedSpellPrerequisite(spellSystem, actor);
     if (diff > 0) {
       cost *= 1 + diff;
+      increased = true;
     } else {
       discountPercent = computeMagicControlOrRitualismDiscountPercent(spellSystem, actor);
     }
@@ -250,5 +255,5 @@ export function computeSpellManaCost(spellSystem, actor) {
   const totalPercent = Math.min(100, discountPercent + grantedPercent);
   cost = cost * (1 - totalPercent / 100) - grantedFlat;
 
-  return Math.max(0, Math.round(cost));
+  return { cost: Math.max(0, Math.round(cost)), increased };
 }

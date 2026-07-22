@@ -65,8 +65,9 @@ export async function rollSpellItem(item) {
   parts.push(`<div class="sksk-roll-description">${descriptionHTML}</div>`);
 
   if (actor) {
-    const manaCost = computeSpellManaCost(system, actor);
-    parts.push(`<div class="sksk-roll-mana-cost"><strong>${game.i18n.localize('SKSK.Spell.ManaCost')}:</strong> ${manaCost}</div>`);
+    const { cost, increased } = computeSpellManaCost(system, actor);
+    const costClass = increased ? 'sksk-roll-mana-cost-increased' : '';
+    parts.push(`<div class="sksk-roll-mana-cost"><strong>${game.i18n.localize('SKSK.Spell.ManaCost')}:</strong> <span class="${costClass}">${cost}</span></div>`);
   }
 
   if (system.attackRoll.enabled) {

@@ -907,6 +907,14 @@
   white-space: nowrap;
 }
 
+/* A Simple/Advanced spell cast below its magic school's required skill
+   level (see helpers/spells.mjs#computeSpellManaCost) - its mana cost
+   carries a +100%/level-of-shortfall surcharge. */
+.sksk .spell-cost-line.mana-cost-increased {
+  color: var(--color-level-error, #ff6060);
+  font-weight: bold;
+}
+
 .sksk .spell-cost i {
   margin: 0 1px 0 4px;
 }
@@ -968,6 +976,14 @@
 
 .sksk-chat-card .sksk-roll-description {
   margin-bottom: 6px;
+}
+
+/* A Simple/Advanced spell cast below its magic school's required skill
+   level (see helpers/spells.mjs#computeSpellManaCost) - its mana cost
+   carries a +100%/level-of-shortfall surcharge. */
+.sksk-chat-card .sksk-roll-mana-cost-increased {
+  color: var(--color-level-error, #ff6060);
+  font-weight: bold;
 }
 
 .sksk-chat-card .sksk-roll-attack,

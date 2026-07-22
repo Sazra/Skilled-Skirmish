@@ -463,7 +463,9 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     // directly on the item so the Spells tab can gray out uncastable
     // spells and show their real (possibly penalized/discounted) cost.
     for (const item of spells) {
-      item.effectiveManaCost = computeSpellManaCost(item.system, actor);
+      const { cost, increased } = computeSpellManaCost(item.system, actor);
+      item.effectiveManaCost = cost;
+      item.manaCostIncreased = increased;
       if (item.system.spellType === 'simple' || item.system.spellType === 'advanced') {
         const { castable, missingLabel } = checkSimpleOrAdvancedSpellPrerequisite(item.system, actor);
         item.castable = castable;
