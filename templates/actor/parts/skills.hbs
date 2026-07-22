@@ -49,6 +49,7 @@
             <div class="item-controls">
               <label class="skill-favorite-toggle" title="Favorite (show on the General tab)">
                 <input type="checkbox" name="system.skills.{{skill.key}}.favorite" {{checked skill.favorite}} />
+                <i class="{{#if skill.favorite}}fas{{else}}far{{/if}} fa-star"></i>
               </label>
               {{#if ../../isNpc}}
               <input type="text" name="system.skills.{{skill.key}}.formula" value="{{skill.formula}}"

@@ -401,9 +401,13 @@
 }
 
 /* Favorite-skill star toggle (General tab pulls in whichever skills have
-   this set - see actor-sheet.mjs#_prepareGeneral). Reskins the underlying
-   checkbox as a star rather than showing a checkbox in the Skills list. */
+   this set - see actor-sheet.mjs#_prepareGeneral). The checkbox itself is
+   visually hidden (inputs are replaced elements - ::before/::after
+   generated content isn't supported on them in any browser) and a sibling
+   <i> icon is styled based on its :checked state instead; the label
+   wrapping both still makes the whole thing clickable natively. */
 .sksk .skill-favorite-toggle {
+  position: relative;
   flex: 0 0 auto;
   display: flex;
   align-items: center;
@@ -411,26 +415,21 @@
 }
 
 .sksk .skill-favorite-toggle input[type="checkbox"] {
-  appearance: none;
-  width: auto;
-  height: auto;
+  position: absolute;
+  width: 1px;
+  height: 1px;
   margin: 0;
+  opacity: 0;
+}
+
+.sksk .skill-favorite-toggle i {
   font-size: 14px;
   color: var(--color-text-dark-secondary, #7a7971);
 }
 
-.sksk .skill-favorite-toggle input[type="checkbox"]::before {
-  font-family: "Font Awesome 5 Free";
-  font-weight: 400;
-  content: "\f005";
-}
-
-.sksk .skill-favorite-toggle input[type="checkbox"]:checked {
-  color: var(--color-level-warning, #ff8800);
-}
-
-.sksk .skill-favorite-toggle input[type="checkbox"]:checked::before {
+.sksk .skill-favorite-toggle input[type="checkbox"]:checked + i {
   font-weight: 900;
+  color: var(--color-level-warning, #ff8800);
 }
 
 /* Spells tab: a vertical strip of 4 spell-type tabs (Simple/Advanced/
