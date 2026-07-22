@@ -19,4 +19,18 @@ export function registerSettings() {
     type: Number,
     default: 200,
   });
+
+  // The base max carry weight, before the size-category multiplier (see
+  // helpers/inventory.mjs#computeMaxCarryWeight). Evaluated as a real Roll
+  // formula against the actor's own roll data, so it can reference
+  // "@attributes.str.value", "@attributes.str.mod", "@skills.<key>",
+  // "@lvl", etc.
+  game.settings.register('sksk', 'carryWeightFormula', {
+    name: 'SKSK.Settings.CarryWeightFormula.Name',
+    hint: 'SKSK.Settings.CarryWeightFormula.Hint',
+    scope: 'world',
+    config: true,
+    type: String,
+    default: '@attributes.str.value * 5',
+  });
 }

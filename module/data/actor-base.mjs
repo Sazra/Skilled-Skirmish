@@ -1,3 +1,5 @@
+import { computeSkillBonusTotals, evaluateSkillFormula, getSkillLevel } from '../helpers/skills.mjs';
+
 export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
 
   static defineSchema() {
@@ -150,6 +152,33 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     }
 
     data.lvl = this.resources.level.value;
+
+    // Every skill's current level, so world-configurable formulas (e.g.
+    // the carry-weight setting) can reference "@skills.<key>" - 0 for
+    // binary/stackable skills, which have no real "level" to begin with.
+    // Deliberately NOT calling the shared getActorSkillLevel helper here:
+    // for NPCs it evaluates the skill's formula via actor.getRollData(),
+    // which would call straight back into this method - infinite
+    // recursion. Uses the "lvl" already computed above instead.
+    if (this.parent) {
+      data.skills = {};
+      const isNpc = this.parent.type === 'npc';
+      const skillBonusTotals = computeSkillBonusTotals(this.parent);
+      for (const category of Object.values(CONFIG.SKSK.skills)) {
+        for (const [key, def] of Object.entries(category)) {
+          if (def.maxLevel !== 5 && def.maxLevel !== 10) {
+            data.skills[key] = 0;
+            continue;
+          }
+          const skillData = this.skills?.[key] ?? {};
+          const bonus = skillBonusTotals[key] ?? 0;
+          const points = isNpc
+            ? evaluateSkillFormula(skillData.formula ?? '', { lvl: data.lvl })
+            : (skillData.points ?? 0);
+          data.skills[key] = Math.min(def.maxLevel, getSkillLevel(points, def.maxLevel) + bonus);
+        }
+      }
+    }
 
     // Each custom resource with an abbreviation set exposes its current
     // value as "@<abbreviation, lowercased>" in any roll formula (damage,

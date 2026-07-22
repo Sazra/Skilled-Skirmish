@@ -1,3 +1,13 @@
 <section class="tab {{tab.cssClass}}" data-group="primary" data-tab="items">
+
+  <div class="resource flex-group-center">
+    <label class="resource-label">{{localize 'SKSK.Items.CarryWeight'}}</label>
+    <div class="resource-content flexrow flex-center flex-between">
+      <span>{{carriedWeight}}</span>
+      <span>/</span>
+      <span>{{maxCarryWeightDisplay}}</span>
+    </div>
+  </div>
+
   {{> "systems/sksk/templates/actor/parts/actor-items.hbs"}}
 </section>

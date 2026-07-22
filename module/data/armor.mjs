@@ -6,6 +6,11 @@ export default class SKSKArmor extends SKSKItemBase {
     const fields = foundry.data.fields;
     const schema = super.defineSchema();
 
+    schema.weight = new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 });
+    // Armor is always equippable, unlike the generic Item type.
+    schema.equipped = new fields.BooleanField({ initial: false });
+    schema.enchanted = new fields.BooleanField({ initial: false });
+
     // Zero or more mana-cost discounts for a specific magic school (of any
     // spellType) - e.g. an enchanted piece of armor granting a flat -5
     // discount on a school. percent stacks additively with every other

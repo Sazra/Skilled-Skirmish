@@ -136,8 +136,12 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
     } else if (itemType === 'item') {
       parts.attributes.template = `systems/sksk/templates/item/parts/item-gear.hbs`;
     } else if (itemType === 'armor') {
+      // Unlike the generic Item type, Armor has no Quantity field.
+      parts.header.template = `systems/sksk/templates/item/parts/header-armor.hbs`;
       parts.attributes.template = `systems/sksk/templates/item/parts/armor.hbs`;
     } else if (itemType === 'weapon') {
+      // Unlike the generic Item type, Weapon has no Quantity field.
+      parts.header.template = `systems/sksk/templates/item/parts/header-weapon.hbs`;
       parts.attributes.template = `systems/sksk/templates/item/parts/weapon.hbs`;
     }
 
@@ -228,6 +232,12 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
     if (item.type === 'class') {
       context.classTypeChoices = CONFIG.SKSK.classTypes;
       context.isFirstClass = item.system.classType === 'first';
+    }
+
+    // Equipped/Enchanted only matter (and are only shown) once an Item is
+    // marked equippable at all - unlike Armor/Weapon, which always are.
+    if (item.type === 'item') {
+      context.isEquippable = item.system.equippable;
     }
 
     if (item.type === 'species' || item.type === 'class' || item.type === 'talent') {

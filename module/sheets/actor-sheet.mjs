@@ -12,6 +12,7 @@ import {
   computeSpellApCost,
 } from '../helpers/spells.mjs';
 import { computeMovementSpeeds, getActorSizeCategory } from '../helpers/movement.mjs';
+import { computeCarriedWeight, computeMaxCarryWeight } from '../helpers/inventory.mjs';
 
 /**
  * Extend the basic ActorSheet with some very simple modifications
@@ -317,6 +318,15 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     this._prepareSkills(context);
     this._prepareSpells(context);
     this._prepareGeneral(context);
+
+    // Carried vs. max carry weight (see helpers/inventory.mjs), shown at
+    // the top of the Items tab. maxCarryWeight is Infinity for Titanic
+    // creatures - displayed as "unlimited" instead of a number.
+    const maxCarryWeight = await computeMaxCarryWeight(actor);
+    context.carriedWeight = Math.round(computeCarriedWeight(actor) * 10) / 10;
+    context.maxCarryWeightDisplay = maxCarryWeight === Infinity
+      ? game.i18n.localize('SKSK.Items.Unlimited')
+      : Math.round(maxCarryWeight * 10) / 10;
 
     // Add roll data for TinyMCE editors.
     context.rollData = actor.getRollData();

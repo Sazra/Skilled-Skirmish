@@ -1,4 +1,19 @@
 <section class="tab {{tab.cssClass}}" data-group="primary" data-tab="attributes">
+  <div class="grid grid-2col">
+    <div class="grid-span-1">
+      <label class="casting-method-option">
+        <input type="checkbox" name="system.equipped" {{checked system.equipped}} />
+        Equipped
+      </label>
+    </div>
+    <div class="grid-span-1">
+      <label class="casting-method-option">
+        <input type="checkbox" name="system.enchanted" {{checked system.enchanted}} />
+        Enchanted
+      </label>
+    </div>
+  </div>
+
   <div class="resource">
     <label class="resource-label">Mana Cost Reductions</label>
     <ol class="items-list items-list-compact">

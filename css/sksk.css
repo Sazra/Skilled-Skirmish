@@ -902,9 +902,26 @@
   color: var(--color-text-hyperlink);
 }
 
-.sksk .item-formula {
-  flex: 0 0 200px;
-  padding: 0 8px;
+/* Gear list (Items tab): weight, equipped/enchanted/consumable icons and
+   quantity, each a narrow fixed-width column - see actor-items.hbs. */
+.sksk .item-weight {
+  flex: 0 0 40px;
+  text-align: center;
+  font-size: 12px;
+}
+
+.sksk .item-equipped,
+.sksk .item-enchanted,
+.sksk .item-consumable {
+  flex: 0 0 32px;
+  text-align: center;
+  font-size: 12px;
+}
+
+.sksk .item-quantity {
+  flex: 0 0 32px;
+  text-align: center;
+  font-size: 12px;
 }
 
 .sksk .effects .item .effect-source,

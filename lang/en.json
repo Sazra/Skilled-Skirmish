@@ -8,6 +8,10 @@
       "SkillPointsLevel10": {
         "Name": "Skill Points for Level 10 Skills",
         "Hint": "Skill points required to reach level 1 of a 10-level skill. The requirement increases by this amount for each subsequent level."
+      },
+      "CarryWeightFormula": {
+        "Name": "Max Carry Weight Formula",
+        "Hint": "Base max carry weight, before size-category scaling (Tiny 25%, Small 75%, Medium 100%, Large 150%, Huge 300%, Gigantic 1000%, Titanic unlimited). A real roll formula - reference attributes as @attributes.str.value or @attributes.str.mod, skill levels as @skills.<key> (e.g. @skills.axe), and character level as @lvl."
       }
     },
     "Movement": {
@@ -41,6 +45,20 @@
     "CharacterSection": {
       "Data": "Data",
       "Biography": "Biography"
+    },
+    "Items": {
+      "CarryWeight": "Carry Weight",
+      "Unlimited": "Unlimited",
+      "Weight": "Weight",
+      "WeightAbbr": "Wt.",
+      "Equipped": "Equipped",
+      "EquippedAbbr": "Eq.",
+      "Enchanted": "Enchanted",
+      "EnchantedAbbr": "Ench.",
+      "Quantity": "Quantity",
+      "QuantityAbbr": "Qty",
+      "Consumable": "Consumable",
+      "ConsumableAbbr": "Cons."
     },
     "Gender": {
       "Male": "Male",

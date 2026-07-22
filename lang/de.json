@@ -8,6 +8,10 @@
             "SkillPointsLevel10": {
                 "Name": "Notwendige Punkte für Stufe 10 Fertigkeiten",
                 "Hint": "Fertigkeitspunkte, die für Stufe 1 einer 10-stufigen Fertigkeit nötig sind. Erhöht sich für jede weitere Stufe um diesen Betrag."
+            },
+            "CarryWeightFormula": {
+                "Name": "Formel für maximales Tragegewicht",
+                "Hint": "Basis-Maximalgewicht, vor der Skalierung durch die Größenkategorie (Winzig 25%, Klein 75%, Mittelgroß 100%, Groß 150%, Riesig 300%, Gigantisch 1000%, Titanisch unbegrenzt). Eine echte Würfelformel - Attribute als @attributes.str.value oder @attributes.str.mod, Fertigkeitsstufen als @skills.<Kürzel> (z.B. @skills.axe), Charakterlevel als @lvl."
             }
         },
         "Movement": {
@@ -41,6 +45,20 @@
         "CharacterSection": {
             "Data": "Daten",
             "Biography": "Biographie"
+        },
+        "Items": {
+            "CarryWeight": "Trage-Gewicht",
+            "Unlimited": "Unbegrenzt",
+            "Weight": "Gewicht",
+            "WeightAbbr": "Gew.",
+            "Equipped": "Ausgerüstet",
+            "EquippedAbbr": "Ausg.",
+            "Enchanted": "Verzaubert",
+            "EnchantedAbbr": "Verz.",
+            "Quantity": "Anzahl",
+            "QuantityAbbr": "Anz.",
+            "Consumable": "Verbrauchbar",
+            "ConsumableAbbr": "Verbr."
         },
         "Gender": {
             "Male": "Männlich",

@@ -9,6 +9,13 @@ export default class SKSKItem extends SKSKItemBase {
 
     schema.quantity = new fields.NumberField({ ...requiredInteger, initial: 1, min: 1 });
     schema.weight = new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 });
+    // Whether this item can be equipped at all (a ring, wand, etc. -
+    // as opposed to a mundane trade good). equipped/enchanted are only
+    // meaningful (and only shown) once this is on.
+    schema.equippable = new fields.BooleanField({ initial: false });
+    schema.equipped = new fields.BooleanField({ initial: false });
+    schema.enchanted = new fields.BooleanField({ initial: false });
+    schema.consumable = new fields.BooleanField({ initial: false });
 
     schema.roll = new fields.SchemaField({
       diceNum: new fields.NumberField({ ...requiredInteger, initial: 1, min: 1 }),

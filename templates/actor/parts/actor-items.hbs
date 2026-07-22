@@ -1,7 +1,11 @@
 <ol class='items-list'>
   <li class='item flexrow items-header'>
     <div class='item-name'>{{localize 'Name'}}</div>
-    <div class='item-formula'>{{localize 'Roll Formula'}}</div>
+    <div class='item-weight' title="{{localize 'SKSK.Items.Weight'}}">{{localize 'SKSK.Items.WeightAbbr'}}</div>
+    <div class='item-equipped' title="{{localize 'SKSK.Items.Equipped'}}">{{localize 'SKSK.Items.EquippedAbbr'}}</div>
+    <div class='item-enchanted' title="{{localize 'SKSK.Items.Enchanted'}}">{{localize 'SKSK.Items.EnchantedAbbr'}}</div>
+    <div class='item-quantity' title="{{localize 'SKSK.Items.Quantity'}}">{{localize 'SKSK.Items.QuantityAbbr'}}</div>
+    <div class='item-consumable' title="{{localize 'SKSK.Items.Consumable'}}">{{localize 'SKSK.Items.ConsumableAbbr'}}</div>
     <div class='item-controls'>
       <a
         class='item-control item-create'
@@ -44,7 +48,33 @@
         </div>
         <h4>{{item.name}}</h4>
       </div>
-      <div class='item-formula item-prop'>{{item.system.formula}}</div>
+      <div class='item-weight'>{{item.system.weight}}</div>
+      <div class='item-equipped'>
+        {{#if (eq item.type "item")}}
+          {{#if item.system.equippable}}
+          <i class="fas {{#if item.system.equipped}}fa-check{{else}}fa-times{{/if}}"></i>
+          {{/if}}
+        {{else}}
+        <i class="fas {{#if item.system.equipped}}fa-check{{else}}fa-times{{/if}}"></i>
+        {{/if}}
+      </div>
+      <div class='item-enchanted'>
+        {{#if (eq item.type "item")}}
+          {{#if item.system.equippable}}
+          <i class="fas {{#if item.system.enchanted}}fa-check{{else}}fa-times{{/if}}"></i>
+          {{/if}}
+        {{else}}
+        <i class="fas {{#if item.system.enchanted}}fa-check{{else}}fa-times{{/if}}"></i>
+        {{/if}}
+      </div>
+      <div class='item-quantity'>
+        {{#if (eq item.type "item")}}{{item.system.quantity}}{{/if}}
+      </div>
+      <div class='item-consumable'>
+        {{#if (eq item.type "item")}}
+        <i class="fas {{#if item.system.consumable}}fa-check{{else}}fa-times{{/if}}"></i>
+        {{/if}}
+      </div>
       <div class='item-controls'>
         <a
           class='item-control item-edit'
