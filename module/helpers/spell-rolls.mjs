@@ -1,4 +1,4 @@
-import { computeDamageBonus, computeSavingThrowValue, computeSpellManaCost } from './spells.mjs';
+import { computeDamageBonus, computeSavingThrowValue, computeSpellManaCost, computeSpellApCost } from './spells.mjs';
 import { getActorSkillLevel, getSkillLabel } from './skills.mjs';
 
 /**
@@ -68,6 +68,9 @@ export async function rollSpellItem(item) {
     const { cost, increased } = computeSpellManaCost(system, actor);
     const costClass = increased ? 'sksk-roll-mana-cost-increased' : '';
     parts.push(`<div class="sksk-roll-mana-cost"><strong>${game.i18n.localize('SKSK.Spell.ManaCost')}:</strong> <span class="${costClass}">${cost}</span></div>`);
+
+    const apCost = computeSpellApCost(system, actor);
+    parts.push(`<div class="sksk-roll-ap-cost"><strong>${game.i18n.localize('SKSK.Spell.APCost')}:</strong> ${apCost}</div>`);
   }
 
   if (system.attackRoll.enabled) {

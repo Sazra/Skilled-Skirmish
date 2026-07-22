@@ -45,6 +45,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       addCombinedSchoolOverrideAttributeBonus: SKSKItemSheet.#addCombinedSchoolOverrideAttributeBonus,
       addCombinedSchoolOverrideSkillBonus: SKSKItemSheet.#addCombinedSchoolOverrideSkillBonus,
       addManaCostReduction: SKSKItemSheet.#addManaCostReduction,
+      addApCostReduction: SKSKItemSheet.#addApCostReduction,
     }
   };
 
@@ -439,7 +440,13 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
 
   static async #addManaCostReduction(event, target) {
     await this.#addArrayEntry('manaCostReductions', {
-      spellType: 'simple', school: 'fire', percent: 0, flatFormula: '0',
+      spellType: 'simple', school: 'fire', percent: 0, flatFormula: '0', allowBelowOne: false,
+    });
+  }
+
+  static async #addApCostReduction(event, target) {
+    await this.#addArrayEntry('apCostReductions', {
+      spellType: 'simple', school: 'fire', flatFormula: '0',
     });
   }
 

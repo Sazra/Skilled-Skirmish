@@ -161,36 +161,95 @@ export function checkSimpleOrAdvancedSpellPrerequisite(spellSystem, actor) {
 }
 
 /**
- * Item types whose manaCostReductions entries can discount an actor's
- * mana cost for a specific magic school.
+ * Item types whose manaCostReductions/apCostReductions entries can
+ * discount an actor's mana/AP cost for a specific magic school.
  */
-const MANA_COST_REDUCTION_ITEM_TYPES = ['talent', 'class', 'species', 'item', 'armor', 'weapon'];
+const COST_REDUCTION_ITEM_TYPES = ['talent', 'class', 'species', 'item', 'armor', 'weapon'];
+
+/**
+ * The magicSchool/combinedSchool/systemlessCategory key that identifies a
+ * spell's "school" regardless of its spellType, for cost-reduction lookups.
+ * @param {object} spellSystem
+ * @return {string}
+ */
+function getSpellSchool(spellSystem) {
+  if (spellSystem.spellType === 'simple' || spellSystem.spellType === 'advanced') return spellSystem.magicSchool;
+  if (spellSystem.spellType === 'combined') return spellSystem.combinedSchool;
+  return spellSystem.systemlessCategory;
+}
+
+/**
+ * Whether a spell currently qualifies for the "prerequisites met" discount
+ * bucket (as opposed to being uncastable, or - Simple/Advanced only -
+ * castable purely via the level-shortfall leeway, which gets a surcharge
+ * instead of a discount - see computeSpellManaCost). Mastered spells and
+ * Systemless spells (which have no prerequisite at all) always qualify.
+ * @param {object} spellSystem
+ * @param {Actor} actor
+ * @return {boolean}
+ */
+function isSpellDiscountEligible(spellSystem, actor) {
+  if (spellSystem.spellType === 'simple' || spellSystem.spellType === 'advanced') {
+    return checkSimpleOrAdvancedSpellPrerequisite(spellSystem, actor).diff === 0;
+  }
+  if (spellSystem.spellType === 'combined') {
+    return checkCombinedSpellPrerequisite(spellSystem, actor).castable;
+  }
+  return true;
+}
 
 /**
  * Sum every manaCostReductions entry across the actor's Talent/Class/
  * Species/Item/Armor/Weapon items that match a specific spellType+school
  * (e.g. combined/necromancy) - percent reductions add together, as do flat
  * ones (each flat entry's formula supports "L" for the actor's level).
+ * allowBelowOne is true if ANY matching entry has that switch enabled.
  * @param {Actor} actor
  * @param {string} spellType   "simple" | "advanced" | "combined" | "systemless".
  * @param {string} school      The matching magicSchool/combinedSchool/systemlessCategory key.
- * @return {{percent: number, flat: number}}
+ * @return {{percent: number, flat: number, allowBelowOne: boolean}}
  */
 function getManaCostReduction(actor, spellType, school) {
   let percent = 0;
   let flat = 0;
+  let allowBelowOne = false;
   const rollData = actor.getRollData();
 
   for (const item of actor.items) {
-    if (!MANA_COST_REDUCTION_ITEM_TYPES.includes(item.type)) continue;
+    if (!COST_REDUCTION_ITEM_TYPES.includes(item.type)) continue;
     for (const entry of item.system.manaCostReductions ?? []) {
       if (entry.spellType !== spellType || entry.school !== school) continue;
       percent += entry.percent ?? 0;
       flat += evaluateSkillFormula(entry.flatFormula, rollData);
+      if (entry.allowBelowOne) allowBelowOne = true;
     }
   }
 
-  return { percent, flat };
+  return { percent, flat, allowBelowOne };
+}
+
+/**
+ * Sum every apCostReductions entry across the actor's Talent/Class/
+ * Species/Item/Armor/Weapon items that match a specific spellType+school -
+ * each entry's flatFormula supports "L" for the actor's level.
+ * @param {Actor} actor
+ * @param {string} spellType
+ * @param {string} school
+ * @return {number}
+ */
+function getApCostReduction(actor, spellType, school) {
+  let flat = 0;
+  const rollData = actor.getRollData();
+
+  for (const item of actor.items) {
+    if (!COST_REDUCTION_ITEM_TYPES.includes(item.type)) continue;
+    for (const entry of item.system.apCostReductions ?? []) {
+      if (entry.spellType !== spellType || entry.school !== school) continue;
+      flat += evaluateSkillFormula(entry.flatFormula, rollData);
+    }
+  }
+
+  return flat;
 }
 
 /**
@@ -217,7 +276,12 @@ function computeMagicControlOrRitualismDiscountPercent(spellSystem, actor) {
  *   Systemless spell - which has no prerequisite at all) the cost is
  *   discounted by the caster's Magic Control/Ritualism skill (see above).
  * - On top of either, every matching Talent/Class/Species/Item/Armor/
- *   Weapon manaCostReductions grant for that school always applies.
+ *   Weapon manaCostReductions grant for that school always applies - flat
+ *   first, then percent (e.g. a base cost of 10 with a flat -4 and a 50%
+ *   discount becomes (10-4)*0.5 = 3, not (10*0.5)-4 = 1).
+ * The result is always rounded down and floored at 1 - unless a flat
+ * reduction that actually applied has its allowBelowOne switch on, in
+ * which case it can go as low as 0 (never negative).
  * Only meaningful once the spell is owned by an actor - a template item
  * has no caster to derive skill levels from.
  * @param {object} spellSystem   A spell's system data.
@@ -231,29 +295,60 @@ export function computeSpellManaCost(spellSystem, actor) {
   let cost = spellSystem.manaCost ?? 0;
   let discountPercent = 0;
   let increased = false;
-  let school;
 
   if (spellSystem.spellType === 'simple' || spellSystem.spellType === 'advanced') {
-    school = spellSystem.magicSchool;
     const { diff } = checkSimpleOrAdvancedSpellPrerequisite(spellSystem, actor);
     if (diff > 0) {
       cost *= 1 + diff;
       increased = true;
-    } else {
-      discountPercent = computeMagicControlOrRitualismDiscountPercent(spellSystem, actor);
     }
-  } else if (spellSystem.spellType === 'combined') {
-    school = spellSystem.combinedSchool;
-    const { castable } = checkCombinedSpellPrerequisite(spellSystem, actor);
-    if (castable) discountPercent = computeMagicControlOrRitualismDiscountPercent(spellSystem, actor);
-  } else {
-    school = spellSystem.systemlessCategory;
+  }
+  if (!increased && isSpellDiscountEligible(spellSystem, actor)) {
     discountPercent = computeMagicControlOrRitualismDiscountPercent(spellSystem, actor);
   }
 
-  const { percent: grantedPercent, flat: grantedFlat } = getManaCostReduction(actor, spellSystem.spellType, school);
+  const school = getSpellSchool(spellSystem);
+  const { percent: grantedPercent, flat: grantedFlat, allowBelowOne } =
+    getManaCostReduction(actor, spellSystem.spellType, school);
   const totalPercent = Math.min(100, discountPercent + grantedPercent);
-  cost = cost * (1 - totalPercent / 100) - grantedFlat;
 
-  return { cost: Math.max(0, Math.round(cost)), increased };
+  // Flat reductions apply first, then percentage ones.
+  cost = (cost - grantedFlat) * (1 - totalPercent / 100);
+  cost = Math.floor(cost);
+  cost = allowBelowOne ? Math.max(0, cost) : Math.max(1, cost);
+
+  return { cost, increased };
+}
+
+/**
+ * Compute the actual AP cost an actor pays to cast a spell. AP costs can
+ * only ever be reduced (never increased): a spell must be Mastered or have
+ * its prerequisites met/overridden (see isSpellDiscountEligible - the same
+ * condition gating the Magic Control/Ritualism mana discount) for any
+ * reduction to apply at all. When it does:
+ * - Every matching Talent/Class/Species/Item/Armor/Weapon apCostReductions
+ *   grant for that school applies first (flat, "L" supported).
+ * - The caster's Chant Shortening skill level then reduces it further, but
+ *   only while the cost is still above 2 - Chant Shortening alone can never
+ *   push it below 2 (so it can only ever reach 1 if the earlier flat
+ *   reductions already got it there first).
+ * AP cost is never allowed below 1, from any combination of sources.
+ * @param {object} spellSystem
+ * @param {Actor} actor
+ * @return {number}
+ */
+export function computeSpellApCost(spellSystem, actor) {
+  let apCost = spellSystem.apCost ?? 1;
+
+  if (isSpellDiscountEligible(spellSystem, actor)) {
+    const school = getSpellSchool(spellSystem);
+    apCost -= getApCostReduction(actor, spellSystem.spellType, school);
+
+    if (apCost > 2) {
+      const chantShorteningLevel = getActorSkillLevel(actor, 'chantShortening');
+      apCost = Math.max(2, apCost - chantShorteningLevel);
+    }
+  }
+
+  return Math.max(1, Math.floor(apCost));
 }

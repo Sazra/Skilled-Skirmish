@@ -9,6 +9,7 @@ import {
   checkCombinedSpellPrerequisite,
   checkSimpleOrAdvancedSpellPrerequisite,
   computeSpellManaCost,
+  computeSpellApCost,
 } from '../helpers/spells.mjs';
 
 /**
@@ -466,6 +467,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       const { cost, increased } = computeSpellManaCost(item.system, actor);
       item.effectiveManaCost = cost;
       item.manaCostIncreased = increased;
+      item.effectiveApCost = computeSpellApCost(item.system, actor);
       if (item.system.spellType === 'simple' || item.system.spellType === 'advanced') {
         const { castable, missingLabel } = checkSimpleOrAdvancedSpellPrerequisite(item.system, actor);
         item.castable = castable;
