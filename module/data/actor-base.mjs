@@ -175,7 +175,7 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
           const points = isNpc
             ? evaluateSkillFormula(skillData.formula ?? '', { lvl: data.lvl })
             : (skillData.points ?? 0);
-          data.skills[key] = Math.min(def.maxLevel, getSkillLevel(points, def.maxLevel) + bonus);
+          data.skills[key] = getSkillLevel(points, def.maxLevel, bonus);
         }
       }
     }
