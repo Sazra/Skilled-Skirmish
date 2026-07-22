@@ -37,6 +37,8 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       roll: SKSKActorSheet.#onRoll,
       addResource: SKSKActorSheet.#addResource,
       removeResource: SKSKActorSheet.#removeResource,
+      addAdditionalData: SKSKActorSheet.#addAdditionalData,
+      removeAdditionalData: SKSKActorSheet.#removeAdditionalData,
     },
     // Drop target for assigning existing Items (of any type) to this actor
     // by dragging them from the sidebar, a compendium, or another sheet.
@@ -47,7 +49,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
   static TABS = {
     primary: {
       tabs: [
-        { id: "description", label: "Description" },
+        { id: "character", label: "SKSK.SheetLabels.Character" },
         { id: "general", label: "SKSK.SheetLabels.General" },
         { id: "items", label: "Items" },
         { id: "abilities", label: "Abilities" },
@@ -55,7 +57,15 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
         { id: "spells", label: "Spells" },
         { id: "effects", label: "Effects" },
       ],
-      initial: "description",
+      initial: "character",
+    },
+    // Sub-tabs shown inside the Character tab.
+    characterSections: {
+      tabs: [
+        { id: "data", label: "SKSK.CharacterSection.Data" },
+        { id: "biography", label: "SKSK.CharacterSection.Biography" },
+      ],
+      initial: "data",
     },
     // Sub-tabs shown inside the Skills tab; one per CONFIG.SKSK.skills
     // category. Hardcoded (rather than derived from CONFIG.SKSK) because
@@ -162,8 +172,8 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     tabs: {
       template: "systems/sksk/templates/actor/parts/tab-navigation.hbs",
     },
-    description: {
-      template: "systems/sksk/templates/actor/parts/description.hbs",
+    character: {
+      template: "systems/sksk/templates/actor/parts/character.hbs",
       scrollable: [""],
     },
     general: {
@@ -270,6 +280,8 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     // With more than one tab group declared, the base _prepareContext no
     // longer auto-populates context.tabs - prepare both groups ourselves.
     context.tabs = this._prepareTabs('primary');
+    context.characterSectionTabs = Object.values(this._prepareTabs('characterSections'));
+    context.genderChoices = CONFIG.SKSK.genders;
     context.skillTabs = Object.values(this._prepareTabs('skillCategories'));
     context.spellTypeTabs = Object.values(this._prepareTabs('spellTypes'));
     context.spellSimpleSchoolTabs = Object.values(this._prepareTabs('spellSimpleSchools'));
@@ -697,7 +709,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     // render (Foundry only wires up clicks after that, it doesn't apply an
     // initial state to nested groups on its own).
     for (const group of [
-      'primary', 'skillCategories', 'spellTypes',
+      'primary', 'characterSections', 'skillCategories', 'spellTypes',
       'spellSimpleSchools', 'spellAdvancedSchools', 'spellCombinedSchools', 'spellSystemlessCategories',
     ]) {
       const active = this.tabGroups?.[group] ?? this.constructor.TABS[group].initial;
@@ -817,6 +829,30 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     const current = foundry.utils.deepClone(this.actor.system.customResources ?? []);
     current.splice(index, 1);
     await this.actor.update({ 'system.customResources': current });
+  }
+
+  /**
+   * Append a blank entry to the actor's user-extensible additional data
+   * list (Character tab's Data section).
+   * @private
+   */
+  static async #addAdditionalData(event, target) {
+    const current = foundry.utils.deepClone(this.actor.system.additionalData ?? []);
+    current.push({ label: '', value: '' });
+    await this.actor.update({ 'system.additionalData': current });
+  }
+
+  /**
+   * Remove an entry from the actor's additional data list.
+   * @param {PointerEvent} event   The originating click event.
+   * @param {HTMLElement} target   The capturing HTML element, carrying data-index.
+   * @private
+   */
+  static async #removeAdditionalData(event, target) {
+    const index = Number(target.dataset.index);
+    const current = foundry.utils.deepClone(this.actor.system.additionalData ?? []);
+    current.splice(index, 1);
+    await this.actor.update({ 'system.additionalData': current });
   }
 
   /**

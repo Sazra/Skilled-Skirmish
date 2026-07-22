@@ -15,6 +15,14 @@ SKSK.attributes = {
   app: 'SKSK.Attribute.App.long',
 };
 
+// Character tab's Data section.
+SKSK.genders = {
+  male: 'SKSK.Gender.Male',
+  female: 'SKSK.Gender.Female',
+  hermaphrodite: 'SKSK.Gender.Hermaphrodite',
+  genderless: 'SKSK.Gender.Genderless',
+};
+
 SKSK.speciesTypes = {
   main: 'SKSK.Species.Type.Main',
   sub: 'SKSK.Species.Type.Sub',

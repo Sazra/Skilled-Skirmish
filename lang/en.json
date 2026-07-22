@@ -38,6 +38,28 @@
       "Abbreviation": "Var.",
       "AbbreviationHint": "Up to 4 letters. Usable in roll formulas as @<abbreviation>, e.g. @rage."
     },
+    "CharacterSection": {
+      "Data": "Data",
+      "Biography": "Biography"
+    },
+    "Gender": {
+      "Male": "Male",
+      "Female": "Female",
+      "Hermaphrodite": "Hermaphrodite",
+      "Genderless": "Genderless"
+    },
+    "Data": {
+      "Gender": "Gender",
+      "Age": "Age",
+      "Height": "Height",
+      "SkinColor": "Skin Color",
+      "HairColor": "Hair Color",
+      "EyeColor": "Eye Color",
+      "AdditionalData": "Additional Data",
+      "Label": "Label",
+      "Value": "Value",
+      "AddEntry": "Add entry"
+    },
     "Attribute": {
       "Str": {
         "long": "Strength",
@@ -288,7 +310,8 @@
       "Species": "Species",
       "Class": "Class",
       "Skills": "Skills",
-      "General": "General"
+      "General": "General",
+      "Character": "Character"
     },
     "Species": {
       "Type": {

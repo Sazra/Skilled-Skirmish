@@ -38,6 +38,26 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     schema.magicResistance = new fields.NumberField({ ...requiredInteger, initial: 10 });
     schema.biography = new fields.StringField({ required: true, blank: true });
 
+    // Character tab's "Data" section - free-flavor fields shown alongside
+    // the biography, none of which feed into any calculation.
+    schema.gender = new fields.StringField({
+      required: true, blank: false, initial: "genderless",
+      choices: ["male", "female", "hermaphrodite", "genderless"]
+    });
+    schema.age = new fields.StringField({ required: true, blank: true });
+    // Independent of sizeCategory (that's a coarse combat-relevant
+    // category; this is the actual, precise height).
+    schema.height = new fields.StringField({ required: true, blank: true });
+    schema.skinColor = new fields.StringField({ required: true, blank: true });
+    schema.hairColor = new fields.StringField({ required: true, blank: true });
+    schema.eyeColor = new fields.StringField({ required: true, blank: true });
+    // User-extensible list of further free-flavor data points (numbers or
+    // words), e.g. "Zodiac Sign: Leo" or "Weight: 70kg".
+    schema.additionalData = new fields.ArrayField(new fields.SchemaField({
+      label: new fields.StringField({ required: true, blank: true }),
+      value: new fields.StringField({ required: true, blank: true }),
+    }));
+
     schema.resources = new fields.SchemaField({
       level: new fields.SchemaField({
         value: new fields.NumberField({ ...requiredInteger, initial: 1 })

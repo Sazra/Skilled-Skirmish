@@ -38,6 +38,28 @@
             "Abbreviation": "Kürzel",
             "AbbreviationHint": "Maximal 4 Buchstaben. Nutzbar in Würfelformeln als @<Kürzel>, z.B. @rage."
         },
+        "CharacterSection": {
+            "Data": "Daten",
+            "Biography": "Biographie"
+        },
+        "Gender": {
+            "Male": "Männlich",
+            "Female": "Weiblich",
+            "Hermaphrodite": "Hermaphrodit",
+            "Genderless": "Geschlechtslos"
+        },
+        "Data": {
+            "Gender": "Geschlecht",
+            "Age": "Alter",
+            "Height": "Körpergröße",
+            "SkinColor": "Hautfarbe",
+            "HairColor": "Haarfarbe",
+            "EyeColor": "Augenfarbe",
+            "AdditionalData": "Weitere Daten",
+            "Label": "Bezeichnung",
+            "Value": "Wert",
+            "AddEntry": "Eintrag hinzufügen"
+        },
         "Attribute": {
             "Str": {
                 "long": "Stärke",
@@ -80,7 +102,8 @@
             "Species": "Spezies",
             "Class": "Klasse",
             "Skills": "Fertigkeiten",
-            "General": "Allgemein"
+            "General": "Allgemein",
+            "Character": "Charakter"
         },
         "Skill": {
             "Weapon": {
