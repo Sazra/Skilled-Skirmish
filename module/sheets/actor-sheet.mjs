@@ -404,7 +404,11 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
           description: ability.description,
           sourceId: source.id,
           sourceImg: source.img,
-          sourceLabel: `${source.name}: Level ${requiredLevel}`,
+          sourceLabel: `${source.name}: Lvl ${requiredLevel}`,
+          // Sorted after species abilities, then by unlock level - see the
+          // sort below the item-collection loop.
+          sortGroup: 1,
+          requiredLevel,
         });
       });
     };
@@ -419,6 +423,9 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
           sourceImg: source.img,
           // Species abilities are labeled with only the species' name.
           sourceLabel: source.name,
+          // Always sorted first - see the sort below the item-collection loop.
+          sortGroup: 0,
+          requiredLevel: 0,
         });
       }
     };
@@ -444,7 +451,10 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       }
       // Append to talents.
       else if (i.type === 'talent') {
-        i.typeLabel = game.i18n.localize(CONFIG.SKSK.talentTypes[i.system.talentType]);
+        // "Level" is abbreviated to "Lvl" here (but not on the Talent item
+        // sheet's own Type dropdown) to save space in the Abilities tab's
+        // item-source column, which is shared with class/species abilities.
+        i.typeLabel = game.i18n.localize(CONFIG.SKSK.talentTypes[i.system.talentType]).replace('Level ', 'Lvl ');
         talents.push(i);
       }
       // Append to classes.
@@ -462,6 +472,11 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       // Spells are handled separately by _prepareSpells - they're grouped
       // and sorted rather than shown as one flat list.
     }
+
+    // Abilities tab order: every species' abilities, then class abilities
+    // by the level they unlock at, then talents (rendered separately in
+    // abilities.hbs, after this list).
+    classAndSpeciesAbilities.sort((a, b) => a.sortGroup - b.sortGroup || a.requiredLevel - b.requiredLevel);
 
     // Assign and return
     context.gear = gear;

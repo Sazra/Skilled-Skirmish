@@ -12,6 +12,24 @@
       </div>
     </li>
 
+    {{#each classAndSpeciesAbilities as |ability|}}
+    <li class="item flexrow" data-item-id="{{ability.sourceId}}">
+      <div class="item-source">{{ability.sourceLabel}}</div>
+      <div class="item-name">
+        <div class="item-image">
+          <img src="{{ability.sourceImg}}" title="{{ability.sourceLabel}}" width="24" height="24" />
+        </div>
+        <h4>{{ability.name}}</h4>
+      </div>
+      <div class="item-description" title="{{ability.description}}">{{ability.description}}</div>
+      <div class="item-controls">
+        <a class="item-control item-edit" data-action="editItem" title="Open {{ability.sourceLabel}}">
+          <i class="fas fa-edit"></i>
+        </a>
+      </div>
+    </li>
+    {{/each}}
+
     {{#each talents as |talent|}}
     <li class="item flexrow" data-item-id="{{talent._id}}">
       <div class="item-source">{{talent.typeLabel}}</div>
@@ -30,24 +48,6 @@
         </a>
         <a class="item-control item-delete" data-action="deleteItem" title="{{localize 'DOCUMENT.Delete' type='Talent'}}">
           <i class="fas fa-trash"></i>
-        </a>
-      </div>
-    </li>
-    {{/each}}
-
-    {{#each classAndSpeciesAbilities as |ability|}}
-    <li class="item flexrow" data-item-id="{{ability.sourceId}}">
-      <div class="item-source">{{ability.sourceLabel}}</div>
-      <div class="item-name">
-        <div class="item-image">
-          <img src="{{ability.sourceImg}}" title="{{ability.sourceLabel}}" width="24" height="24" />
-        </div>
-        <h4>{{ability.name}}</h4>
-      </div>
-      <div class="item-description" title="{{ability.description}}">{{ability.description}}</div>
-      <div class="item-controls">
-        <a class="item-control item-edit" data-action="editItem" title="Open {{ability.sourceLabel}}">
-          <i class="fas fa-edit"></i>
         </a>
       </div>
     </li>
