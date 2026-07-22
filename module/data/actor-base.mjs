@@ -46,11 +46,21 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
 
     // User-extensible list of additional trackable resources (e.g. Rage,
     // Ki points), shown on the General tab alongside Life/Mana/AP/etc.
+    // abbreviation (up to 4 letters, enforced by the input's maxlength
+    // rather than here) exposes this resource's current value as a roll
+    // formula variable - see getRollData below.
     schema.customResources = new fields.ArrayField(new fields.SchemaField({
       name: new fields.StringField({ required: true, blank: true }),
+      abbreviation: new fields.StringField({ required: true, blank: true }),
       value: new fields.NumberField({ ...requiredInteger, initial: 0 }),
       max: new fields.NumberField({ ...requiredInteger, initial: 0 }),
     }));
+
+    // Overrides the size category (CONFIG.SKSK.sizeCategories) this actor
+    // would otherwise inherit from its main Species item - e.g. an
+    // individual that's smaller than typical for its species. Blank means
+    // "use the species default" - see helpers/movement.mjs#getActorSizeCategory.
+    schema.sizeCategory = new fields.StringField({ required: true, blank: true, initial: "" });
 
     // Base movement speeds (in meters), one per CONFIG.SKSK.movementTypes -
     // shown as a horizontal list on the General tab. See
@@ -120,6 +130,14 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     }
 
     data.lvl = this.resources.level.value;
+
+    // Each custom resource with an abbreviation set exposes its current
+    // value as "@<abbreviation, lowercased>" in any roll formula (damage,
+    // the generic Item roll formula, attribute rolls, etc).
+    for (const resource of this.customResources ?? []) {
+      if (!resource.abbreviation) continue;
+      data[resource.abbreviation.toLowerCase()] = resource.value;
+    }
 
     return data;
   }

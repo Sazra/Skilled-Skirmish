@@ -35,13 +35,17 @@ export function computeMovementSpeeds(actor) {
 }
 
 /**
- * An actor's size category (CONFIG.SKSK.sizeCategories), derived from
- * their main Species item - sub-species don't affect it. Defaults to
- * "medium" if the actor has no Species item at all.
+ * An actor's size category (CONFIG.SKSK.sizeCategories): the actor's own
+ * override (system.sizeCategory, editable in the sheet header - e.g. an
+ * individual smaller than typical for its species) if set, otherwise
+ * derived from their main Species item (sub-species don't affect it), or
+ * "medium" if neither is set.
  * @param {Actor} actor
  * @return {string}
  */
 export function getActorSizeCategory(actor) {
+  if (actor.system.sizeCategory) return actor.system.sizeCategory;
+
   const mainSpecies = actor.items.find(i => i.type === 'species' && i.system.speciesType === 'main')
     ?? actor.items.find(i => i.type === 'species');
   return mainSpecies?.system.sizeCategory ?? 'medium';

@@ -11,7 +11,9 @@ import { getActorSkillLevel, getSkillLabel } from './skills.mjs';
 async function renderDamageRoll(damage, actor) {
   const bonus = computeDamageBonus(damage, actor);
   const formula = bonus ? `${damage.formula} + ${bonus}` : damage.formula;
-  const roll = await new Roll(formula).evaluate();
+  // rollData exposes the actor's custom resources (see actor-base.mjs#
+  // getRollData) as "@<abbreviation>", usable directly in the formula.
+  const roll = await new Roll(formula, actor?.getRollData()).evaluate();
   const typeLabel = game.i18n.localize(CONFIG.SKSK.damageTypes[damage.damageType] ?? damage.damageType);
   const rendered = await roll.render();
   return `<div class="sksk-roll-line"><strong>${typeLabel} ${game.i18n.localize('SKSK.Spell.Roll.Damage')}</strong></div>${rendered}`;
@@ -76,7 +78,7 @@ export async function rollSpellItem(item) {
   if (system.attackRoll.enabled) {
     const attackDamages = system.damages.filter(d => d.trigger === 'attack');
     for (let i = 1; i <= system.attackRoll.count; i++) {
-      const attackRoll = await new Roll('1d20').evaluate();
+      const attackRoll = await new Roll('1d20', actor?.getRollData()).evaluate();
       const rendered = await attackRoll.render();
       parts.push(`<div class="sksk-roll-attack"><strong>${game.i18n.format('SKSK.Spell.Roll.Attack', { number: i })}</strong></div>${rendered}`);
 
@@ -153,7 +155,7 @@ export async function rollSavingThrowFromChat(itemUuid, saveIndex) {
   best ??= { label: '', value: 0 };
 
   const dc = computeSavingThrowValue(save, item.actor);
-  const roll = await new Roll(`1d20 + ${best.value}`).evaluate();
+  const roll = await new Roll(`1d20 + ${best.value}`, actor.getRollData()).evaluate();
   const success = roll.total >= dc;
   const saveLabel = save.label || game.i18n.format('SKSK.Spell.SavingThrow.Numbered', { number: saveIndex + 1 });
   const outcome = game.i18n.localize(success ? 'SKSK.Spell.Roll.Success' : 'SKSK.Spell.Roll.Failure');

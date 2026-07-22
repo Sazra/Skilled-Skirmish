@@ -612,9 +612,10 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
   }
 
   /**
-   * Build the General tab's data: movement speeds, size category,
-   * favorited skills (level only - see skills.hbs' favorite toggle), and
-   * the actor's user-extensible custom resources list. Must run after
+   * Build the General tab's data: movement speeds, favorited skills (level
+   * only - see skills.hbs' favorite toggle), and the actor's user-
+   * extensible custom resources list. Also resolves the size category
+   * shown (and editable) in the sheet header. Must run after
    * _prepareSkills, since it reuses its already-computed skillCategories
    * rows to pull out the favorited ones.
    *
@@ -630,8 +631,11 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       key, label, value: speeds[key],
     }));
 
-    const sizeCategory = getActorSizeCategory(actor);
-    context.sizeCategoryLabel = CONFIG.SKSK.sizeCategories[sizeCategory] ?? sizeCategory;
+    // Header dropdown: shows the resolved size (override or species
+    // default) but only ever writes an explicit override on change - see
+    // getActorSizeCategory.
+    context.sizeCategory = getActorSizeCategory(actor);
+    context.sizeCategoryChoices = CONFIG.SKSK.sizeCategories;
 
     context.favoriteSkills = Object.values(context.skillCategories ?? {})
       .flat()

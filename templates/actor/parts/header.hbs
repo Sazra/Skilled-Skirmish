@@ -46,4 +46,10 @@
     <input type="text" name="system.resources.level.value" value="{{system.resources.level.value}}"
       data-dtype="Number" />
   </div>
+  <div class="header-size flex-group-center">
+    <label for="system.sizeCategory" class="resource-label">{{localize 'SKSK.General.SizeCategory'}}</label>
+    <select name="system.sizeCategory">
+      {{selectOptions sizeCategoryChoices selected=sizeCategory localize=true}}
+    </select>
+  </div>
 </header>

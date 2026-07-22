@@ -255,12 +255,17 @@
   flex: 1;
 }
 
-.sksk .sheet-header .header-level {
+.sksk .sheet-header .header-level,
+.sksk .sheet-header .header-size {
   flex: 0 0 70px;
   display: flex;
   flex-direction: column;
   align-self: center;
   gap: 4px;
+}
+
+.sksk .sheet-header .header-size {
+  flex-basis: 100px;
 }
 
 .sksk .sheet-header .header-level input {
@@ -1050,8 +1055,8 @@
   line-height: normal;
 }
 
-/* General tab: horizontal movement-speed list, size category, favorite
-   skills and custom resources. */
+/* General tab: horizontal movement-speed list, and a two-column layout
+   with favorite skills on the left, custom resources on the right. */
 .sksk .movement-speed-entry {
   text-align: center;
 }
@@ -1060,6 +1065,19 @@
   font-size: 14px;
 }
 
-.sksk .size-category-value {
-  font-size: 14px;
+.sksk .general-columns {
+  gap: 10px;
+}
+
+/* Up to 4 letters (see the input's maxlength) - no need for the full
+   flex:2 share every other .item-name column gets by default. */
+.sksk .resource-abbreviation {
+  width: 100%;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+/* Size category dropdown, moved into the sheet header next to Level. */
+.sksk .header-size select {
+  width: 100%;
 }

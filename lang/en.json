@@ -34,7 +34,9 @@
       "FavoriteSkills": "Favorite Skills",
       "NoFavoriteSkills": "No favorite skills yet - star one in the Skills tab.",
       "AdditionalResources": "Additional Resources",
-      "AddResource": "Add resource"
+      "AddResource": "Add resource",
+      "Abbreviation": "Var.",
+      "AbbreviationHint": "Up to 4 letters. Usable in roll formulas as @<abbreviation>, e.g. @rage."
     },
     "Attribute": {
       "Str": {

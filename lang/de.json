@@ -34,7 +34,9 @@
             "FavoriteSkills": "Favorisierte Fertigkeiten",
             "NoFavoriteSkills": "Noch keine favorisierten Fertigkeiten - im Fertigkeiten-Tab markieren.",
             "AdditionalResources": "Zusätzliche Ressourcen",
-            "AddResource": "Ressource hinzufügen"
+            "AddResource": "Ressource hinzufügen",
+            "Abbreviation": "Kürzel",
+            "AbbreviationHint": "Maximal 4 Buchstaben. Nutzbar in Würfelformeln als @<Kürzel>, z.B. @rage."
         },
         "Attribute": {
             "Str": {
