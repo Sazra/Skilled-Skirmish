@@ -60,6 +60,9 @@
       "Consumable": "Consumable",
       "ConsumableAbbr": "Cons."
     },
+    "Life": {
+      "MaxComputed": "Automatically calculated from Classes, Constitution, Health, Tenacity and abilities - not directly editable"
+    },
     "Gender": {
       "Male": "Male",
       "Female": "Female",
@@ -358,6 +361,10 @@
         "Bonus": "Bonus Talent",
         "Bloodline": "Bloodline"
       }
+    },
+    "Ability": {
+      "LifeBonusFormula": "Life Bonus (scaling)",
+      "LifeBonusFormulaHint": "Added to max life once this ability is unlocked. Supports \"L\" for the actor's level, e.g. \"L * 2\"."
     },
     "Spell": {
       "ManaCost": "Mana",

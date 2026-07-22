@@ -13,6 +13,7 @@ import {
 } from '../helpers/spells.mjs';
 import { computeMovementSpeeds, getActorSizeCategory } from '../helpers/movement.mjs';
 import { computeCarriedWeight, computeMaxCarryWeight } from '../helpers/inventory.mjs';
+import { getClassAbilityLevels, actorHasAdvancedClass } from '../helpers/abilities.mjs';
 
 /**
  * Extend the basic ActorSheet with some very simple modifications
@@ -376,24 +377,14 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
 
     // Whether the actor also holds an Advanced Class raises the Second
     // Class unlock levels from 13/18/24 to 14/19/25.
-    const hasAdvancedClass = context.items.some(
-      (i) => i.type === 'class' && i.system.classType === 'advanced'
-    );
-
-    // The level at which each of a class's 3 abilities unlocks, by class type.
-    const classAbilityLevels = {
-      first: [1, 6, 12],
-      second: hasAdvancedClass ? [14, 19, 25] : [13, 18, 24],
-      advanced: [13, 13, 13],
-      third: [25, 25, 25],
-    };
+    const hasAdvancedClass = actorHasAdvancedClass(this.actor);
 
     // Abilities granted by class/species items, flattened into a single
     // list for the Abilities tab (alongside talents).
     const classAndSpeciesAbilities = [];
 
     const collectClassAbilities = (source) => {
-      const levels = classAbilityLevels[source.system.classType] ?? [1, 1, 1];
+      const levels = getClassAbilityLevels(source.system.classType, hasAdvancedClass);
       source.system.abilities?.forEach((ability, index) => {
         if (!ability.name && !ability.description) return;
         const requiredLevel = levels[index] ?? 1;

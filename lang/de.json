@@ -60,6 +60,9 @@
             "Consumable": "Verbrauchbar",
             "ConsumableAbbr": "Verbr."
         },
+        "Life": {
+            "MaxComputed": "Automatisch berechnet aus Klassen, Konstitution, Gesundheit, Zähigkeit und Fähigkeiten - nicht direkt bearbeitbar"
+        },
         "Gender": {
             "Male": "Männlich",
             "Female": "Weiblich",
@@ -358,6 +361,10 @@
                 "Bonus": "Bonustalent",
                 "Bloodline": "Blutlinie"
             }
+        },
+        "Ability": {
+            "LifeBonusFormula": "Lebens-Bonus (skalierend)",
+            "LifeBonusFormulaHint": "Wird zum maximalen Leben addiert, sobald diese Fähigkeit freigeschaltet ist. Unterstützt \"L\" für das Level des Akteurs, z.B. \"L * 2\"."
         },
         "Spell": {
             "ManaCost": "Mana",

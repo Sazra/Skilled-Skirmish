@@ -632,6 +632,16 @@
   font-weight: bold;
 }
 
+/* Max Life is no longer user-editable (see data/actor-base.mjs#
+   prepareDerivedData) - styled to look distinct from the Life value input
+   next to it, rather than like an editable field. */
+.sksk .resource-computed {
+  flex: 1;
+  text-align: center;
+  color: var(--color-text-dark-secondary, #7a7971);
+  font-style: italic;
+}
+
 .sksk .items-header {
   height: 28px;
   margin: 2px 0;

@@ -77,6 +77,9 @@
   <div class="resource">
     <label class="resource-label">Ability</label>
     <textarea name="system.ability" rows="4" placeholder="Describe the ability">{{system.ability}}</textarea>
+    <label class="resource-label">{{localize 'SKSK.Ability.LifeBonusFormula'}}</label>
+    <input type="text" name="system.lifeBonusFormula" value="{{system.lifeBonusFormula}}"
+      title="{{localize 'SKSK.Ability.LifeBonusFormulaHint'}}" placeholder="0" />
     {{> "systems/sksk/templates/item/parts/item-effects.hbs"}}
   </div>
 

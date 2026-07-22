@@ -29,6 +29,10 @@ export default class SKSKTalent extends SKSKItemBase {
     // Any Active Effects on the item itself belong to this ability.
     schema.ability = new fields.StringField({ required: true, blank: true });
 
+    // A scaling life bonus this ability always grants, supporting "L" for
+    // the actor's level (e.g. "L * 2") - see helpers/life.mjs#computeMaxLife.
+    schema.lifeBonusFormula = new fields.StringField({ required: true, blank: true, initial: "0" });
+
     // Zero or more overrides granting the ability to cast spells from a
     // specific combined magic school (CONFIG.SKSK.combinedMagicSchools) up
     // to a computed max level, bypassing that school's spells' own

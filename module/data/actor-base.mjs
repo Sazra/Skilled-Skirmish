@@ -1,4 +1,5 @@
 import { computeSkillBonusTotals, evaluateSkillFormula, getSkillLevel } from '../helpers/skills.mjs';
+import { computeMaxLife } from '../helpers/life.mjs';
 
 export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
 
@@ -9,7 +10,14 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
 
     schema.life = new fields.SchemaField({
       value: new fields.NumberField({ ...requiredInteger, initial: 10, min: 0 }),
-      max: new fields.NumberField({ ...requiredInteger, initial: 10 })
+      // No longer directly user-editable - overwritten every data
+      // preparation by helpers/life.mjs#computeMaxLife (see
+      // prepareDerivedData below).
+      max: new fields.NumberField({ ...requiredInteger, initial: 10 }),
+      // Flat bonus added on top of the computed max life, after every
+      // other multiplier - not meant to be hand-edited, but targeted by
+      // Active Effects via "system.life.bonus".
+      bonus: new fields.NumberField({ ...requiredInteger, initial: 0 })
     });
     // Damage taken after life reaches 0 is deducted from negative life
     // instead of killing the character outright.
@@ -138,6 +146,14 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       if (!this.attributes[key]) continue;
       this.attributes[key].mod = Math.floor((this.attributes[key].value - 10) / 2);
       this.attributes[key].label = game.i18n.localize(CONFIG.SKSK.attributes[key]) ?? key;
+    }
+
+    // Depends on the Constitution modifier just computed above, so must
+    // run after the attributes loop. Requires this.parent (the owning
+    // Actor, for its items and skill levels) - unavailable in a few edge
+    // cases (e.g. schema validation off a bare data model).
+    if (this.parent) {
+      this.life.max = computeMaxLife(this.parent);
     }
   }
 
