@@ -1,0 +1,41 @@
+<div class="sksk-materials-config">
+  <p class="hint">{{localize 'SKSK.Settings.Materials.Hint'}}</p>
+
+  <ol class="items-list">
+    <li class="item flexrow items-header">
+      <div class="item-name">{{localize 'SKSK.Materials.Name'}}</div>
+      <div class="item-name">{{localize 'SKSK.Materials.MaterialBonus'}}</div>
+      <div class="item-name">{{localize 'SKSK.Materials.ManaCapacity'}}</div>
+      <div class="item-controls">
+        <a class="item-control" data-action="addMaterial" title="{{localize 'SKSK.Materials.Add'}}">
+          <i class="fas fa-plus"></i>
+        </a>
+      </div>
+    </li>
+    {{#each materials as |material index|}}
+    <li class="item flexrow">
+      <div class="item-name">
+        <input type="text" name="materials.{{index}}.name" value="{{material.name}}" />
+      </div>
+      <div class="item-name">
+        <input type="text" name="materials.{{index}}.materialBonus" value="{{material.materialBonus}}"
+          title="{{localize 'SKSK.Materials.VariableHint'}}" placeholder="0" />
+      </div>
+      <div class="item-name">
+        <input type="text" name="materials.{{index}}.manaCapacity" value="{{material.manaCapacity}}"
+          title="{{localize 'SKSK.Materials.VariableHint'}}" placeholder="0" />
+      </div>
+      <div class="item-controls">
+        <a class="item-control item-delete" data-action="removeMaterial" data-index="{{index}}"
+          title="{{localize 'SKSK.Materials.Remove'}}">
+          <i class="fas fa-trash"></i>
+        </a>
+      </div>
+    </li>
+    {{else}}
+    <li class="item flexrow">
+      <div class="item-name">{{localize 'SKSK.Materials.None'}}</div>
+    </li>
+    {{/each}}
+  </ol>
+</div>

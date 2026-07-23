@@ -11,5 +11,6 @@ export const preloadHandlebarsTemplates = async function () {
     'systems/sksk/templates/actor/parts/actor-effects.hbs',
     // Item partials
     'systems/sksk/templates/item/parts/item-effects.hbs',
+    'systems/sksk/templates/item/parts/material-section.hbs',
   ]);
 };

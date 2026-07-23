@@ -6,6 +6,7 @@ import {
 } from '../helpers/effects.mjs';
 import { getSkillBonusChoices } from '../helpers/skills.mjs';
 import { computeSavingThrowValue, computeDamageBonus, computeCombinedSchoolOverrideLevel } from '../helpers/spells.mjs';
+import { getMaterials, getMaterial } from '../helpers/materials.mjs';
 
 /**
  * Extend the basic ItemSheet with some very simple modifications
@@ -275,6 +276,28 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       context.systemlessCategoryChoices = CONFIG.SKSK.systemlessMagicCategories;
       // "all" (every movement type at once) plus each individual type.
       context.movementTypeChoices = { all: 'SKSK.Movement.All', ...CONFIG.SKSK.movementTypes };
+    }
+
+    // Material selection (Item/Armor/Weapon only) - see helpers/materials.mjs.
+    // The override inputs for materialBonus/manaCapacity are only shown
+    // when the selected material's own value is "?" (individually
+    // configurable per item). The resulting bonuses/totalManaCapacity are
+    // derived-only (set in each type's prepareDerivedData, not part of the
+    // schema), so context.system (a toObject() clone, source data only)
+    // doesn't carry them - passed through as their own context properties
+    // straight from the live item.system instead.
+    if (['item', 'armor', 'weapon'].includes(item.type)) {
+      context.materials = getMaterials();
+      const material = getMaterial(item.system.material);
+      context.materialBonusIsVariable = material?.materialBonus === '?';
+      context.manaCapacityIsVariable = material?.manaCapacity === '?';
+      context.totalManaCapacity = item.system.totalManaCapacity;
+      if (item.type === 'weapon') {
+        context.materialAttackBonus = item.system.materialAttackBonus;
+        context.materialDamageBonus = item.system.materialDamageBonus;
+      } else if (item.type === 'armor') {
+        context.materialArmorBonus = item.system.materialArmorBonus;
+      }
     }
 
     if (item.type === 'species' || item.type === 'class') {

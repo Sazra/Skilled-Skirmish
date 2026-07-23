@@ -12,6 +12,11 @@
       "CarryWeightFormula": {
         "Name": "Max Carry Weight Formula",
         "Hint": "Base max carry weight, before size-category scaling (Tiny 25%, Small 75%, Medium 100%, Large 150%, Huge 300%, Gigantic 1000%, Titanic unlimited). A real roll formula - reference attributes as @attributes.str.value or @attributes.str.mod, skill levels as @skills.<key> (e.g. @skills.axe), and character level as @lvl."
+      },
+      "Materials": {
+        "Name": "Materials",
+        "Hint": "Materials selectable on Items/Armor/Weapons. Material Bonus and Mana Capacity may each be a number, or \"?\" to let each item using this material set its own value instead.",
+        "Label": "Configure Materials"
       }
     },
     "Movement": {
@@ -59,6 +64,23 @@
       "QuantityAbbr": "Qty",
       "Consumable": "Consumable",
       "ConsumableAbbr": "Cons."
+    },
+    "Materials": {
+      "Name": "Name",
+      "MaterialBonus": "Material Bonus",
+      "ManaCapacity": "Mana Capacity",
+      "VariableHint": "A non-negative number, or \"?\" to let each item using this material set its own value",
+      "Add": "Add Material",
+      "Remove": "Remove",
+      "None": "No materials defined yet.",
+      "Material": "Material",
+      "NoMaterial": "None",
+      "MaterialBonusOverride": "Material Bonus (this item)",
+      "ManaCapacityOverride": "Mana Capacity (this item)",
+      "TotalManaCapacity": "Total Mana Capacity",
+      "AttackBonus": "Attack Bonus (Material)",
+      "DamageBonus": "Damage Bonus (Material)",
+      "ArmorBonus": "Armor Bonus (Material)"
     },
     "Life": {
       "MaxComputed": "Automatically calculated from Classes, Constitution, Health, Tenacity and abilities - not directly editable"

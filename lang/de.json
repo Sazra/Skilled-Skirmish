@@ -12,6 +12,11 @@
             "CarryWeightFormula": {
                 "Name": "Formel für maximales Tragegewicht",
                 "Hint": "Basis-Maximalgewicht, vor der Skalierung durch die Größenkategorie (Winzig 25%, Klein 75%, Mittelgroß 100%, Groß 150%, Riesig 300%, Gigantisch 1000%, Titanisch unbegrenzt). Eine echte Würfelformel - Attribute als @attributes.str.value oder @attributes.str.mod, Fertigkeitsstufen als @skills.<Kürzel> (z.B. @skills.axe), Charakterlevel als @lvl."
+            },
+            "Materials": {
+                "Name": "Materialien",
+                "Hint": "Materialien, die in Gegenständen/Rüstungen/Waffen ausgewählt werden können. Materialbonus und Manakapazität können jeweils eine Zahl sein, oder \"?\", damit jeder Gegenstand mit diesem Material einen eigenen Wert festlegt.",
+                "Label": "Materialien konfigurieren"
             }
         },
         "Movement": {
@@ -59,6 +64,23 @@
             "QuantityAbbr": "Anz.",
             "Consumable": "Verbrauchbar",
             "ConsumableAbbr": "Verbr."
+        },
+        "Materials": {
+            "Name": "Name",
+            "MaterialBonus": "Materialbonus",
+            "ManaCapacity": "Manakapazität",
+            "VariableHint": "Eine Zahl ab 0, oder \"?\", damit jeder Gegenstand mit diesem Material einen eigenen Wert festlegt",
+            "Add": "Material hinzufügen",
+            "Remove": "Entfernen",
+            "None": "Noch keine Materialien angelegt.",
+            "Material": "Material",
+            "NoMaterial": "Keins",
+            "MaterialBonusOverride": "Materialbonus (dieser Gegenstand)",
+            "ManaCapacityOverride": "Manakapazität (dieser Gegenstand)",
+            "TotalManaCapacity": "Gesamt-Manakapazität",
+            "AttackBonus": "Angriffsbonus (Material)",
+            "DamageBonus": "Schadensbonus (Material)",
+            "ArmorBonus": "Rüstungsbonus (Material)"
         },
         "Life": {
             "MaxComputed": "Automatisch berechnet aus Klassen, Konstitution, Gesundheit, Zähigkeit und Fähigkeiten - nicht direkt bearbeitbar"

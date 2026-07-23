@@ -1,3 +1,5 @@
+import { SKSKMaterialsConfig } from '../apps/materials-config.mjs';
+
 /**
  * Register world-scoped game settings for the system.
  */
@@ -32,5 +34,26 @@ export function registerSettings() {
     config: true,
     type: String,
     default: '@attributes.str.value * 5',
+  });
+
+  // GM-configurable list of materials selectable on Item/Armor/Weapon
+  // items - see apps/materials-config.mjs and helpers/materials.mjs.
+  // No native config UI for an array setting, so it's edited via the menu
+  // registered below instead (config: false hides it from the normal
+  // settings list).
+  game.settings.register('sksk', 'materials', {
+    scope: 'world',
+    config: false,
+    type: Array,
+    default: [],
+  });
+
+  game.settings.registerMenu('sksk', 'materialsMenu', {
+    name: 'SKSK.Settings.Materials.Name',
+    hint: 'SKSK.Settings.Materials.Hint',
+    label: 'SKSK.Settings.Materials.Label',
+    icon: 'fas fa-gem',
+    type: SKSKMaterialsConfig,
+    restricted: true,
   });
 }
