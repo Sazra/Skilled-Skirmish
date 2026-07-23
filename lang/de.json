@@ -535,13 +535,7 @@
             "NoModel": "Keins",
             "WeaponType": "Waffenart",
             "ArmorType": "Rüstungsart",
-            "PropertyOverrides": "Eigenschaften-Anpassungen",
-            "Property": "Eigenschaft",
-            "OverrideMode": "Modus",
-            "OverrideAdd": "Hinzufügen",
-            "OverrideRemove": "Entfernen",
-            "OverrideValue": "Wert",
-            "AddOverride": "Eigenschaften-Anpassung hinzufügen"
+            "PropertyOverrides": "Eigenschaften-Anpassungen"
         },
         "ModelProperty": {
             "Heavy": {

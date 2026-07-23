@@ -535,13 +535,7 @@
       "NoModel": "None",
       "WeaponType": "Weapon Type",
       "ArmorType": "Armor Type",
-      "PropertyOverrides": "Property Overrides",
-      "Property": "Property",
-      "OverrideMode": "Mode",
-      "OverrideAdd": "Add",
-      "OverrideRemove": "Remove",
-      "OverrideValue": "Value",
-      "AddOverride": "Add Property Override"
+      "PropertyOverrides": "Property Overrides"
     },
     "ModelProperty": {
       "Heavy": {
