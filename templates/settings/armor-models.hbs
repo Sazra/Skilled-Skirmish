@@ -1,0 +1,71 @@
+<section class="tab {{tab.cssClass}}" data-group="primary" data-tab="armorModels">
+  <ol class="items-list">
+    <li class="item flexrow items-header">
+      <div class="item-name">{{localize 'SKSK.Models.ArmorModels'}}</div>
+      <div class="item-controls">
+        <a class="item-control" data-action="addArmorModel" title="{{localize 'SKSK.Models.Add'}}">
+          <i class="fas fa-plus"></i>
+        </a>
+      </div>
+    </li>
+    {{#each armorModels as |model index|}}
+    <li class="item flexcol model-entry">
+      <div class="flexrow flex-between">
+        <input type="text" name="armorModels.{{index}}.name" value="{{model.name}}"
+          placeholder="{{localize 'SKSK.Models.Name'}}" />
+        <a class="item-control item-delete" data-action="removeArmorModel" data-index="{{index}}"
+          title="{{localize 'SKSK.Models.Remove'}}">
+          <i class="fas fa-trash"></i>
+        </a>
+      </div>
+
+      <div class="grid grid-3col">
+        <div class="grid-span-1">
+          <label class="resource-label">{{localize 'SKSK.Models.ArmorType'}}</label>
+          <select name="armorModels.{{index}}.armorType">
+            {{selectOptions ../armorTypeChoices selected=model.armorType localize=true}}
+          </select>
+        </div>
+        <div class="grid-span-1">
+          <label class="resource-label">{{localize 'SKSK.Models.FlatBonus'}}</label>
+          <input type="text" name="armorModels.{{index}}.flatBonus" value="{{model.flatBonus}}"
+            data-dtype="Number" />
+        </div>
+        <div class="grid-span-1">
+          <label class="resource-label" title="{{localize 'SKSK.ModelProperty.Hardened.Hint'}}">
+            {{localize 'SKSK.Models.HardenedValue'}}
+          </label>
+          <input type="text" name="armorModels.{{index}}.hardenedValue" value="{{model.hardenedValue}}"
+            data-dtype="Number" />
+        </div>
+      </div>
+
+      <label class="resource-label">{{localize 'SKSK.Models.Attributes'}}</label>
+      <div class="grid grid-4col model-checkbox-grid">
+        {{#each ../attributeChoices as |label key|}}
+        <label class="casting-method-option">
+          <input type="checkbox" name="armorModels.{{index}}.attributes.{{key}}"
+            {{checked (includes model.attributes key)}} />
+          {{localize label}}
+        </label>
+        {{/each}}
+      </div>
+
+      <label class="resource-label">{{localize 'SKSK.Models.Properties'}}</label>
+      <div class="grid grid-3col model-checkbox-grid">
+        {{#each ../armorPropertyChoices as |def key|}}
+        <label class="casting-method-option" title="{{localize def.hint}}">
+          <input type="checkbox" name="armorModels.{{index}}.properties.{{key}}"
+            {{checked (includes model.properties key)}} />
+          {{localize def.label}}
+        </label>
+        {{/each}}
+      </div>
+    </li>
+    {{else}}
+    <li class="item flexrow">
+      <div class="item-name">{{localize 'SKSK.Models.None'}}</div>
+    </li>
+    {{/each}}
+  </ol>
+</section>

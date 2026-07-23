@@ -1107,3 +1107,22 @@
 .sksk .header-size select {
   width: 100%;
 }
+
+/* Weapon/Armor Model rows (Configure Models settings app) - each is a
+   flexcol card (name+delete, then type/bonus fields, then attribute and
+   property checkbox grids), unlike the flexrow default .items-list .item
+   assumes. */
+.sksk .model-entry {
+  align-items: stretch;
+  padding: 8px 4px;
+  gap: 4px;
+}
+
+.sksk .model-checkbox-grid {
+  gap: 2px 8px;
+  margin: 0 0 8px;
+}
+
+.sksk .model-checkbox-grid .casting-method-option {
+  font-size: 12px;
+}

@@ -69,6 +69,10 @@ Handlebars.registerHelper('firstLetter', function (str) {
   return (str ?? '').charAt(0).toUpperCase();
 });
 
+Handlebars.registerHelper('includes', function (array, value) {
+  return (array ?? []).includes(value);
+});
+
 Hooks.once('ready', function () {
   Hooks.on('hotbarDrop', (bar, data, slot) => createItemMacro(data, slot));
 

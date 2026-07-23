@@ -1,0 +1,69 @@
+<section class="tab {{tab.cssClass}}" data-group="primary" data-tab="weaponModels">
+  <ol class="items-list">
+    <li class="item flexrow items-header">
+      <div class="item-name">{{localize 'SKSK.Models.WeaponModels'}}</div>
+      <div class="item-controls">
+        <a class="item-control" data-action="addWeaponModel" title="{{localize 'SKSK.Models.Add'}}">
+          <i class="fas fa-plus"></i>
+        </a>
+      </div>
+    </li>
+    {{#each weaponModels as |model index|}}
+    <li class="item flexcol model-entry">
+      <div class="flexrow flex-between">
+        <input type="text" name="weaponModels.{{index}}.name" value="{{model.name}}"
+          placeholder="{{localize 'SKSK.Models.Name'}}" />
+        <a class="item-control item-delete" data-action="removeWeaponModel" data-index="{{index}}"
+          title="{{localize 'SKSK.Models.Remove'}}">
+          <i class="fas fa-trash"></i>
+        </a>
+      </div>
+
+      <div class="grid grid-3col">
+        <div class="grid-span-1">
+          <label class="resource-label">{{localize 'SKSK.Models.WeaponType'}}</label>
+          <select name="weaponModels.{{index}}.weaponType">
+            {{selectOptions ../weaponTypeChoices selected=model.weaponType localize=true}}
+          </select>
+        </div>
+        <div class="grid-span-1">
+          <label class="resource-label">{{localize 'SKSK.Models.DiceFormula'}}</label>
+          <input type="text" name="weaponModels.{{index}}.diceFormula" value="{{model.diceFormula}}"
+            placeholder="e.g. 1d4" />
+        </div>
+        <div class="grid-span-1">
+          <label class="resource-label">{{localize 'SKSK.Models.FlatBonus'}}</label>
+          <input type="text" name="weaponModels.{{index}}.flatBonus" value="{{model.flatBonus}}"
+            data-dtype="Number" />
+        </div>
+      </div>
+
+      <label class="resource-label">{{localize 'SKSK.Models.Attributes'}}</label>
+      <div class="grid grid-4col model-checkbox-grid">
+        {{#each ../attributeChoices as |label key|}}
+        <label class="casting-method-option">
+          <input type="checkbox" name="weaponModels.{{index}}.attributes.{{key}}"
+            {{checked (includes model.attributes key)}} />
+          {{localize label}}
+        </label>
+        {{/each}}
+      </div>
+
+      <label class="resource-label">{{localize 'SKSK.Models.Properties'}}</label>
+      <div class="grid grid-3col model-checkbox-grid">
+        {{#each ../weaponPropertyChoices as |def key|}}
+        <label class="casting-method-option" title="{{localize def.hint}}">
+          <input type="checkbox" name="weaponModels.{{index}}.properties.{{key}}"
+            {{checked (includes model.properties key)}} />
+          {{localize def.label}}
+        </label>
+        {{/each}}
+      </div>
+    </li>
+    {{else}}
+    <li class="item flexrow">
+      <div class="item-name">{{localize 'SKSK.Models.None'}}</div>
+    </li>
+    {{/each}}
+  </ol>
+</section>

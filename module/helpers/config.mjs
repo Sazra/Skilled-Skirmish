@@ -420,3 +420,70 @@ SKSK.skills = {
     immortal: { label: 'SKSK.Skill.Special.Immortal', maxLevel: 1 },
   },
 };
+
+// Selectable properties for Weapon/Armor Models (see apps/models-config.mjs,
+// helpers/models.mjs). appliesTo restricts which item categories a property
+// can be picked for: "weapon" (any weapon type), "lightArmor"/"heavyArmor"
+// (armor models of that type), "shield". Sourced from the design
+// spreadsheet's "Modelleigenschaften" list, using its own "Kann angewandt
+// werden auf" column - Schild is kept distinct from Rüstung throughout,
+// matching the sheet (a handful of Rüstung-only properties, e.g. Hart,
+// Laut, don't list Schild even though they'd read as plausible on one).
+SKSK.modelProperties = {
+  // Vorraussetzungsmodifikator - minimum attribute score needed to use the
+  // item effectively; also restricts two-handed weapons to one-handed use
+  // below a (further raised) threshold.
+  heavy: { label: 'SKSK.ModelProperty.Heavy.Name', hint: 'SKSK.ModelProperty.Heavy.Hint', appliesTo: ['weapon', 'lightArmor', 'heavyArmor'] },
+  heavyReduced: { label: 'SKSK.ModelProperty.HeavyReduced.Name', hint: 'SKSK.ModelProperty.HeavyReduced.Hint', appliesTo: ['weapon', 'lightArmor', 'heavyArmor'] },
+  heavyIncreased: { label: 'SKSK.ModelProperty.HeavyIncreased.Name', hint: 'SKSK.ModelProperty.HeavyIncreased.Hint', appliesTo: ['weapon', 'lightArmor', 'heavyArmor'] },
+  demanding: { label: 'SKSK.ModelProperty.Demanding.Name', hint: 'SKSK.ModelProperty.Demanding.Hint', appliesTo: ['weapon', 'lightArmor', 'heavyArmor'] },
+  demandingReduced: { label: 'SKSK.ModelProperty.DemandingReduced.Name', hint: 'SKSK.ModelProperty.DemandingReduced.Hint', appliesTo: ['weapon', 'lightArmor', 'heavyArmor'] },
+  demandingIncreased: { label: 'SKSK.ModelProperty.DemandingIncreased.Name', hint: 'SKSK.ModelProperty.DemandingIncreased.Hint', appliesTo: ['weapon', 'lightArmor', 'heavyArmor'] },
+  draining: { label: 'SKSK.ModelProperty.Draining.Name', hint: 'SKSK.ModelProperty.Draining.Hint', appliesTo: ['weapon', 'lightArmor', 'heavyArmor'] },
+  drainingReduced: { label: 'SKSK.ModelProperty.DrainingReduced.Name', hint: 'SKSK.ModelProperty.DrainingReduced.Hint', appliesTo: ['weapon', 'lightArmor', 'heavyArmor'] },
+  drainingIncreased: { label: 'SKSK.ModelProperty.DrainingIncreased.Name', hint: 'SKSK.ModelProperty.DrainingIncreased.Hint', appliesTo: ['weapon', 'lightArmor', 'heavyArmor'] },
+  complicated: { label: 'SKSK.ModelProperty.Complicated.Name', hint: 'SKSK.ModelProperty.Complicated.Hint', appliesTo: ['weapon', 'lightArmor', 'heavyArmor'] },
+  // Wertnutzungsmodifikator - how a weapon's multiple selected attribute
+  // modifiers (see data/model.mjs#attributes) combine; mutually exclusive
+  // with each other in practice, but not enforced here.
+  refined: { label: 'SKSK.ModelProperty.Refined.Name', hint: 'SKSK.ModelProperty.Refined.Hint', appliesTo: ['weapon'] },
+  specialized: { label: 'SKSK.ModelProperty.Specialized.Name', hint: 'SKSK.ModelProperty.Specialized.Hint', appliesTo: ['weapon'] },
+  masterful: { label: 'SKSK.ModelProperty.Masterful.Name', hint: 'SKSK.ModelProperty.Masterful.Hint', appliesTo: ['weapon'] },
+  // Allgemein.
+  rending: { label: 'SKSK.ModelProperty.Rending.Name', hint: 'SKSK.ModelProperty.Rending.Hint', appliesTo: ['weapon'] },
+  stunning: { label: 'SKSK.ModelProperty.Stunning.Name', hint: 'SKSK.ModelProperty.Stunning.Hint', appliesTo: ['weapon'] },
+  disarming: { label: 'SKSK.ModelProperty.Disarming.Name', hint: 'SKSK.ModelProperty.Disarming.Hint', appliesTo: ['weapon', 'lightArmor', 'heavyArmor'] },
+  ranged: { label: 'SKSK.ModelProperty.Ranged.Name', hint: 'SKSK.ModelProperty.Ranged.Hint', appliesTo: ['weapon'] },
+  flexible: { label: 'SKSK.ModelProperty.Flexible.Name', hint: 'SKSK.ModelProperty.Flexible.Hint', appliesTo: ['weapon'] },
+  shapeshifting: { label: 'SKSK.ModelProperty.Shapeshifting.Name', hint: 'SKSK.ModelProperty.Shapeshifting.Hint', appliesTo: ['weapon', 'lightArmor', 'heavyArmor'] },
+  infusion: { label: 'SKSK.ModelProperty.Infusion.Name', hint: 'SKSK.ModelProperty.Infusion.Hint', appliesTo: ['weapon'] },
+  unstable: { label: 'SKSK.ModelProperty.Unstable.Name', hint: 'SKSK.ModelProperty.Unstable.Hint', appliesTo: ['weapon', 'lightArmor', 'heavyArmor'] },
+  long: { label: 'SKSK.ModelProperty.Long.Name', hint: 'SKSK.ModelProperty.Long.Hint', appliesTo: ['weapon'] },
+  light: { label: 'SKSK.ModelProperty.Light.Name', hint: 'SKSK.ModelProperty.Light.Hint', appliesTo: ['weapon'] },
+  antimagic: { label: 'SKSK.ModelProperty.Antimagic.Name', hint: 'SKSK.ModelProperty.Antimagic.Hint', appliesTo: ['weapon', 'lightArmor', 'heavyArmor'] },
+  reach: { label: 'SKSK.ModelProperty.Reach.Name', hint: 'SKSK.ModelProperty.Reach.Hint', appliesTo: ['weapon'] },
+  giantSlayer: { label: 'SKSK.ModelProperty.GiantSlayer.Name', hint: 'SKSK.ModelProperty.GiantSlayer.Hint', appliesTo: ['weapon'] },
+  veryLong: { label: 'SKSK.ModelProperty.VeryLong.Name', hint: 'SKSK.ModelProperty.VeryLong.Hint', appliesTo: ['weapon'] },
+  simple: { label: 'SKSK.ModelProperty.Simple.Name', hint: 'SKSK.ModelProperty.Simple.Hint', appliesTo: ['weapon', 'lightArmor', 'heavyArmor'] },
+  redirection: { label: 'SKSK.ModelProperty.Redirection.Name', hint: 'SKSK.ModelProperty.Redirection.Hint', appliesTo: ['weapon', 'lightArmor', 'heavyArmor'] },
+  silvered: { label: 'SKSK.ModelProperty.Silvered.Name', hint: 'SKSK.ModelProperty.Silvered.Hint', appliesTo: ['weapon', 'lightArmor', 'heavyArmor', 'shield'] },
+  concealed: { label: 'SKSK.ModelProperty.Concealed.Name', hint: 'SKSK.ModelProperty.Concealed.Hint', appliesTo: ['weapon'] },
+  wounding: { label: 'SKSK.ModelProperty.Wounding.Name', hint: 'SKSK.ModelProperty.Wounding.Hint', appliesTo: ['weapon'] },
+  throwable: { label: 'SKSK.ModelProperty.Throwable.Name', hint: 'SKSK.ModelProperty.Throwable.Hint', appliesTo: ['weapon'] },
+  shattering: { label: 'SKSK.ModelProperty.Shattering.Name', hint: 'SKSK.ModelProperty.Shattering.Hint', appliesTo: ['weapon'] },
+  twoHanded: { label: 'SKSK.ModelProperty.TwoHanded.Name', hint: 'SKSK.ModelProperty.TwoHanded.Hint', appliesTo: ['weapon'] },
+  // Shield/Armor-specific.
+  deployable: { label: 'SKSK.ModelProperty.Deployable.Name', hint: 'SKSK.ModelProperty.Deployable.Hint', appliesTo: ['shield'] },
+  armBound: { label: 'SKSK.ModelProperty.ArmBound.Name', hint: 'SKSK.ModelProperty.ArmBound.Hint', appliesTo: ['shield'] },
+  hardened: { label: 'SKSK.ModelProperty.Hardened.Name', hint: 'SKSK.ModelProperty.Hardened.Hint', appliesTo: ['lightArmor', 'heavyArmor'] },
+  loud: { label: 'SKSK.ModelProperty.Loud.Name', hint: 'SKSK.ModelProperty.Loud.Hint', appliesTo: ['lightArmor', 'heavyArmor'] },
+  reflective: { label: 'SKSK.ModelProperty.Reflective.Name', hint: 'SKSK.ModelProperty.Reflective.Hint', appliesTo: ['lightArmor', 'heavyArmor'] },
+  flawless: { label: 'SKSK.ModelProperty.Flawless.Name', hint: 'SKSK.ModelProperty.Flawless.Hint', appliesTo: ['lightArmor', 'heavyArmor'] },
+  spiky: { label: 'SKSK.ModelProperty.Spiky.Name', hint: 'SKSK.ModelProperty.Spiky.Hint', appliesTo: ['lightArmor', 'heavyArmor'] },
+};
+
+SKSK.armorModelTypes = {
+  lightArmor: 'SKSK.Skill.Armor.LightArmor',
+  heavyArmor: 'SKSK.Skill.Armor.HeavyArmor',
+  shield: 'SKSK.Skill.Armor.Shield',
+};
