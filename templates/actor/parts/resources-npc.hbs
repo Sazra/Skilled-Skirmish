@@ -11,11 +11,16 @@
     </div>
 
     <div class="resource flex-group-center">
-      <label for="system.negativeLife.value" class="resource-label">Negative Life</label>
+      <label for="system.negativeLife.value" class="resource-label">
+        Negative Life
+        <input type="checkbox" name="system.negativeLife.includeToughness"
+          {{checked system.negativeLife.includeToughness}} class="negative-life-toughness-toggle"
+          title="{{localize 'SKSK.NegativeLife.IncludeToughnessHint'}}" />
+      </label>
       <div class="resource-content flexrow flex-center flex-between">
         <input type="text" name="system.negativeLife.value" value="{{system.negativeLife.value}}" data-dtype="Number" />
         <span>/</span>
-        <input type="text" name="system.negativeLife.max" value="{{system.negativeLife.max}}" data-dtype="Number" />
+        <span class="resource-computed" title="{{localize 'SKSK.NegativeLife.MaxComputed'}}">{{system.negativeLife.max}}</span>
       </div>
     </div>
 

@@ -1,5 +1,5 @@
 import { computeSkillBonusTotals, evaluateSkillFormula, getSkillLevel } from '../helpers/skills.mjs';
-import { computeMaxLife } from '../helpers/life.mjs';
+import { computeMaxLife, computeMaxNegativeLife } from '../helpers/life.mjs';
 import { computeMaxMana } from '../helpers/mana.mjs';
 
 export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
@@ -24,7 +24,15 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // instead of killing the character outright.
     schema.negativeLife = new fields.SchemaField({
       value: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
-      max: new fields.NumberField({ ...requiredInteger, initial: 10 })
+      // No longer directly user-editable - overwritten every data
+      // preparation by helpers/life.mjs#computeMaxNegativeLife (see
+      // prepareDerivedData below).
+      max: new fields.NumberField({ ...requiredInteger, initial: 10 }),
+      // Whether Tenacity's multiplier (see helpers/life.mjs#computeMaxLife)
+      // also raises max negative life, instead of acting purely as a
+      // buffer that protects it from max-life reductions without
+      // extending it - see helpers/life.mjs#computeMaxNegativeLife.
+      includeToughness: new fields.BooleanField({ initial: false })
     });
     // Usually-temporary pool that shields life (or negative life) from damage.
     schema.barrier = new fields.SchemaField({
@@ -161,6 +169,7 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // cases (e.g. schema validation off a bare data model).
     if (this.parent) {
       this.life.max = computeMaxLife(this.parent);
+      this.negativeLife.max = computeMaxNegativeLife(this.parent);
       this.mana.max = computeMaxMana(this.parent);
     }
   }

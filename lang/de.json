@@ -63,6 +63,10 @@
         "Life": {
             "MaxComputed": "Automatisch berechnet aus Klassen, Konstitution, Gesundheit, Zähigkeit und Fähigkeiten - nicht direkt bearbeitbar"
         },
+        "NegativeLife": {
+            "MaxComputed": "Automatisch berechnet aus maximalem Leben, abzüglich des Multiplikators von Zähigkeit (sofern unten nicht eingeschlossen) - nicht direkt bearbeitbar",
+            "IncludeToughnessHint": "Lässt den Multiplikator von Zähigkeit auch das maximale negative Leben erhöhen, statt nur das maximale Leben"
+        },
         "Mana": {
             "MaxComputed": "Automatisch berechnet aus Aura, Manakapazität, Quellengebunden, Manakern und Fähigkeiten - nicht direkt bearbeitbar"
         },
