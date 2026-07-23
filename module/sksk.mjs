@@ -101,6 +101,22 @@ Hooks.once('ready', function () {
     if (game.user.id !== userId) return;
     item.parent.update({ 'system.attributes.aur.value': computeSpeciesAura(item.parent) });
   });
+
+  // Only one Light/Heavy Armor can ever be equipped at once (Shields are
+  // unaffected - see helpers/defense.mjs#computeArmorClass, which only
+  // ever looks at a single worn Light/Heavy piece) - equipping one
+  // auto-unequips every other Light/Heavy armor on the same actor.
+  Hooks.on('updateItem', (item, changes, options, userId) => {
+    if (item.type !== 'armor' || !(item.parent instanceof Actor)) return;
+    if (game.user.id !== userId) return;
+    if (foundry.utils.getProperty(changes, 'system.equipped') !== true) return;
+    if (!['lightArmor', 'heavyArmor'].includes(item.system.armorType)) return;
+    const others = item.parent.items.filter(i =>
+      i.id !== item.id && i.type === 'armor' && i.system.equipped
+      && ['lightArmor', 'heavyArmor'].includes(i.system.armorType)
+    );
+    for (const other of others) other.update({ 'system.equipped': false });
+  });
 });
 
 async function createItemMacro(data, slot) {

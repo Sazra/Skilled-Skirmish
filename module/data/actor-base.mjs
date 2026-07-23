@@ -2,6 +2,7 @@ import { computeSkillBonusTotals, evaluateSkillFormula, getSkillLevel } from '..
 import { computeMaxLife, computeMaxNegativeLife } from '../helpers/life.mjs';
 import { computeMaxMana } from '../helpers/mana.mjs';
 import { computeMaxActionPoints, computeMaxReactionPoints } from '../helpers/points.mjs';
+import { computeNaturalMaterialBonus, computeArmorClass, computeMagicResistance } from '../helpers/defense.mjs';
 
 export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
 
@@ -68,10 +69,36 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       // prepareDerivedData below).
       max: new fields.NumberField({ ...requiredInteger, initial: 1 })
     });
-    // Attack rolls must exceed this to deal weapon damage.
+    // Attack rolls must exceed this to deal weapon damage. No longer
+    // directly user-editable - overwritten every data preparation by
+    // helpers/defense.mjs#computeArmorClass (see prepareDerivedData below).
     schema.armorClass = new fields.NumberField({ ...requiredInteger, initial: 10 });
-    // Attack rolls must exceed this for a spell to have full effect.
+    // Attack rolls must exceed this for a spell to have full effect. No
+    // longer directly user-editable - overwritten every data preparation by
+    // helpers/defense.mjs#computeMagicResistance (see prepareDerivedData below).
     schema.magicResistance = new fields.NumberField({ ...requiredInteger, initial: 10 });
+    // Grund-AC's own base value (before the Constitution modifier that's
+    // folded in on top) - a plain field, directly user-editable on the GM
+    // tab and equally targetable by Active Effects (see
+    // helpers/defense.mjs#computeArmorClass).
+    schema.baseArmorClass = new fields.NumberField({ ...requiredInteger, initial: 10 });
+    // A flat AC/MR bonus (positive or negative) layered on top of every
+    // other AC-Boni/MR component - plain fields, directly user-editable on
+    // the GM tab and equally targetable by Active Effects (see
+    // helpers/defense.mjs#computeArmorClass/computeMagicResistance).
+    schema.customArmorClassBonus = new fields.NumberField({ ...requiredInteger, initial: 0 });
+    schema.customMagicResistanceBonus = new fields.NumberField({ ...requiredInteger, initial: 0 });
+    // A creature's innate "natural armor" bonus, scaling with level - see
+    // helpers/defense.mjs#computeNaturalMaterialBonus. adjustment is a
+    // plain, user-editable (GM tab) flat modifier; bonus is not meant to be
+    // hand-edited, but targeted by Active Effects via
+    // "system.naturalMaterialBonus.bonus"; value is the computed total, no
+    // longer directly user-editable - overwritten every data preparation.
+    schema.naturalMaterialBonus = new fields.SchemaField({
+      adjustment: new fields.NumberField({ ...requiredInteger, initial: 0 }),
+      bonus: new fields.NumberField({ ...requiredInteger, initial: 0 }),
+      value: new fields.NumberField({ ...requiredInteger, initial: 0 }),
+    });
     schema.biography = new fields.StringField({ required: true, blank: true });
 
     // Character tab's "Data" section - free-flavor fields shown alongside
@@ -184,6 +211,11 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       this.mana.max = computeMaxMana(this.parent);
       this.actionPoints.max = computeMaxActionPoints(this.parent);
       this.reactionPoints.max = computeMaxReactionPoints(this.parent);
+      // naturalMaterialBonus.value must be computed before armorClass,
+      // which uses it as a floor under worn armor's own bonus.
+      this.naturalMaterialBonus.value = computeNaturalMaterialBonus(this.parent);
+      this.armorClass = computeArmorClass(this.parent);
+      this.magicResistance = computeMagicResistance(this.parent);
     }
   }
 

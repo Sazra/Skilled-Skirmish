@@ -105,8 +105,23 @@
     "ReactionPoints": {
       "MaxComputed": "Automatically calculated from max AP and Reflexes beyond level 3 - not directly editable"
     },
+    "ArmorClass": {
+      "Computed": "Automatically calculated from Base AC, Constitution, worn armor/shield and any effects - not directly editable"
+    },
+    "MagicResistance": {
+      "Computed": "Automatically calculated from Aura, Antimagic armor/shields and any effects - not directly editable"
+    },
     "GM": {
-      "Switches": "Switches"
+      "Switches": "Switches",
+      "NaturalMaterialBonus": "Natural Material Bonus Adjustment",
+      "NaturalMaterialBonusHint": "A flat adjustment (positive or negative) to the creature's level-based natural material bonus - a floor under worn Light/Heavy armor's own AC bonus.",
+      "NaturalMaterialBonusValue": "Natural Material Bonus (computed)",
+      "BaseArmorClass": "Base AC",
+      "BaseArmorClassHint": "The base of Grund-AC, before the Constitution modifier is added on top.",
+      "CustomArmorClassBonus": "Custom AC Bonus",
+      "CustomArmorClassBonusHint": "A flat AC bonus (positive or negative) on top of every other AC component.",
+      "CustomMagicResistanceBonus": "Custom MR Bonus",
+      "CustomMagicResistanceBonusHint": "A flat MR bonus (positive or negative) on top of every other MR component."
     },
     "Gender": {
       "Male": "Male",

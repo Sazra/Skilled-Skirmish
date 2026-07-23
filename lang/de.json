@@ -105,8 +105,23 @@
         "ReactionPoints": {
             "MaxComputed": "Automatisch berechnet aus maximalen AP und Reflexe über Stufe 3 hinaus - nicht direkt bearbeitbar"
         },
+        "ArmorClass": {
+            "Computed": "Automatisch berechnet aus Grund-AC, Konstitution, getragener Rüstung/Schild und etwaigen Effekten - nicht direkt bearbeitbar"
+        },
+        "MagicResistance": {
+            "Computed": "Automatisch berechnet aus Aura, magiestörenden Rüstungen/Schilden und etwaigen Effekten - nicht direkt bearbeitbar"
+        },
         "GM": {
-            "Switches": "Schalter"
+            "Switches": "Schalter",
+            "NaturalMaterialBonus": "Anpassung Natürlicher Materialbonus",
+            "NaturalMaterialBonusHint": "Eine feste Anpassung (positiv oder negativ) am levelabhängigen natürlichen Materialbonus der Kreatur - dient als Mindestwert für den AC-Bonus der getragenen leichten/schweren Rüstung.",
+            "NaturalMaterialBonusValue": "Natürlicher Materialbonus (berechnet)",
+            "BaseArmorClass": "Basis-Grund-AC",
+            "BaseArmorClassHint": "Die Basis des Grund-AC-Werts, bevor der Konstitutionsmodifikator hinzugerechnet wird.",
+            "CustomArmorClassBonus": "Eigener AC-Bonus",
+            "CustomArmorClassBonusHint": "Ein fester AC-Bonus (positiv oder negativ) zusätzlich zu jeder anderen AC-Komponente.",
+            "CustomMagicResistanceBonus": "Eigener MR-Bonus",
+            "CustomMagicResistanceBonusHint": "Ein fester MR-Bonus (positiv oder negativ) zusätzlich zu jeder anderen MR-Komponente."
         },
         "Gender": {
             "Male": "Männlich",

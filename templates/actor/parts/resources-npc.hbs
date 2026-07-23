@@ -56,16 +56,16 @@
     </div>
 
     <div class="resource flex-group-center">
-      <label for="system.armorClass" class="resource-label">AC</label>
+      <label class="resource-label">AC</label>
       <div class="resource-content flexrow flex-center flex-between">
-        <input type="text" name="system.armorClass" value="{{system.armorClass}}" data-dtype="Number" />
+        <span class="resource-computed" title="{{localize 'SKSK.ArmorClass.Computed'}}">{{system.armorClass}}</span>
       </div>
     </div>
 
     <div class="resource flex-group-center">
-      <label for="system.magicResistance" class="resource-label">MR</label>
+      <label class="resource-label">MR</label>
       <div class="resource-content flexrow flex-center flex-between">
-        <input type="text" name="system.magicResistance" value="{{system.magicResistance}}" data-dtype="Number" />
+        <span class="resource-computed" title="{{localize 'SKSK.MagicResistance.Computed'}}">{{system.magicResistance}}</span>
       </div>
     </div>
 

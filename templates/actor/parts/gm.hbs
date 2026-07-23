@@ -8,4 +8,39 @@
     </label>
   </div>
 
+  <div class="grid grid-2col">
+    <div class="grid-span-1">
+      <label class="resource-label" title="{{localize 'SKSK.GM.NaturalMaterialBonusHint'}}">
+        {{localize 'SKSK.GM.NaturalMaterialBonus'}}
+      </label>
+      <input type="text" name="system.naturalMaterialBonus.adjustment" value="{{system.naturalMaterialBonus.adjustment}}"
+        data-dtype="Number" />
+    </div>
+    <div class="grid-span-1">
+      <label class="resource-label">{{localize 'SKSK.GM.NaturalMaterialBonusValue'}}</label>
+      <span class="resource-computed">{{system.naturalMaterialBonus.value}}</span>
+    </div>
+  </div>
+
+  <div class="grid grid-3col">
+    <div class="grid-span-1">
+      <label class="resource-label" title="{{localize 'SKSK.GM.BaseArmorClassHint'}}">
+        {{localize 'SKSK.GM.BaseArmorClass'}}
+      </label>
+      <input type="text" name="system.baseArmorClass" value="{{system.baseArmorClass}}" data-dtype="Number" />
+    </div>
+    <div class="grid-span-1">
+      <label class="resource-label" title="{{localize 'SKSK.GM.CustomArmorClassBonusHint'}}">
+        {{localize 'SKSK.GM.CustomArmorClassBonus'}}
+      </label>
+      <input type="text" name="system.customArmorClassBonus" value="{{system.customArmorClassBonus}}" data-dtype="Number" />
+    </div>
+    <div class="grid-span-1">
+      <label class="resource-label" title="{{localize 'SKSK.GM.CustomMagicResistanceBonusHint'}}">
+        {{localize 'SKSK.GM.CustomMagicResistanceBonus'}}
+      </label>
+      <input type="text" name="system.customMagicResistanceBonus" value="{{system.customMagicResistanceBonus}}" data-dtype="Number" />
+    </div>
+  </div>
+
 </section>
