@@ -71,6 +71,12 @@
         "Mana": {
             "MaxComputed": "Automatisch berechnet aus Aura, Manakapazität, Quellengebunden, Manakern und Fähigkeiten - nicht direkt bearbeitbar"
         },
+        "ActionPoints": {
+            "MaxComputed": "Automatisch berechnet aus einem Basiswert von 3 plus Reflexe (bis Stufe 3) und etwaigen Effekten - nicht direkt bearbeitbar"
+        },
+        "ReactionPoints": {
+            "MaxComputed": "Automatisch berechnet aus maximalen AP und Reflexe über Stufe 3 hinaus - nicht direkt bearbeitbar"
+        },
         "GM": {
             "Switches": "Schalter"
         },

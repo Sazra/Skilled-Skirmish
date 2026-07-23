@@ -42,7 +42,7 @@
       <div class="resource-content flexrow flex-center flex-between">
         <input type="text" name="system.actionPoints.value" value="{{system.actionPoints.value}}" data-dtype="Number" />
         <span>/</span>
-        <input type="text" name="system.actionPoints.max" value="{{system.actionPoints.max}}" data-dtype="Number" />
+        <span class="resource-computed" title="{{localize 'SKSK.ActionPoints.MaxComputed'}}">{{system.actionPoints.max}}</span>
       </div>
     </div>
 
@@ -51,7 +51,7 @@
       <div class="resource-content flexrow flex-center flex-between">
         <input type="text" name="system.reactionPoints.value" value="{{system.reactionPoints.value}}" data-dtype="Number" />
         <span>/</span>
-        <input type="text" name="system.reactionPoints.max" value="{{system.reactionPoints.max}}" data-dtype="Number" />
+        <span class="resource-computed" title="{{localize 'SKSK.ReactionPoints.MaxComputed'}}">{{system.reactionPoints.max}}</span>
       </div>
     </div>
 

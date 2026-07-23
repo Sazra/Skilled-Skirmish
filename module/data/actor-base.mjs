@@ -1,6 +1,7 @@
 import { computeSkillBonusTotals, evaluateSkillFormula, getSkillLevel } from '../helpers/skills.mjs';
 import { computeMaxLife, computeMaxNegativeLife } from '../helpers/life.mjs';
 import { computeMaxMana } from '../helpers/mana.mjs';
+import { computeMaxActionPoints, computeMaxReactionPoints } from '../helpers/points.mjs';
 
 export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
 
@@ -51,10 +52,20 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     });
     schema.actionPoints = new fields.SchemaField({
       value: new fields.NumberField({ ...requiredInteger, initial: 3, min: 0 }),
-      max: new fields.NumberField({ ...requiredInteger, initial: 3 })
+      // No longer directly user-editable - overwritten every data
+      // preparation by helpers/points.mjs#computeMaxActionPoints (see
+      // prepareDerivedData below).
+      max: new fields.NumberField({ ...requiredInteger, initial: 3 }),
+      // Flat bonus added on top of the computed max AP - not meant to be
+      // hand-edited, but targeted by Active Effects via
+      // "system.actionPoints.bonus".
+      bonus: new fields.NumberField({ ...requiredInteger, initial: 0 })
     });
     schema.reactionPoints = new fields.SchemaField({
       value: new fields.NumberField({ ...requiredInteger, initial: 1, min: 0 }),
+      // No longer directly user-editable - overwritten every data
+      // preparation by helpers/points.mjs#computeMaxReactionPoints (see
+      // prepareDerivedData below).
       max: new fields.NumberField({ ...requiredInteger, initial: 1 })
     });
     // Attack rolls must exceed this to deal weapon damage.
@@ -171,6 +182,8 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       this.life.max = computeMaxLife(this.parent);
       this.negativeLife.max = computeMaxNegativeLife(this.parent);
       this.mana.max = computeMaxMana(this.parent);
+      this.actionPoints.max = computeMaxActionPoints(this.parent);
+      this.reactionPoints.max = computeMaxReactionPoints(this.parent);
     }
   }
 

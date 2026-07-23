@@ -71,6 +71,12 @@
     "Mana": {
       "MaxComputed": "Automatically calculated from Aura, Mana Capacity, Source Bound, Mana Core and abilities - not directly editable"
     },
+    "ActionPoints": {
+      "MaxComputed": "Automatically calculated from a base of 3 plus Reflexes (up to level 3) and any effects - not directly editable"
+    },
+    "ReactionPoints": {
+      "MaxComputed": "Automatically calculated from max AP and Reflexes beyond level 3 - not directly editable"
+    },
     "GM": {
       "Switches": "Switches"
     },
