@@ -114,6 +114,7 @@
         "Resource": {
             "Life": "Leben",
             "NegativeLife": "Negatives Leben",
+            "NegativeLifeAbbr": "Neg. Leben",
             "Mana": "Mana",
             "Barrier": "Barriere",
             "AC": "AC",

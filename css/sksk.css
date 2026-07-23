@@ -634,7 +634,10 @@
 
 .sksk .resource-label[data-tooltip] {
   cursor: help;
-  border-bottom: 1px dotted currentColor;
+}
+
+.sksk .side-tab-resources input[type="text"] {
+  text-align: center;
 }
 
 /* Max Life is no longer user-editable (see data/actor-base.mjs#
