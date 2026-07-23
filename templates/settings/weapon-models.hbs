@@ -49,16 +49,25 @@
         {{/each}}
       </div>
 
-      <label class="resource-label">{{localize 'SKSK.Models.Properties'}}</label>
-      <div class="grid grid-3col model-checkbox-grid">
-        {{#each ../weaponPropertyChoices as |def key|}}
-        <label class="casting-method-option" title="{{localize def.hint}}">
-          <input type="checkbox" name="weaponModels.{{index}}.properties.{{key}}"
-            {{checked (includes model.properties key)}} />
-          {{localize def.label}}
-        </label>
-        {{/each}}
-      </div>
+      <details class="model-properties-details" data-sync="weapon-model-properties-{{index}}">
+        <summary class="resource-label">{{localize 'SKSK.Models.Properties'}}</summary>
+        <div class="grid grid-3col model-checkbox-grid">
+          {{#each ../weaponPropertyChoices as |def key|}}
+          <div class="model-property-option">
+            <label class="casting-method-option" title="{{localize def.hint}}">
+              <input type="checkbox" name="weaponModels.{{index}}.properties.{{key}}"
+                {{checked (includes model.properties key)}} />
+              {{localize def.label}}
+            </label>
+            {{#if def.hasRequirement}}
+            <input type="text" class="model-requirement-input" name="weaponModels.{{index}}.{{concat key 'Requirement'}}"
+              value="{{lookup model (concat key 'Requirement')}}" data-dtype="Number"
+              title="{{localize 'SKSK.Models.Requirement'}}" placeholder="{{localize 'SKSK.Models.Requirement'}}" />
+            {{/if}}
+          </div>
+          {{/each}}
+        </div>
+      </details>
     </li>
     {{else}}
     <li class="item flexrow">

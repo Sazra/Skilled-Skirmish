@@ -25,7 +25,11 @@ export class SKSKModelsConfig extends HandlebarsApplicationMixin(ApplicationV2) 
   static DEFAULT_OPTIONS = {
     id: 'sksk-models-config',
     tag: 'form',
-    classes: ['sksk'],
+    // "models-config" carries the CSS (see sksk.css) making the active
+    // tab's own content scroll while the tab bar stays fixed - the
+    // scrollable: [''] PARTS option only persists scroll position across
+    // re-renders, it doesn't make anything actually scrollable by itself.
+    classes: ['sksk', 'models-config'],
     window: {
       title: 'SKSK.Settings.Models.Name',
       icon: 'fas fa-shapes',
@@ -129,6 +133,9 @@ export class SKSKModelsConfig extends HandlebarsApplicationMixin(ApplicationV2) 
       flatBonus: Number(m.flatBonus) || 0,
       attributes: selectedKeys(m.attributes),
       properties: selectedKeys(m.properties),
+      heavyRequirement: Number(m.heavyRequirement) || 0,
+      demandingRequirement: Number(m.demandingRequirement) || 0,
+      drainingRequirement: Number(m.drainingRequirement) || 0,
     }));
     const armorModels = Object.values(expanded.armorModels ?? {}).map(m => ({
       name: m.name ?? '',
@@ -137,6 +144,9 @@ export class SKSKModelsConfig extends HandlebarsApplicationMixin(ApplicationV2) 
       attributes: selectedKeys(m.attributes),
       properties: selectedKeys(m.properties),
       hardenedValue: Number(m.hardenedValue) || 0,
+      heavyRequirement: Number(m.heavyRequirement) || 0,
+      demandingRequirement: Number(m.demandingRequirement) || 0,
+      drainingRequirement: Number(m.drainingRequirement) || 0,
     }));
     await game.settings.set('sksk', 'weaponModels', weaponModels);
     await game.settings.set('sksk', 'armorModels', armorModels);
@@ -145,7 +155,10 @@ export class SKSKModelsConfig extends HandlebarsApplicationMixin(ApplicationV2) 
   /** @private */
   static async #addWeaponModel(event, target) {
     const models = foundry.utils.deepClone(getWeaponModels());
-    models.push({ name: '', weaponType: 'axe', diceFormula: '', flatBonus: 0, attributes: [], properties: [] });
+    models.push({
+      name: '', weaponType: 'axe', diceFormula: '', flatBonus: 0, attributes: [], properties: [],
+      heavyRequirement: 0, demandingRequirement: 0, drainingRequirement: 0,
+    });
     await game.settings.set('sksk', 'weaponModels', models);
     this.render();
   }
@@ -162,7 +175,10 @@ export class SKSKModelsConfig extends HandlebarsApplicationMixin(ApplicationV2) 
   /** @private */
   static async #addArmorModel(event, target) {
     const models = foundry.utils.deepClone(getArmorModels());
-    models.push({ name: '', armorType: 'lightArmor', flatBonus: 0, attributes: [], properties: [], hardenedValue: 0 });
+    models.push({
+      name: '', armorType: 'lightArmor', flatBonus: 0, attributes: [], properties: [], hardenedValue: 0,
+      heavyRequirement: 0, demandingRequirement: 0, drainingRequirement: 0,
+    });
     await game.settings.set('sksk', 'armorModels', models);
     this.render();
   }

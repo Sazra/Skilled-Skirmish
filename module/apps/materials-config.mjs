@@ -25,7 +25,11 @@ export class SKSKMaterialsConfig extends HandlebarsApplicationMixin(ApplicationV
   static DEFAULT_OPTIONS = {
     id: 'sksk-materials-config',
     tag: 'form',
-    classes: ['sksk'],
+    // "materials-config" carries the CSS (see sksk.css) making the window
+    // content scroll - the scrollable: [''] PARTS option only persists
+    // scroll position across re-renders, it doesn't make anything
+    // actually scrollable by itself.
+    classes: ['sksk', 'materials-config'],
     window: {
       title: 'SKSK.Settings.Materials.Name',
       icon: 'fas fa-gem',
@@ -46,6 +50,7 @@ export class SKSKMaterialsConfig extends HandlebarsApplicationMixin(ApplicationV
   static PARTS = {
     form: {
       template: 'systems/sksk/templates/settings/materials-config.hbs',
+      scrollable: [''],
     },
   };
 

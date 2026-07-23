@@ -73,6 +73,11 @@ Handlebars.registerHelper('includes', function (array, value) {
   return (array ?? []).includes(value);
 });
 
+Handlebars.registerHelper('concat', function (...args) {
+  args.pop(); // Drop the trailing Handlebars options object.
+  return args.join('');
+});
+
 Hooks.once('ready', function () {
   Hooks.on('hotbarDrop', (bar, data, slot) => createItemMacro(data, slot));
 

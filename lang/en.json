@@ -525,6 +525,7 @@
       "Attributes": "Attribute Modifiers Used",
       "Properties": "Properties",
       "HardenedValue": "Hardened Value (X)",
+      "Requirement": "Requirement",
       "Add": "Add Model",
       "Remove": "Remove",
       "None": "No models defined yet.",
@@ -536,43 +537,15 @@
     "ModelProperty": {
       "Heavy": {
         "Name": "Heavy",
-        "Hint": "This item is very heavy and requires a Strength score of at least 16 to use effectively. A weapon with this modifier can't be wielded in both hands until the character's Strength is 22+."
-      },
-      "HeavyReduced": {
-        "Name": "Heavy (Reduced)",
-        "Hint": "This item is heavier and requires a Strength score of at least 14 to use effectively. This modifier and the Light modifier cancel each other out. A weapon with this modifier can't be wielded in both hands until the character's Strength is 20+."
-      },
-      "HeavyIncreased": {
-        "Name": "Heavy (Increased)",
-        "Hint": "This item is extremely heavy and requires a Strength score of at least 18 to use effectively. A weapon with this modifier can't be wielded in both hands until the character's Strength is 25+."
+        "Hint": "This item is heavy and requires a Strength score of at least the given requirement to use effectively. A weapon with this modifier can't be wielded in both hands until the character's Strength is well above that requirement."
       },
       "Demanding": {
         "Name": "Demanding",
-        "Hint": "This item is hard to handle and requires a Dexterity score of at least 16 to use effectively. A weapon with this modifier can't be wielded in both hands until the character's Dexterity is 20+."
-      },
-      "DemandingReduced": {
-        "Name": "Demanding (Reduced)",
-        "Hint": "This item is harder to handle and requires a Dexterity score of at least 14 to use effectively. This modifier and the Simple modifier cancel each other out. A weapon with this modifier can't be wielded in both hands until the character's Dexterity is 18+."
-      },
-      "DemandingIncreased": {
-        "Name": "Demanding (Increased)",
-        "Hint": "This item is extremely hard to handle and requires a Dexterity score of at least 18 to use effectively. A weapon with this modifier can't be wielded in both hands until the character's Dexterity is 25+."
+        "Hint": "This item is hard to handle and requires a Dexterity score of at least the given requirement to use effectively. A weapon with this modifier can't be wielded in both hands until the character's Dexterity is well above that requirement."
       },
       "Draining": {
         "Name": "Draining",
-        "Hint": "Using this item quickly tires its bearer and requires a Constitution score of at least 16 to use effectively. This modifier and the Light modifier cancel each other out. A weapon with this modifier can't be wielded in both hands until the character's Dexterity is 22+."
-      },
-      "DrainingReduced": {
-        "Name": "Draining (Reduced)",
-        "Hint": "Using this item quickly tires its bearer and requires a Constitution score of at least 14 to use effectively. This modifier and the Light modifier cancel each other out. A weapon with this modifier can't be wielded in both hands until the character's Dexterity is 18+."
-      },
-      "DrainingIncreased": {
-        "Name": "Draining (Increased)",
-        "Hint": "Using this item quickly tires its bearer and requires a Constitution score of at least 18 to use effectively. A weapon with this modifier can't be wielded in both hands until the character's Constitution is 25+."
-      },
-      "Complicated": {
-        "Name": "Complicated",
-        "Hint": "This item is strange and must first be understood, requiring an Intelligence score of at least 16 to use effectively. This modifier and the Simple modifier cancel each other out."
+        "Hint": "Using this item quickly tires its bearer and requires a Constitution score of at least the given requirement to use effectively. A weapon with this modifier can't be wielded in both hands until the character's Constitution is well above that requirement."
       },
       "Refined": {
         "Name": "Refined",
@@ -672,7 +645,7 @@
       },
       "TwoHanded": {
         "Name": "Two-Handed",
-        "Hint": "A weapon with this modifier must be wielded two-handed. Unless such a weapon also has the Heavy, Demanding, Draining or Complicated modifier, it can be wielded one-handed if the bearer has a Strength score of 18 or higher."
+        "Hint": "A weapon with this modifier must be wielded two-handed. Unless such a weapon also has the Heavy, Demanding or Draining modifier, it can be wielded one-handed if the bearer has a Strength score of 18 or higher."
       },
       "Deployable": {
         "Name": "Deployable",

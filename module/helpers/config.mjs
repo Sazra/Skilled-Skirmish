@@ -432,17 +432,14 @@ SKSK.skills = {
 SKSK.modelProperties = {
   // Vorraussetzungsmodifikator - minimum attribute score needed to use the
   // item effectively; also restricts two-handed weapons to one-handed use
-  // below a (further raised) threshold.
-  heavy: { label: 'SKSK.ModelProperty.Heavy.Name', hint: 'SKSK.ModelProperty.Heavy.Hint', appliesTo: ['weapon', 'lightArmor', 'heavyArmor'] },
-  heavyReduced: { label: 'SKSK.ModelProperty.HeavyReduced.Name', hint: 'SKSK.ModelProperty.HeavyReduced.Hint', appliesTo: ['weapon', 'lightArmor', 'heavyArmor'] },
-  heavyIncreased: { label: 'SKSK.ModelProperty.HeavyIncreased.Name', hint: 'SKSK.ModelProperty.HeavyIncreased.Hint', appliesTo: ['weapon', 'lightArmor', 'heavyArmor'] },
-  demanding: { label: 'SKSK.ModelProperty.Demanding.Name', hint: 'SKSK.ModelProperty.Demanding.Hint', appliesTo: ['weapon', 'lightArmor', 'heavyArmor'] },
-  demandingReduced: { label: 'SKSK.ModelProperty.DemandingReduced.Name', hint: 'SKSK.ModelProperty.DemandingReduced.Hint', appliesTo: ['weapon', 'lightArmor', 'heavyArmor'] },
-  demandingIncreased: { label: 'SKSK.ModelProperty.DemandingIncreased.Name', hint: 'SKSK.ModelProperty.DemandingIncreased.Hint', appliesTo: ['weapon', 'lightArmor', 'heavyArmor'] },
-  draining: { label: 'SKSK.ModelProperty.Draining.Name', hint: 'SKSK.ModelProperty.Draining.Hint', appliesTo: ['weapon', 'lightArmor', 'heavyArmor'] },
-  drainingReduced: { label: 'SKSK.ModelProperty.DrainingReduced.Name', hint: 'SKSK.ModelProperty.DrainingReduced.Hint', appliesTo: ['weapon', 'lightArmor', 'heavyArmor'] },
-  drainingIncreased: { label: 'SKSK.ModelProperty.DrainingIncreased.Name', hint: 'SKSK.ModelProperty.DrainingIncreased.Hint', appliesTo: ['weapon', 'lightArmor', 'heavyArmor'] },
-  complicated: { label: 'SKSK.ModelProperty.Complicated.Name', hint: 'SKSK.ModelProperty.Complicated.Hint', appliesTo: ['weapon', 'lightArmor', 'heavyArmor'] },
+  // below a (further raised) threshold. Originally 3 fixed-threshold tiers
+  // each (Heavy/Heavy (Reduced)/Heavy (Increased), etc.) - collapsed into
+  // one property with a GM-entered number (see data/model.mjs#
+  // heavyRequirement/demandingRequirement/drainingRequirement), since the
+  // exact threshold matters more than picking from 3 preset tiers.
+  heavy: { label: 'SKSK.ModelProperty.Heavy.Name', hint: 'SKSK.ModelProperty.Heavy.Hint', appliesTo: ['weapon', 'lightArmor', 'heavyArmor'], hasRequirement: true },
+  demanding: { label: 'SKSK.ModelProperty.Demanding.Name', hint: 'SKSK.ModelProperty.Demanding.Hint', appliesTo: ['weapon', 'lightArmor', 'heavyArmor'], hasRequirement: true },
+  draining: { label: 'SKSK.ModelProperty.Draining.Name', hint: 'SKSK.ModelProperty.Draining.Hint', appliesTo: ['weapon', 'lightArmor', 'heavyArmor'], hasRequirement: true },
   // Wertnutzungsmodifikator - how a weapon's multiple selected attribute
   // modifiers (see data/model.mjs#attributes) combine; mutually exclusive
   // with each other in practice, but not enforced here.

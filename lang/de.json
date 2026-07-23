@@ -525,6 +525,7 @@
             "Attributes": "Genutzte Attributsmodifikatoren",
             "Properties": "Eigenschaften",
             "HardenedValue": "Härte-Wert (X)",
+            "Requirement": "Voraussetzung",
             "Add": "Modell hinzufügen",
             "Remove": "Entfernen",
             "None": "Noch keine Modelle angelegt.",
@@ -536,43 +537,15 @@
         "ModelProperty": {
             "Heavy": {
                 "Name": "Schwer",
-                "Hint": "Dieser Gegenstand ist sehr schwer und benötigt zur effektiven Benutzung mindestens einen Stärkewert von 16. Eine Waffe mit diesem Modifikator kann nicht in beiden Händen getragen werden, bis die Stärke des Charakters 22+ beträgt."
-            },
-            "HeavyReduced": {
-                "Name": "Schwer (Verringert)",
-                "Hint": "Dieser Gegenstand ist schwerer und benötigt zur effektiven Benutzung mindestens einen Stärkewert von 14. Dieser Modifikator und der Modifikator Leicht heben sich gegenseitig auf. Eine Waffe mit diesem Modifikator kann nicht in beiden Händen getragen werden, bis die Stärke des Charakters 20+ beträgt."
-            },
-            "HeavyIncreased": {
-                "Name": "Schwer (Erhöht)",
-                "Hint": "Dieser Gegenstand ist extrem schwer und benötigt zur effektiven Benutzung mindestens einen Stärkewert von 18. Eine Waffe mit diesem Modifikator kann nicht in beiden Händen getragen werden, bis die Stärke des Charakters 25+ beträgt."
+                "Hint": "Dieser Gegenstand ist schwer und benötigt zur effektiven Benutzung mindestens den angegebenen Stärkewert. Eine Waffe mit diesem Modifikator kann erst dann in beiden Händen getragen werden, wenn die Stärke des Charakters deutlich über diesem Wert liegt."
             },
             "Demanding": {
                 "Name": "Fordernd",
-                "Hint": "Dieser Gegenstand ist schwer zu händeln und benötigt zur effektiven Benutzung mindestens einen Geschicklichkeitswert von 16. Eine Waffe mit diesem Modifikator kann nicht in beiden Händen getragen werden, bis die Geschicklichkeit des Charakters 20+ beträgt."
-            },
-            "DemandingReduced": {
-                "Name": "Fordernd (Verringert)",
-                "Hint": "Dieser Gegenstand ist schwieriger zu händeln und benötigt zur effektiven Benutzung mindestens einen Geschicklichkeitwert von 14. Dieser Modifikator und der Modifikator Simpel heben sich gegenseitig auf. Eine Waffe mit diesem Modifikator kann nicht in beiden Händen getragen werden, bis die Geschicklichkeit des Charakters 18+ beträgt."
-            },
-            "DemandingIncreased": {
-                "Name": "Fordernd (Erhöht)",
-                "Hint": "Dieser Gegenstand ist extrem schwer zu händeln und benötigt zur effektiven Benutzung mindestens einen Geschicklichkeitswert von 18. Eine Waffe mit diesem Modifikator kann nicht in beiden Händen getragen werden, bis die Geschicklichkeit des Charakters 25+ beträgt."
+                "Hint": "Dieser Gegenstand ist schwer zu händeln und benötigt zur effektiven Benutzung mindestens den angegebenen Geschicklichkeitswert. Eine Waffe mit diesem Modifikator kann erst dann in beiden Händen getragen werden, wenn die Geschicklichkeit des Charakters deutlich über diesem Wert liegt."
             },
             "Draining": {
                 "Name": "Zehrend",
-                "Hint": "Die Benutzung dieses Gegenstand ermüdet den Träger schnell und benötigt zur effektiven Benutzung mindestens einen Konstitutionswert von 16. Dieser Modifikator und der Modifikator Leicht heben sich gegenseitig auf. Eine Waffe mit diesem Modifikator kann nicht in beiden Händen getragen werden, bis die Geschicklichkeit des Charakters 22+ beträgt."
-            },
-            "DrainingReduced": {
-                "Name": "Zehrend (Verringert)",
-                "Hint": "Die Benutzung dieses Gegenstand ermüdet den Träger schnell und benötigt zur effektiven Benutzung mindestens einen Konstitutionswert von 14. Dieser Modifikator und der Modifikator Leicht heben sich gegenseitig auf. Eine Waffe mit diesem Modifikator kann nicht in beiden Händen getragen werden, bis die Geschicklichkeit des Charakters 18+ beträgt."
-            },
-            "DrainingIncreased": {
-                "Name": "Zehrend (Erhöht)",
-                "Hint": "Die Benutzung dieses Gegenstand ermüdet den Träger schnell und benötigt zur effektiven Benutzung mindestens einen Konstitutionswert von 18. Eine Waffe mit diesem Modifikator kann nicht in beiden Händen getragen werden, bis die Konstitution des Charakters 25+ beträgt."
-            },
-            "Complicated": {
-                "Name": "Kompliziert",
-                "Hint": "Dieser Gegenstand ist seltsam, muss erstmal verstanden werden und benötigt zur effektiven Nutzung mindestens einen Intelligenzwert von 16. Dieser Modifikator und der Modifikator Simpel heben sich gegenseitig auf."
+                "Hint": "Die Benutzung dieses Gegenstands ermüdet den Träger schnell und benötigt zur effektiven Benutzung mindestens den angegebenen Konstitutionswert. Eine Waffe mit diesem Modifikator kann erst dann in beiden Händen getragen werden, wenn die Konstitution des Charakters deutlich über diesem Wert liegt."
             },
             "Refined": {
                 "Name": "Raffiniert",
@@ -672,7 +645,7 @@
             },
             "TwoHanded": {
                 "Name": "Zweihändig",
-                "Hint": "Eine Waffe mit diesem Modifikator muss zweihändig geführt werden. Sollte eine solche Waffe nicht den Modifikator Schwer, Fordernd, Zehrend oder Kompliziert besitzen, dann kann sie einhändig geführt werden, falls der Träger einen Stärkewert von 18 oder höher hat."
+                "Hint": "Eine Waffe mit diesem Modifikator muss zweihändig geführt werden. Sollte eine solche Waffe nicht den Modifikator Schwer, Fordernd oder Zehrend besitzen, dann kann sie einhändig geführt werden, falls der Träger einen Stärkewert von 18 oder höher hat."
             },
             "Deployable": {
                 "Name": "Aufbaubar",

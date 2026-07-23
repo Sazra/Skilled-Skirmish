@@ -1126,3 +1126,57 @@
 .sksk .model-checkbox-grid .casting-method-option {
   font-size: 12px;
 }
+
+/* Wraps each property's checkbox (and, for Heavy/Demanding/Draining, its
+   requirement input) so the pair stays together in one grid cell instead
+   of the input pushing the next property into misaligned columns. */
+.sksk .model-property-option {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sksk .model-property-option .casting-method-option {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Collapses the (fairly long) Properties checkbox grid out of the way by
+   default - each model's summary line stays visible and clickable to
+   expand. */
+.sksk .model-properties-details summary {
+  cursor: pointer;
+  margin-bottom: 4px;
+}
+
+/* The GM-entered requirement (attribute score) for the Heavy/Demanding/
+   Draining properties - narrow, sits right next to that property's own
+   checkbox. */
+.sksk .model-requirement-input {
+  flex: 0 0 40px;
+  width: 40px;
+  min-width: 0;
+  font-size: 12px;
+}
+
+/* Configure Models settings app - keeps its tab bar fixed while the
+   active tab's own content scrolls internally (same pattern as
+   .sksk.item's window-content>section.tab, just under our own class
+   since this app isn't an actor/item sheet). */
+.application.sksk.models-config .window-content {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sksk.models-config .window-content>section.tab {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 8px;
+}
+
+/* Configure Materials settings app - a single, untabbed part, so the
+   whole window content just scrolls as one block. */
+.sksk.materials-config .window-content {
+  overflow-y: auto;
+}
