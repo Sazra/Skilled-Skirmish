@@ -111,6 +111,34 @@
     "MagicResistance": {
       "Computed": "Automatically calculated from Aura, Antimagic armor/shields and any effects - not directly editable"
     },
+    "Resource": {
+      "Life": "Life",
+      "NegativeLife": "Negative Life",
+      "Mana": "Mana",
+      "Barrier": "Barrier",
+      "AC": "AC",
+      "MR": "MR",
+      "AP": "AP",
+      "RP": "RP"
+    },
+    "Breakdown": {
+      "Level": "Level",
+      "ClassLife": "{name} (Life)",
+      "Ability": "Ability: {name}",
+      "AdvancedClassBonus": "Advanced Class Bonus",
+      "ToughnessMultiplier": "Toughness Multiplier (Tenacity Level {level})",
+      "Subtotal": "Subtotal",
+      "EffectsBonus": "Bonus (Effects)",
+      "Total": "Total",
+      "NegativeLifeBaseline": "Baseline (protected buffer)",
+      "ActualMaxLife": "Actual Max Life",
+      "Doubled": "{name} (×2)",
+      "GroundArmorClass": "Grund-AC (Base AC + Constitution)",
+      "ArmorSkillBonus": "Armor Skill Bonus",
+      "ArmorBonus": "Armor Bonus",
+      "ShieldBonus": "Shield Bonus",
+      "AntimagicBonus": "Antimagic ({name})"
+    },
     "GM": {
       "Switches": "Switches",
       "NaturalMaterialBonus": "Natural Material Bonus Adjustment",

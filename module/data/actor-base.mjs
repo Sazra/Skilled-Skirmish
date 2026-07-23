@@ -36,10 +36,11 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       // extending it - see helpers/life.mjs#computeMaxNegativeLife.
       includeToughness: new fields.BooleanField({ initial: false })
     });
-    // Usually-temporary pool that shields life (or negative life) from damage.
+    // Usually-temporary pool that shields life (or negative life) from
+    // damage - unlike every other resource, it's theoretically unbounded,
+    // so it has no max.
     schema.barrier = new fields.SchemaField({
       value: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
-      max: new fields.NumberField({ ...requiredInteger, initial: 0 })
     });
     schema.mana = new fields.SchemaField({
       value: new fields.NumberField({ ...requiredInteger, initial: 5, min: 0 }),

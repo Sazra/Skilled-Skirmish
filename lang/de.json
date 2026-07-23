@@ -111,6 +111,34 @@
         "MagicResistance": {
             "Computed": "Automatisch berechnet aus Aura, magiestörenden Rüstungen/Schilden und etwaigen Effekten - nicht direkt bearbeitbar"
         },
+        "Resource": {
+            "Life": "Leben",
+            "NegativeLife": "Negatives Leben",
+            "Mana": "Mana",
+            "Barrier": "Barriere",
+            "AC": "AC",
+            "MR": "MR",
+            "AP": "AP",
+            "RP": "RP"
+        },
+        "Breakdown": {
+            "Level": "Stufe",
+            "ClassLife": "{name} (Leben)",
+            "Ability": "Fähigkeit: {name}",
+            "AdvancedClassBonus": "Fortgeschrittene-Klasse-Bonus",
+            "ToughnessMultiplier": "Zähigkeits-Multiplikator (Zähigkeit Stufe {level})",
+            "Subtotal": "Zwischensumme",
+            "EffectsBonus": "Bonus (Effekte)",
+            "Total": "Gesamt",
+            "NegativeLifeBaseline": "Basiswert (geschützter Puffer)",
+            "ActualMaxLife": "Tatsächliches maximales Leben",
+            "Doubled": "{name} (×2)",
+            "GroundArmorClass": "Grund-AC (Basis-Grund-AC + Konstitution)",
+            "ArmorSkillBonus": "Rüstungs-Fertigkeitsbonus",
+            "ArmorBonus": "Rüstungsbonus",
+            "ShieldBonus": "Schild-Rüstungsbonus",
+            "AntimagicBonus": "Magiestörend ({name})"
+        },
         "GM": {
             "Switches": "Schalter",
             "NaturalMaterialBonus": "Anpassung Natürlicher Materialbonus",

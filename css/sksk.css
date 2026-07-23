@@ -632,6 +632,11 @@
   font-weight: bold;
 }
 
+.sksk .resource-label[data-tooltip] {
+  cursor: help;
+  border-bottom: 1px dotted currentColor;
+}
+
 /* Max Life is no longer user-editable (see data/actor-base.mjs#
    prepareDerivedData) - styled to look distinct from the Life value input
    next to it, rather than like an editable field. */
@@ -1179,4 +1184,45 @@
    whole window content just scrolls as one block. */
 .sksk.materials-config .window-content {
   overflow-y: auto;
+}
+
+/* Formula-breakdown hover tooltips (Life/Negative Life/Mana/AC/MR labels
+   on the resources sidebar - see helpers/tooltips.mjs). NOT scoped under
+   .sksk: Foundry's TooltipManager reparents the tooltip element onto
+   <body> itself, outside any sheet's own DOM subtree. */
+.sksk-breakdown-tooltip {
+  min-width: 220px;
+  font-size: 12px;
+}
+
+.sksk-breakdown-title {
+  font-weight: bold;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--color-border-light-tertiary, #d9d8ce);
+  padding-bottom: 2px;
+}
+
+.sksk-breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  white-space: nowrap;
+}
+
+.sksk-breakdown-perlevel {
+  opacity: 0.7;
+  font-style: italic;
+}
+
+.sksk-breakdown-subtotal {
+  margin-top: 2px;
+  border-top: 1px solid var(--color-border-light-tertiary, #d9d8ce);
+  padding-top: 2px;
+}
+
+.sksk-breakdown-total {
+  margin-top: 2px;
+  border-top: 1px solid var(--color-border-light-tertiary, #d9d8ce);
+  padding-top: 2px;
+  font-weight: bold;
 }

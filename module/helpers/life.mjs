@@ -2,8 +2,11 @@ import { getActorSkillLevel, evaluateSkillFormula } from './skills.mjs';
 import { getClassAbilityLevels, actorHasAdvancedClass } from './abilities.mjs';
 
 /**
- * The shared building blocks behind both computeMaxLife and
- * computeMaxNegativeLife. Per level, a creature gains:
+ * The shared building blocks behind computeMaxLife, computeMaxNegativeLife
+ * and getLifeBreakdown (the tooltip shown over the Life/Negative Life
+ * labels on the actor sheet) - the single source of truth for all three,
+ * so the tooltip can never drift out of sync with the actual numbers.
+ * Per level, a creature gains:
  * 1. The first Class's flat life value (system.life on the Class item).
  * 2. The second Class's flat life value, but only once the actor's level
  *    reaches the level its own first ability would unlock at (13, or 14
@@ -17,46 +20,73 @@ import { getClassAbilityLevels, actorHasAdvancedClass } from './abilities.mjs';
  * 6. +20, once the actor's level reaches 13 AND it holds an Advanced Class.
  *
  * @param {Actor} actor
- * @return {{rawBase: number, toughnessMultiplier: number, flatBonus: number}}
- *   rawBase is components 1-6 above, summed and multiplied by level -
- *   i.e. max life before Tenacity's multiplier and the flat bonus.
+ * @return {{
+ *   rows: Array<{label: string, perLevel: (number|null), value: number}>,
+ *   subtotal: number,
+ *   toughnessMultiplier: number,
+ *   flatBonus: number
+ * }} rows are components 1-6 above, individually - perLevel is the raw
+ *   per-level rate (null for ability bonuses, which already scale on their
+ *   own via their own formula) and value is that row's contribution to
+ *   subtotal (components 1-4/6 multiplied by level; ability bonuses as-is).
+ *   subtotal is max life before Tenacity's multiplier and the flat bonus.
  */
 function computeLifeComponents(actor) {
   const level = actor.system.resources?.level?.value ?? 1;
   const hasAdvancedClass = actorHasAdvancedClass(actor);
 
-  let perLevel = 0;
-  let abilityLifeBonus = 0;
+  const rows = [];
+  const pushAbility = (name, formula) => {
+    if (!formula) return;
+    const value = evaluateSkillFormula(formula, { lvl: level });
+    if (value) rows.push({ label: game.i18n.format('SKSK.Breakdown.Ability', { name }), perLevel: null, value });
+  };
 
   for (const item of actor.items) {
     if (item.type === 'class') {
-      if (item.system.classType === 'first') {
-        perLevel += item.system.life ?? 0;
+      if (item.system.classType === 'first' && item.system.life) {
+        rows.push({
+          label: game.i18n.format('SKSK.Breakdown.ClassLife', { name: item.name }),
+          perLevel: item.system.life, value: item.system.life * level,
+        });
       } else if (item.system.classType === 'second') {
         const [threshold] = getClassAbilityLevels('second', hasAdvancedClass);
-        if (level >= threshold) perLevel += item.system.life ?? 0;
+        if (level >= threshold && item.system.life) {
+          rows.push({
+            label: game.i18n.format('SKSK.Breakdown.ClassLife', { name: item.name }),
+            perLevel: item.system.life, value: item.system.life * level,
+          });
+        }
       }
       const unlockLevels = getClassAbilityLevels(item.system.classType, hasAdvancedClass);
       item.system.abilities?.forEach((ability, index) => {
-        if (!ability.lifeBonusFormula || level < (unlockLevels[index] ?? 1)) return;
-        abilityLifeBonus += evaluateSkillFormula(ability.lifeBonusFormula, { lvl: level });
+        if (level < (unlockLevels[index] ?? 1)) return;
+        pushAbility(ability.name || item.name, ability.lifeBonusFormula);
       });
     } else if (item.type === 'species') {
       for (const ability of item.system.abilities ?? []) {
-        if (!ability.lifeBonusFormula) continue;
-        abilityLifeBonus += evaluateSkillFormula(ability.lifeBonusFormula, { lvl: level });
+        pushAbility(ability.name || item.name, ability.lifeBonusFormula);
       }
-    } else if (item.type === 'talent' && item.system.lifeBonusFormula) {
-      abilityLifeBonus += evaluateSkillFormula(item.system.lifeBonusFormula, { lvl: level });
+    } else if (item.type === 'talent') {
+      pushAbility(item.name, item.system.lifeBonusFormula);
     }
   }
 
-  perLevel += actor.system.attributes?.con?.mod ?? 0;
-  perLevel += getActorSkillLevel(actor, 'health');
-  if (hasAdvancedClass && level >= 13) perLevel += 20;
+  const conMod = actor.system.attributes?.con?.mod ?? 0;
+  rows.push({ label: game.i18n.localize('SKSK.Attribute.Con.long'), perLevel: conMod, value: conMod * level });
+
+  const healthLevel = getActorSkillLevel(actor, 'health');
+  rows.push({ label: game.i18n.localize('SKSK.Skill.Fighter.Health'), perLevel: healthLevel, value: healthLevel * level });
+
+  if (hasAdvancedClass && level >= 13) {
+    rows.push({ label: game.i18n.localize('SKSK.Breakdown.AdvancedClassBonus'), perLevel: 20, value: 20 * level });
+  }
+
+  const subtotal = rows.reduce((sum, row) => sum + row.value, 0);
 
   return {
-    rawBase: perLevel * level + abilityLifeBonus,
+    rows,
+    subtotal,
     toughnessMultiplier: 1 + 0.2 * getActorSkillLevel(actor, 'tenacity'),
     flatBonus: actor.system.life?.bonus ?? 0,
   };
@@ -65,15 +95,15 @@ function computeLifeComponents(actor) {
 /**
  * An actor's maximum life - no longer directly user-editable (see
  * data/actor-base.mjs#prepareDerivedData, which overwrites system.life.max
- * with this every time). rawBase (see computeLifeComponents) is multiplied
+ * with this every time). subtotal (see computeLifeComponents) is multiplied
  * by (1 + 0.2 per Tenacity skill level), and finally a flat,
  * Active-Effect-driven bonus (system.life.bonus) is added on top.
  * @param {Actor} actor
  * @return {number}
  */
 export function computeMaxLife(actor) {
-  const { rawBase, toughnessMultiplier, flatBonus } = computeLifeComponents(actor);
-  return Math.max(0, Math.round(rawBase * toughnessMultiplier + flatBonus));
+  const { subtotal, toughnessMultiplier, flatBonus } = computeLifeComponents(actor);
+  return Math.max(0, Math.round(subtotal * toughnessMultiplier + flatBonus));
 }
 
 /**
@@ -98,9 +128,63 @@ export function computeMaxLife(actor) {
  * @return {number}
  */
 export function computeMaxNegativeLife(actor) {
-  const { rawBase, toughnessMultiplier, flatBonus } = computeLifeComponents(actor);
+  const { subtotal, toughnessMultiplier, flatBonus } = computeLifeComponents(actor);
   const includeToughness = actor.system.negativeLife?.includeToughness ?? false;
-  const coreMaxLife = rawBase * (includeToughness ? toughnessMultiplier : 1);
-  const actualMaxLife = rawBase * toughnessMultiplier + flatBonus;
+  const coreMaxLife = subtotal * (includeToughness ? toughnessMultiplier : 1);
+  const actualMaxLife = subtotal * toughnessMultiplier + flatBonus;
   return Math.max(0, Math.round(Math.min(coreMaxLife, actualMaxLife)));
+}
+
+/**
+ * The itemized breakdown shown in the tooltip over the Life/Negative Life
+ * labels on the actor sheet - see helpers/tooltips.mjs#renderBreakdownHtml.
+ * @param {Actor} actor
+ * @return {{
+ *   rows: Array, subtotal: number,
+ *   multiplier: {label: string, factor: number},
+ *   flatBonus: number, total: number
+ * }}
+ */
+export function getLifeBreakdown(actor) {
+  const { rows, subtotal, toughnessMultiplier, flatBonus } = computeLifeComponents(actor);
+  const tenacityLevel = getActorSkillLevel(actor, 'tenacity');
+  return {
+    rows,
+    subtotal,
+    multiplier: {
+      label: game.i18n.format('SKSK.Breakdown.ToughnessMultiplier', { level: tenacityLevel }),
+      factor: toughnessMultiplier,
+    },
+    flatBonus,
+    total: computeMaxLife(actor),
+  };
+}
+
+/**
+ * The itemized breakdown shown in the tooltip over the Negative Life
+ * label - the same per-level components as Life, but ending in the
+ * "lower of the two" comparison instead of a flat flatBonus addition (see
+ * computeMaxNegativeLife).
+ * @param {Actor} actor
+ * @return {{
+ *   rows: Array, subtotal: number,
+ *   multiplier: {label: string, factor: number},
+ *   withoutToughness: number, withToughness: number, total: number
+ * }}
+ */
+export function getNegativeLifeBreakdown(actor) {
+  const { rows, subtotal, toughnessMultiplier, flatBonus } = computeLifeComponents(actor);
+  const tenacityLevel = getActorSkillLevel(actor, 'tenacity');
+  const includeToughness = actor.system.negativeLife?.includeToughness ?? false;
+  return {
+    rows,
+    subtotal,
+    multiplier: {
+      label: game.i18n.format('SKSK.Breakdown.ToughnessMultiplier', { level: tenacityLevel }),
+      factor: toughnessMultiplier,
+    },
+    withoutToughness: Math.round(subtotal * (includeToughness ? toughnessMultiplier : 1)),
+    withToughness: Math.round(subtotal * toughnessMultiplier + flatBonus),
+    total: computeMaxNegativeLife(actor),
+  };
 }

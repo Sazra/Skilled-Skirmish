@@ -14,6 +14,18 @@ import {
 import { computeMovementSpeeds, getActorSizeCategory } from '../helpers/movement.mjs';
 import { computeCarriedWeight, computeMaxCarryWeight } from '../helpers/inventory.mjs';
 import { getClassAbilityLevels, actorHasAdvancedClass } from '../helpers/abilities.mjs';
+import { getLifeBreakdown, getNegativeLifeBreakdown } from '../helpers/life.mjs';
+import { getManaBreakdown } from '../helpers/mana.mjs';
+import { getArmorClassBreakdown, getMagicResistanceBreakdown } from '../helpers/defense.mjs';
+import { renderBreakdownHtml } from '../helpers/tooltips.mjs';
+
+/**
+ * Schema paths (relative to system.*) whose value input accepts the "+N"/
+ * "-N" relative-adjustment syntax on the resources sidebar and is clamped
+ * to [0, the field's own computed max] - see #normalizeResourceInput.
+ * Barrier is intentionally excluded: it has no max (unbounded).
+ */
+const CLAMPED_RESOURCE_KEYS = ['life', 'negativeLife', 'mana', 'actionPoints', 'reactionPoints'];
 
 /**
  * Extend the basic ActorSheet with some very simple modifications
@@ -357,6 +369,19 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       actor.allApplicableEffects()
     );
 
+    // Hover tooltips over the Life/Negative Life/Mana/AC/MR labels on the
+    // resources sidebar, breaking each computed value down into its
+    // formula's individual components - see helpers/tooltips.mjs.
+    context.lifeTooltip = renderBreakdownHtml(game.i18n.localize('SKSK.Resource.Life'), getLifeBreakdown(actor));
+    context.negativeLifeTooltip = renderBreakdownHtml(
+      game.i18n.localize('SKSK.Resource.NegativeLife'), getNegativeLifeBreakdown(actor)
+    );
+    context.manaTooltip = renderBreakdownHtml(game.i18n.localize('SKSK.Resource.Mana'), getManaBreakdown(actor));
+    context.armorClassTooltip = renderBreakdownHtml(game.i18n.localize('SKSK.Resource.AC'), getArmorClassBreakdown(actor));
+    context.magicResistanceTooltip = renderBreakdownHtml(
+      game.i18n.localize('SKSK.Resource.MR'), getMagicResistanceBreakdown(actor)
+    );
+
     return context;
   }
 
@@ -687,8 +712,35 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
 
   /** @override */
   _onChangeForm(formConfig, event) {
+    this.#normalizeResourceInput(event.target);
     this.#enforceElementExclusivity(event.target);
     super._onChangeForm(formConfig, event);
+  }
+
+  /**
+   * Life/Negative Life/Mana/AP/RP's value inputs (resources.hbs/
+   * resources-npc.hbs) accept "+N"/"-N" to adjust the CURRENT value by
+   * that amount, in addition to a plain absolute number - and always
+   * clamp to [0, the field's own computed max]. Rewrites the input's own
+   * value in place before the pending submitOnChange form submission
+   * fires, so the corrected number is what actually gets saved - mirrors
+   * #enforceElementExclusivity below.
+   * @param {HTMLElement} target
+   */
+  #normalizeResourceInput(target) {
+    const match = target?.name?.match(/^system\.(\w+)\.value$/);
+    if (!match || !CLAMPED_RESOURCE_KEYS.includes(match[1])) return;
+    const [, key] = match;
+    const resource = this.actor.system[key];
+    const raw = target.value.trim();
+
+    let next;
+    if (/^[+-]\d+$/.test(raw)) next = resource.value + Number(raw);
+    else {
+      const parsed = Number(raw);
+      next = Number.isFinite(parsed) ? parsed : resource.value;
+    }
+    target.value = String(Math.max(0, Math.min(next, resource.max)));
   }
 
   /**

@@ -2,70 +2,68 @@
   <div class="side-tab-content flexcol">
 
     <div class="resource flex-group-center">
-      <label for="system.life.value" class="resource-label">Life</label>
+      <label class="resource-label" data-tooltip="{{localize 'SKSK.Resource.Life'}}" data-tooltip-html="{{lifeTooltip}}">
+        {{localize 'SKSK.Resource.Life'}}
+      </label>
       <div class="resource-content flexrow flex-center flex-between">
-        <input type="text" name="system.life.value" value="{{system.life.value}}" data-dtype="Number" />
-        <span>/</span>
-        <span class="resource-computed" title="{{localize 'SKSK.Life.MaxComputed'}}">{{system.life.max}}</span>
+        <input type="text" class="resource-value-input" name="system.life.value" value="{{system.life.value}}" />
       </div>
     </div>
 
     <div class="resource flex-group-center">
-      <label for="system.negativeLife.value" class="resource-label">Negative Life</label>
+      <label class="resource-label" data-tooltip="{{localize 'SKSK.Resource.NegativeLife'}}" data-tooltip-html="{{negativeLifeTooltip}}">
+        {{localize 'SKSK.Resource.NegativeLife'}}
+      </label>
       <div class="resource-content flexrow flex-center flex-between">
-        <input type="text" name="system.negativeLife.value" value="{{system.negativeLife.value}}" data-dtype="Number" />
-        <span>/</span>
-        <span class="resource-computed" title="{{localize 'SKSK.NegativeLife.MaxComputed'}}">{{system.negativeLife.max}}</span>
+        <input type="text" class="resource-value-input" name="system.negativeLife.value" value="{{system.negativeLife.value}}" />
       </div>
     </div>
 
     <div class="resource flex-group-center">
-      <label for="system.barrier.value" class="resource-label">Barrier</label>
+      <label class="resource-label" data-tooltip="{{localize 'SKSK.Resource.Mana'}}" data-tooltip-html="{{manaTooltip}}">
+        {{localize 'SKSK.Resource.Mana'}}
+      </label>
+      <div class="resource-content flexrow flex-center flex-between">
+        <input type="text" class="resource-value-input" name="system.mana.value" value="{{system.mana.value}}" />
+      </div>
+    </div>
+
+    <div class="resource flex-group-center">
+      <label class="resource-label">{{localize 'SKSK.Resource.Barrier'}}</label>
       <div class="resource-content flexrow flex-center flex-between">
         <input type="text" name="system.barrier.value" value="{{system.barrier.value}}" data-dtype="Number" />
-        <span>/</span>
-        <input type="text" name="system.barrier.max" value="{{system.barrier.max}}" data-dtype="Number" />
       </div>
     </div>
 
     <div class="resource flex-group-center">
-      <label for="system.mana.value" class="resource-label">Mana</label>
+      <label class="resource-label" data-tooltip="{{localize 'SKSK.Resource.AC'}}" data-tooltip-html="{{armorClassTooltip}}">
+        {{localize 'SKSK.Resource.AC'}}
+      </label>
       <div class="resource-content flexrow flex-center flex-between">
-        <input type="text" name="system.mana.value" value="{{system.mana.value}}" data-dtype="Number" />
-        <span>/</span>
-        <span class="resource-computed" title="{{localize 'SKSK.Mana.MaxComputed'}}">{{system.mana.max}}</span>
+        <span class="resource-computed">{{system.armorClass}}</span>
       </div>
     </div>
 
     <div class="resource flex-group-center">
-      <label for="system.actionPoints.value" class="resource-label">AP</label>
+      <label class="resource-label" data-tooltip="{{localize 'SKSK.Resource.MR'}}" data-tooltip-html="{{magicResistanceTooltip}}">
+        {{localize 'SKSK.Resource.MR'}}
+      </label>
       <div class="resource-content flexrow flex-center flex-between">
-        <input type="text" name="system.actionPoints.value" value="{{system.actionPoints.value}}" data-dtype="Number" />
-        <span>/</span>
-        <span class="resource-computed" title="{{localize 'SKSK.ActionPoints.MaxComputed'}}">{{system.actionPoints.max}}</span>
+        <span class="resource-computed">{{system.magicResistance}}</span>
       </div>
     </div>
 
     <div class="resource flex-group-center">
-      <label for="system.reactionPoints.value" class="resource-label">RP</label>
+      <label class="resource-label">{{localize 'SKSK.Resource.AP'}}</label>
       <div class="resource-content flexrow flex-center flex-between">
-        <input type="text" name="system.reactionPoints.value" value="{{system.reactionPoints.value}}" data-dtype="Number" />
-        <span>/</span>
-        <span class="resource-computed" title="{{localize 'SKSK.ReactionPoints.MaxComputed'}}">{{system.reactionPoints.max}}</span>
+        <input type="text" class="resource-value-input" name="system.actionPoints.value" value="{{system.actionPoints.value}}" />
       </div>
     </div>
 
     <div class="resource flex-group-center">
-      <label class="resource-label">AC</label>
+      <label class="resource-label">{{localize 'SKSK.Resource.RP'}}</label>
       <div class="resource-content flexrow flex-center flex-between">
-        <span class="resource-computed" title="{{localize 'SKSK.ArmorClass.Computed'}}">{{system.armorClass}}</span>
-      </div>
-    </div>
-
-    <div class="resource flex-group-center">
-      <label class="resource-label">MR</label>
-      <div class="resource-content flexrow flex-center flex-between">
-        <span class="resource-computed" title="{{localize 'SKSK.MagicResistance.Computed'}}">{{system.magicResistance}}</span>
+        <input type="text" class="resource-value-input" name="system.reactionPoints.value" value="{{system.reactionPoints.value}}" />
       </div>
     </div>
 

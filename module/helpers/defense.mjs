@@ -3,8 +3,9 @@ import { getActorSkillLevel } from "./skills.mjs";
 /**
  * The level-based component of a creature's "natural" material bonus -
  * present even fully unarmored, used as a floor under worn armor's own
- * bonus (see computeArmorClass). Per the design spreadsheet: level 1-24
- * scales as ceil(level/3); level 25 is a fixed 9; level 26+ is a fixed 10.
+ * bonus (see computeArmorClassComponents). Per the design spreadsheet:
+ * level 1-24 scales as ceil(level/3); level 25 is a fixed 9; level 26+ is
+ * a fixed 10.
  * @param {number} level
  * @return {number}
  */
@@ -37,8 +38,7 @@ export function computeNaturalMaterialBonus(actor) {
 /**
  * A single equipped Armor item's own "armor bonus" - its material's bonus,
  * plus its model's flat bonus, plus the model's Hardened Value - shared by
- * light/heavy armor and shields alike (see computeArmorClass/
- * computeMagicResistance).
+ * light/heavy armor and shields alike.
  * @param {Item} armorItem
  * @return {number}
  */
@@ -61,11 +61,11 @@ function getEquippedArmorByType(actor, armorType) {
 }
 
 /**
- * An actor's Armor Class - no longer directly user-editable (see
- * data/actor-base.mjs#prepareDerivedData, which overwrites
- * system.armorClass with this every time). Grund-AC (system.baseArmorClass,
- * a plain user/Active-Effect-editable field, plus the Constitution
- * modifier) plus AC-Boni:
+ * The shared building blocks behind computeArmorClass and
+ * getArmorClassBreakdown (the tooltip shown over the AC label on the actor
+ * sheet) - the single source of truth for both. AC-Boni, in order:
+ * - Grund-AC: system.baseArmorClass (a plain user/Active-Effect-editable
+ *   field) plus the Constitution modifier.
  * - A skill bonus from equipped Light/Heavy Armor, 1 per skill level up to
  *   and including level 5 (Light) / level 6 (Heavy) - only one of the two
  *   can ever be equipped at once (see the updateItem hook in sksk.mjs).
@@ -77,11 +77,14 @@ function getEquippedArmorByType(actor, armorType) {
  * - system.customArmorClassBonus, a plain user/Active-Effect-editable
  *   flat bonus.
  * @param {Actor} actor
- * @return {number}
+ * @return {{rows: Array<{label: string, perLevel: null, value: number}>, total: number}}
  */
-export function computeArmorClass(actor) {
+function computeArmorClassComponents(actor) {
   const system = actor.system;
-  const baseArmorClass = (system.baseArmorClass ?? 0) + (system.attributes?.con?.mod ?? 0);
+  const rows = [];
+
+  const groundArmorClass = (system.baseArmorClass ?? 0) + (system.attributes?.con?.mod ?? 0);
+  rows.push({ label: game.i18n.localize('SKSK.Breakdown.GroundArmorClass'), perLevel: null, value: groundArmorClass });
 
   const lightArmor = getEquippedArmorByType(actor, 'lightArmor')[0] ?? null;
   const heavyArmor = getEquippedArmorByType(actor, 'heavyArmor')[0] ?? null;
@@ -90,33 +93,91 @@ export function computeArmorClass(actor) {
   let armorSkillBonus = 0;
   if (lightArmor) armorSkillBonus = Math.min(getActorSkillLevel(actor, 'lightArmor'), 5);
   else if (heavyArmor) armorSkillBonus = Math.min(getActorSkillLevel(actor, 'heavyArmor'), 6);
+  rows.push({ label: game.i18n.localize('SKSK.Breakdown.ArmorSkillBonus'), perLevel: null, value: armorSkillBonus });
 
   const wornArmorBonus = wornArmor ? computeArmorPieceBonus(wornArmor) : 0;
   const armorBonus = Math.max(wornArmorBonus, computeNaturalMaterialBonus(actor));
+  rows.push({ label: game.i18n.localize('SKSK.Breakdown.ArmorBonus'), perLevel: null, value: armorBonus });
 
   const shieldBonus = getEquippedArmorByType(actor, 'shield')
     .reduce((sum, shield) => sum + computeArmorPieceBonus(shield), 0);
+  rows.push({ label: game.i18n.localize('SKSK.Breakdown.ShieldBonus'), perLevel: null, value: shieldBonus });
 
-  return Math.round(baseArmorClass + armorSkillBonus + armorBonus + shieldBonus + (system.customArmorClassBonus ?? 0));
+  rows.push({ label: game.i18n.localize('SKSK.GM.CustomArmorClassBonus'), perLevel: null, value: system.customArmorClassBonus ?? 0 });
+
+  return { rows, total: Math.round(rows.reduce((sum, row) => sum + row.value, 0)) };
+}
+
+/**
+ * The shared building blocks behind computeMagicResistance and
+ * getMagicResistanceBreakdown (the tooltip shown over the MR label on the
+ * actor sheet) - the single source of truth for both. The Aura attribute
+ * value, plus (for every equipped Armor/Shield with the Antimagic
+ * property) half that piece's own armor bonus (rounded down), plus
+ * system.customMagicResistanceBonus, a plain user/Active-Effect-editable
+ * flat bonus.
+ * @param {Actor} actor
+ * @return {{rows: Array<{label: string, perLevel: null, value: number}>, total: number}}
+ */
+function computeMagicResistanceComponents(actor) {
+  const system = actor.system;
+  const rows = [];
+
+  rows.push({ label: game.i18n.localize('SKSK.Attribute.Aur.long'), perLevel: null, value: system.attributes?.aur?.value ?? 0 });
+
+  const antimagicItems = actor.items.filter(i => i.type === 'armor' && i.system.equipped
+    && (i.system.effectiveProperties ?? []).some(p => p.property === 'antimagic'));
+  for (const item of antimagicItems) {
+    rows.push({
+      label: game.i18n.format('SKSK.Breakdown.AntimagicBonus', { name: item.name }),
+      perLevel: null, value: Math.floor(computeArmorPieceBonus(item) / 2),
+    });
+  }
+
+  rows.push({ label: game.i18n.localize('SKSK.GM.CustomMagicResistanceBonus'), perLevel: null, value: system.customMagicResistanceBonus ?? 0 });
+
+  return { rows, total: Math.round(rows.reduce((sum, row) => sum + row.value, 0)) };
+}
+
+/**
+ * An actor's Armor Class - no longer directly user-editable (see
+ * data/actor-base.mjs#prepareDerivedData, which overwrites
+ * system.armorClass with this every time). See computeArmorClassComponents.
+ * @param {Actor} actor
+ * @return {number}
+ */
+export function computeArmorClass(actor) {
+  return computeArmorClassComponents(actor).total;
 }
 
 /**
  * An actor's Magic Resistance - no longer directly user-editable (see
  * data/actor-base.mjs#prepareDerivedData, which overwrites
- * system.magicResistance with this every time). The Aura attribute value,
- * plus (for every equipped Armor/Shield with the Antimagic property) half
- * that piece's own armor bonus (rounded down), plus
- * system.customMagicResistanceBonus, a plain user/Active-Effect-editable
- * flat bonus.
+ * system.magicResistance with this every time). See
+ * computeMagicResistanceComponents.
  * @param {Actor} actor
  * @return {number}
  */
 export function computeMagicResistance(actor) {
-  const system = actor.system;
-  const antimagicBonus = actor.items
-    .filter(i => i.type === 'armor' && i.system.equipped
-      && (i.system.effectiveProperties ?? []).some(p => p.property === 'antimagic'))
-    .reduce((sum, armorItem) => sum + Math.floor(computeArmorPieceBonus(armorItem) / 2), 0);
+  return computeMagicResistanceComponents(actor).total;
+}
 
-  return Math.round((system.attributes?.aur?.value ?? 0) + antimagicBonus + (system.customMagicResistanceBonus ?? 0));
+/**
+ * The itemized breakdown shown in the tooltip over the AC label on the
+ * actor sheet - see helpers/tooltips.mjs#renderBreakdownHtml.
+ * @param {Actor} actor
+ * @return {{rows: Array, total: number}}
+ */
+export function getArmorClassBreakdown(actor) {
+  return computeArmorClassComponents(actor);
+}
+
+/**
+ * The itemized breakdown shown in the tooltip over the MR label on the
+ * actor sheet - see helpers/tooltips.mjs#renderBreakdownHtml.
+ * @param {Actor} actor
+ * @return {{rows: Array, total: number}}
+ */
+export function getMagicResistanceBreakdown(actor) {
+  return computeMagicResistanceComponents(actor);
 }
