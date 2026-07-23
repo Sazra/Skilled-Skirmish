@@ -64,11 +64,15 @@
       "MaxComputed": "Automatically calculated from Classes, Constitution, Health, Tenacity and abilities - not directly editable"
     },
     "NegativeLife": {
-      "MaxComputed": "Automatically calculated from max life, minus Tenacity's multiplier unless included below - not directly editable",
+      "MaxComputed": "Automatically calculated from max life, minus Tenacity's multiplier unless enabled on the GM tab - not directly editable",
+      "IncludeToughness": "Tenacity also raises max negative life",
       "IncludeToughnessHint": "Let Tenacity's multiplier also raise max negative life, instead of only max life"
     },
     "Mana": {
       "MaxComputed": "Automatically calculated from Aura, Mana Capacity, Source Bound, Mana Core and abilities - not directly editable"
+    },
+    "GM": {
+      "Switches": "Switches"
     },
     "Gender": {
       "Male": "Male",
@@ -339,7 +343,8 @@
       "Class": "Class",
       "Skills": "Skills",
       "General": "General",
-      "Character": "Character"
+      "Character": "Character",
+      "GM": "GM"
     },
     "Species": {
       "Type": {

@@ -58,6 +58,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
         { id: "skills", label: "SKSK.SheetLabels.Skills" },
         { id: "spells", label: "Spells" },
         { id: "effects", label: "Effects" },
+        { id: "gm", label: "SKSK.SheetLabels.GM" },
       ],
       initial: "character",
     },
@@ -202,6 +203,10 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       template: "systems/sksk/templates/actor/parts/effects.hbs",
       scrollable: [""],
     },
+    gm: {
+      template: "systems/sksk/templates/actor/parts/gm.hbs",
+      scrollable: [""],
+    },
   };
 
   /** @override */
@@ -218,6 +223,11 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       parts.header.template = `systems/sksk/templates/actor/parts/header.hbs`;
       parts.resources.template = `systems/sksk/templates/actor/parts/resources.hbs`;
     }
+
+    // The GM tab holds background information/switches irrelevant to
+    // players - not rendered into the DOM at all for non-GM users (see
+    // also _prepareContext, which hides its tab-bar button).
+    if (!game.user.isGM) delete parts.gm;
 
     return parts;
   }
@@ -282,6 +292,9 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     // With more than one tab group declared, the base _prepareContext no
     // longer auto-populates context.tabs - prepare both groups ourselves.
     context.tabs = this._prepareTabs('primary');
+    // The GM tab holds background information/switches irrelevant to
+    // players - hidden from the tab bar entirely for non-GM users.
+    if (!game.user.isGM) delete context.tabs.gm;
     context.characterSectionTabs = Object.values(this._prepareTabs('characterSections'));
     context.genderChoices = CONFIG.SKSK.genders;
     context.skillTabs = Object.values(this._prepareTabs('skillCategories'));

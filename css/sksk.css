@@ -642,13 +642,6 @@
   font-style: italic;
 }
 
-/* Toggles whether Tenacity's multiplier also raises max negative life -
-   see helpers/life.mjs#computeMaxNegativeLife. */
-.sksk .negative-life-toughness-toggle {
-  margin-left: 4px;
-  vertical-align: middle;
-}
-
 .sksk .items-header {
   height: 28px;
   margin: 2px 0;
