@@ -518,8 +518,6 @@
     },
     "Models": {
       "Name": "Name",
-      "WeaponType": "Weapon Type",
-      "ArmorType": "Armor Type",
       "DiceFormula": "Roll Formula",
       "FlatBonus": "Flat Value",
       "Attributes": "Attribute Modifiers Used",

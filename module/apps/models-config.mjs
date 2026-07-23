@@ -13,12 +13,30 @@ function selectedKeys(selection) {
 }
 
 /**
+ * Groups an array of models by one of their own fields, while preserving
+ * each model's index in the ORIGINAL (ungrouped) array - needed since
+ * every field name in the form is "weaponModels.<original index>.<field>",
+ * matching the flat world-setting array, regardless of which sub-tab it's
+ * displayed under.
+ * @param {object[]} models
+ * @param {string} typeField  E.g. "weaponType" or "armorType".
+ * @return {Object<string, Array<{model: object, index: number}>>}
+ */
+function groupByType(models, typeField) {
+  const groups = {};
+  models.forEach((model, index) => {
+    (groups[model[typeField]] ??= []).push({ model, index });
+  });
+  return groups;
+}
+
+/**
  * GM-only settings menu app for managing the world's lists of Weapon
- * Models (by weapon type) and Armor Models (Light Armor/Heavy Armor/
- * Shield) - see helpers/models.mjs. Two plain world settings (untyped
- * Arrays) have no native config UI, so this provides one, following the
- * same add/remove-array-entry pattern used elsewhere against a world
- * setting (see also apps/materials-config.mjs).
+ * Models (one sub-tab per weapon type) and Armor Models (one sub-tab per
+ * Light Armor/Heavy Armor/Shield) - see helpers/models.mjs. Two plain
+ * world settings (untyped Arrays) have no native config UI, so this
+ * provides one, following the same add/remove-array-entry pattern used
+ * elsewhere against a world setting (see also apps/materials-config.mjs).
  */
 export class SKSKModelsConfig extends HandlebarsApplicationMixin(ApplicationV2) {
   /** @override */
@@ -57,6 +75,34 @@ export class SKSKModelsConfig extends HandlebarsApplicationMixin(ApplicationV2) 
       ],
       initial: 'weaponModels',
     },
+    // Sub-tabs shown inside the Weapon Models tab, one per weapon type -
+    // replaces a per-row Weapon Type dropdown. Hardcoded (rather than
+    // derived from CONFIG.SKSK) since static class fields evaluate before
+    // the init hook populates CONFIG.SKSK, matching actor-sheet.mjs's
+    // skillCategories.
+    weaponModelTypes: {
+      tabs: [
+        { id: 'axe', label: 'SKSK.Skill.Weapon.Axe' },
+        { id: 'bow', label: 'SKSK.Skill.Weapon.Bow' },
+        { id: 'bluntWeapon', label: 'SKSK.Skill.Weapon.BluntWeapon' },
+        { id: 'dagger', label: 'SKSK.Skill.Weapon.Dagger' },
+        { id: 'firearms', label: 'SKSK.Skill.Weapon.Firearms' },
+        { id: 'martialArts', label: 'SKSK.Skill.Weapon.MartialArts' },
+        { id: 'polearms', label: 'SKSK.Skill.Weapon.Polearm' },
+        { id: 'sword', label: 'SKSK.Skill.Weapon.Sword' },
+      ],
+      initial: 'axe',
+    },
+    // Sub-tabs shown inside the Armor Models tab - replaces a per-row
+    // Armor Type dropdown.
+    armorModelTypes: {
+      tabs: [
+        { id: 'lightArmor', label: 'SKSK.Skill.Armor.LightArmor' },
+        { id: 'heavyArmor', label: 'SKSK.Skill.Armor.HeavyArmor' },
+        { id: 'shield', label: 'SKSK.Skill.Armor.Shield' },
+      ],
+      initial: 'lightArmor',
+    },
   };
 
   /** @override */
@@ -78,20 +124,24 @@ export class SKSKModelsConfig extends HandlebarsApplicationMixin(ApplicationV2) 
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
     context.tabs = this._prepareTabs('primary');
-    context.weaponModels = getWeaponModels();
-    context.armorModels = getArmorModels();
-    context.weaponTypeChoices = Object.fromEntries(
-      Object.entries(CONFIG.SKSK.skills.weapons).map(([key, def]) => [key, def.label])
-    );
-    context.armorTypeChoices = CONFIG.SKSK.armorModelTypes;
+    context.weaponModelTypeTabs = Object.values(this._prepareTabs('weaponModelTypes'));
+    context.armorModelTypeTabs = Object.values(this._prepareTabs('armorModelTypes'));
+
+    context.weaponModelsByType = groupByType(getWeaponModels(), 'weaponType');
+    context.armorModelsByType = groupByType(getArmorModels(), 'armorType');
+
     context.attributeChoices = CONFIG.SKSK.attributes;
-    // Every weapon model shares the same property pool (weapon type
-    // doesn't affect applicability); every armor model shares the same
-    // pool too (light/heavy/shield combined) rather than filtering per
-    // row's own armorType, to keep this GM tool simple - properties that
-    // don't apply to a particular armor type are just left unchecked.
+    // Every weapon type shares the same property pool.
     context.weaponPropertyChoices = getModelPropertiesFor(['weapon']);
-    context.armorPropertyChoices = getModelPropertiesFor(['lightArmor', 'heavyArmor', 'shield']);
+    // Armor properties are filtered per the model's own exact type now
+    // that each lives under its own sub-tab (Light/Heavy Armor share a
+    // pool; Shield's is genuinely different - e.g. Deployable/Arm-Bound
+    // only make sense there).
+    context.armorPropertyChoicesByType = {
+      lightArmor: getModelPropertiesFor(['lightArmor']),
+      heavyArmor: getModelPropertiesFor(['heavyArmor']),
+      shield: getModelPropertiesFor(['shield']),
+    };
     return context;
   }
 
@@ -110,25 +160,32 @@ export class SKSKModelsConfig extends HandlebarsApplicationMixin(ApplicationV2) 
   /** @override */
   async _onRender(context, options) {
     await super._onRender(context, options);
-    // Force-apply the active tab on first render (Foundry only wires up
-    // clicks after that, matching the pattern used on Actor/Item sheets).
-    const active = this.tabGroups?.primary ?? this.constructor.TABS.primary.initial;
-    if (active && this.element.querySelector(`.tab[data-group="primary"][data-tab="${active}"]`)) {
-      this.changeTab(active, 'primary', { force: true, updatePosition: false });
+    // Force-apply every declared tab group's active tab on first render
+    // (Foundry only wires up clicks after that, matching the pattern used
+    // on Actor/Item sheets).
+    for (const group of ['primary', 'weaponModelTypes', 'armorModelTypes']) {
+      const active = this.tabGroups?.[group] ?? this.constructor.TABS[group].initial;
+      if (active && this.element.querySelector(`.tab[data-group="${group}"][data-tab="${active}"]`)) {
+        this.changeTab(active, group, { force: true, updatePosition: false });
+      }
     }
   }
 
   /**
    * Parse the submitted form's flat "weaponModels.<index>.<field>" and
    * "armorModels.<index>.<field>" keys back into arrays and persist them
-   * as the world settings.
+   * as the world settings. weaponType/armorType aren't form fields
+   * anymore (implicit from whichever sub-tab a model was added under),
+   * so they're carried over from the existing stored value instead.
    * @private
    */
   static async #onSubmit(event, form, formData) {
     const expanded = foundry.utils.expandObject(formData.object);
-    const weaponModels = Object.values(expanded.weaponModels ?? {}).map(m => ({
+    const existingWeaponModels = getWeaponModels();
+    const existingArmorModels = getArmorModels();
+    const weaponModels = Object.entries(expanded.weaponModels ?? {}).map(([index, m]) => ({
       name: m.name ?? '',
-      weaponType: m.weaponType ?? 'axe',
+      weaponType: existingWeaponModels[index]?.weaponType ?? 'axe',
       diceFormula: m.diceFormula ?? '',
       flatBonus: Number(m.flatBonus) || 0,
       attributes: selectedKeys(m.attributes),
@@ -137,9 +194,9 @@ export class SKSKModelsConfig extends HandlebarsApplicationMixin(ApplicationV2) 
       demandingRequirement: Number(m.demandingRequirement) || 0,
       drainingRequirement: Number(m.drainingRequirement) || 0,
     }));
-    const armorModels = Object.values(expanded.armorModels ?? {}).map(m => ({
+    const armorModels = Object.entries(expanded.armorModels ?? {}).map(([index, m]) => ({
       name: m.name ?? '',
-      armorType: m.armorType ?? 'lightArmor',
+      armorType: existingArmorModels[index]?.armorType ?? 'lightArmor',
       flatBonus: Number(m.flatBonus) || 0,
       attributes: selectedKeys(m.attributes),
       properties: selectedKeys(m.properties),
@@ -156,7 +213,7 @@ export class SKSKModelsConfig extends HandlebarsApplicationMixin(ApplicationV2) 
   static async #addWeaponModel(event, target) {
     const models = foundry.utils.deepClone(getWeaponModels());
     models.push({
-      name: '', weaponType: 'axe', diceFormula: '', flatBonus: 0, attributes: [], properties: [],
+      name: '', weaponType: target.dataset.weaponType, diceFormula: '', flatBonus: 0, attributes: [], properties: [],
       heavyRequirement: 0, demandingRequirement: 0, drainingRequirement: 0,
     });
     await game.settings.set('sksk', 'weaponModels', models);
@@ -176,7 +233,7 @@ export class SKSKModelsConfig extends HandlebarsApplicationMixin(ApplicationV2) 
   static async #addArmorModel(event, target) {
     const models = foundry.utils.deepClone(getArmorModels());
     models.push({
-      name: '', armorType: 'lightArmor', flatBonus: 0, attributes: [], properties: [], hardenedValue: 0,
+      name: '', armorType: target.dataset.armorType, flatBonus: 0, attributes: [], properties: [], hardenedValue: 0,
       heavyRequirement: 0, demandingRequirement: 0, drainingRequirement: 0,
     });
     await game.settings.set('sksk', 'armorModels', models);

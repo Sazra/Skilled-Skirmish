@@ -518,8 +518,6 @@
         },
         "Models": {
             "Name": "Name",
-            "WeaponType": "Waffenart",
-            "ArmorType": "Rüstungsart",
             "DiceFormula": "Wurfformel",
             "FlatBonus": "Fester Wert",
             "Attributes": "Genutzte Attributsmodifikatoren",

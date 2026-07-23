@@ -478,9 +478,3 @@ SKSK.modelProperties = {
   flawless: { label: 'SKSK.ModelProperty.Flawless.Name', hint: 'SKSK.ModelProperty.Flawless.Hint', appliesTo: ['lightArmor', 'heavyArmor'] },
   spiky: { label: 'SKSK.ModelProperty.Spiky.Name', hint: 'SKSK.ModelProperty.Spiky.Hint', appliesTo: ['lightArmor', 'heavyArmor'] },
 };
-
-SKSK.armorModelTypes = {
-  lightArmor: 'SKSK.Skill.Armor.LightArmor',
-  heavyArmor: 'SKSK.Skill.Armor.HeavyArmor',
-  shield: 'SKSK.Skill.Armor.Shield',
-};
