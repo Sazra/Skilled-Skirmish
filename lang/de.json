@@ -12,6 +12,16 @@
             "CarryWeightFormula": {
                 "Name": "Formel für maximales Tragegewicht",
                 "Hint": "Basis-Maximalgewicht, vor der Skalierung durch die Größenkategorie (Winzig 25%, Klein 75%, Mittelgroß 100%, Groß 150%, Riesig 300%, Gigantisch 1000%, Titanisch unbegrenzt). Eine echte Würfelformel - Attribute als @attributes.str.value oder @attributes.str.mod, Fertigkeitsstufen als @skills.<Kürzel> (z.B. @skills.axe), Charakterlevel als @lvl."
+            },
+            "Materials": {
+                "Name": "Materialien",
+                "Hint": "Materialien, die in Gegenständen/Rüstungen/Waffen ausgewählt werden können. Materialbonus und Manakapazität können jeweils eine Zahl sein, oder \"?\", damit jeder Gegenstand mit diesem Material einen eigenen Wert festlegt.",
+                "Label": "Materialien konfigurieren"
+            },
+            "Models": {
+                "Name": "Modelle",
+                "Hint": "Waffenmodelle (nach Waffenart) und Rüstungsmodelle (Leichte Rüstung, Schwere Rüstung, Schild), die in Waffen/Rüstungen ausgewählt werden können.",
+                "Label": "Modelle konfigurieren"
             }
         },
         "Movement": {
@@ -59,6 +69,87 @@
             "QuantityAbbr": "Anz.",
             "Consumable": "Verbrauchbar",
             "ConsumableAbbr": "Verbr."
+        },
+        "Materials": {
+            "Name": "Name",
+            "MaterialBonus": "Materialbonus",
+            "ManaCapacity": "Manakapazität",
+            "VariableHint": "Eine Zahl ab 0, oder \"?\", damit jeder Gegenstand mit diesem Material einen eigenen Wert festlegt",
+            "Add": "Material hinzufügen",
+            "Remove": "Entfernen",
+            "None": "Noch keine Materialien angelegt.",
+            "Material": "Material",
+            "NoMaterial": "Keins",
+            "MaterialBonusOverride": "Materialbonus (dieser Gegenstand)",
+            "ManaCapacityOverride": "Manakapazität (dieser Gegenstand)",
+            "TotalManaCapacity": "Gesamt-Manakapazität",
+            "AttackBonus": "Angriffsbonus (Material)",
+            "DamageBonus": "Schadensbonus (Material)",
+            "ArmorBonus": "Rüstungsbonus (Material)",
+            "Properties": "Eigenschaften"
+        },
+        "Life": {
+            "MaxComputed": "Automatisch berechnet aus Klassen, Konstitution, Gesundheit, Zähigkeit und Fähigkeiten - nicht direkt bearbeitbar"
+        },
+        "NegativeLife": {
+            "MaxComputed": "Automatisch berechnet aus maximalem Leben, abzüglich des Multiplikators von Zähigkeit, sofern nicht im GM-Tab aktiviert - nicht direkt bearbeitbar",
+            "IncludeToughness": "Zähigkeit erhöht auch das maximale negative Leben",
+            "IncludeToughnessHint": "Lässt den Multiplikator von Zähigkeit auch das maximale negative Leben erhöhen, statt nur das maximale Leben"
+        },
+        "Mana": {
+            "MaxComputed": "Automatisch berechnet aus Aura, Manakapazität, Quellengebunden, Manakern und Fähigkeiten - nicht direkt bearbeitbar"
+        },
+        "ActionPoints": {
+            "MaxComputed": "Automatisch berechnet aus einem Basiswert von 3 plus Reflexe (bis Stufe 3) und etwaigen Effekten - nicht direkt bearbeitbar"
+        },
+        "ReactionPoints": {
+            "MaxComputed": "Automatisch berechnet aus maximalen AP und Reflexe über Stufe 3 hinaus - nicht direkt bearbeitbar"
+        },
+        "ArmorClass": {
+            "Computed": "Automatisch berechnet aus Grund-AC, Konstitution, getragener Rüstung/Schild und etwaigen Effekten - nicht direkt bearbeitbar"
+        },
+        "MagicResistance": {
+            "Computed": "Automatisch berechnet aus Aura, magiestörenden Rüstungen/Schilden und etwaigen Effekten - nicht direkt bearbeitbar"
+        },
+        "Resource": {
+            "Life": "Leben",
+            "NegativeLife": "Negatives Leben",
+            "Mana": "Mana",
+            "Barrier": "Barriere",
+            "AC": "AC",
+            "MR": "MR",
+            "AP": "AP",
+            "RP": "RP"
+        },
+        "Breakdown": {
+            "Level": "Stufe",
+            "ClassLife": "{name} (Leben)",
+            "Ability": "Fähigkeit: {name}",
+            "AdvancedClassBonus": "Fortgeschrittene-Klasse-Bonus",
+            "ToughnessMultiplier": "Zähigkeits-Multiplikator (Zähigkeit Stufe {level})",
+            "Subtotal": "Zwischensumme",
+            "EffectsBonus": "Bonus (Effekte)",
+            "Total": "Gesamt",
+            "NegativeLifeBaseline": "Basiswert (geschützter Puffer)",
+            "ActualMaxLife": "Tatsächliches maximales Leben",
+            "Doubled": "{name} (×2)",
+            "GroundArmorClass": "Grund-AC (Basis-Grund-AC + Konstitution)",
+            "ArmorSkillBonus": "Rüstungs-Fertigkeitsbonus",
+            "ArmorBonus": "Rüstungsbonus",
+            "ShieldBonus": "Schild-Rüstungsbonus",
+            "AntimagicBonus": "Magiestörend ({name})"
+        },
+        "GM": {
+            "Switches": "Schalter",
+            "NaturalMaterialBonus": "Anpassung Natürlicher Materialbonus",
+            "NaturalMaterialBonusHint": "Eine feste Anpassung (positiv oder negativ) am levelabhängigen natürlichen Materialbonus der Kreatur - dient als Mindestwert für den AC-Bonus der getragenen leichten/schweren Rüstung.",
+            "NaturalMaterialBonusValue": "Natürlicher Materialbonus (berechnet)",
+            "BaseArmorClass": "Basis-Grund-AC",
+            "BaseArmorClassHint": "Die Basis des Grund-AC-Werts, bevor der Konstitutionsmodifikator hinzugerechnet wird.",
+            "CustomArmorClassBonus": "Eigener AC-Bonus",
+            "CustomArmorClassBonusHint": "Ein fester AC-Bonus (positiv oder negativ) zusätzlich zu jeder anderen AC-Komponente.",
+            "CustomMagicResistanceBonus": "Eigener MR-Bonus",
+            "CustomMagicResistanceBonusHint": "Ein fester MR-Bonus (positiv oder negativ) zusätzlich zu jeder anderen MR-Komponente."
         },
         "Gender": {
             "Male": "Männlich",
@@ -121,7 +212,8 @@
             "Class": "Klasse",
             "Skills": "Fertigkeiten",
             "General": "Allgemein",
-            "Character": "Charakter"
+            "Character": "Charakter",
+            "GM": "GM"
         },
         "Skill": {
             "Weapon": {
@@ -359,6 +451,12 @@
                 "Bloodline": "Blutlinie"
             }
         },
+        "Ability": {
+            "LifeBonusFormula": "Lebens-Bonus (skalierend)",
+            "LifeBonusFormulaHint": "Wird zum maximalen Leben addiert, sobald diese Fähigkeit freigeschaltet ist. Unterstützt \"L\" für das Level des Akteurs, z.B. \"L * 2\".",
+            "ManaBonusFormula": "Mana-Bonus (skalierend)",
+            "ManaBonusFormulaHint": "Wird zum maximalen Mana addiert, sobald diese Fähigkeit freigeschaltet ist. Unterstützt \"L\" für das Level des Akteurs, z.B. \"L * 2\"."
+        },
         "Spell": {
             "ManaCost": "Mana",
             "APCost": "AP",
@@ -461,6 +559,168 @@
             "Temporary": "Temporäre Effekte",
             "Passive": "Passive Effekte",
             "Inactive": "Inaktive Effekte"
+        },
+        "Models": {
+            "Name": "Name",
+            "DiceFormula": "Wurfformel",
+            "FlatBonus": "Fester Wert",
+            "Attributes": "Genutzte Attributsmodifikatoren",
+            "Properties": "Eigenschaften",
+            "HardenedValue": "Härte-Wert (X)",
+            "Requirement": "Voraussetzung",
+            "Range": "Reichweite",
+            "Add": "Modell hinzufügen",
+            "Remove": "Entfernen",
+            "None": "Noch keine Modelle angelegt.",
+            "WeaponModels": "Waffenmodelle",
+            "ArmorModels": "Rüstungsmodelle",
+            "Model": "Modell",
+            "NoModel": "Keins",
+            "WeaponType": "Waffenart",
+            "ArmorType": "Rüstungsart",
+            "PropertyOverrides": "Eigenschaften-Anpassungen"
+        },
+        "ModelProperty": {
+            "Heavy": {
+                "Name": "Schwer",
+                "Hint": "Dieser Gegenstand ist schwer und benötigt zur effektiven Benutzung mindestens den angegebenen Stärkewert. Eine Waffe mit diesem Modifikator kann erst dann in beiden Händen getragen werden, wenn die Stärke des Charakters deutlich über diesem Wert liegt."
+            },
+            "Demanding": {
+                "Name": "Fordernd",
+                "Hint": "Dieser Gegenstand ist schwer zu händeln und benötigt zur effektiven Benutzung mindestens den angegebenen Geschicklichkeitswert. Eine Waffe mit diesem Modifikator kann erst dann in beiden Händen getragen werden, wenn die Geschicklichkeit des Charakters deutlich über diesem Wert liegt."
+            },
+            "Draining": {
+                "Name": "Zehrend",
+                "Hint": "Die Benutzung dieses Gegenstands ermüdet den Träger schnell und benötigt zur effektiven Benutzung mindestens den angegebenen Konstitutionswert. Eine Waffe mit diesem Modifikator kann erst dann in beiden Händen getragen werden, wenn die Konstitution des Charakters deutlich über diesem Wert liegt."
+            },
+            "Refined": {
+                "Name": "Raffiniert",
+                "Hint": "Diese Waffe nutzt eines der angegebenen Attribute (Wahl des Nutzers). Inkompatibel mit Spezialisiert und Meisterhaft."
+            },
+            "Specialized": {
+                "Name": "Spezialisiert",
+                "Hint": "Diese Waffe nutzt das angegebene Attribut doppelt. Inkompatibel mit Simpel, Raffiniert und Meisterhaft. Existiert dieser Modifikator in Kombination mit dem Modifikator Zweihändig, dann verliert dieser Modifikator seine Wirkung, sollte die Waffe nicht zweihändig geführt werden."
+            },
+            "Masterful": {
+                "Name": "Meisterhaft",
+                "Hint": "Dieser Gegenstand ist weit besser in der Hand von jemanden, der zwei Attribute gemeistert hat. Ein solcher Gegenstand nutzt zwei Attribute. Das höhere von beiden wird genutzt und wenn beide gleich sind, dann werden beide genutzt. Inkompatibel mit Simpel, Raffiniert und Spezialisiert."
+            },
+            "Rending": {
+                "Name": "Abreißend",
+                "Hint": "Eine Waffe mit diesem Modifikator fügt Gebäuden, Konstrukten, materiellen Untoten, Objekten und inorganischen Hindernissen doppelten Schaden zu."
+            },
+            "Stunning": {
+                "Name": "Betäubend",
+                "Hint": "Ein kritischer Angriff mit einer Waffe mit diesem Modifikator verleiht dem Ziel des Angriffs mehrere Stapel Benommenheit. Die Menge entspricht dabei dem Materialbonus / 2 und wird mit 1.5 / 2 / 2.5 multipliziert, wenn diese Waffe die Modifikatoren Schwer (Verringert) / Schwer / Schwer (Erhöht) besitzt."
+            },
+            "Disarming": {
+                "Name": "Entwaffnend",
+                "Hint": "Eine Kreatur, die einen Gegenstand mit diesem Modifikator nutzt, kann als Reaktion auf einen Waffenangriff versuchen, den Angreifer zu entwaffnen. Dieser muss einen DC 16 Geschicklichkeit- oder DC 18 Stärkewurf schaffen (Wahl des Angreifers) und wird bei Fehlschlag entwaffnet. Der Angriff des Ziels schlägt bei einem fehlgeschlagenen Wurf fehl."
+            },
+            "Ranged": {
+                "Name": "Fernkampf",
+                "Hint": "Eine Waffe mit diesem Modifikator kann genutzt werden, um auf Reichweite anzugreifen (in Klammern angegeben / Nachteil auf erweiterte Reichweite). Im direkten Kampf, also 2m oder weniger Entfernung zum Ziel, kann eine solche Waffe nicht zum Angreifen genutzt werden."
+            },
+            "Flexible": {
+                "Name": "Flexibel",
+                "Hint": "Eine Waffe mit diesem Modifikator kann sowohl einhändig als auch zweihändig genutzt werden."
+            },
+            "Shapeshifting": {
+                "Name": "Formwandelnd",
+                "Hint": "Dieser Gegenstand kann seine Form wandeln. Es ist möglich, eine Waffe hiermit in eine andere zu verwandeln oder sogar in ein Rüstungsstück. Die allgemeine Masse des Gegenstands kann sich nicht durch diesen Modifikator verändern. Kostet 3 Aktionspunkte."
+            },
+            "Infusion": {
+                "Name": "Infusion",
+                "Hint": "Diese Waffe kann mit Mana aufgeladen und damit für die Fähigkeiten Magische Angriffe und Tödliche Angriffe genutzt werden. Sollte dieser Effekt auf einem Material natürlich sein, dann geht er verloren, wenn die Waffe verzaubert wird (außer mit diesem Modifikator). Magiestörende Gegenstände mit diesem Modifikator können verzaubert oder mit Magie verstärkt werden."
+            },
+            "Unstable": {
+                "Name": "Instabil",
+                "Hint": "Ein Gegenstand mit diesem Modifikator ist instabil. Jede Runde muss ein D10 gewürfelt werden, bei einer 10 nimmt der Gegenstand von selbst eine andere Form an. Dieser Modifikator kann nur auf Gegenstände mit dem Modifikator Formwandelnd oder der Verzauberung Formanpassend angewandt werden."
+            },
+            "Long": {
+                "Name": "Lang",
+                "Hint": "Eine Waffe mit diesem Modifikator hat eine doppelt so hohe Nahkampfreichweite."
+            },
+            "Light": {
+                "Name": "Leicht",
+                "Hint": "Eine Waffe mit diesem Modifikator verleiht dem Träger einen zusätzlichen AP."
+            },
+            "Antimagic": {
+                "Name": "Magiestörend",
+                "Hint": "Ein Gegenstand mit diesem Modifikator ist nicht verzauberbar, fügt magischen Schilden doppelten Schaden zu und lässt eine Illusion bei Berührung flackern. Zudem hat die angegriffene Kreatur Nachteil auf ihren Konzentrationswurf. Rüstungen aus Materialien mit diesem Modifikator bieten Magieresistenz in Höhe von (gebotene AC / 2, abgerundet)."
+            },
+            "Reach": {
+                "Name": "Reichweite",
+                "Hint": "Eine Waffe mit diesem Modifikator kann genutzt werden, um auf Reichweite anzugreifen (in Klammern angegeben). Auf mehr als 2m Entfernung wird der Angriffswurf und Schadenswurf mit dem angegebenen Charakterwertmodifikator berechnet."
+            },
+            "GiantSlayer": {
+                "Name": "Riesenfäller",
+                "Hint": "Kreaturen mit der Größenordnung Riesig erhalten 25% Zusatzschaden, Kreaturen mit der Größenordnung Gigantisch erhalten 50% Zusatzschaden, Kreaturen mit der Größenordnung Titanisch erhalten 100% Zusatzschaden."
+            },
+            "VeryLong": {
+                "Name": "Sehr Lang",
+                "Hint": "Eine Waffe mit diesem Modifikator hat eine dreimal so hohe Nahkampfreichweite."
+            },
+            "Simple": {
+                "Name": "Simpel",
+                "Hint": "Eine Waffe oder Rüstung mit diesem Modifikator kann effektiv genutzt werden, selbst wenn der Träger die entsprechende Fertigkeit nicht besitzt. Gleichzeitig erhält eine Rüstung oder Waffe mit diesem Modifikator keinen Bonus durch Fertigkeiten (dies erlaubt jedoch das Erlangen von Fertigkeitspunkten der entsprechenden Fertigkeiten). Inkompatibel mit Spezialisiert, Meisterhaft und Raffiniert."
+            },
+            "Redirection": {
+                "Name": "Umleitung",
+                "Hint": "Der Träger eines Gegenstands mit diesem Modifikator kann als Reaktion einen Angriff ohne Arealeffekt auf die nächste Kreatur innerhalb von 2m umleiten, falls diese keinen DC 15 Konstitutionswurf schafft. Magische Angriffe können nur mit diesem Modifikator umgeleitet werden, wenn dieser verzaubert wurde."
+            },
+            "Silvered": {
+                "Name": "Versilbert",
+                "Hint": "Waffen aus diesem Material verursachen zusätzlichen Schaden an bestimmten Kreaturen."
+            },
+            "Concealed": {
+                "Name": "Versteckt",
+                "Hint": "Ein Angriff mit dieser Waffe entfernt nicht automatisch Tarnung. Kreaturen, die von einem Angriff mit einer solch modifizierten Waffe getroffen werden, erhalten Vorteil auf ihren nächsten Beobachtungswurf zur Aufdeckung des Angreifers."
+            },
+            "Wounding": {
+                "Name": "Verwundend",
+                "Hint": "Ein erfolgreicher Angriff mit dieser Waffe verursacht automatisch eine Wunde."
+            },
+            "Throwable": {
+                "Name": "Werfbar",
+                "Hint": "Dieser Gegenstand ist werfbar (kein Malus auf Waffenangriffe). Eine mit diesem Modifikator verzauberte Waffe kehrt nach dem Angriff zurück."
+            },
+            "Shattering": {
+                "Name": "Zerschmetternd",
+                "Hint": "Die AC von Kreaturen, die mit einer Waffe mit diesem Modifikator getroffen werden, wird für eine Runde um die Anzahl an Waffenwürfeln gesenkt. Dieser Effekt kann sich stapeln, bis der Ausrüstungsmodifikator 0 erreicht."
+            },
+            "TwoHanded": {
+                "Name": "Zweihändig",
+                "Hint": "Eine Waffe mit diesem Modifikator muss zweihändig geführt werden. Sollte eine solche Waffe nicht den Modifikator Schwer, Fordernd oder Zehrend besitzen, dann kann sie einhändig geführt werden, falls der Träger einen Stärkewert von 18 oder höher hat."
+            },
+            "Deployable": {
+                "Name": "Aufbaubar",
+                "Hint": "Ein Schild mit diesem Modifikator kann aufgebaut werden und gilt daraufhin als inorganisches Hindernis, das volle oder halbe Deckung bietet."
+            },
+            "ArmBound": {
+                "Name": "Armgebunden",
+                "Hint": "Ein Schild mit diesem Modifikator kann nicht verloren werden, solange nicht der tragende Arm abgeschlagen wird. Zudem kann die Hand des Arms, mit dem dieser Schild genutzt wird, für Angriffe genutzt werden."
+            },
+            "Hardened": {
+                "Name": "Hart (X)",
+                "Hint": "Dieser Gegenstand ist gehärtet und bietet eine um X erhöhte AC (Maximum ist Materialbonus / 2)."
+            },
+            "Loud": {
+                "Name": "Laut",
+                "Hint": "Der Träger erhält Nachteil auf Tarnungswürfe, solange er diesen Gegenstand trägt."
+            },
+            "Reflective": {
+                "Name": "Reflektierend",
+                "Hint": "Reflektiert 10% des magischen Schadens, den der Träger erleidet, auf den Verursacher zurück."
+            },
+            "Flawless": {
+                "Name": "Schwachstellenlos",
+                "Hint": "Ein kritischer Angriffswurf, der gegen den Träger eines Gegenstands mit diesem Modifikator gemacht wurde, trifft zwar automatisch, verursacht aber keinen zusätzlichen Schaden."
+            },
+            "Spiky": {
+                "Name": "Stachlig",
+                "Hint": "Kreaturen, die den Träger eines solchen Gegenstands mit einem Nahkampfwaffenangriff angreifen, erleiden 1d6 Spitzschaden."
+            }
         }
     },
     "TYPES": {

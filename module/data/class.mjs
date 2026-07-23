@@ -30,9 +30,18 @@ export default class SKSKClass extends SKSKItemBase {
     // that can carry its own Active Effects.
     schema.abilities = new fields.ArrayField(new fields.SchemaField({
       name: new fields.StringField({ required: true, blank: true }),
-      description: new fields.StringField({ required: true, blank: true })
+      description: new fields.StringField({ required: true, blank: true }),
+      // A scaling life/mana bonus this ability grants once unlocked,
+      // supporting "L" for the actor's level (e.g. "L * 2") - see
+      // helpers/life.mjs#computeMaxLife and helpers/mana.mjs#computeMaxMana.
+      lifeBonusFormula: new fields.StringField({ required: true, blank: true, initial: "0" }),
+      manaBonusFormula: new fields.StringField({ required: true, blank: true, initial: "0" })
     }), {
-      initial: [{ name: "", description: "" }, { name: "", description: "" }, { name: "", description: "" }]
+      initial: [
+        { name: "", description: "", lifeBonusFormula: "0", manaBonusFormula: "0" },
+        { name: "", description: "", lifeBonusFormula: "0", manaBonusFormula: "0" },
+        { name: "", description: "", lifeBonusFormula: "0", manaBonusFormula: "0" }
+      ]
     });
 
     // Zero or more overrides granting the ability to cast spells from a

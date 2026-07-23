@@ -16,7 +16,11 @@ export default class SKSKSpecies extends SKSKItemBase {
 
     // Base value granted to the Aura attribute. A character's Aura is the
     // sum of this value from their main species and (if any) sub-species.
-    schema.aura = new fields.NumberField({ ...requiredInteger, initial: 10, min: 8, max: 20 });
+    // The field's own min covers a Sub-Species (0 - it doesn't have to add
+    // anything to Aura, but still can); a Main Species' stricter minimum
+    // of 8 is enforced separately below in validateJoint, since it depends
+    // on speciesType.
+    schema.aura = new fields.NumberField({ ...requiredInteger, initial: 10, min: 0, max: 20 });
 
     // The size category (CONFIG.SKSK.sizeCategories) a character of this
     // species defaults to - only the main species' value is used (see
@@ -45,7 +49,12 @@ export default class SKSKSpecies extends SKSKItemBase {
     // actively used).
     schema.abilities = new fields.ArrayField(new fields.SchemaField({
       name: new fields.StringField({ required: true, blank: true }),
-      description: new fields.StringField({ required: true, blank: true })
+      description: new fields.StringField({ required: true, blank: true }),
+      // A scaling life/mana bonus this ability always grants, supporting
+      // "L" for the actor's level (e.g. "L * 2") - see
+      // helpers/life.mjs#computeMaxLife and helpers/mana.mjs#computeMaxMana.
+      lifeBonusFormula: new fields.StringField({ required: true, blank: true, initial: "0" }),
+      manaBonusFormula: new fields.StringField({ required: true, blank: true, initial: "0" })
     }));
 
     // Zero or more overrides granting the ability to cast spells from a
@@ -121,5 +130,13 @@ export default class SKSKSpecies extends SKSKItemBase {
     }));
 
     return schema;
+  }
+
+  /** @override */
+  static validateJoint(data) {
+    super.validateJoint(data);
+    if (data.speciesType === "main" && data.aura < 8) {
+      throw new Error("Main Species Aura must be at least 8 (only a Sub-Species may go as low as 0)");
+    }
   }
 }

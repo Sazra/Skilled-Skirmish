@@ -1,0 +1,64 @@
+<div class="sksk-materials-config">
+  <p class="hint">{{localize 'SKSK.Settings.Materials.Hint'}}</p>
+
+  <ol class="items-list">
+    <li class="item flexrow items-header">
+      <div class="item-name">{{localize 'SKSK.Materials.Name'}}</div>
+      <div class="item-controls">
+        <a class="item-control" data-action="addMaterial" title="{{localize 'SKSK.Materials.Add'}}">
+          <i class="fas fa-plus"></i>
+        </a>
+      </div>
+    </li>
+    {{#each materials as |material index|}}
+    <li class="item flexcol model-entry">
+      <div class="flexrow flex-between">
+        <input type="text" name="materials.{{index}}.name" value="{{material.name}}"
+          placeholder="{{localize 'SKSK.Materials.Name'}}" />
+        <a class="item-control item-delete" data-action="removeMaterial" data-index="{{index}}"
+          title="{{localize 'SKSK.Materials.Remove'}}">
+          <i class="fas fa-trash"></i>
+        </a>
+      </div>
+
+      <div class="grid grid-2col">
+        <div class="grid-span-1">
+          <label class="resource-label">{{localize 'SKSK.Materials.MaterialBonus'}}</label>
+          <input type="text" name="materials.{{index}}.materialBonus" value="{{material.materialBonus}}"
+            title="{{localize 'SKSK.Materials.VariableHint'}}" placeholder="0" />
+        </div>
+        <div class="grid-span-1">
+          <label class="resource-label">{{localize 'SKSK.Materials.ManaCapacity'}}</label>
+          <input type="text" name="materials.{{index}}.manaCapacity" value="{{material.manaCapacity}}"
+            title="{{localize 'SKSK.Materials.VariableHint'}}" placeholder="0" />
+        </div>
+      </div>
+
+      <details class="model-properties-details" data-sync="material-properties-{{index}}">
+        <summary class="resource-label">{{localize 'SKSK.Materials.Properties'}}</summary>
+        <div class="grid grid-3col model-checkbox-grid">
+          {{#each ../materialPropertyChoices as |def key|}}
+          <div class="model-property-option">
+            <label class="casting-method-option" title="{{localize def.hint}}">
+              <input type="checkbox" name="materials.{{index}}.properties.{{key}}"
+                {{checked (includes material.properties key)}} />
+              {{localize def.label}}
+            </label>
+            {{#if def.hasRequirement}}
+            <input type="text" class="model-requirement-input"
+              name="materials.{{index}}.{{concat key 'Requirement'}}"
+              value="{{lookup material (concat key 'Requirement')}}" data-dtype="Number"
+              title="{{localize 'SKSK.Models.Requirement'}}" placeholder="{{localize 'SKSK.Models.Requirement'}}" />
+            {{/if}}
+          </div>
+          {{/each}}
+        </div>
+      </details>
+    </li>
+    {{else}}
+    <li class="item flexrow">
+      <div class="item-name">{{localize 'SKSK.Materials.None'}}</div>
+    </li>
+    {{/each}}
+  </ol>
+</div>

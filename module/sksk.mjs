@@ -6,6 +6,7 @@ import { preloadHandlebarsTemplates } from './helpers/templates.mjs';
 import { SKSK } from './helpers/config.mjs';
 import { registerSettings } from './helpers/settings.mjs';
 import { rollSavingThrowFromChat } from './helpers/spell-rolls.mjs';
+import { computeSpeciesAura } from './helpers/attributes.mjs';
 import * as models from './data/_module.mjs';
 
 Hooks.once('init', function () {
@@ -68,6 +69,15 @@ Handlebars.registerHelper('firstLetter', function (str) {
   return (str ?? '').charAt(0).toUpperCase();
 });
 
+Handlebars.registerHelper('includes', function (array, value) {
+  return (array ?? []).includes(value);
+});
+
+Handlebars.registerHelper('concat', function (...args) {
+  args.pop(); // Drop the trailing Handlebars options object.
+  return args.join('');
+});
+
 Hooks.once('ready', function () {
   Hooks.on('hotbarDrop', (bar, data, slot) => createItemMacro(data, slot));
 
@@ -78,6 +88,34 @@ Hooks.once('ready', function () {
     if (!button) return;
     event.preventDefault();
     rollSavingThrowFromChat(button.dataset.itemUuid, Number(button.dataset.saveIndex));
+  });
+
+  // Aura is otherwise a normal user-editable attribute, but the moment a
+  // Species item is added (main or sub - however it got there: sheet
+  // button, drag-drop, compendium import), it's overwritten with the sum
+  // of every Species item's own Aura value. Only the client that actually
+  // created the item performs the write-back, so every other connected
+  // client doesn't also race to make the same update.
+  Hooks.on('createItem', (item, options, userId) => {
+    if (item.type !== 'species' || !(item.parent instanceof Actor)) return;
+    if (game.user.id !== userId) return;
+    item.parent.update({ 'system.attributes.aur.value': computeSpeciesAura(item.parent) });
+  });
+
+  // Only one Light/Heavy Armor can ever be equipped at once (Shields are
+  // unaffected - see helpers/defense.mjs#computeArmorClass, which only
+  // ever looks at a single worn Light/Heavy piece) - equipping one
+  // auto-unequips every other Light/Heavy armor on the same actor.
+  Hooks.on('updateItem', (item, changes, options, userId) => {
+    if (item.type !== 'armor' || !(item.parent instanceof Actor)) return;
+    if (game.user.id !== userId) return;
+    if (foundry.utils.getProperty(changes, 'system.equipped') !== true) return;
+    if (!['lightArmor', 'heavyArmor'].includes(item.system.armorType)) return;
+    const others = item.parent.items.filter(i =>
+      i.id !== item.id && i.type === 'armor' && i.system.equipped
+      && ['lightArmor', 'heavyArmor'].includes(i.system.armorType)
+    );
+    for (const other of others) other.update({ 'system.equipped': false });
   });
 });
 

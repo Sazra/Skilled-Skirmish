@@ -59,6 +59,12 @@
           placeholder="Ability name" />
         <textarea name="system.abilities.{{index}}.description" rows="3"
           placeholder="Describe the ability">{{entry.description}}</textarea>
+        <label class="resource-label">{{localize 'SKSK.Ability.LifeBonusFormula'}}</label>
+        <input type="text" name="system.abilities.{{index}}.lifeBonusFormula" value="{{entry.lifeBonusFormula}}"
+          title="{{localize 'SKSK.Ability.LifeBonusFormulaHint'}}" placeholder="0" />
+        <label class="resource-label">{{localize 'SKSK.Ability.ManaBonusFormula'}}</label>
+        <input type="text" name="system.abilities.{{index}}.manaBonusFormula" value="{{entry.manaBonusFormula}}"
+          title="{{localize 'SKSK.Ability.ManaBonusFormulaHint'}}" placeholder="0" />
 
         <ol class="items-list ability-effects">
           {{#each (lookup ../abilityEffects index) as |effect|}}

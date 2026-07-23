@@ -13,6 +13,19 @@ import {
 } from '../helpers/spells.mjs';
 import { computeMovementSpeeds, getActorSizeCategory } from '../helpers/movement.mjs';
 import { computeCarriedWeight, computeMaxCarryWeight } from '../helpers/inventory.mjs';
+import { getClassAbilityLevels, actorHasAdvancedClass } from '../helpers/abilities.mjs';
+import { getLifeBreakdown, getNegativeLifeBreakdown } from '../helpers/life.mjs';
+import { getManaBreakdown } from '../helpers/mana.mjs';
+import { getArmorClassBreakdown, getMagicResistanceBreakdown } from '../helpers/defense.mjs';
+import { renderBreakdownHtml } from '../helpers/tooltips.mjs';
+
+/**
+ * Schema paths (relative to system.*) whose value input accepts the "+N"/
+ * "-N" relative-adjustment syntax on the resources sidebar and is clamped
+ * to [0, the field's own computed max] - see #normalizeResourceInput.
+ * Barrier is intentionally excluded: it has no max (unbounded).
+ */
+const CLAMPED_RESOURCE_KEYS = ['life', 'negativeLife', 'mana', 'actionPoints', 'reactionPoints'];
 
 /**
  * Extend the basic ActorSheet with some very simple modifications
@@ -57,6 +70,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
         { id: "skills", label: "SKSK.SheetLabels.Skills" },
         { id: "spells", label: "Spells" },
         { id: "effects", label: "Effects" },
+        { id: "gm", label: "SKSK.SheetLabels.GM" },
       ],
       initial: "character",
     },
@@ -201,6 +215,10 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       template: "systems/sksk/templates/actor/parts/effects.hbs",
       scrollable: [""],
     },
+    gm: {
+      template: "systems/sksk/templates/actor/parts/gm.hbs",
+      scrollable: [""],
+    },
   };
 
   /** @override */
@@ -217,6 +235,11 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       parts.header.template = `systems/sksk/templates/actor/parts/header.hbs`;
       parts.resources.template = `systems/sksk/templates/actor/parts/resources.hbs`;
     }
+
+    // The GM tab holds background information/switches irrelevant to
+    // players - not rendered into the DOM at all for non-GM users (see
+    // also _prepareContext, which hides its tab-bar button).
+    if (!game.user.isGM) delete parts.gm;
 
     return parts;
   }
@@ -281,6 +304,9 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     // With more than one tab group declared, the base _prepareContext no
     // longer auto-populates context.tabs - prepare both groups ourselves.
     context.tabs = this._prepareTabs('primary');
+    // The GM tab holds background information/switches irrelevant to
+    // players - hidden from the tab bar entirely for non-GM users.
+    if (!game.user.isGM) delete context.tabs.gm;
     context.characterSectionTabs = Object.values(this._prepareTabs('characterSections'));
     context.genderChoices = CONFIG.SKSK.genders;
     context.skillTabs = Object.values(this._prepareTabs('skillCategories'));
@@ -343,6 +369,19 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       actor.allApplicableEffects()
     );
 
+    // Hover tooltips over the Life/Negative Life/Mana/AC/MR labels on the
+    // resources sidebar, breaking each computed value down into its
+    // formula's individual components - see helpers/tooltips.mjs.
+    context.lifeTooltip = renderBreakdownHtml(game.i18n.localize('SKSK.Resource.Life'), getLifeBreakdown(actor));
+    context.negativeLifeTooltip = renderBreakdownHtml(
+      game.i18n.localize('SKSK.Resource.NegativeLife'), getNegativeLifeBreakdown(actor)
+    );
+    context.manaTooltip = renderBreakdownHtml(game.i18n.localize('SKSK.Resource.Mana'), getManaBreakdown(actor));
+    context.armorClassTooltip = renderBreakdownHtml(game.i18n.localize('SKSK.Resource.AC'), getArmorClassBreakdown(actor));
+    context.magicResistanceTooltip = renderBreakdownHtml(
+      game.i18n.localize('SKSK.Resource.MR'), getMagicResistanceBreakdown(actor)
+    );
+
     return context;
   }
 
@@ -376,24 +415,14 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
 
     // Whether the actor also holds an Advanced Class raises the Second
     // Class unlock levels from 13/18/24 to 14/19/25.
-    const hasAdvancedClass = context.items.some(
-      (i) => i.type === 'class' && i.system.classType === 'advanced'
-    );
-
-    // The level at which each of a class's 3 abilities unlocks, by class type.
-    const classAbilityLevels = {
-      first: [1, 6, 12],
-      second: hasAdvancedClass ? [14, 19, 25] : [13, 18, 24],
-      advanced: [13, 13, 13],
-      third: [25, 25, 25],
-    };
+    const hasAdvancedClass = actorHasAdvancedClass(this.actor);
 
     // Abilities granted by class/species items, flattened into a single
     // list for the Abilities tab (alongside talents).
     const classAndSpeciesAbilities = [];
 
     const collectClassAbilities = (source) => {
-      const levels = classAbilityLevels[source.system.classType] ?? [1, 1, 1];
+      const levels = getClassAbilityLevels(source.system.classType, hasAdvancedClass);
       source.system.abilities?.forEach((ability, index) => {
         if (!ability.name && !ability.description) return;
         const requiredLevel = levels[index] ?? 1;
@@ -404,7 +433,11 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
           description: ability.description,
           sourceId: source.id,
           sourceImg: source.img,
-          sourceLabel: `${source.name}: Level ${requiredLevel}`,
+          sourceLabel: `${source.name}: Lvl ${requiredLevel}`,
+          // Sorted after species abilities, then by unlock level - see the
+          // sort below the item-collection loop.
+          sortGroup: 1,
+          requiredLevel,
         });
       });
     };
@@ -419,6 +452,9 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
           sourceImg: source.img,
           // Species abilities are labeled with only the species' name.
           sourceLabel: source.name,
+          // Always sorted first - see the sort below the item-collection loop.
+          sortGroup: 0,
+          requiredLevel: 0,
         });
       }
     };
@@ -444,7 +480,10 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       }
       // Append to talents.
       else if (i.type === 'talent') {
-        i.typeLabel = game.i18n.localize(CONFIG.SKSK.talentTypes[i.system.talentType]);
+        // "Level" is abbreviated to "Lvl" here (but not on the Talent item
+        // sheet's own Type dropdown) to save space in the Abilities tab's
+        // item-source column, which is shared with class/species abilities.
+        i.typeLabel = game.i18n.localize(CONFIG.SKSK.talentTypes[i.system.talentType]).replace('Level ', 'Lvl ');
         talents.push(i);
       }
       // Append to classes.
@@ -462,6 +501,11 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       // Spells are handled separately by _prepareSpells - they're grouped
       // and sorted rather than shown as one flat list.
     }
+
+    // Abilities tab order: every species' abilities, then class abilities
+    // by the level they unlock at, then talents (rendered separately in
+    // abilities.hbs, after this list).
+    classAndSpeciesAbilities.sort((a, b) => a.sortGroup - b.sortGroup || a.requiredLevel - b.requiredLevel);
 
     // Assign and return
     context.gear = gear;
@@ -668,8 +712,35 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
 
   /** @override */
   _onChangeForm(formConfig, event) {
+    this.#normalizeResourceInput(event.target);
     this.#enforceElementExclusivity(event.target);
     super._onChangeForm(formConfig, event);
+  }
+
+  /**
+   * Life/Negative Life/Mana/AP/RP's value inputs (resources.hbs/
+   * resources-npc.hbs) accept "+N"/"-N" to adjust the CURRENT value by
+   * that amount, in addition to a plain absolute number - and always
+   * clamp to [0, the field's own computed max]. Rewrites the input's own
+   * value in place before the pending submitOnChange form submission
+   * fires, so the corrected number is what actually gets saved - mirrors
+   * #enforceElementExclusivity below.
+   * @param {HTMLElement} target
+   */
+  #normalizeResourceInput(target) {
+    const match = target?.name?.match(/^system\.(\w+)\.value$/);
+    if (!match || !CLAMPED_RESOURCE_KEYS.includes(match[1])) return;
+    const [, key] = match;
+    const resource = this.actor.system[key];
+    const raw = target.value.trim();
+
+    let next;
+    if (/^[+-]\d+$/.test(raw)) next = resource.value + Number(raw);
+    else {
+      const parsed = Number(raw);
+      next = Number.isFinite(parsed) ? parsed : resource.value;
+    }
+    target.value = String(Math.max(0, Math.min(next, resource.max)));
   }
 
   /**

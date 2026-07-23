@@ -1,4 +1,7 @@
 import SKSKItemBase from "./item-base.mjs";
+import { resolveMaterialBonus, computeTotalManaCapacity } from "../helpers/materials.mjs";
+import { getWeaponModel } from "../helpers/models.mjs";
+import { computeEffectiveProperties } from "../helpers/properties.mjs";
 
 export default class SKSKWeapon extends SKSKItemBase {
 
@@ -57,6 +60,52 @@ export default class SKSKWeapon extends SKSKItemBase {
       bonus: new fields.NumberField({ required: true, nullable: false, initial: 0 }),
     }));
 
+    // The material this weapon is made of (a name from the GM-configured
+    // world setting - see helpers/materials.mjs), or blank for none.
+    schema.material = new fields.StringField({ required: true, blank: true, initial: "" });
+    // Only used when the selected material's own materialBonus/manaCapacity
+    // is "?" (individually configurable per item) - see
+    // helpers/materials.mjs#resolveMaterialBonus/resolveMaterialManaCapacity.
+    schema.materialBonusOverride = new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 });
+    schema.manaCapacityOverride = new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 });
+
+    // This weapon's type (axe, bow, sword, etc.) - determines which Weapon
+    // Models (see helpers/models.mjs) are selectable below. Mirrors
+    // CONFIG.SKSK.skills.weapons' keys, hardcoded here since static schema
+    // fields evaluate before the init hook populates CONFIG.SKSK (same
+    // reasoning as the movementBonuses choices above).
+    schema.weaponType = new fields.StringField({
+      required: true, blank: false, initial: "axe",
+      choices: ["axe", "bow", "bluntWeapon", "dagger", "firearms", "martialArts", "polearms", "sword"],
+    });
+    // The Weapon Model this weapon uses (a name from the GM-configured
+    // world setting, filtered to this weapon's own weaponType), or blank
+    // for none.
+    schema.model = new fields.StringField({ required: true, blank: true, initial: "" });
+    // Zero or more manual property add/remove overrides layered on top of
+    // the properties granted by this weapon's Material and Model - e.g. a
+    // bespoke weapon crafted to be throwable gains Throwable plus a Range
+    // value despite neither its material nor model normally having it.
+    // See helpers/properties.mjs#computeEffectiveProperties.
+    schema.propertyOverrides = new fields.ArrayField(new fields.SchemaField({
+      property: new fields.StringField({ required: true, blank: false, initial: "throwable" }),
+      mode: new fields.StringField({ required: true, blank: false, initial: "add", choices: ["add", "remove"] }),
+      value: new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 }),
+    }));
+
     return schema;
+  }
+
+  prepareDerivedData() {
+    super.prepareDerivedData();
+    // See helpers/materials.mjs - the material grants an automatic attack
+    // and damage bonus, and its mana capacity for every 0.1kg of this
+    // weapon's weight.
+    const materialBonus = resolveMaterialBonus(this);
+    this.materialAttackBonus = materialBonus;
+    this.materialDamageBonus = materialBonus;
+    this.totalManaCapacity = computeTotalManaCapacity(this);
+    this.resolvedModel = getWeaponModel(this.model);
+    this.effectiveProperties = computeEffectiveProperties(this, this.resolvedModel);
   }
 }

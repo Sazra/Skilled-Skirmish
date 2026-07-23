@@ -1,4 +1,7 @@
 import SKSKItemBase from "./item-base.mjs";
+import { resolveMaterialBonus, computeTotalManaCapacity } from "../helpers/materials.mjs";
+import { getArmorModel } from "../helpers/models.mjs";
+import { computeEffectiveProperties } from "../helpers/properties.mjs";
 
 export default class SKSKArmor extends SKSKItemBase {
 
@@ -57,6 +60,44 @@ export default class SKSKArmor extends SKSKItemBase {
       bonus: new fields.NumberField({ required: true, nullable: false, initial: 0 }),
     }));
 
+    // The material this armor is made of (a name from the GM-configured
+    // world setting - see helpers/materials.mjs), or blank for none.
+    schema.material = new fields.StringField({ required: true, blank: true, initial: "" });
+    // Only used when the selected material's own materialBonus/manaCapacity
+    // is "?" (individually configurable per item) - see
+    // helpers/materials.mjs#resolveMaterialBonus/resolveMaterialManaCapacity.
+    schema.materialBonusOverride = new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 });
+    schema.manaCapacityOverride = new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 });
+
+    // This armor's type (Light Armor, Heavy Armor, Shield) - determines
+    // which Armor Models (see helpers/models.mjs) are selectable below.
+    schema.armorType = new fields.StringField({
+      required: true, blank: false, initial: "lightArmor",
+      choices: ["lightArmor", "heavyArmor", "shield"],
+    });
+    // The Armor Model this armor uses (a name from the GM-configured world
+    // setting, filtered to this armor's own armorType), or blank for none.
+    schema.model = new fields.StringField({ required: true, blank: true, initial: "" });
+    // Zero or more manual property add/remove overrides layered on top of
+    // the properties granted by this armor's Material and Model - e.g. a
+    // bespoke suit of armor loses the Heavy property it'd otherwise have.
+    // See helpers/properties.mjs#computeEffectiveProperties.
+    schema.propertyOverrides = new fields.ArrayField(new fields.SchemaField({
+      property: new fields.StringField({ required: true, blank: false, initial: "hardened" }),
+      mode: new fields.StringField({ required: true, blank: false, initial: "add", choices: ["add", "remove"] }),
+      value: new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 }),
+    }));
+
     return schema;
+  }
+
+  prepareDerivedData() {
+    super.prepareDerivedData();
+    // See helpers/materials.mjs - the material grants an automatic armor
+    // bonus, and its mana capacity for every 0.1kg of this armor's weight.
+    this.materialArmorBonus = resolveMaterialBonus(this);
+    this.totalManaCapacity = computeTotalManaCapacity(this);
+    this.resolvedModel = getArmorModel(this.model);
+    this.effectiveProperties = computeEffectiveProperties(this, this.resolvedModel);
   }
 }

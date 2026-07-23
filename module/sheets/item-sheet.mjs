@@ -6,6 +6,9 @@ import {
 } from '../helpers/effects.mjs';
 import { getSkillBonusChoices } from '../helpers/skills.mjs';
 import { computeSavingThrowValue, computeDamageBonus, computeCombinedSchoolOverrideLevel } from '../helpers/spells.mjs';
+import { getMaterials, getMaterial } from '../helpers/materials.mjs';
+import { getWeaponModels, getArmorModels, getWeaponModel, getArmorModel, getOverridablePropertiesFor } from '../helpers/models.mjs';
+import { computeEffectiveProperties } from '../helpers/properties.mjs';
 
 /**
  * Extend the basic ItemSheet with some very simple modifications
@@ -277,6 +280,61 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       context.movementTypeChoices = { all: 'SKSK.Movement.All', ...CONFIG.SKSK.movementTypes };
     }
 
+    // Material selection (Item/Armor/Weapon only) - see helpers/materials.mjs.
+    // The override inputs for materialBonus/manaCapacity are only shown
+    // when the selected material's own value is "?" (individually
+    // configurable per item). The resulting bonuses/totalManaCapacity are
+    // derived-only (set in each type's prepareDerivedData, not part of the
+    // schema), so context.system (a toObject() clone, source data only)
+    // doesn't carry them - passed through as their own context properties
+    // straight from the live item.system instead.
+    if (['item', 'armor', 'weapon'].includes(item.type)) {
+      context.materials = getMaterials();
+      const material = getMaterial(item.system.material);
+      context.materialBonusIsVariable = material?.materialBonus === '?';
+      context.manaCapacityIsVariable = material?.manaCapacity === '?';
+      context.totalManaCapacity = item.system.totalManaCapacity;
+      if (item.type === 'weapon') {
+        context.materialAttackBonus = item.system.materialAttackBonus;
+        context.materialDamageBonus = item.system.materialDamageBonus;
+      } else if (item.type === 'armor') {
+        context.materialArmorBonus = item.system.materialArmorBonus;
+      }
+    }
+
+    // Model selection and property overrides (Weapon/Armor only) - see
+    // helpers/models.mjs, helpers/properties.mjs. resolvedModel/
+    // effectiveProperties are derived-only (set in prepareDerivedData, not
+    // part of the schema), so they're read straight from the live
+    // item.system instance rather than context.system (a toObject() clone,
+    // source data only - see the Material block above for the same
+    // reasoning).
+    if (item.type === 'weapon' || item.type === 'armor') {
+      const isWeapon = item.type === 'weapon';
+      const category = isWeapon ? 'weapon' : item.system.armorType;
+      // {value, label} pairs (matching the {{selectOptions}} default shape
+      // used elsewhere, e.g. getSkillBonusChoices) rather than the raw
+      // CONFIG.SKSK.skills.* object, whose entries are {label, maxLevel}.
+      context.typeChoices = Object.entries(isWeapon ? CONFIG.SKSK.skills.weapons : CONFIG.SKSK.skills.armors).map(
+        ([key, def]) => ({ value: key, label: def.label })
+      );
+      context.modelChoices = (isWeapon ? getWeaponModels() : getArmorModels()).filter(
+        m => (isWeapon ? m.weaponType : m.armorType) === (isWeapon ? item.system.weaponType : item.system.armorType)
+      );
+      context.resolvedModel = item.system.resolvedModel;
+      // The Property Overrides section shows a switch for every property
+      // applicable to this item's category (same keyed-object shape as
+      // e.g. weaponPropertyChoices, for the same {{#each choices as |def
+      // key|}} template pattern), pre-checked/pre-filled to reflect the
+      // CURRENT effective state (material + model + existing overrides) -
+      // see #onPropertyOverrideChange, which turns a changed switch back
+      // into an add/remove override entry.
+      context.overridePropertyChoices = getOverridablePropertiesFor([category]);
+      const effective = item.system.effectiveProperties ?? [];
+      context.effectivePropertyKeys = effective.map(e => e.property);
+      context.effectivePropertyValues = Object.fromEntries(effective.map(e => [e.property, e.value ?? 0]));
+    }
+
     if (item.type === 'species' || item.type === 'class') {
       // Active Effects scoped to a specific ability, indexed to match system.abilities.
       context.abilityEffects = (item.system.abilities ?? []).map((ability, index) =>
@@ -343,6 +401,15 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
         this.changeTab(activeSection, "spellSections", { force: true, updatePosition: false });
       }
     }
+
+    if (this.item.type === 'weapon' || this.item.type === 'armor') {
+      // The Property Overrides switches aren't named form fields (their
+      // effect is computed, not a direct 1:1 field), so they're handled via
+      // a manual "change" listener instead of the sheet's normal
+      // submitOnChange - see #onPropertyOverrideChange.
+      this.element.querySelector('.property-overrides-section')
+        ?.addEventListener('change', this.#onPropertyOverrideChange.bind(this));
+    }
   }
 
   /* -------------------------------------------- */
@@ -394,7 +461,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
 
   static async #addAbility(event, target) {
     if ((this.item.system.abilities?.length ?? 0) >= 3) return;
-    await this.#addArrayEntry('abilities', { name: '', description: '' });
+    await this.#addArrayEntry('abilities', { name: '', description: '', lifeBonusFormula: '0', manaBonusFormula: '0' });
   }
 
   static async #addRange(event, target) {
@@ -466,6 +533,48 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
 
   static async #addMovementBonus(event, target) {
     await this.#addArrayEntry('movementBonuses', { movementType: 'all', bonus: 0 });
+  }
+
+  /**
+   * Recompute this Weapon/Armor's propertyOverrides array from the current
+   * checked/value state of every property switch in the Property Overrides
+   * section - a switch checked when the property isn't naturally granted
+   * (by this item's Material + Model alone) becomes an "add" override;
+   * unchecked when it IS naturally granted becomes a "remove" override; a
+   * checked switch whose coupled Requirement/Range value differs from the
+   * natural one becomes an "add" override carrying the new value. A switch
+   * left matching the natural state needs no override entry at all - see
+   * helpers/properties.mjs#computeEffectiveProperties.
+   * @param {Event} event  A "change" event bubbled up from the section.
+   * @private
+   */
+  async #onPropertyOverrideChange(event) {
+    event.stopPropagation();
+    const item = this.item;
+    const isWeapon = item.type === 'weapon';
+    const model = isWeapon ? getWeaponModel(item.system.model) : getArmorModel(item.system.model);
+    const natural = new Map(
+      computeEffectiveProperties({ material: item.system.material, propertyOverrides: [] }, model)
+        .map(e => [e.property, e.value])
+    );
+
+    const section = event.currentTarget;
+    const overrides = [];
+    for (const toggle of section.querySelectorAll('.property-override-toggle')) {
+      const key = toggle.dataset.property;
+      const def = CONFIG.SKSK.modelProperties[key];
+      const valueInput = section.querySelector(`.property-override-value[data-property="${key}"]`);
+      const value = valueInput ? Number(valueInput.value) || 0 : 0;
+      const isNatural = natural.has(key);
+      if (toggle.checked && !isNatural) {
+        overrides.push({ property: key, mode: 'add', value });
+      } else if (!toggle.checked && isNatural) {
+        overrides.push({ property: key, mode: 'remove', value: 0 });
+      } else if (toggle.checked && isNatural && (def?.hasRequirement || def?.hasRange) && value !== natural.get(key)) {
+        overrides.push({ property: key, mode: 'add', value });
+      }
+    }
+    await item.update({ 'system.propertyOverrides': overrides });
   }
 
   /**

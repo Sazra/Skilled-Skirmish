@@ -1,0 +1,94 @@
+<section class="tab {{tab.cssClass}}" data-group="primary" data-tab="weaponModels">
+
+  <nav class="sheet-tabs tabs weapon-model-type-tabs" data-group="weaponModelTypes">
+    {{#each weaponModelTypeTabs as |t|}}
+    <a class="{{t.cssClass}}" data-action="tab" data-group="weaponModelTypes" data-tab="{{t.id}}">
+      <label>{{localize t.label}}</label>
+    </a>
+    {{/each}}
+  </nav>
+
+  {{#each weaponModelTypeTabs as |t|}}
+  <section class="tab" data-group="weaponModelTypes" data-tab="{{t.id}}">
+    <ol class="items-list">
+      <li class="item flexrow items-header">
+        <div class="item-name">{{localize t.label}}</div>
+        <div class="item-controls">
+          <a class="item-control" data-action="addWeaponModel" data-weapon-type="{{t.id}}"
+            title="{{localize 'SKSK.Models.Add'}}">
+            <i class="fas fa-plus"></i>
+          </a>
+        </div>
+      </li>
+      {{#each (lookup ../weaponModelsByType t.id) as |entry|}}
+      <li class="item flexcol model-entry">
+        <div class="flexrow flex-between">
+          <input type="text" name="weaponModels.{{entry.index}}.name" value="{{entry.model.name}}"
+            placeholder="{{localize 'SKSK.Models.Name'}}" />
+          <a class="item-control item-delete" data-action="removeWeaponModel" data-index="{{entry.index}}"
+            title="{{localize 'SKSK.Models.Remove'}}">
+            <i class="fas fa-trash"></i>
+          </a>
+        </div>
+
+        <div class="grid grid-2col">
+          <div class="grid-span-1">
+            <label class="resource-label">{{localize 'SKSK.Models.DiceFormula'}}</label>
+            <input type="text" name="weaponModels.{{entry.index}}.diceFormula" value="{{entry.model.diceFormula}}"
+              placeholder="e.g. 1d4" />
+          </div>
+          <div class="grid-span-1">
+            <label class="resource-label">{{localize 'SKSK.Models.FlatBonus'}}</label>
+            <input type="text" name="weaponModels.{{entry.index}}.flatBonus" value="{{entry.model.flatBonus}}"
+              data-dtype="Number" />
+          </div>
+        </div>
+
+        <label class="resource-label">{{localize 'SKSK.Models.Attributes'}}</label>
+        <div class="grid grid-4col model-checkbox-grid">
+          {{#each ../../attributeChoices as |label key|}}
+          <label class="casting-method-option">
+            <input type="checkbox" name="weaponModels.{{entry.index}}.attributes.{{key}}"
+              {{checked (includes entry.model.attributes key)}} />
+            {{localize label}}
+          </label>
+          {{/each}}
+        </div>
+
+        <details class="model-properties-details" data-sync="weapon-model-properties-{{entry.index}}">
+          <summary class="resource-label">{{localize 'SKSK.Models.Properties'}}</summary>
+          <div class="grid grid-3col model-checkbox-grid">
+            {{#each ../../weaponPropertyChoices as |def key|}}
+            <div class="model-property-option">
+              <label class="casting-method-option" title="{{localize def.hint}}">
+                <input type="checkbox" name="weaponModels.{{entry.index}}.properties.{{key}}"
+                  {{checked (includes entry.model.properties key)}} />
+                {{localize def.label}}
+              </label>
+              {{#if def.hasRequirement}}
+              <input type="text" class="model-requirement-input"
+                name="weaponModels.{{entry.index}}.{{concat key 'Requirement'}}"
+                value="{{lookup entry.model (concat key 'Requirement')}}" data-dtype="Number"
+                title="{{localize 'SKSK.Models.Requirement'}}" placeholder="{{localize 'SKSK.Models.Requirement'}}" />
+              {{/if}}
+              {{#if def.hasRange}}
+              <input type="text" class="model-requirement-input"
+                name="weaponModels.{{entry.index}}.{{concat key 'Range'}}"
+                value="{{lookup entry.model (concat key 'Range')}}" data-dtype="Number"
+                title="{{localize 'SKSK.Models.Range'}}" placeholder="{{localize 'SKSK.Models.Range'}}" />
+              {{/if}}
+            </div>
+            {{/each}}
+          </div>
+        </details>
+      </li>
+      {{else}}
+      <li class="item flexrow">
+        <div class="item-name">{{localize 'SKSK.Models.None'}}</div>
+      </li>
+      {{/each}}
+    </ol>
+  </section>
+  {{/each}}
+
+</section>

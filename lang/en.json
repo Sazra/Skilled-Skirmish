@@ -12,6 +12,16 @@
       "CarryWeightFormula": {
         "Name": "Max Carry Weight Formula",
         "Hint": "Base max carry weight, before size-category scaling (Tiny 25%, Small 75%, Medium 100%, Large 150%, Huge 300%, Gigantic 1000%, Titanic unlimited). A real roll formula - reference attributes as @attributes.str.value or @attributes.str.mod, skill levels as @skills.<key> (e.g. @skills.axe), and character level as @lvl."
+      },
+      "Materials": {
+        "Name": "Materials",
+        "Hint": "Materials selectable on Items/Armor/Weapons. Material Bonus and Mana Capacity may each be a number, or \"?\" to let each item using this material set its own value instead.",
+        "Label": "Configure Materials"
+      },
+      "Models": {
+        "Name": "Models",
+        "Hint": "Weapon Models (by weapon type) and Armor Models (Light Armor, Heavy Armor, Shield) selectable on Weapons/Armor.",
+        "Label": "Configure Models"
       }
     },
     "Movement": {
@@ -59,6 +69,87 @@
       "QuantityAbbr": "Qty",
       "Consumable": "Consumable",
       "ConsumableAbbr": "Cons."
+    },
+    "Materials": {
+      "Name": "Name",
+      "MaterialBonus": "Material Bonus",
+      "ManaCapacity": "Mana Capacity",
+      "VariableHint": "A non-negative number, or \"?\" to let each item using this material set its own value",
+      "Add": "Add Material",
+      "Remove": "Remove",
+      "None": "No materials defined yet.",
+      "Material": "Material",
+      "NoMaterial": "None",
+      "MaterialBonusOverride": "Material Bonus (this item)",
+      "ManaCapacityOverride": "Mana Capacity (this item)",
+      "TotalManaCapacity": "Total Mana Capacity",
+      "AttackBonus": "Attack Bonus (Material)",
+      "DamageBonus": "Damage Bonus (Material)",
+      "ArmorBonus": "Armor Bonus (Material)",
+      "Properties": "Properties"
+    },
+    "Life": {
+      "MaxComputed": "Automatically calculated from Classes, Constitution, Health, Tenacity and abilities - not directly editable"
+    },
+    "NegativeLife": {
+      "MaxComputed": "Automatically calculated from max life, minus Tenacity's multiplier unless enabled on the GM tab - not directly editable",
+      "IncludeToughness": "Tenacity also raises max negative life",
+      "IncludeToughnessHint": "Let Tenacity's multiplier also raise max negative life, instead of only max life"
+    },
+    "Mana": {
+      "MaxComputed": "Automatically calculated from Aura, Mana Capacity, Source Bound, Mana Core and abilities - not directly editable"
+    },
+    "ActionPoints": {
+      "MaxComputed": "Automatically calculated from a base of 3 plus Reflexes (up to level 3) and any effects - not directly editable"
+    },
+    "ReactionPoints": {
+      "MaxComputed": "Automatically calculated from max AP and Reflexes beyond level 3 - not directly editable"
+    },
+    "ArmorClass": {
+      "Computed": "Automatically calculated from Base AC, Constitution, worn armor/shield and any effects - not directly editable"
+    },
+    "MagicResistance": {
+      "Computed": "Automatically calculated from Aura, Antimagic armor/shields and any effects - not directly editable"
+    },
+    "Resource": {
+      "Life": "Life",
+      "NegativeLife": "Negative Life",
+      "Mana": "Mana",
+      "Barrier": "Barrier",
+      "AC": "AC",
+      "MR": "MR",
+      "AP": "AP",
+      "RP": "RP"
+    },
+    "Breakdown": {
+      "Level": "Level",
+      "ClassLife": "{name} (Life)",
+      "Ability": "Ability: {name}",
+      "AdvancedClassBonus": "Advanced Class Bonus",
+      "ToughnessMultiplier": "Toughness Multiplier (Tenacity Level {level})",
+      "Subtotal": "Subtotal",
+      "EffectsBonus": "Bonus (Effects)",
+      "Total": "Total",
+      "NegativeLifeBaseline": "Baseline (protected buffer)",
+      "ActualMaxLife": "Actual Max Life",
+      "Doubled": "{name} (×2)",
+      "GroundArmorClass": "Grund-AC (Base AC + Constitution)",
+      "ArmorSkillBonus": "Armor Skill Bonus",
+      "ArmorBonus": "Armor Bonus",
+      "ShieldBonus": "Shield Bonus",
+      "AntimagicBonus": "Antimagic ({name})"
+    },
+    "GM": {
+      "Switches": "Switches",
+      "NaturalMaterialBonus": "Natural Material Bonus Adjustment",
+      "NaturalMaterialBonusHint": "A flat adjustment (positive or negative) to the creature's level-based natural material bonus - a floor under worn Light/Heavy armor's own AC bonus.",
+      "NaturalMaterialBonusValue": "Natural Material Bonus (computed)",
+      "BaseArmorClass": "Base AC",
+      "BaseArmorClassHint": "The base of Grund-AC, before the Constitution modifier is added on top.",
+      "CustomArmorClassBonus": "Custom AC Bonus",
+      "CustomArmorClassBonusHint": "A flat AC bonus (positive or negative) on top of every other AC component.",
+      "CustomMagicResistanceBonus": "Custom MR Bonus",
+      "CustomMagicResistanceBonusHint": "A flat MR bonus (positive or negative) on top of every other MR component."
     },
     "Gender": {
       "Male": "Male",
@@ -329,7 +420,8 @@
       "Class": "Class",
       "Skills": "Skills",
       "General": "General",
-      "Character": "Character"
+      "Character": "Character",
+      "GM": "GM"
     },
     "Species": {
       "Type": {
@@ -358,6 +450,12 @@
         "Bonus": "Bonus Talent",
         "Bloodline": "Bloodline"
       }
+    },
+    "Ability": {
+      "LifeBonusFormula": "Life Bonus (scaling)",
+      "LifeBonusFormulaHint": "Added to max life once this ability is unlocked. Supports \"L\" for the actor's level, e.g. \"L * 2\".",
+      "ManaBonusFormula": "Mana Bonus (scaling)",
+      "ManaBonusFormulaHint": "Added to max mana once this ability is unlocked. Supports \"L\" for the actor's level, e.g. \"L * 2\"."
     },
     "Spell": {
       "ManaCost": "Mana",
@@ -461,6 +559,168 @@
       "Temporary": "Temporary Effects",
       "Passive": "Passive Effects",
       "Inactive": "Inactive Effects"
+    },
+    "Models": {
+      "Name": "Name",
+      "DiceFormula": "Roll Formula",
+      "FlatBonus": "Flat Value",
+      "Attributes": "Attribute Modifiers Used",
+      "Properties": "Properties",
+      "HardenedValue": "Hardened Value (X)",
+      "Requirement": "Requirement",
+      "Range": "Range",
+      "Add": "Add Model",
+      "Remove": "Remove",
+      "None": "No models defined yet.",
+      "WeaponModels": "Weapon Models",
+      "ArmorModels": "Armor Models",
+      "Model": "Model",
+      "NoModel": "None",
+      "WeaponType": "Weapon Type",
+      "ArmorType": "Armor Type",
+      "PropertyOverrides": "Property Overrides"
+    },
+    "ModelProperty": {
+      "Heavy": {
+        "Name": "Heavy",
+        "Hint": "This item is heavy and requires a Strength score of at least the given requirement to use effectively. A weapon with this modifier can't be wielded in both hands until the character's Strength is well above that requirement."
+      },
+      "Demanding": {
+        "Name": "Demanding",
+        "Hint": "This item is hard to handle and requires a Dexterity score of at least the given requirement to use effectively. A weapon with this modifier can't be wielded in both hands until the character's Dexterity is well above that requirement."
+      },
+      "Draining": {
+        "Name": "Draining",
+        "Hint": "Using this item quickly tires its bearer and requires a Constitution score of at least the given requirement to use effectively. A weapon with this modifier can't be wielded in both hands until the character's Constitution is well above that requirement."
+      },
+      "Refined": {
+        "Name": "Refined",
+        "Hint": "This weapon uses one of its listed attributes (user's choice). Incompatible with Specialized and Masterful."
+      },
+      "Specialized": {
+        "Name": "Specialized",
+        "Hint": "This weapon uses its listed attribute twice. Incompatible with Simple, Refined and Masterful. If combined with the Two-Handed modifier, this modifier loses its effect unless the weapon is wielded two-handed."
+      },
+      "Masterful": {
+        "Name": "Masterful",
+        "Hint": "This item is far better in the hands of someone who has mastered two attributes. Such an item uses two attributes - the higher of the two is used, and if both are equal, both are used. Incompatible with Simple, Refined and Specialized."
+      },
+      "Rending": {
+        "Name": "Rending",
+        "Hint": "A weapon with this modifier deals double damage to buildings, constructs, corporeal undead, objects, and inorganic obstacles."
+      },
+      "Stunning": {
+        "Name": "Stunning",
+        "Hint": "A critical hit with a weapon with this modifier grants the target several stacks of Dazed. The amount equals Material Bonus / 2, multiplied by 1.5 / 2 / 2.5 if this weapon has the Heavy (Reduced) / Heavy / Heavy (Increased) modifier."
+      },
+      "Disarming": {
+        "Name": "Disarming",
+        "Hint": "A creature using an item with this modifier can, as a reaction to a weapon attack, attempt to disarm the attacker. The attacker must succeed a DC 16 Dexterity or DC 18 Strength save (attacker's choice) or be disarmed on failure. The target's attack also fails on a failed save."
+      },
+      "Ranged": {
+        "Name": "Ranged",
+        "Hint": "A weapon with this modifier can be used to attack at range (given in parentheses / disadvantage at extended range). In melee, i.e. 2m or less from the target, such a weapon can't be used to attack."
+      },
+      "Flexible": {
+        "Name": "Flexible",
+        "Hint": "A weapon with this modifier can be used either one-handed or two-handed."
+      },
+      "Shapeshifting": {
+        "Name": "Shapeshifting",
+        "Hint": "This item can change its shape. It can turn a weapon into another one, or even into a piece of armor. This modifier can't change the item's overall mass. Costs 3 Action Points."
+      },
+      "Infusion": {
+        "Name": "Infusion",
+        "Hint": "This weapon can be charged with mana, enabling the Magical Attacks and Deadly Attacks abilities. If this effect is natural to a material, it's lost if the weapon is enchanted (unless with this modifier). Antimagic items with this modifier can be enchanted or magically enhanced."
+      },
+      "Unstable": {
+        "Name": "Unstable",
+        "Hint": "An item with this modifier is unstable. Each round, a D10 must be rolled - on a 10, the item spontaneously changes shape. This modifier can only be applied to items with the Shapeshifting modifier or the Shape-Adapting enchantment."
+      },
+      "Long": {
+        "Name": "Long",
+        "Hint": "A weapon with this modifier has double the melee reach."
+      },
+      "Light": {
+        "Name": "Light",
+        "Hint": "A weapon with this modifier grants its bearer an additional AP."
+      },
+      "Antimagic": {
+        "Name": "Antimagic",
+        "Hint": "An item with this modifier can't be enchanted, deals double damage to magical shields, and makes an illusion flicker on touch. The attacked creature also has disadvantage on its Concentration save. Armor made from materials with this modifier grants Magic Resistance equal to (AC granted / 2, rounded down)."
+      },
+      "Reach": {
+        "Name": "Reach",
+        "Hint": "A weapon with this modifier can be used to attack at range (given in parentheses). Beyond 2m, the attack and damage roll use the given attribute modifier."
+      },
+      "GiantSlayer": {
+        "Name": "Giant Slayer",
+        "Hint": "Large-sized creatures take 25% extra damage, Gigantic-sized creatures take 50% extra damage, Titanic-sized creatures take 100% extra damage."
+      },
+      "VeryLong": {
+        "Name": "Very Long",
+        "Hint": "A weapon with this modifier has triple the melee reach."
+      },
+      "Simple": {
+        "Name": "Simple",
+        "Hint": "A weapon or armor with this modifier can be used effectively even without the corresponding skill. At the same time, it gains no bonus from skills (though skill points for the corresponding skill can still be earned). Incompatible with Specialized, Masterful and Refined."
+      },
+      "Redirection": {
+        "Name": "Redirection",
+        "Hint": "The bearer of an item with this modifier can, as a reaction, redirect a non-area attack to the nearest creature within 2m, unless that creature succeeds a DC 15 Constitution save. Magical attacks can only be redirected with this modifier if it was granted via enchantment."
+      },
+      "Silvered": {
+        "Name": "Silvered",
+        "Hint": "Weapons made from this material deal extra damage to certain creatures."
+      },
+      "Concealed": {
+        "Name": "Concealed",
+        "Hint": "An attack with this weapon doesn't automatically break stealth. Creatures hit by an attack with such a weapon gain advantage on their next Observation check to reveal the attacker."
+      },
+      "Wounding": {
+        "Name": "Wounding",
+        "Hint": "A successful attack with this weapon automatically inflicts a Wound."
+      },
+      "Throwable": {
+        "Name": "Throwable",
+        "Hint": "This item can be thrown (no penalty on weapon attacks). A weapon enchanted with this modifier returns after the attack."
+      },
+      "Shattering": {
+        "Name": "Shattering",
+        "Hint": "The AC of a creature hit by a weapon with this modifier is reduced for one round by the number of weapon dice. This effect can stack until the equipment's AC modifier reaches 0."
+      },
+      "TwoHanded": {
+        "Name": "Two-Handed",
+        "Hint": "A weapon with this modifier must be wielded two-handed. Unless such a weapon also has the Heavy, Demanding or Draining modifier, it can be wielded one-handed if the bearer has a Strength score of 18 or higher."
+      },
+      "Deployable": {
+        "Name": "Deployable",
+        "Hint": "A shield with this modifier can be deployed, after which it counts as an inorganic obstacle providing full or half cover."
+      },
+      "ArmBound": {
+        "Name": "Arm-Bound",
+        "Hint": "A shield with this modifier can't be lost unless the bearing arm is severed. Additionally, the hand of the arm wielding this shield can still be used for attacks."
+      },
+      "Hardened": {
+        "Name": "Hardened (X)",
+        "Hint": "This item is hardened and grants AC increased by X (maximum is Material Bonus / 2)."
+      },
+      "Loud": {
+        "Name": "Loud",
+        "Hint": "The bearer has disadvantage on Stealth checks while wearing this item."
+      },
+      "Reflective": {
+        "Name": "Reflective",
+        "Hint": "Reflects 10% of the magical damage its bearer takes back onto the source."
+      },
+      "Flawless": {
+        "Name": "Flawless",
+        "Hint": "A critical attack roll made against the bearer of an item with this modifier still hits automatically, but deals no extra damage."
+      },
+      "Spiky": {
+        "Name": "Spiky",
+        "Hint": "Creatures that attack the bearer of such an item with a melee weapon attack take 1d6 piercing damage."
+      }
     }
   },
   "TYPES": {

@@ -24,16 +24,25 @@ export function getSkillPointThreshold(level, maxLevel) {
 }
 
 /**
- * Derive the current level of a multi-level skill from accumulated points.
+ * Derive the current level of a multi-level skill from accumulated points,
+ * on top of a starting-bonus level (e.g. a Class granting Axe at level 1).
+ * The bonus level is the BASELINE, not an afterthought added on top of the
+ * points-derived level: points are spent climbing from that baseline, so
+ * the threshold for each further level is discounted by the points the
+ * baseline level would have cost - e.g. with a level-1 bonus, reaching
+ * level 2 only needs (threshold(2) - threshold(1)) points, not the full
+ * threshold(2), and reaching level 3 needs (threshold(3) - threshold(1)).
  * @param {number} points
  * @param {number} maxLevel
- * @return {number} The current level (0 if below the level 1 threshold).
+ * @param {number} [startLevel=0]  Starting bonus level, used as the baseline.
+ * @return {number} The current level (at least startLevel, capped at maxLevel).
  */
-export function getSkillLevel(points, maxLevel) {
+export function getSkillLevel(points, maxLevel, startLevel = 0) {
   if (maxLevel <= 1) return 0;
-  let level = 0;
-  for (let l = 1; l <= maxLevel; l++) {
-    if (points >= getSkillPointThreshold(l, maxLevel)) level = l;
+  let level = Math.max(0, Math.min(startLevel, maxLevel));
+  const baseline = level > 0 ? getSkillPointThreshold(level, maxLevel) : 0;
+  for (let l = level + 1; l <= maxLevel; l++) {
+    if (points >= getSkillPointThreshold(l, maxLevel) - baseline) level = l;
     else break;
   }
   return level;
@@ -232,5 +241,5 @@ export function getActorSkillLevel(actor, skillKey) {
     ? evaluateSkillFormula(data.formula ?? '', actor.getRollData())
     : (data.points ?? 0);
 
-  return Math.min(def.maxLevel, getSkillLevel(points, def.maxLevel) + bonus);
+  return getSkillLevel(points, def.maxLevel, bonus);
 }

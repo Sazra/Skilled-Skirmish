@@ -14,6 +14,64 @@
     </div>
   </div>
 
+  {{> "systems/sksk/templates/item/parts/material-section.hbs" showAttackBonus=true}}
+
+  <div class="grid grid-2col">
+    <div class="grid-span-1">
+      <label class="resource-label">{{localize 'SKSK.Models.WeaponType'}}</label>
+      <select name="system.weaponType">
+        {{selectOptions typeChoices selected=system.weaponType localize=true}}
+      </select>
+    </div>
+    <div class="grid-span-1">
+      <label class="resource-label">{{localize 'SKSK.Models.Model'}}</label>
+      <select name="system.model">
+        <option value="">{{localize 'SKSK.Models.NoModel'}}</option>
+        {{#each modelChoices as |m|}}
+        <option value="{{m.name}}" {{#if (eq m.name ../system.model)}}selected{{/if}}>{{m.name}}</option>
+        {{/each}}
+      </select>
+    </div>
+  </div>
+
+  {{#if resolvedModel}}
+  <div class="grid grid-2col">
+    <div class="grid-span-1">
+      <label class="resource-label">{{localize 'SKSK.Models.DiceFormula'}}</label>
+      <span>{{resolvedModel.diceFormula}}</span>
+    </div>
+    <div class="grid-span-1">
+      <label class="resource-label">{{localize 'SKSK.Models.FlatBonus'}}</label>
+      <span>{{resolvedModel.flatBonus}}</span>
+    </div>
+  </div>
+  {{/if}}
+
+  <details class="model-properties-details property-overrides-section" data-sync="weapon-property-overrides">
+    <summary class="resource-label">{{localize 'SKSK.Models.PropertyOverrides'}}</summary>
+    <div class="grid grid-3col model-checkbox-grid">
+      {{#each overridePropertyChoices as |def key|}}
+      <div class="model-property-option">
+        <label class="casting-method-option" title="{{localize def.hint}}">
+          <input type="checkbox" class="property-override-toggle" data-property="{{key}}"
+            {{checked (includes ../effectivePropertyKeys key)}} />
+          {{localize def.label}}
+        </label>
+        {{#if def.hasRequirement}}
+        <input type="text" class="model-requirement-input property-override-value" data-property="{{key}}"
+          value="{{lookup ../effectivePropertyValues key}}" data-dtype="Number"
+          title="{{localize 'SKSK.Models.Requirement'}}" placeholder="{{localize 'SKSK.Models.Requirement'}}" />
+        {{/if}}
+        {{#if def.hasRange}}
+        <input type="text" class="model-requirement-input property-override-value" data-property="{{key}}"
+          value="{{lookup ../effectivePropertyValues key}}" data-dtype="Number"
+          title="{{localize 'SKSK.Models.Range'}}" placeholder="{{localize 'SKSK.Models.Range'}}" />
+        {{/if}}
+      </div>
+      {{/each}}
+    </div>
+  </details>
+
   <div class="resource">
     <label class="resource-label">Mana Cost Reductions</label>
     <ol class="items-list items-list-compact">

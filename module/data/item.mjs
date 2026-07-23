@@ -1,4 +1,5 @@
 import SKSKItemBase from "./item-base.mjs";
+import { computeTotalManaCapacity } from "../helpers/materials.mjs";
 
 export default class SKSKItem extends SKSKItemBase {
 
@@ -71,6 +72,15 @@ export default class SKSKItem extends SKSKItemBase {
       bonus: new fields.NumberField({ required: true, nullable: false, initial: 0 }),
     }));
 
+    // The material this item is made of (a name from the GM-configured
+    // world setting - see helpers/materials.mjs), or blank for none.
+    schema.material = new fields.StringField({ required: true, blank: true, initial: "" });
+    // Only used when the selected material's own materialBonus/manaCapacity
+    // is "?" (individually configurable per item) - see
+    // helpers/materials.mjs#resolveMaterialBonus/resolveMaterialManaCapacity.
+    schema.materialBonusOverride = new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 });
+    schema.manaCapacityOverride = new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 });
+
     return schema;
   }
 
@@ -78,5 +88,8 @@ export default class SKSKItem extends SKSKItemBase {
     super.prepareDerivedData();
     const roll = this.roll;
     this.formula = `${roll.diceNum}${roll.diceSize}${roll.diceBonus}`;
+    // See helpers/materials.mjs - the material's mana capacity for every
+    // 0.1kg of this item's own weight.
+    this.totalManaCapacity = computeTotalManaCapacity(this);
   }
 }

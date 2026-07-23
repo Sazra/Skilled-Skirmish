@@ -1,4 +1,8 @@
 import { computeSkillBonusTotals, evaluateSkillFormula, getSkillLevel } from '../helpers/skills.mjs';
+import { computeMaxLife, computeMaxNegativeLife } from '../helpers/life.mjs';
+import { computeMaxMana } from '../helpers/mana.mjs';
+import { computeMaxActionPoints, computeMaxReactionPoints } from '../helpers/points.mjs';
+import { computeNaturalMaterialBonus, computeArmorClass, computeMagicResistance } from '../helpers/defense.mjs';
 
 export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
 
@@ -9,35 +13,93 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
 
     schema.life = new fields.SchemaField({
       value: new fields.NumberField({ ...requiredInteger, initial: 10, min: 0 }),
-      max: new fields.NumberField({ ...requiredInteger, initial: 10 })
+      // No longer directly user-editable - overwritten every data
+      // preparation by helpers/life.mjs#computeMaxLife (see
+      // prepareDerivedData below).
+      max: new fields.NumberField({ ...requiredInteger, initial: 10 }),
+      // Flat bonus added on top of the computed max life, after every
+      // other multiplier - not meant to be hand-edited, but targeted by
+      // Active Effects via "system.life.bonus".
+      bonus: new fields.NumberField({ ...requiredInteger, initial: 0 })
     });
     // Damage taken after life reaches 0 is deducted from negative life
     // instead of killing the character outright.
     schema.negativeLife = new fields.SchemaField({
       value: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
-      max: new fields.NumberField({ ...requiredInteger, initial: 10 })
+      // No longer directly user-editable - overwritten every data
+      // preparation by helpers/life.mjs#computeMaxNegativeLife (see
+      // prepareDerivedData below).
+      max: new fields.NumberField({ ...requiredInteger, initial: 10 }),
+      // Whether Tenacity's multiplier (see helpers/life.mjs#computeMaxLife)
+      // also raises max negative life, instead of acting purely as a
+      // buffer that protects it from max-life reductions without
+      // extending it - see helpers/life.mjs#computeMaxNegativeLife.
+      includeToughness: new fields.BooleanField({ initial: false })
     });
-    // Usually-temporary pool that shields life (or negative life) from damage.
+    // Usually-temporary pool that shields life (or negative life) from
+    // damage - unlike every other resource, it's theoretically unbounded,
+    // so it has no max.
     schema.barrier = new fields.SchemaField({
       value: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
-      max: new fields.NumberField({ ...requiredInteger, initial: 0 })
     });
     schema.mana = new fields.SchemaField({
       value: new fields.NumberField({ ...requiredInteger, initial: 5, min: 0 }),
-      max: new fields.NumberField({ ...requiredInteger, initial: 5 })
+      // No longer directly user-editable - overwritten every data
+      // preparation by helpers/mana.mjs#computeMaxMana (see
+      // prepareDerivedData below).
+      max: new fields.NumberField({ ...requiredInteger, initial: 5 }),
+      // Flat bonus added on top of the computed max mana - not meant to be
+      // hand-edited, but targeted by Active Effects via "system.mana.bonus".
+      bonus: new fields.NumberField({ ...requiredInteger, initial: 0 })
     });
     schema.actionPoints = new fields.SchemaField({
       value: new fields.NumberField({ ...requiredInteger, initial: 3, min: 0 }),
-      max: new fields.NumberField({ ...requiredInteger, initial: 3 })
+      // No longer directly user-editable - overwritten every data
+      // preparation by helpers/points.mjs#computeMaxActionPoints (see
+      // prepareDerivedData below).
+      max: new fields.NumberField({ ...requiredInteger, initial: 3 }),
+      // Flat bonus added on top of the computed max AP - not meant to be
+      // hand-edited, but targeted by Active Effects via
+      // "system.actionPoints.bonus".
+      bonus: new fields.NumberField({ ...requiredInteger, initial: 0 })
     });
     schema.reactionPoints = new fields.SchemaField({
       value: new fields.NumberField({ ...requiredInteger, initial: 1, min: 0 }),
+      // No longer directly user-editable - overwritten every data
+      // preparation by helpers/points.mjs#computeMaxReactionPoints (see
+      // prepareDerivedData below).
       max: new fields.NumberField({ ...requiredInteger, initial: 1 })
     });
-    // Attack rolls must exceed this to deal weapon damage.
+    // Attack rolls must exceed this to deal weapon damage. No longer
+    // directly user-editable - overwritten every data preparation by
+    // helpers/defense.mjs#computeArmorClass (see prepareDerivedData below).
     schema.armorClass = new fields.NumberField({ ...requiredInteger, initial: 10 });
-    // Attack rolls must exceed this for a spell to have full effect.
+    // Attack rolls must exceed this for a spell to have full effect. No
+    // longer directly user-editable - overwritten every data preparation by
+    // helpers/defense.mjs#computeMagicResistance (see prepareDerivedData below).
     schema.magicResistance = new fields.NumberField({ ...requiredInteger, initial: 10 });
+    // Grund-AC's own base value (before the Constitution modifier that's
+    // folded in on top) - a plain field, directly user-editable on the GM
+    // tab and equally targetable by Active Effects (see
+    // helpers/defense.mjs#computeArmorClass).
+    schema.baseArmorClass = new fields.NumberField({ ...requiredInteger, initial: 10 });
+    // A flat AC/MR bonus (positive or negative) layered on top of every
+    // other AC-Boni/MR component - plain fields, directly user-editable on
+    // the GM tab and equally targetable by Active Effects (see
+    // helpers/defense.mjs#computeArmorClass/computeMagicResistance).
+    schema.customArmorClassBonus = new fields.NumberField({ ...requiredInteger, initial: 0 });
+    schema.customMagicResistanceBonus = new fields.NumberField({ ...requiredInteger, initial: 0 });
+    // A creature's innate "natural armor" bonus, scaling with level - see
+    // helpers/defense.mjs#computeNaturalMaterialBonus. adjustment is a
+    // plain, user-editable (GM tab) flat modifier; bonus is not meant to be
+    // hand-edited, but targeted by Active Effects via
+    // "system.naturalMaterialBonus.bonus"; value is the computed total, no
+    // longer directly user-editable - overwritten every data preparation.
+    schema.naturalMaterialBonus = new fields.SchemaField({
+      adjustment: new fields.NumberField({ ...requiredInteger, initial: 0 }),
+      bonus: new fields.NumberField({ ...requiredInteger, initial: 0 }),
+      value: new fields.NumberField({ ...requiredInteger, initial: 0 }),
+    });
     schema.biography = new fields.StringField({ required: true, blank: true });
 
     // Character tab's "Data" section - free-flavor fields shown alongside
@@ -139,6 +201,23 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       this.attributes[key].mod = Math.floor((this.attributes[key].value - 10) / 2);
       this.attributes[key].label = game.i18n.localize(CONFIG.SKSK.attributes[key]) ?? key;
     }
+
+    // Depends on the Constitution modifier just computed above, so must
+    // run after the attributes loop. Requires this.parent (the owning
+    // Actor, for its items and skill levels) - unavailable in a few edge
+    // cases (e.g. schema validation off a bare data model).
+    if (this.parent) {
+      this.life.max = computeMaxLife(this.parent);
+      this.negativeLife.max = computeMaxNegativeLife(this.parent);
+      this.mana.max = computeMaxMana(this.parent);
+      this.actionPoints.max = computeMaxActionPoints(this.parent);
+      this.reactionPoints.max = computeMaxReactionPoints(this.parent);
+      // naturalMaterialBonus.value must be computed before armorClass,
+      // which uses it as a floor under worn armor's own bonus.
+      this.naturalMaterialBonus.value = computeNaturalMaterialBonus(this.parent);
+      this.armorClass = computeArmorClass(this.parent);
+      this.magicResistance = computeMagicResistance(this.parent);
+    }
   }
 
   getRollData() {
@@ -175,7 +254,7 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
           const points = isNpc
             ? evaluateSkillFormula(skillData.formula ?? '', { lvl: data.lvl })
             : (skillData.points ?? 0);
-          data.skills[key] = Math.min(def.maxLevel, getSkillLevel(points, def.maxLevel) + bonus);
+          data.skills[key] = getSkillLevel(points, def.maxLevel, bonus);
         }
       }
     }

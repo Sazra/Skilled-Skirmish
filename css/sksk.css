@@ -632,6 +632,21 @@
   font-weight: bold;
 }
 
+.sksk .resource-label[data-tooltip] {
+  cursor: help;
+  border-bottom: 1px dotted currentColor;
+}
+
+/* Max Life is no longer user-editable (see data/actor-base.mjs#
+   prepareDerivedData) - styled to look distinct from the Life value input
+   next to it, rather than like an editable field. */
+.sksk .resource-computed {
+  flex: 1;
+  text-align: center;
+  color: var(--color-text-dark-secondary, #7a7971);
+  font-style: italic;
+}
+
 .sksk .items-header {
   height: 28px;
   margin: 2px 0;
@@ -983,11 +998,11 @@
   font-weight: bold;
 }
 
-.sksk .spell-cost i {
+.sksk .spell-cost-line i {
   margin: 0 1px 0 4px;
 }
 
-.sksk .spell-cost i:first-child {
+.sksk .spell-cost-line i:first-child {
   margin-left: 0;
 }
 
@@ -1024,15 +1039,14 @@
   opacity: 0.5;
 }
 
+/* Replaces the mana/AP cost display entirely (see actor-spells.hbs) when a
+   spell can't be cast - e.g. its prerequisite skill/level isn't met. Its
+   own intrinsic (font-based) width means .spell-cost's flex stretch never
+   kicks in, so it needs an explicit auto/auto margin to actually center
+   within the column instead of sitting flush against one side. */
 .sksk .spell-prerequisite-warning {
-  /* Foundry core's ".flexrow > *" rule sets flex:1 on every direct child
-     of .item-name (which carries both "item-name" and "flexrow") - without
-     this override the icon grows to match the spell name's flex-basis
-     exactly, stealing that same amount of width from the name and
-     truncating it far earlier than necessary. */
-  flex: 0 0 auto;
-  margin: 0 1px;
-  font-size: 11px;
+  margin: 0 auto;
+  font-size: 13px;
   color: var(--color-level-warning, #ff8800);
 }
 
@@ -1097,4 +1111,118 @@
 /* Size category dropdown, moved into the sheet header next to Level. */
 .sksk .header-size select {
   width: 100%;
+}
+
+/* Weapon/Armor Model rows (Configure Models settings app) - each is a
+   flexcol card (name+delete, then type/bonus fields, then attribute and
+   property checkbox grids), unlike the flexrow default .items-list .item
+   assumes. */
+.sksk .model-entry {
+  align-items: stretch;
+  padding: 8px 4px;
+  gap: 4px;
+}
+
+.sksk .model-checkbox-grid {
+  gap: 2px 8px;
+  margin: 0 0 8px;
+}
+
+.sksk .model-checkbox-grid .casting-method-option {
+  font-size: 12px;
+}
+
+/* Wraps each property's checkbox (and, for Heavy/Demanding/Draining, its
+   requirement input) so the pair stays together in one grid cell instead
+   of the input pushing the next property into misaligned columns. */
+.sksk .model-property-option {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sksk .model-property-option .casting-method-option {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Collapses the (fairly long) Properties checkbox grid out of the way by
+   default - each model's summary line stays visible and clickable to
+   expand. */
+.sksk .model-properties-details summary {
+  cursor: pointer;
+  margin-bottom: 4px;
+}
+
+/* The GM-entered requirement (attribute score) for the Heavy/Demanding/
+   Draining properties - narrow, sits right next to that property's own
+   checkbox. */
+.sksk .model-requirement-input {
+  flex: 0 0 40px;
+  width: 40px;
+  min-width: 0;
+  font-size: 12px;
+}
+
+/* Configure Models settings app - keeps its tab bar fixed while the
+   active tab's own content scrolls internally (same pattern as
+   .sksk.item's window-content>section.tab, just under our own class
+   since this app isn't an actor/item sheet). */
+.application.sksk.models-config .window-content {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sksk.models-config .window-content>section.tab {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 8px;
+}
+
+/* Configure Materials settings app - a single, untabbed part, so the
+   whole window content just scrolls as one block. */
+.sksk.materials-config .window-content {
+  overflow-y: auto;
+}
+
+/* Formula-breakdown hover tooltips (Life/Negative Life/Mana/AC/MR labels
+   on the resources sidebar - see helpers/tooltips.mjs). NOT scoped under
+   .sksk: Foundry's TooltipManager reparents the tooltip element onto
+   <body> itself, outside any sheet's own DOM subtree. */
+.sksk-breakdown-tooltip {
+  min-width: 220px;
+  font-size: 12px;
+}
+
+.sksk-breakdown-title {
+  font-weight: bold;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--color-border-light-tertiary, #d9d8ce);
+  padding-bottom: 2px;
+}
+
+.sksk-breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  white-space: nowrap;
+}
+
+.sksk-breakdown-perlevel {
+  opacity: 0.7;
+  font-style: italic;
+}
+
+.sksk-breakdown-subtotal {
+  margin-top: 2px;
+  border-top: 1px solid var(--color-border-light-tertiary, #d9d8ce);
+  padding-top: 2px;
+}
+
+.sksk-breakdown-total {
+  margin-top: 2px;
+  border-top: 1px solid var(--color-border-light-tertiary, #d9d8ce);
+  padding-top: 2px;
+  font-weight: bold;
 }
