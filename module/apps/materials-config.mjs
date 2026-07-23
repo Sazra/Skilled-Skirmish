@@ -1,3 +1,5 @@
+import { getMaterialProperties } from '../helpers/materials.mjs';
+
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
 /**
@@ -11,6 +13,16 @@ function sanitizeMaterialValue(value) {
   if (value === '?') return '?';
   const num = Number(value);
   return Number.isFinite(num) && num >= 0 ? num : 0;
+}
+
+/**
+ * A multi-select's submitted shape (name="...key" checkboxes) back into a
+ * plain array of the checked keys.
+ * @param {object} selection  E.g. {heavy: true, silvered: false}.
+ * @return {string[]}
+ */
+function selectedKeys(selection) {
+  return Object.entries(selection ?? {}).filter(([, checked]) => checked).map(([key]) => key);
 }
 
 /**
@@ -58,6 +70,7 @@ export class SKSKMaterialsConfig extends HandlebarsApplicationMixin(ApplicationV
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
     context.materials = game.settings.get('sksk', 'materials') ?? [];
+    context.materialPropertyChoices = getMaterialProperties();
     return context;
   }
 
@@ -72,6 +85,10 @@ export class SKSKMaterialsConfig extends HandlebarsApplicationMixin(ApplicationV
       name: m.name ?? '',
       materialBonus: sanitizeMaterialValue(m.materialBonus),
       manaCapacity: sanitizeMaterialValue(m.manaCapacity),
+      properties: selectedKeys(m.properties),
+      heavyRequirement: Number(m.heavyRequirement) || 0,
+      demandingRequirement: Number(m.demandingRequirement) || 0,
+      drainingRequirement: Number(m.drainingRequirement) || 0,
     }));
     await game.settings.set('sksk', 'materials', materials);
   }
@@ -79,7 +96,10 @@ export class SKSKMaterialsConfig extends HandlebarsApplicationMixin(ApplicationV
   /** @private */
   static async #addMaterial(event, target) {
     const materials = foundry.utils.deepClone(game.settings.get('sksk', 'materials') ?? []);
-    materials.push({ name: '', materialBonus: 0, manaCapacity: 0 });
+    materials.push({
+      name: '', materialBonus: 0, manaCapacity: 0, properties: [],
+      heavyRequirement: 0, demandingRequirement: 0, drainingRequirement: 0,
+    });
     await game.settings.set('sksk', 'materials', materials);
     this.render();
   }

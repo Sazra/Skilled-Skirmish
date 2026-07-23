@@ -16,6 +16,97 @@
 
   {{> "systems/sksk/templates/item/parts/material-section.hbs" showAttackBonus=true}}
 
+  <div class="grid grid-2col">
+    <div class="grid-span-1">
+      <label class="resource-label">{{localize 'SKSK.Models.WeaponType'}}</label>
+      <select name="system.weaponType">
+        {{selectOptions typeChoices selected=system.weaponType localize=true}}
+      </select>
+    </div>
+    <div class="grid-span-1">
+      <label class="resource-label">{{localize 'SKSK.Models.Model'}}</label>
+      <select name="system.model">
+        <option value="">{{localize 'SKSK.Models.NoModel'}}</option>
+        {{#each modelChoices as |m|}}
+        <option value="{{m.name}}" {{#if (eq m.name ../system.model)}}selected{{/if}}>{{m.name}}</option>
+        {{/each}}
+      </select>
+    </div>
+  </div>
+
+  {{#if resolvedModel}}
+  <div class="grid grid-2col">
+    <div class="grid-span-1">
+      <label class="resource-label">{{localize 'SKSK.Models.DiceFormula'}}</label>
+      <span>{{resolvedModel.diceFormula}}</span>
+    </div>
+    <div class="grid-span-1">
+      <label class="resource-label">{{localize 'SKSK.Models.FlatBonus'}}</label>
+      <span>{{resolvedModel.flatBonus}}</span>
+    </div>
+  </div>
+  {{/if}}
+
+  <details class="model-properties-details" data-sync="weapon-effective-properties">
+    <summary class="resource-label">{{localize 'SKSK.Models.Properties'}}</summary>
+    <ol class="items-list items-list-compact">
+      {{#each effectivePropertiesList as |entry|}}
+      <li class="item flexrow" title="{{localize entry.hint}}">
+        <div class="item-name">{{localize entry.label}}</div>
+        {{#if entry.hasValue}}
+        <div class="item-name">{{entry.value}}</div>
+        {{/if}}
+      </li>
+      {{else}}
+      <li class="item flexrow">
+        <div class="item-name">{{localize 'SKSK.Models.None'}}</div>
+      </li>
+      {{/each}}
+    </ol>
+  </details>
+
+  <div class="resource">
+    <label class="resource-label">{{localize 'SKSK.Models.PropertyOverrides'}}</label>
+    <ol class="items-list items-list-compact">
+      <li class="item flexrow items-header">
+        <div class="item-name">{{localize 'SKSK.Models.Property'}}</div>
+        <div class="item-name">{{localize 'SKSK.Models.OverrideMode'}}</div>
+        <div class="item-name">{{localize 'SKSK.Models.OverrideValue'}}</div>
+        <div class="item-controls">
+          <a class="item-control item-create" data-action="addPropertyOverride"
+            title="{{localize 'SKSK.Models.AddOverride'}}">
+            <i class="fas fa-plus"></i>
+          </a>
+        </div>
+      </li>
+      {{#each system.propertyOverrides as |entry index|}}
+      <li class="item flexrow">
+        <div class="item-name">
+          <select name="system.propertyOverrides.{{index}}.property">
+            {{selectOptions ../overridePropertyChoices selected=entry.property localize=true}}
+          </select>
+        </div>
+        <div class="item-name">
+          <select name="system.propertyOverrides.{{index}}.mode">
+            <option value="add" {{#if (eq entry.mode "add")}}selected{{/if}}>{{localize 'SKSK.Models.OverrideAdd'}}</option>
+            <option value="remove" {{#if (eq entry.mode "remove")}}selected{{/if}}>{{localize 'SKSK.Models.OverrideRemove'}}</option>
+          </select>
+        </div>
+        <div class="item-name">
+          <input type="text" name="system.propertyOverrides.{{index}}.value" value="{{entry.value}}"
+            data-dtype="Number" />
+        </div>
+        <div class="item-controls">
+          <a class="item-control item-delete" data-action="removeArrayEntry" data-field="propertyOverrides"
+            data-index="{{index}}" title="Remove">
+            <i class="fas fa-trash"></i>
+          </a>
+        </div>
+      </li>
+      {{/each}}
+    </ol>
+  </div>
+
   <div class="resource">
     <label class="resource-label">Mana Cost Reductions</label>
     <ol class="items-list items-list-compact">

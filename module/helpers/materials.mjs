@@ -22,6 +22,23 @@ export function getMaterial(name) {
 }
 
 /**
+ * CONFIG.SKSK.modelProperties entries selectable on a Material - those
+ * whose own "sources" list includes "material" (Antimagic/Silvered are
+ * Material-only; Heavy/Demanding/Draining/Shapeshifting/Infusion/Unstable/
+ * Light are shared with Models - see helpers/models.mjs#
+ * getModelPropertiesFor). Unlike Models, Materials aren't filtered by
+ * appliesTo category - a single material applies generically across
+ * Items/Armor/Weapons, not split by weapon/armor type.
+ * @return {Object<string, object>} The filtered subset, same shape as
+ *   CONFIG.SKSK.modelProperties.
+ */
+export function getMaterialProperties() {
+  return Object.fromEntries(
+    Object.entries(CONFIG.SKSK.modelProperties).filter(([, def]) => (def.sources ?? ['model']).includes('material'))
+  );
+}
+
+/**
  * The effective material bonus for an Item/Armor/Weapon - the referenced
  * material's own materialBonus, or the item's own materialBonusOverride if
  * that material's value is "?" (individually configurable per item). 0 if

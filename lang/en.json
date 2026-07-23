@@ -85,7 +85,8 @@
       "TotalManaCapacity": "Total Mana Capacity",
       "AttackBonus": "Attack Bonus (Material)",
       "DamageBonus": "Damage Bonus (Material)",
-      "ArmorBonus": "Armor Bonus (Material)"
+      "ArmorBonus": "Armor Bonus (Material)",
+      "Properties": "Properties"
     },
     "Life": {
       "MaxComputed": "Automatically calculated from Classes, Constitution, Health, Tenacity and abilities - not directly editable"
@@ -524,13 +525,23 @@
       "Properties": "Properties",
       "HardenedValue": "Hardened Value (X)",
       "Requirement": "Requirement",
+      "Range": "Range",
       "Add": "Add Model",
       "Remove": "Remove",
       "None": "No models defined yet.",
       "WeaponModels": "Weapon Models",
       "ArmorModels": "Armor Models",
       "Model": "Model",
-      "NoModel": "None"
+      "NoModel": "None",
+      "WeaponType": "Weapon Type",
+      "ArmorType": "Armor Type",
+      "PropertyOverrides": "Property Overrides",
+      "Property": "Property",
+      "OverrideMode": "Mode",
+      "OverrideAdd": "Add",
+      "OverrideRemove": "Remove",
+      "OverrideValue": "Value",
+      "AddOverride": "Add Property Override"
     },
     "ModelProperty": {
       "Heavy": {

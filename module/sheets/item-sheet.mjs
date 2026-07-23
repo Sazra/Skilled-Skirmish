@@ -7,6 +7,7 @@ import {
 import { getSkillBonusChoices } from '../helpers/skills.mjs';
 import { computeSavingThrowValue, computeDamageBonus, computeCombinedSchoolOverrideLevel } from '../helpers/spells.mjs';
 import { getMaterials, getMaterial } from '../helpers/materials.mjs';
+import { getWeaponModels, getArmorModels, getOverridablePropertiesFor } from '../helpers/models.mjs';
 
 /**
  * Extend the basic ItemSheet with some very simple modifications
@@ -48,6 +49,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       addManaCostReduction: SKSKItemSheet.#addManaCostReduction,
       addApCostReduction: SKSKItemSheet.#addApCostReduction,
       addMovementBonus: SKSKItemSheet.#addMovementBonus,
+      addPropertyOverride: SKSKItemSheet.#addPropertyOverride,
     }
   };
 
@@ -300,6 +302,39 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       }
     }
 
+    // Model selection, effective properties and property overrides
+    // (Weapon/Armor only) - see helpers/models.mjs, helpers/properties.mjs.
+    // resolvedModel/effectiveProperties are derived-only (set in
+    // prepareDerivedData, not part of the schema), so they're read straight
+    // from the live item.system instance rather than context.system (a
+    // toObject() clone, source data only - see the Material block above for
+    // the same reasoning).
+    if (item.type === 'weapon' || item.type === 'armor') {
+      const isWeapon = item.type === 'weapon';
+      const category = isWeapon ? 'weapon' : item.system.armorType;
+      // {value, label} pairs (matching the {{selectOptions}} default shape
+      // used elsewhere, e.g. getSkillBonusChoices) rather than the raw
+      // CONFIG.SKSK.skills.* object, whose entries are {label, maxLevel}.
+      context.typeChoices = Object.entries(isWeapon ? CONFIG.SKSK.skills.weapons : CONFIG.SKSK.skills.armors).map(
+        ([key, def]) => ({ value: key, label: def.label })
+      );
+      context.modelChoices = (isWeapon ? getWeaponModels() : getArmorModels()).filter(
+        m => (isWeapon ? m.weaponType : m.armorType) === (isWeapon ? item.system.weaponType : item.system.armorType)
+      );
+      context.resolvedModel = item.system.resolvedModel;
+      // An array of {value, label} (matching the {{selectOptions}} default
+      // shape used elsewhere, e.g. savingThrowChoices below) rather than the
+      // raw keyed object, since each entry's own label lives on a nested def
+      // object rather than being the value itself.
+      context.overridePropertyChoices = Object.entries(getOverridablePropertiesFor([category])).map(
+        ([key, def]) => ({ value: key, label: def.label })
+      );
+      context.effectivePropertiesList = (item.system.effectiveProperties ?? []).map(({ property, value }) => {
+        const def = CONFIG.SKSK.modelProperties[property];
+        return { property, label: def?.label, hint: def?.hint, hasValue: value !== undefined, value };
+      });
+    }
+
     if (item.type === 'species' || item.type === 'class') {
       // Active Effects scoped to a specific ability, indexed to match system.abilities.
       context.abilityEffects = (item.system.abilities ?? []).map((ability, index) =>
@@ -489,6 +524,13 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
 
   static async #addMovementBonus(event, target) {
     await this.#addArrayEntry('movementBonuses', { movementType: 'all', bonus: 0 });
+  }
+
+  static async #addPropertyOverride(event, target) {
+    const defaultProperty = Object.keys(
+      getOverridablePropertiesFor([this.item.type === 'weapon' ? 'weapon' : this.item.system.armorType])
+    )[0] ?? '';
+    await this.#addArrayEntry('propertyOverrides', { property: defaultProperty, mode: 'add', value: 0 });
   }
 
   /**

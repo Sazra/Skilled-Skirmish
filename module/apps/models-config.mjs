@@ -193,6 +193,8 @@ export class SKSKModelsConfig extends HandlebarsApplicationMixin(ApplicationV2) 
       heavyRequirement: Number(m.heavyRequirement) || 0,
       demandingRequirement: Number(m.demandingRequirement) || 0,
       drainingRequirement: Number(m.drainingRequirement) || 0,
+      reachRange: Number(m.reachRange) || 0,
+      rangedRange: Number(m.rangedRange) || 0,
     }));
     const armorModels = Object.entries(expanded.armorModels ?? {}).map(([index, m]) => ({
       name: m.name ?? '',
@@ -214,7 +216,7 @@ export class SKSKModelsConfig extends HandlebarsApplicationMixin(ApplicationV2) 
     const models = foundry.utils.deepClone(getWeaponModels());
     models.push({
       name: '', weaponType: target.dataset.weaponType, diceFormula: '', flatBonus: 0, attributes: [], properties: [],
-      heavyRequirement: 0, demandingRequirement: 0, drainingRequirement: 0,
+      heavyRequirement: 0, demandingRequirement: 0, drainingRequirement: 0, reachRange: 0, rangedRange: 0,
     });
     await game.settings.set('sksk', 'weaponModels', models);
     this.render();

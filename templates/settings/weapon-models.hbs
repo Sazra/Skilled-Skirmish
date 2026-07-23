@@ -71,6 +71,12 @@
                 value="{{lookup entry.model (concat key 'Requirement')}}" data-dtype="Number"
                 title="{{localize 'SKSK.Models.Requirement'}}" placeholder="{{localize 'SKSK.Models.Requirement'}}" />
               {{/if}}
+              {{#if def.hasRange}}
+              <input type="text" class="model-requirement-input"
+                name="weaponModels.{{entry.index}}.{{concat key 'Range'}}"
+                value="{{lookup entry.model (concat key 'Range')}}" data-dtype="Number"
+                title="{{localize 'SKSK.Models.Range'}}" placeholder="{{localize 'SKSK.Models.Range'}}" />
+              {{/if}}
             </div>
             {{/each}}
           </div>

@@ -85,7 +85,8 @@
             "TotalManaCapacity": "Gesamt-Manakapazität",
             "AttackBonus": "Angriffsbonus (Material)",
             "DamageBonus": "Schadensbonus (Material)",
-            "ArmorBonus": "Rüstungsbonus (Material)"
+            "ArmorBonus": "Rüstungsbonus (Material)",
+            "Properties": "Eigenschaften"
         },
         "Life": {
             "MaxComputed": "Automatisch berechnet aus Klassen, Konstitution, Gesundheit, Zähigkeit und Fähigkeiten - nicht direkt bearbeitbar"
@@ -524,13 +525,23 @@
             "Properties": "Eigenschaften",
             "HardenedValue": "Härte-Wert (X)",
             "Requirement": "Voraussetzung",
+            "Range": "Reichweite",
             "Add": "Modell hinzufügen",
             "Remove": "Entfernen",
             "None": "Noch keine Modelle angelegt.",
             "WeaponModels": "Waffenmodelle",
             "ArmorModels": "Rüstungsmodelle",
             "Model": "Modell",
-            "NoModel": "Keins"
+            "NoModel": "Keins",
+            "WeaponType": "Waffenart",
+            "ArmorType": "Rüstungsart",
+            "PropertyOverrides": "Eigenschaften-Anpassungen",
+            "Property": "Eigenschaft",
+            "OverrideMode": "Modus",
+            "OverrideAdd": "Hinzufügen",
+            "OverrideRemove": "Entfernen",
+            "OverrideValue": "Wert",
+            "AddOverride": "Eigenschaften-Anpassung hinzufügen"
         },
         "ModelProperty": {
             "Heavy": {
