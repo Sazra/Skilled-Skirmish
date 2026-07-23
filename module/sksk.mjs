@@ -6,6 +6,7 @@ import { preloadHandlebarsTemplates } from './helpers/templates.mjs';
 import { SKSK } from './helpers/config.mjs';
 import { registerSettings } from './helpers/settings.mjs';
 import { rollSavingThrowFromChat } from './helpers/spell-rolls.mjs';
+import { computeSpeciesAura } from './helpers/attributes.mjs';
 import * as models from './data/_module.mjs';
 
 Hooks.once('init', function () {
@@ -78,6 +79,18 @@ Hooks.once('ready', function () {
     if (!button) return;
     event.preventDefault();
     rollSavingThrowFromChat(button.dataset.itemUuid, Number(button.dataset.saveIndex));
+  });
+
+  // Aura is otherwise a normal user-editable attribute, but the moment a
+  // Species item is added (main or sub - however it got there: sheet
+  // button, drag-drop, compendium import), it's overwritten with the sum
+  // of every Species item's own Aura value. Only the client that actually
+  // created the item performs the write-back, so every other connected
+  // client doesn't also race to make the same update.
+  Hooks.on('createItem', (item, options, userId) => {
+    if (item.type !== 'species' || !(item.parent instanceof Actor)) return;
+    if (game.user.id !== userId) return;
+    item.parent.update({ 'system.attributes.aur.value': computeSpeciesAura(item.parent) });
   });
 });
 
