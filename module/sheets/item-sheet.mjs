@@ -394,7 +394,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
 
   static async #addAbility(event, target) {
     if ((this.item.system.abilities?.length ?? 0) >= 3) return;
-    await this.#addArrayEntry('abilities', { name: '', description: '', lifeBonusFormula: '0' });
+    await this.#addArrayEntry('abilities', { name: '', description: '', lifeBonusFormula: '0', manaBonusFormula: '0' });
   }
 
   static async #addRange(event, target) {

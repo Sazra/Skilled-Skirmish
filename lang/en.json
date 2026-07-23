@@ -63,6 +63,9 @@
     "Life": {
       "MaxComputed": "Automatically calculated from Classes, Constitution, Health, Tenacity and abilities - not directly editable"
     },
+    "Mana": {
+      "MaxComputed": "Automatically calculated from Aura, Mana Capacity, Source Bound, Mana Core and abilities - not directly editable"
+    },
     "Gender": {
       "Male": "Male",
       "Female": "Female",
@@ -364,7 +367,9 @@
     },
     "Ability": {
       "LifeBonusFormula": "Life Bonus (scaling)",
-      "LifeBonusFormulaHint": "Added to max life once this ability is unlocked. Supports \"L\" for the actor's level, e.g. \"L * 2\"."
+      "LifeBonusFormulaHint": "Added to max life once this ability is unlocked. Supports \"L\" for the actor's level, e.g. \"L * 2\".",
+      "ManaBonusFormula": "Mana Bonus (scaling)",
+      "ManaBonusFormulaHint": "Added to max mana once this ability is unlocked. Supports \"L\" for the actor's level, e.g. \"L * 2\"."
     },
     "Spell": {
       "ManaCost": "Mana",

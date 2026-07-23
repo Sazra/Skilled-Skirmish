@@ -1,5 +1,6 @@
 import { computeSkillBonusTotals, evaluateSkillFormula, getSkillLevel } from '../helpers/skills.mjs';
 import { computeMaxLife } from '../helpers/life.mjs';
+import { computeMaxMana } from '../helpers/mana.mjs';
 
 export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
 
@@ -32,7 +33,13 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     });
     schema.mana = new fields.SchemaField({
       value: new fields.NumberField({ ...requiredInteger, initial: 5, min: 0 }),
-      max: new fields.NumberField({ ...requiredInteger, initial: 5 })
+      // No longer directly user-editable - overwritten every data
+      // preparation by helpers/mana.mjs#computeMaxMana (see
+      // prepareDerivedData below).
+      max: new fields.NumberField({ ...requiredInteger, initial: 5 }),
+      // Flat bonus added on top of the computed max mana - not meant to be
+      // hand-edited, but targeted by Active Effects via "system.mana.bonus".
+      bonus: new fields.NumberField({ ...requiredInteger, initial: 0 })
     });
     schema.actionPoints = new fields.SchemaField({
       value: new fields.NumberField({ ...requiredInteger, initial: 3, min: 0 }),
@@ -154,6 +161,7 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // cases (e.g. schema validation off a bare data model).
     if (this.parent) {
       this.life.max = computeMaxLife(this.parent);
+      this.mana.max = computeMaxMana(this.parent);
     }
   }
 

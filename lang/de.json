@@ -63,6 +63,9 @@
         "Life": {
             "MaxComputed": "Automatisch berechnet aus Klassen, Konstitution, Gesundheit, Zähigkeit und Fähigkeiten - nicht direkt bearbeitbar"
         },
+        "Mana": {
+            "MaxComputed": "Automatisch berechnet aus Aura, Manakapazität, Quellengebunden, Manakern und Fähigkeiten - nicht direkt bearbeitbar"
+        },
         "Gender": {
             "Male": "Männlich",
             "Female": "Weiblich",
@@ -364,7 +367,9 @@
         },
         "Ability": {
             "LifeBonusFormula": "Lebens-Bonus (skalierend)",
-            "LifeBonusFormulaHint": "Wird zum maximalen Leben addiert, sobald diese Fähigkeit freigeschaltet ist. Unterstützt \"L\" für das Level des Akteurs, z.B. \"L * 2\"."
+            "LifeBonusFormulaHint": "Wird zum maximalen Leben addiert, sobald diese Fähigkeit freigeschaltet ist. Unterstützt \"L\" für das Level des Akteurs, z.B. \"L * 2\".",
+            "ManaBonusFormula": "Mana-Bonus (skalierend)",
+            "ManaBonusFormulaHint": "Wird zum maximalen Mana addiert, sobald diese Fähigkeit freigeschaltet ist. Unterstützt \"L\" für das Level des Akteurs, z.B. \"L * 2\"."
         },
         "Spell": {
             "ManaCost": "Mana",
