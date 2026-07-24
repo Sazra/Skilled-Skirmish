@@ -71,6 +71,11 @@
       "Consumable": "Consumable",
       "ConsumableAbbr": "Cons."
     },
+    "Charges": {
+      "Enabled": "Has Charges",
+      "Value": "Current Charges",
+      "Max": "Max Charges"
+    },
     "Materials": {
       "Name": "Name",
       "MaterialBonus": "Material Bonus",

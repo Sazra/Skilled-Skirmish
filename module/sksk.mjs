@@ -117,6 +117,23 @@ Hooks.once('ready', function () {
     );
     for (const other of others) other.update({ 'system.equipped': false });
   });
+
+  // A Consumable Item's charges reaching 0 consumes one unit of its own
+  // quantity, then resets its charges back to max - a fresh copy takes its
+  // place, same as swapping in the next potion from a stack. An Equippable
+  // (non-Consumable) item's charges instead just stay at 0 once
+  // depleted - it isn't used up, it just needs recharging some other way.
+  // See data/item.mjs#charges.
+  Hooks.on('updateItem', (item, changes, options, userId) => {
+    if (item.type !== 'item' || !item.system.consumable || !item.system.charges.enabled) return;
+    if (game.user.id !== userId) return;
+    if (foundry.utils.getProperty(changes, 'system.charges.value') !== 0) return;
+    const newQuantity = Math.max(0, item.system.quantity - 1);
+    item.update({
+      'system.quantity': newQuantity,
+      'system.charges.value': newQuantity > 0 ? item.system.charges.max : 0,
+    });
+  });
 });
 
 async function createItemMacro(data, slot) {

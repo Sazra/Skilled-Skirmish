@@ -71,6 +71,11 @@
             "Consumable": "Verbrauchbar",
             "ConsumableAbbr": "Verbr."
         },
+        "Charges": {
+            "Enabled": "Hat Ladungen",
+            "Value": "Momentane Ladungen",
+            "Max": "Maximale Ladungen"
+        },
         "Materials": {
             "Name": "Name",
             "MaterialBonus": "Materialbonus",

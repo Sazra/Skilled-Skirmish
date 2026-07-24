@@ -29,6 +29,25 @@
     </label>
   </div>
 
+  <div class="resource">
+    <label class="casting-method-option">
+      <input type="checkbox" name="system.charges.enabled" {{checked system.charges.enabled}} />
+      {{localize 'SKSK.Charges.Enabled'}}
+    </label>
+    {{#if system.charges.enabled}}
+    <div class="grid grid-2col">
+      <div class="grid-span-1">
+        <label class="resource-label">{{localize 'SKSK.Charges.Value'}}</label>
+        <input type="text" name="system.charges.value" value="{{system.charges.value}}" data-dtype="Number" />
+      </div>
+      <div class="grid-span-1">
+        <label class="resource-label">{{localize 'SKSK.Charges.Max'}}</label>
+        <input type="text" name="system.charges.max" value="{{system.charges.max}}" data-dtype="Number" />
+      </div>
+    </div>
+    {{/if}}
+  </div>
+
   {{> "systems/sksk/templates/item/parts/material-section.hbs"}}
 
   <div class="resource">

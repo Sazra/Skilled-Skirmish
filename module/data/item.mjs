@@ -8,7 +8,9 @@ export default class SKSKItem extends SKSKItemBase {
     const requiredInteger = { required: true, nullable: false, integer: true };
     const schema = super.defineSchema();
 
-    schema.quantity = new fields.NumberField({ ...requiredInteger, initial: 1, min: 1 });
+    // min 0 (not 1) - see schema.charges below: a consumable item's own
+    // quantity can drop to 0 once its last copy's charges are used up.
+    schema.quantity = new fields.NumberField({ ...requiredInteger, initial: 1, min: 0 });
     schema.weight = new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 });
     // Whether this item can be equipped at all (a ring, wand, etc. -
     // as opposed to a mundane trade good). equipped/enchanted are only
@@ -17,6 +19,20 @@ export default class SKSKItem extends SKSKItemBase {
     schema.equipped = new fields.BooleanField({ initial: false });
     schema.enchanted = new fields.BooleanField({ initial: false });
     schema.consumable = new fields.BooleanField({ initial: false });
+
+    // Whether this item tracks charges at all - value/max are only shown
+    // once this is on. Both Consumable and Equippable items can have
+    // charges, but they behave differently once depleted (charges.value
+    // reaches 0) - see the updateItem hook in sksk.mjs: a Consumable
+    // item's own quantity drops by 1 and its charges reset to max (a fresh
+    // copy takes its place); an Equippable (non-Consumable) item's charges
+    // instead just stay at 0 - it isn't used up, it just needs recharging
+    // some other way.
+    schema.charges = new fields.SchemaField({
+      enabled: new fields.BooleanField({ initial: false }),
+      value: new fields.NumberField({ ...requiredInteger, initial: 1, min: 0 }),
+      max: new fields.NumberField({ ...requiredInteger, initial: 1, min: 0 }),
+    });
 
     schema.roll = new fields.SchemaField({
       diceNum: new fields.NumberField({ ...requiredInteger, initial: 1, min: 1 }),
