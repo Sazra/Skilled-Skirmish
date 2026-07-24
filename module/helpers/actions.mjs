@@ -201,6 +201,36 @@ export async function useMove(actor, movementType) {
 }
 
 /**
+ * "Use" an equipped Weapon or a usable Item from the Actions tab: rolls it
+ * (SKSKItem#roll's own behavior - a formula roll for a generic Item that
+ * has one set, its description otherwise; Weapons have neither, so this
+ * just posts their description if any), deducting its own configured AP
+ * cost (system.useApCost). A used Item additionally consumes itself - one
+ * charge if it has charges enabled (which may itself deplete the item's
+ * quantity, via the updateItem hook in sksk.mjs - see data/item.mjs#
+ * charges), or one unit of quantity directly if it's Consumable without
+ * charges enabled.
+ * @param {Actor} actor
+ * @param {Item} item   A Weapon or Item, owned by actor.
+ * @return {Promise<void>}
+ */
+export async function useItem(actor, item) {
+  const apCost = item.system.useApCost ?? 0;
+  if (!hasEnoughActionPoints(actor, apCost)) return;
+
+  await item.roll();
+  await actor.update(spendActionPoints(actor, apCost));
+
+  if (item.type === 'item') {
+    if (item.system.charges?.enabled) {
+      await item.update({ 'system.charges.value': Math.max(0, item.system.charges.value - 1) });
+    } else if (item.system.consumable) {
+      await item.update({ 'system.quantity': Math.max(0, item.system.quantity - 1) });
+    }
+  }
+}
+
+/**
  * Use Dodge: grants disadvantage on (1 + Reflexes skill level) attacks
  * against the actor until its next turn - a chat announcement only (no
  * automated attack-roll system exists yet to enforce it against). Costs a

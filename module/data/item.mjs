@@ -34,6 +34,10 @@ export default class SKSKItem extends SKSKItemBase {
       max: new fields.NumberField({ ...requiredInteger, initial: 1, min: 0 }),
     });
 
+    // AP cost to Use this item from the actor sheet's Actions tab - see
+    // helpers/actions.mjs#useItem.
+    schema.useApCost = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+
     schema.roll = new fields.SchemaField({
       diceNum: new fields.NumberField({ ...requiredInteger, initial: 1, min: 1 }),
       diceSize: new fields.StringField({ initial: "d20" }),

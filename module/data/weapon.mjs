@@ -69,6 +69,10 @@ export default class SKSKWeapon extends SKSKItemBase {
     schema.materialBonusOverride = new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 });
     schema.manaCapacityOverride = new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 });
 
+    // AP cost to Use this weapon from the actor sheet's Actions tab - see
+    // helpers/actions.mjs#useItem.
+    schema.useApCost = new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 });
+
     // This weapon's type (axe, bow, sword, etc.) - determines which Weapon
     // Models (see helpers/models.mjs) are selectable below. Mirrors
     // CONFIG.SKSK.skills.weapons' keys, hardcoded here since static schema

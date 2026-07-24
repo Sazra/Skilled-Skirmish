@@ -187,7 +187,13 @@
       "DodgeCount": "Grants disadvantage on the next {count} attacks against this creature.",
       "MartialArtsAttack": "Martial Arts Attack",
       "Roll": "Roll",
-      "NotEnoughAP": "Not enough Action Points."
+      "NotEnoughAP": "Not enough Action Points.",
+      "UseApCost": "AP Cost (Use)",
+      "Use": "Use",
+      "Weapons": "Weapons",
+      "NoWeapons": "No equipped weapons.",
+      "UsableItems": "Usable Items",
+      "NoUsableItems": "No usable items."
     },
     "Gender": {
       "Male": "Male",

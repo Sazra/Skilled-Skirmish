@@ -18,7 +18,7 @@ import { getLifeBreakdown, getNegativeLifeBreakdown } from '../helpers/life.mjs'
 import { getManaBreakdown } from '../helpers/mana.mjs';
 import { getArmorClassBreakdown, getMagicResistanceBreakdown } from '../helpers/defense.mjs';
 import { renderBreakdownHtml } from '../helpers/tooltips.mjs';
-import { rollMartialArtsAttack, rollRegeneration, rollMeditation, useMove, useDodge } from '../helpers/actions.mjs';
+import { rollMartialArtsAttack, rollRegeneration, rollMeditation, useMove, useDodge, useItem } from '../helpers/actions.mjs';
 
 /**
  * Schema paths (relative to system.*) whose value input accepts the "+N"/
@@ -61,6 +61,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       rollMeditation: SKSKActorSheet.#rollMeditation,
       useMove: SKSKActorSheet.#useMove,
       useDodge: SKSKActorSheet.#useDodge,
+      useItem: SKSKActorSheet.#useItem,
     },
     // Drop target for assigning existing Items (of any type) to this actor
     // by dragging them from the sidebar, a compendium, or another sheet.
@@ -329,6 +330,13 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     context.movementTypeChoices = CONFIG.SKSK.movementTypes;
     context.attributeChoices = CONFIG.SKSK.attributes;
     context.attributeUsageChoices = CONFIG.SKSK.attributeUsageTypes;
+    // Actions tab's Weapons/Usable Items containers - "usable" Items are
+    // Consumable and/or have Charges enabled (see data/item.mjs#charges) -
+    // see helpers/actions.mjs#useItem.
+    context.equippedWeapons = actor.items.filter(i => i.type === 'weapon' && i.system.equipped);
+    context.usableItems = actor.items.filter(i =>
+      i.type === 'item' && (i.system.consumable || i.system.charges?.enabled)
+    );
     context.skillTabs = Object.values(this._prepareTabs('skillCategories'));
     context.spellTypeTabs = Object.values(this._prepareTabs('spellTypes'));
     context.spellSimpleSchoolTabs = Object.values(this._prepareTabs('spellSimpleSchools'));
@@ -1022,6 +1030,18 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
   /** @private */
   static async #useDodge(event, target) {
     await useDodge(this.actor);
+  }
+
+  /**
+   * Use one of the Actions tab's listed equipped Weapons/usable Items -
+   * see helpers/actions.mjs#useItem.
+   * @param {PointerEvent} event
+   * @param {HTMLElement} target   The clicked Use button, carrying data-item-id.
+   * @private
+   */
+  static async #useItem(event, target) {
+    const item = this.actor.items.get(target.dataset.itemId);
+    if (item) await useItem(this.actor, item);
   }
 
   /**

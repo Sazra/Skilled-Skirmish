@@ -55,4 +55,40 @@
     </div>
   </div>
 
+  <div class="resource">
+    <label class="resource-label">{{localize 'SKSK.Action.Weapons'}}</label>
+    <ol class="items-list items-list-compact">
+      {{#each equippedWeapons as |weapon|}}
+      <li class="item flexrow">
+        <div class="item-name">{{weapon.name}}</div>
+        <div class="item-controls">
+          <button type="button" data-action="useItem" data-item-id="{{weapon.id}}">{{localize 'SKSK.Action.Use'}}</button>
+        </div>
+      </li>
+      {{else}}
+      <li class="item flexrow">
+        <div class="item-name">{{localize 'SKSK.Action.NoWeapons'}}</div>
+      </li>
+      {{/each}}
+    </ol>
+  </div>
+
+  <div class="resource">
+    <label class="resource-label">{{localize 'SKSK.Action.UsableItems'}}</label>
+    <ol class="items-list items-list-compact">
+      {{#each usableItems as |usableItem|}}
+      <li class="item flexrow">
+        <div class="item-name">{{usableItem.name}}</div>
+        <div class="item-controls">
+          <button type="button" data-action="useItem" data-item-id="{{usableItem.id}}">{{localize 'SKSK.Action.Use'}}</button>
+        </div>
+      </li>
+      {{else}}
+      <li class="item flexrow">
+        <div class="item-name">{{localize 'SKSK.Action.NoUsableItems'}}</div>
+      </li>
+      {{/each}}
+    </ol>
+  </div>
+
 </section>
