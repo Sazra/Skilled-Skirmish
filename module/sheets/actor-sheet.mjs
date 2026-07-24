@@ -18,6 +18,7 @@ import { getLifeBreakdown, getNegativeLifeBreakdown } from '../helpers/life.mjs'
 import { getManaBreakdown } from '../helpers/mana.mjs';
 import { getArmorClassBreakdown, getMagicResistanceBreakdown } from '../helpers/defense.mjs';
 import { renderBreakdownHtml } from '../helpers/tooltips.mjs';
+import { rollMartialArtsAttack, rollRegeneration, rollMeditation, useMove, useDodge } from '../helpers/actions.mjs';
 
 /**
  * Schema paths (relative to system.*) whose value input accepts the "+N"/
@@ -53,6 +54,13 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       removeResource: SKSKActorSheet.#removeResource,
       addAdditionalData: SKSKActorSheet.#addAdditionalData,
       removeAdditionalData: SKSKActorSheet.#removeAdditionalData,
+      addMartialArtsAttack: SKSKActorSheet.#addMartialArtsAttack,
+      removeMartialArtsAttack: SKSKActorSheet.#removeMartialArtsAttack,
+      rollMartialArtsAttack: SKSKActorSheet.#rollMartialArtsAttack,
+      rollRegeneration: SKSKActorSheet.#rollRegeneration,
+      rollMeditation: SKSKActorSheet.#rollMeditation,
+      useMove: SKSKActorSheet.#useMove,
+      useDodge: SKSKActorSheet.#useDodge,
     },
     // Drop target for assigning existing Items (of any type) to this actor
     // by dragging them from the sidebar, a compendium, or another sheet.
@@ -63,7 +71,6 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
   static TABS = {
     primary: {
       tabs: [
-        { id: "character", label: "SKSK.SheetLabels.Character" },
         { id: "general", label: "SKSK.SheetLabels.General" },
         { id: "items", label: "Items" },
         { id: "abilities", label: "Abilities" },
@@ -72,9 +79,20 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
         { id: "effects", label: "Effects" },
         { id: "gm", label: "SKSK.SheetLabels.GM" },
       ],
-      initial: "character",
+      initial: "general",
     },
-    // Sub-tabs shown inside the Character tab.
+    // Sub-tabs shown inside the General tab - Character (formerly its own
+    // top-level tab) and Actions (new) alongside the General tab's
+    // pre-existing content, now named Overview.
+    generalSections: {
+      tabs: [
+        { id: "overview", label: "SKSK.General.Overview" },
+        { id: "character", label: "SKSK.SheetLabels.Character" },
+        { id: "actions", label: "SKSK.SheetLabels.Actions" },
+      ],
+      initial: "overview",
+    },
+    // Sub-tabs shown inside the General tab's Character section.
     characterSections: {
       tabs: [
         { id: "data", label: "SKSK.CharacterSection.Data" },
@@ -186,10 +204,6 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     },
     tabs: {
       template: "systems/sksk/templates/actor/parts/tab-navigation.hbs",
-    },
-    character: {
-      template: "systems/sksk/templates/actor/parts/character.hbs",
-      scrollable: [""],
     },
     general: {
       template: "systems/sksk/templates/actor/parts/general.hbs",
@@ -307,8 +321,14 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     // The GM tab holds background information/switches irrelevant to
     // players - hidden from the tab bar entirely for non-GM users.
     if (!game.user.isGM) delete context.tabs.gm;
+    context.generalSectionTabs = Object.values(this._prepareTabs('generalSections'));
     context.characterSectionTabs = Object.values(this._prepareTabs('characterSections'));
     context.genderChoices = CONFIG.SKSK.genders;
+    // Actions tab (Move) and GM tab (Martial Arts Attacks) choices - see
+    // helpers/actions.mjs.
+    context.movementTypeChoices = CONFIG.SKSK.movementTypes;
+    context.attributeChoices = CONFIG.SKSK.attributes;
+    context.attributeUsageChoices = CONFIG.SKSK.attributeUsageTypes;
     context.skillTabs = Object.values(this._prepareTabs('skillCategories'));
     context.spellTypeTabs = Object.values(this._prepareTabs('spellTypes'));
     context.spellSimpleSchoolTabs = Object.values(this._prepareTabs('spellSimpleSchools'));
@@ -790,7 +810,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     // render (Foundry only wires up clicks after that, it doesn't apply an
     // initial state to nested groups on its own).
     for (const group of [
-      'primary', 'characterSections', 'skillCategories', 'spellTypes',
+      'primary', 'generalSections', 'characterSections', 'skillCategories', 'spellTypes',
       'spellSimpleSchools', 'spellAdvancedSchools', 'spellCombinedSchools', 'spellSystemlessCategories',
     ]) {
       const active = this.tabGroups?.[group] ?? this.constructor.TABS[group].initial;
@@ -934,6 +954,74 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     const current = foundry.utils.deepClone(this.actor.system.additionalData ?? []);
     current.splice(index, 1);
     await this.actor.update({ 'system.additionalData': current });
+  }
+
+  /**
+   * Append a blank entry to the actor's GM-defined Martial Arts Attacks
+   * list (GM tab) - see data/actor-base.mjs#martialArtsAttacks.
+   * @private
+   */
+  static async #addMartialArtsAttack(event, target) {
+    const current = foundry.utils.deepClone(this.actor.system.martialArtsAttacks ?? []);
+    // Every attribute key must be explicitly present (false) - see the
+    // matching comment on data/actor-base.mjs#martialArtsAttacks' own
+    // default value.
+    const attributes = Object.fromEntries(Object.keys(CONFIG.SKSK.attributes).map(key => [key, false]));
+    current.push({ name: '', formula: '1d4', apCost: 0, attributes, attributeUsage: 'highestMultiple' });
+    await this.actor.update({ 'system.martialArtsAttacks': current });
+  }
+
+  /**
+   * Remove an entry from the actor's Martial Arts Attacks list.
+   * @param {PointerEvent} event   The originating click event.
+   * @param {HTMLElement} target   The capturing HTML element, carrying data-index.
+   * @private
+   */
+  static async #removeMartialArtsAttack(event, target) {
+    const index = Number(target.dataset.index);
+    const current = foundry.utils.deepClone(this.actor.system.martialArtsAttacks ?? []);
+    current.splice(index, 1);
+    await this.actor.update({ 'system.martialArtsAttacks': current });
+  }
+
+  /**
+   * Roll the Martial Arts Attack currently chosen in the Actions tab's
+   * selector - see helpers/actions.mjs#rollMartialArtsAttack.
+   * @param {PointerEvent} event
+   * @param {HTMLElement} target   The clicked Roll button.
+   * @private
+   */
+  static async #rollMartialArtsAttack(event, target) {
+    const select = target.closest('.action-row')?.querySelector('.martial-arts-attack-select');
+    if (!select?.value) return;
+    await rollMartialArtsAttack(this.actor, Number(select.value));
+  }
+
+  /** @private */
+  static async #rollRegeneration(event, target) {
+    await rollRegeneration(this.actor);
+  }
+
+  /** @private */
+  static async #rollMeditation(event, target) {
+    await rollMeditation(this.actor);
+  }
+
+  /**
+   * Use the Move action for the movement type currently chosen in the
+   * Actions tab's selector - see helpers/actions.mjs#useMove.
+   * @param {PointerEvent} event
+   * @param {HTMLElement} target   The clicked Move button.
+   * @private
+   */
+  static async #useMove(event, target) {
+    const select = target.closest('.action-row')?.querySelector('.move-type-select');
+    await useMove(this.actor, select?.value ?? 'walking');
+  }
+
+  /** @private */
+  static async #useDodge(event, target) {
+    await useDodge(this.actor);
   }
 
   /**

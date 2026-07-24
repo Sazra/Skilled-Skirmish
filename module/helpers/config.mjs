@@ -199,6 +199,17 @@ SKSK.spellTriggers = {
   unconditional: 'SKSK.Spell.Trigger.Unconditional',
 };
 
+// How a Martial Arts Attack's selected attribute switches (see
+// data/actor-base.mjs#martialArtsAttacks) combine into a single modifier -
+// mirrors the Refined/Masterful/Specialized Model properties' wording,
+// generalized to any number of selected attributes. See
+// helpers/actions.mjs#resolveMartialArtsAttributeBonus.
+SKSK.attributeUsageTypes = {
+  highestSingle: 'SKSK.AttributeUsage.HighestSingle',
+  all: 'SKSK.AttributeUsage.All',
+  highestMultiple: 'SKSK.AttributeUsage.HighestMultiple',
+};
+
 SKSK.talentTypes = {
   level6: 'SKSK.Talent.Type.Level6',
   level12: 'SKSK.Talent.Type.Level12',

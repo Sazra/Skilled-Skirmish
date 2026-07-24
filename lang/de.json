@@ -43,6 +43,7 @@
             "Titanic": "Titanisch"
         },
         "General": {
+            "Overview": "Übersicht",
             "MovementSpeeds": "Bewegungsgeschwindigkeiten",
             "SizeCategory": "Größenkategorie",
             "FavoriteSkills": "Favorisierte Fertigkeiten",
@@ -152,6 +153,37 @@
             "CustomMagicResistanceBonus": "Eigener MR-Bonus",
             "CustomMagicResistanceBonusHint": "Ein fester MR-Bonus (positiv oder negativ) zusätzlich zu jeder anderen MR-Komponente."
         },
+        "AttributeUsage": {
+            "HighestSingle": "Nutze Höchsten (Nur Ein Attribut)",
+            "All": "Nutze alle",
+            "HighestMultiple": "Nutze Höchsten (mehrere wenn gleich)"
+        },
+        "MartialArtsAttack": {
+            "DefaultMainHand": "Haupthand",
+            "DefaultOffHand": "Nebenhand",
+            "SectionTitle": "Kampfkunstangriffe",
+            "Name": "Name",
+            "Formula": "Formel",
+            "APCost": "AP-Kosten",
+            "Attributes": "Attribute",
+            "AttributeUsage": "Attributsnutzung",
+            "Add": "Angriff hinzufügen",
+            "Remove": "Entfernen",
+            "None": "Noch keine Kampfkunstangriffe definiert."
+        },
+        "Action": {
+            "Regeneration": "Regeneration",
+            "Meditation": "Meditation",
+            "Move": "Bewegen",
+            "MoveHint": "Die erste Nutzung jede Kampfrunde ist kostenlos, alle weiteren Nutzungen in dieser Runde kosten 1 AP.",
+            "MoveDistance": "Bewegt sich {speed}m ({label}).",
+            "Dodge": "Ausweichen",
+            "DodgeHint": "Verleiht einer Anzahl an Angriffen gegen diese Kreatur Nachteil. Kostet 1 AP.",
+            "DodgeCount": "Verleiht den nächsten {count} Angriffen gegen diese Kreatur Nachteil.",
+            "MartialArtsAttack": "Kampfkunstangriff",
+            "Roll": "Würfeln",
+            "NotEnoughAP": "Nicht genug Aktionspunkte."
+        },
         "Gender": {
             "Male": "Männlich",
             "Female": "Weiblich",
@@ -214,6 +246,7 @@
             "Skills": "Fertigkeiten",
             "General": "Allgemein",
             "Character": "Charakter",
+            "Actions": "Aktionen",
             "GM": "GM"
         },
         "Skill": {

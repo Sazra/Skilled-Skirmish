@@ -1,77 +1,15 @@
 <section class="tab {{tab.cssClass}}" data-group="primary" data-tab="general">
 
-  <div class="resource">
-    <label class="resource-label">{{localize 'SKSK.General.MovementSpeeds'}}</label>
-    <div class="grid grid-6col">
-      {{#each movementSpeeds as |m|}}
-      <div class="grid-span-1 movement-speed-entry">
-        <label class="resource-label">{{localize m.label}}</label>
-        <div class="movement-speed-value">{{m.value}}m</div>
-      </div>
-      {{/each}}
-    </div>
-  </div>
+  <nav class="sheet-tabs tabs general-section-tabs" data-group="generalSections">
+    {{#each generalSectionTabs as |sec|}}
+    <a class="{{sec.cssClass}}" data-action="tab" data-group="generalSections" data-tab="{{sec.id}}">
+      <label>{{localize sec.label}}</label>
+    </a>
+    {{/each}}
+  </nav>
 
-  <div class="grid grid-2col general-columns">
-
-    <div class="grid-span-1 resource">
-      <label class="resource-label">{{localize 'SKSK.General.FavoriteSkills'}}</label>
-      <ol class="items-list items-list-compact">
-        {{#each favoriteSkills as |skill|}}
-        <li class="item flexrow">
-          <div class="item-name"><h4>{{localize skill.label}}</h4></div>
-          <div class="skill-level">{{skill.level}} / {{skill.maxLevel}}</div>
-        </li>
-        {{else}}
-        <li class="item flexrow">
-          <div class="item-name">{{localize 'SKSK.General.NoFavoriteSkills'}}</div>
-        </li>
-        {{/each}}
-      </ol>
-    </div>
-
-    <div class="grid-span-1 resource">
-      <label class="resource-label">{{localize 'SKSK.General.AdditionalResources'}}</label>
-      <ol class="items-list items-list-compact">
-        <li class="item flexrow items-header">
-          <div class="item-name">{{localize 'Name'}}</div>
-          <div class="item-name" title="{{localize 'SKSK.General.AbbreviationHint'}}">{{localize 'SKSK.General.Abbreviation'}}</div>
-          <div class="item-name">{{localize 'SKSK.SheetLabels.Resources'}}</div>
-          <div class="item-controls">
-            <a class="item-control item-create" data-action="addResource" title="{{localize 'SKSK.General.AddResource'}}">
-              <i class="fas fa-plus"></i>
-            </a>
-          </div>
-        </li>
-        {{#each system.customResources as |entry index|}}
-        <li class="item flexrow">
-          <div class="item-name">
-            <input type="text" name="system.customResources.{{index}}.name" value="{{entry.name}}"
-              placeholder="{{localize 'Name'}}" />
-          </div>
-          <div class="item-name">
-            <input type="text" name="system.customResources.{{index}}.abbreviation" value="{{entry.abbreviation}}"
-              maxlength="4" class="resource-abbreviation" placeholder="e.g. RAGE"
-              title="{{localize 'SKSK.General.AbbreviationHint'}}" />
-          </div>
-          <div class="item-name flexrow flex-center">
-            <input type="text" name="system.customResources.{{index}}.value" value="{{entry.value}}"
-              data-dtype="Number" />
-            <span>/</span>
-            <input type="text" name="system.customResources.{{index}}.max" value="{{entry.max}}"
-              data-dtype="Number" />
-          </div>
-          <div class="item-controls">
-            <a class="item-control item-delete" data-action="removeResource" data-index="{{index}}"
-              title="{{localize 'DOCUMENT.Delete' type='Resource'}}">
-              <i class="fas fa-trash"></i>
-            </a>
-          </div>
-        </li>
-        {{/each}}
-      </ol>
-    </div>
-
-  </div>
+  {{> "systems/sksk/templates/actor/parts/general-overview.hbs"}}
+  {{> "systems/sksk/templates/actor/parts/character.hbs"}}
+  {{> "systems/sksk/templates/actor/parts/general-actions.hbs"}}
 
 </section>

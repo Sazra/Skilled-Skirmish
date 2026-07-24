@@ -43,6 +43,7 @@
       "Titanic": "Titanic"
     },
     "General": {
+      "Overview": "Overview",
       "MovementSpeeds": "Movement Speeds",
       "SizeCategory": "Size Category",
       "FavoriteSkills": "Favorite Skills",
@@ -151,6 +152,37 @@
       "CustomArmorClassBonusHint": "A flat AC bonus (positive or negative) on top of every other AC component.",
       "CustomMagicResistanceBonus": "Custom MR Bonus",
       "CustomMagicResistanceBonusHint": "A flat MR bonus (positive or negative) on top of every other MR component."
+    },
+    "AttributeUsage": {
+      "HighestSingle": "Use Highest (Only One Attribute)",
+      "All": "Use All",
+      "HighestMultiple": "Use Highest (multiple if tied)"
+    },
+    "MartialArtsAttack": {
+      "DefaultMainHand": "Main Hand",
+      "DefaultOffHand": "Off Hand",
+      "SectionTitle": "Martial Arts Attacks",
+      "Name": "Name",
+      "Formula": "Formula",
+      "APCost": "AP Cost",
+      "Attributes": "Attributes",
+      "AttributeUsage": "Attribute Usage",
+      "Add": "Add Attack",
+      "Remove": "Remove",
+      "None": "No Martial Arts Attacks defined yet."
+    },
+    "Action": {
+      "Regeneration": "Regeneration",
+      "Meditation": "Meditation",
+      "Move": "Move",
+      "MoveHint": "The first use each Combat round is free; every further use that round costs 1 AP.",
+      "MoveDistance": "Moves {speed}m ({label}).",
+      "Dodge": "Dodge",
+      "DodgeHint": "Grants disadvantage on a number of attacks against this creature. Costs 1 AP.",
+      "DodgeCount": "Grants disadvantage on the next {count} attacks against this creature.",
+      "MartialArtsAttack": "Martial Arts Attack",
+      "Roll": "Roll",
+      "NotEnoughAP": "Not enough Action Points."
     },
     "Gender": {
       "Male": "Male",
@@ -422,6 +454,7 @@
       "Skills": "Skills",
       "General": "General",
       "Character": "Character",
+      "Actions": "Actions",
       "GM": "GM"
     },
     "Species": {

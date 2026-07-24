@@ -1,0 +1,58 @@
+<section class="tab" data-group="generalSections" data-tab="actions">
+
+  <div class="resource action-row">
+    <label class="resource-label">{{localize 'SKSK.Action.Regeneration'}}</label>
+    <div class="flexrow flex-center action-row-controls">
+      <label class="ap-cost-label" title="{{localize 'SKSK.Spell.APCost'}}">
+        {{localize 'SKSK.Spell.APCost'}}
+        <input type="text" name="system.regenerationApCost" value="{{system.regenerationApCost}}" data-dtype="Number" class="ap-cost-input" />
+      </label>
+      <button type="button" data-action="rollRegeneration">{{localize 'SKSK.Action.Roll'}}</button>
+    </div>
+  </div>
+
+  <div class="resource action-row">
+    <label class="resource-label">{{localize 'SKSK.Action.Meditation'}}</label>
+    <div class="flexrow flex-center action-row-controls">
+      <label class="ap-cost-label" title="{{localize 'SKSK.Spell.APCost'}}">
+        {{localize 'SKSK.Spell.APCost'}}
+        <input type="text" name="system.meditationApCost" value="{{system.meditationApCost}}" data-dtype="Number" class="ap-cost-input" />
+      </label>
+      <button type="button" data-action="rollMeditation">{{localize 'SKSK.Action.Roll'}}</button>
+    </div>
+  </div>
+
+  <div class="resource action-row">
+    <label class="resource-label" title="{{localize 'SKSK.Action.MoveHint'}}">{{localize 'SKSK.Action.Move'}}</label>
+    <div class="flexrow flex-center action-row-controls">
+      <select class="move-type-select">
+        {{#each movementTypeChoices as |label key|}}
+        <option value="{{key}}">{{localize label}}</option>
+        {{/each}}
+      </select>
+      <button type="button" data-action="useMove">{{localize 'SKSK.Action.Move'}}</button>
+    </div>
+  </div>
+
+  <div class="resource action-row">
+    <label class="resource-label" title="{{localize 'SKSK.Action.DodgeHint'}}">{{localize 'SKSK.Action.Dodge'}}</label>
+    <div class="flexrow flex-center action-row-controls">
+      <button type="button" data-action="useDodge">{{localize 'SKSK.Action.Dodge'}}</button>
+    </div>
+  </div>
+
+  <div class="resource action-row">
+    <label class="resource-label">{{localize 'SKSK.Action.MartialArtsAttack'}}</label>
+    <div class="flexrow flex-center action-row-controls">
+      <select class="martial-arts-attack-select">
+        {{#each system.martialArtsAttacks as |attack index|}}
+        <option value="{{index}}">{{attack.name}}</option>
+        {{else}}
+        <option value="" disabled>{{localize 'SKSK.MartialArtsAttack.None'}}</option>
+        {{/each}}
+      </select>
+      <button type="button" data-action="rollMartialArtsAttack">{{localize 'SKSK.Action.Roll'}}</button>
+    </div>
+  </div>
+
+</section>

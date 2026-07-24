@@ -156,6 +156,63 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     }
     schema.movement = new fields.SchemaField(movementSchema);
 
+    // GM-defined custom Martial Arts Attacks (General tab's Actions
+    // sub-tab lets any owner roll one - see helpers/actions.mjs). attributes
+    // is a SchemaField of booleans (one per CONFIG.SKSK.attributes key) -
+    // unlike a Weapon Model's own array-of-keys attributes field, this one
+    // has to submit through the actor sheet's plain default form handler
+    // (no custom static form.handler like apps/models-config.mjs has), so
+    // each checkbox needs to map straight onto its own schema field rather
+    // than needing server-side reassembly into an array. attributeUsage
+    // (CONFIG.SKSK.attributeUsageTypes) decides how the checked attributes'
+    // modifiers combine into one bonus - see helpers/actions.mjs#
+    // resolveMartialArtsAttributeBonus. Defaults to the two universal
+    // unarmed strikes every creature has - Main Hand/Off Hand - editable/
+    // removable like any other entry.
+    const attackAttributesSchema = {};
+    for (const attribute of Object.keys(CONFIG.SKSK.attributes)) {
+      attackAttributesSchema[attribute] = new fields.BooleanField({ initial: false });
+    }
+    schema.martialArtsAttacks = new fields.ArrayField(new fields.SchemaField({
+      name: new fields.StringField({ required: true, blank: true, initial: "" }),
+      formula: new fields.StringField({ required: true, blank: true, initial: "1d4" }),
+      apCost: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+      attributes: new fields.SchemaField(attackAttributesSchema),
+      attributeUsage: new fields.StringField({
+        required: true, blank: false, initial: "highestMultiple",
+        choices: ["highestSingle", "all", "highestMultiple"],
+      }),
+    }), {
+      // Every attribute key must be explicitly present (true or false) -
+      // schema validation doesn't fill in a nested BooleanField's own
+      // default for keys missing entirely from a provided initial object.
+      initial: () => {
+        const strDexOnly = Object.fromEntries(
+          Object.keys(CONFIG.SKSK.attributes).map(key => [key, key === 'str' || key === 'dex'])
+        );
+        return [
+          {
+            name: game.i18n.localize('SKSK.MartialArtsAttack.DefaultMainHand'),
+            formula: "1d4", apCost: 2, attributes: strDexOnly, attributeUsage: "highestMultiple",
+          },
+          {
+            name: game.i18n.localize('SKSK.MartialArtsAttack.DefaultOffHand'),
+            formula: "1d4", apCost: 1, attributes: { ...strDexOnly }, attributeUsage: "highestMultiple",
+          },
+        ];
+      },
+    });
+
+    // Actions tab (General tab's Actions sub-tab) fields - see
+    // helpers/actions.mjs. Regeneration/Meditation's AP cost is directly
+    // user-editable there (0 is a valid, explicitly allowed value).
+    schema.regenerationApCost = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+    schema.meditationApCost = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+    // The last Combat round the Move action was used for free in - not
+    // meant to be hand-edited. null outside of (or before ever using Move
+    // in) combat. See helpers/actions.mjs#useMove.
+    schema.lastFreeMoveRound = new fields.NumberField({ required: true, nullable: true, integer: true, initial: null });
+
     const attributeKeys = Object.keys(CONFIG.SKSK.attributes);
     const attributesSchema = {};
     for (const attribute of attributeKeys) {
