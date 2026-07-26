@@ -111,5 +111,15 @@ export default class SKSKWeapon extends SKSKItemBase {
     this.totalManaCapacity = computeTotalManaCapacity(this);
     this.resolvedModel = getWeaponModel(this.model);
     this.effectiveProperties = computeEffectiveProperties(this, this.resolvedModel);
+
+    // The roll formula used by SKSKItem#roll (Actions tab's "Use" button,
+    // Items tab's roll button) - same field name as the generic Item type's
+    // own system.formula, so the document's existing roll() logic just
+    // works unchanged. The Model's own dice formula (if any), plus the
+    // Material's attack bonus and the Model's own flat bonus.
+    const flatBonus = materialBonus + (this.resolvedModel?.flatBonus ?? 0);
+    this.formula = this.resolvedModel?.diceFormula
+      ? `${this.resolvedModel.diceFormula} + ${flatBonus}`
+      : `${flatBonus}`;
   }
 }
