@@ -280,6 +280,13 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       context.movementTypeChoices = { all: 'SKSK.Movement.All', ...CONFIG.SKSK.movementTypes };
     }
 
+    // Only Species can replace (rather than merely add to) an actor's base
+    // movement speed, or unlock a movement type entirely - see
+    // helpers/movement.mjs#computeMovementSpeeds.
+    if (item.type === 'species') {
+      context.movementBonusModeChoices = CONFIG.SKSK.movementBonusModes;
+    }
+
     // Material selection (Item/Armor/Weapon only) - see helpers/materials.mjs.
     // The override inputs for materialBonus/manaCapacity are only shown
     // when the selected material's own value is "?" (individually
@@ -532,7 +539,13 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
   }
 
   static async #addMovementBonus(event, target) {
-    await this.#addArrayEntry('movementBonuses', { movementType: 'all', bonus: 0 });
+    const entry = { movementType: 'all', bonus: 0 };
+    // mode/unlocked only exist on Species' schema - see data/species.mjs.
+    if (this.item.type === 'species') {
+      entry.mode = 'bonus';
+      entry.unlocked = false;
+    }
+    await this.#addArrayEntry('movementBonuses', entry);
   }
 
   /**

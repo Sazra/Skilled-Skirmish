@@ -126,7 +126,21 @@ export default class SKSKSpecies extends SKSKItemBase {
         required: true, blank: false, initial: "all",
         choices: ["all", "walking", "flying", "hovering", "swimming", "climbing", "digging"]
       }),
+      // "bonus" adds this value on top of every other source as before;
+      // "override" replaces the actor's own base speed for this movement
+      // type outright (before every item's "bonus"-mode entry is summed on
+      // top) - e.g. a species whose innate speed isn't a mere bonus but a
+      // wholesale replacement of the default. See
+      // helpers/movement.mjs#computeMovementSpeeds.
+      mode: new fields.StringField({
+        required: true, blank: false, initial: "bonus", choices: ["bonus", "override"]
+      }),
       bonus: new fields.NumberField({ required: true, nullable: false, initial: 0 }),
+      // Marks this movement type as one the species actually grants access
+      // to at all (e.g. a species can fly) - unlocked types are floored to
+      // a minimum speed based on the actor's size category, applied after
+      // every bonus/override above. See helpers/movement.mjs.
+      unlocked: new fields.BooleanField({ initial: false }),
     }));
 
     return schema;

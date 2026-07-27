@@ -45,6 +45,13 @@ SKSK.movementTypes = {
 // the bonus applies to every movement type at once rather than just one.
 SKSK.movementBonusAll = 'all';
 
+// A Species' movementBonuses entry's mode field - see
+// helpers/movement.mjs#computeMovementSpeeds.
+SKSK.movementBonusModes = {
+  bonus: 'SKSK.Movement.Mode.Bonus',
+  override: 'SKSK.Movement.Mode.Override',
+};
+
 // A creature's size category - defaults per Species (see species.mjs),
 // shown as a simple readonly indicator on the General tab.
 SKSK.sizeCategories = {

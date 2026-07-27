@@ -389,7 +389,11 @@
     <ol class="items-list items-list-compact">
       <li class="item flexrow items-header">
         <div class="item-name">Type</div>
+        <div class="item-name">{{localize 'SKSK.Movement.Mode.Label'}}</div>
         <div class="item-name">Bonus</div>
+        <div class="item-name" title="{{localize 'SKSK.Movement.UnlockedHint'}}">
+          {{localize 'SKSK.Movement.Unlocked'}}
+        </div>
         <div class="item-controls">
           <a class="item-control item-create" data-action="addMovementBonus" title="Add movement bonus">
             <i class="fas fa-plus"></i>
@@ -404,8 +408,17 @@
           </select>
         </div>
         <div class="item-name">
+          <select name="system.movementBonuses.{{index}}.mode">
+            {{selectOptions ../movementBonusModeChoices selected=entry.mode localize=true}}
+          </select>
+        </div>
+        <div class="item-name">
           <input type="text" name="system.movementBonuses.{{index}}.bonus" value="{{entry.bonus}}"
             data-dtype="Number" />
+        </div>
+        <div class="item-name">
+          <input type="checkbox" name="system.movementBonuses.{{index}}.unlocked" {{checked entry.unlocked}}
+            title="{{localize 'SKSK.Movement.UnlockedHint'}}" />
         </div>
         <div class="item-controls">
           <a class="item-control item-delete" data-action="removeArrayEntry" data-field="movementBonuses"

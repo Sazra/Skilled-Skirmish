@@ -31,7 +31,14 @@
             "Hovering": "Schwebend",
             "Swimming": "Schwimmend",
             "Climbing": "Kletternd",
-            "Digging": "Grabend"
+            "Digging": "Grabend",
+            "Unlocked": "Freigeschaltet",
+            "UnlockedHint": "Schaltet diese Bewegungsart überhaupt erst frei und setzt sie auf eine Mindestgeschwindigkeit abhängig von der Körpergröße (höher für Fliegend/Schwebend bei kleinen Kreaturen).",
+            "Mode": {
+                "Label": "Modus",
+                "Bonus": "Bonus",
+                "Override": "Ersatz"
+            }
         },
         "Size": {
             "Tiny": "Winzig",

@@ -31,7 +31,14 @@
       "Hovering": "Hovering",
       "Swimming": "Swimming",
       "Climbing": "Climbing",
-      "Digging": "Digging"
+      "Digging": "Digging",
+      "Unlocked": "Unlocked",
+      "UnlockedHint": "Grants access to this movement type at all, floored to a minimum speed based on the actor's size category (higher for Flying/Hovering on small creatures).",
+      "Mode": {
+        "Label": "Mode",
+        "Bonus": "Bonus",
+        "Override": "Override"
+      }
     },
     "Size": {
       "Tiny": "Tiny",
