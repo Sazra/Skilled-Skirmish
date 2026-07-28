@@ -43,6 +43,18 @@
             </a>
           </div>
         </li>
+        {{#each generalResources as |res|}}
+        <li class="item flexrow">
+          <div class="item-name">{{localize res.label}}</div>
+          <div class="item-name"></div>
+          <div class="item-name flexrow flex-center">
+            <input type="text" name="system.{{res.key}}.value" value="{{res.value}}" data-dtype="Number" />
+            <span>/</span>
+            <span class="resource-computed">{{res.max}}</span>
+          </div>
+          <div class="item-controls"></div>
+        </li>
+        {{/each}}
         {{#each system.customResources as |entry index|}}
         <li class="item flexrow">
           <div class="item-name">

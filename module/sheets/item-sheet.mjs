@@ -50,6 +50,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       addManaCostReduction: SKSKItemSheet.#addManaCostReduction,
       addApCostReduction: SKSKItemSheet.#addApCostReduction,
       addMovementBonus: SKSKItemSheet.#addMovementBonus,
+      addChargeBonus: SKSKItemSheet.#addChargeBonus,
     }
   };
 
@@ -285,6 +286,13 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
     // helpers/movement.mjs#computeMovementSpeeds.
     if (item.type === 'species') {
       context.movementBonusModeChoices = CONFIG.SKSK.movementBonusModes;
+    }
+
+    // Charge bonuses (Meditation/Regeneration/Inspiration/Adrenalin max
+    // charges) - only Species/Class/Talent can grant these. See
+    // helpers/generalResources.mjs.
+    if (['species', 'class', 'talent'].includes(item.type)) {
+      context.chargeResourceChoices = CONFIG.SKSK.chargeResources;
     }
 
     // Material selection (Item/Armor/Weapon only) - see helpers/materials.mjs.
@@ -546,6 +554,10 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       entry.unlocked = false;
     }
     await this.#addArrayEntry('movementBonuses', entry);
+  }
+
+  static async #addChargeBonus(event, target) {
+    await this.#addArrayEntry('chargeBonuses', { resource: 'meditation', bonus: 0 });
   }
 
   /**

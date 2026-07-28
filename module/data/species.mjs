@@ -143,6 +143,18 @@ export default class SKSKSpecies extends SKSKItemBase {
       unlocked: new fields.BooleanField({ initial: false }),
     }));
 
+    // Zero or more bonuses to a general resource's max charges
+    // (CONFIG.SKSK.chargeResources - Meditation/Regeneration/Inspiration/
+    // Adrenalin, but not Luck, which can't be increased). See
+    // helpers/generalResources.mjs.
+    schema.chargeBonuses = new fields.ArrayField(new fields.SchemaField({
+      resource: new fields.StringField({
+        required: true, blank: false, initial: "meditation",
+        choices: ["meditation", "regeneration", "inspiration", "adrenalin"]
+      }),
+      bonus: new fields.NumberField({ required: true, nullable: false, initial: 0 }),
+    }));
+
     return schema;
   }
 

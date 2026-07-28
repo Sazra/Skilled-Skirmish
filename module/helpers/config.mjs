@@ -52,6 +52,16 @@ SKSK.movementBonusModes = {
   override: 'SKSK.Movement.Mode.Override',
 };
 
+// A Species/Class/Talent's chargeBonuses entry's resource field - see
+// helpers/generalResources.mjs. Luck is deliberately excluded: unlike the
+// other four, its charge count can't be increased by anything.
+SKSK.chargeResources = {
+  meditation: 'SKSK.GeneralResource.Meditation',
+  regeneration: 'SKSK.GeneralResource.Regeneration',
+  inspiration: 'SKSK.GeneralResource.Inspiration',
+  adrenalin: 'SKSK.GeneralResource.Adrenalin',
+};
+
 // A creature's size category - defaults per Species (see species.mjs),
 // shown as a simple readonly indicator on the General tab.
 SKSK.sizeCategories = {

@@ -3,6 +3,10 @@ import { computeMaxLife, computeMaxNegativeLife } from '../helpers/life.mjs';
 import { computeMaxMana } from '../helpers/mana.mjs';
 import { computeMaxActionPoints, computeMaxReactionPoints } from '../helpers/points.mjs';
 import { computeNaturalMaterialBonus, computeArmorClass, computeMagicResistance } from '../helpers/defense.mjs';
+import {
+  computeMaxMeditationCharges, computeMaxRegenerationCharges,
+  computeMaxInspirationCharges, computeMaxAdrenalinCharges, computeMaxLuckCharges,
+} from '../helpers/generalResources.mjs';
 
 export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
 
@@ -69,6 +73,37 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       // preparation by helpers/points.mjs#computeMaxReactionPoints (see
       // prepareDerivedData below).
       max: new fields.NumberField({ ...requiredInteger, initial: 1 })
+    });
+    // General resources every creature tracks charges for (General tab's
+    // Overview sub-tab, alongside the user-extensible customResources, but
+    // not itself editable/removable there) - see
+    // helpers/generalResources.mjs. max is no longer directly
+    // user-editable - overwritten every data preparation below.
+    schema.meditationCharges = new fields.SchemaField({
+      value: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+      max: new fields.NumberField({ ...requiredInteger, initial: 0 })
+    });
+    schema.regenerationCharges = new fields.SchemaField({
+      value: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+      max: new fields.NumberField({ ...requiredInteger, initial: 0 })
+    });
+    // Locked (max 0) until the Inspiration skill reaches level 1 - see
+    // helpers/generalResources.mjs#computeMaxInspirationCharges.
+    schema.inspirationCharges = new fields.SchemaField({
+      value: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+      max: new fields.NumberField({ ...requiredInteger, initial: 0 })
+    });
+    // Locked (max 0) until the Adrenalin skill reaches level 1 - see
+    // helpers/generalResources.mjs#computeMaxAdrenalinCharges.
+    schema.adrenalinCharges = new fields.SchemaField({
+      value: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+      max: new fields.NumberField({ ...requiredInteger, initial: 0 })
+    });
+    // Locked (max 0) until the Luck skill reaches level 1 - see
+    // helpers/generalResources.mjs#computeMaxLuckCharges.
+    schema.luckCharges = new fields.SchemaField({
+      value: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+      max: new fields.NumberField({ ...requiredInteger, initial: 0 })
     });
     // Attack rolls must exceed this to deal weapon damage. No longer
     // directly user-editable - overwritten every data preparation by
@@ -274,6 +309,11 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       this.naturalMaterialBonus.value = computeNaturalMaterialBonus(this.parent);
       this.armorClass = computeArmorClass(this.parent);
       this.magicResistance = computeMagicResistance(this.parent);
+      this.meditationCharges.max = computeMaxMeditationCharges(this.parent);
+      this.regenerationCharges.max = computeMaxRegenerationCharges(this.parent);
+      this.inspirationCharges.max = computeMaxInspirationCharges(this.parent);
+      this.adrenalinCharges.max = computeMaxAdrenalinCharges(this.parent);
+      this.luckCharges.max = computeMaxLuckCharges(this.parent);
     }
   }
 

@@ -202,6 +202,15 @@
             "UsableItems": "Nutzbare Gegenstände",
             "NoUsableItems": "Keine nutzbaren Gegenstände."
         },
+        "GeneralResource": {
+            "Meditation": "Meditation",
+            "Regeneration": "Regeneration",
+            "Inspiration": "Inspiration",
+            "Adrenalin": "Adrenalin",
+            "Luck": "Glück",
+            "ChargeBonuses": "Ladungsboni",
+            "Resource": "Ressource"
+        },
         "Gender": {
             "Male": "Männlich",
             "Female": "Weiblich",

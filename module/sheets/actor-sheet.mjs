@@ -26,7 +26,23 @@ import { rollMartialArtsAttack, rollRegeneration, rollMeditation, useMove, useDo
  * to [0, the field's own computed max] - see #normalizeResourceInput.
  * Barrier is intentionally excluded: it has no max (unbounded).
  */
-const CLAMPED_RESOURCE_KEYS = ['life', 'negativeLife', 'mana', 'actionPoints', 'reactionPoints'];
+const CLAMPED_RESOURCE_KEYS = [
+  'life', 'negativeLife', 'mana', 'actionPoints', 'reactionPoints',
+  'meditationCharges', 'regenerationCharges', 'inspirationCharges', 'adrenalinCharges', 'luckCharges',
+];
+
+/**
+ * The General tab Overview sub-tab's fixed (non-user-editable) general
+ * resources - see helpers/generalResources.mjs. requiredSkill (if any) must
+ * reach level 1 before the resource shows up at all (locked otherwise).
+ */
+const GENERAL_RESOURCES = [
+  { key: 'meditationCharges', label: 'SKSK.GeneralResource.Meditation' },
+  { key: 'regenerationCharges', label: 'SKSK.GeneralResource.Regeneration' },
+  { key: 'inspirationCharges', label: 'SKSK.GeneralResource.Inspiration', requiredSkill: 'inspiration' },
+  { key: 'adrenalinCharges', label: 'SKSK.GeneralResource.Adrenalin', requiredSkill: 'adrenalin' },
+  { key: 'luckCharges', label: 'SKSK.GeneralResource.Luck', requiredSkill: 'luck' },
+];
 
 /**
  * Extend the basic ActorSheet with some very simple modifications
@@ -734,6 +750,10 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     context.favoriteSkills = Object.values(context.skillCategories ?? {})
       .flat()
       .filter(row => row.favorite);
+
+    context.generalResources = GENERAL_RESOURCES
+      .filter(r => !r.requiredSkill || getActorSkillLevel(actor, r.requiredSkill) >= 1)
+      .map(r => ({ key: r.key, label: r.label, value: actor.system[r.key].value, max: actor.system[r.key].max }));
   }
 
   /* -------------------------------------------- */

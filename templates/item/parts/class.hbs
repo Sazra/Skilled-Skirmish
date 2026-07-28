@@ -370,4 +370,38 @@
     </ol>
   </div>
 
+  <div class="resource">
+    <label class="resource-label">{{localize 'SKSK.GeneralResource.ChargeBonuses'}}</label>
+    <ol class="items-list items-list-compact">
+      <li class="item flexrow items-header">
+        <div class="item-name">{{localize 'SKSK.GeneralResource.Resource'}}</div>
+        <div class="item-name">Bonus</div>
+        <div class="item-controls">
+          <a class="item-control item-create" data-action="addChargeBonus" title="Add charge bonus">
+            <i class="fas fa-plus"></i>
+          </a>
+        </div>
+      </li>
+      {{#each system.chargeBonuses as |entry index|}}
+      <li class="item flexrow">
+        <div class="item-name">
+          <select name="system.chargeBonuses.{{index}}.resource">
+            {{selectOptions ../chargeResourceChoices selected=entry.resource localize=true}}
+          </select>
+        </div>
+        <div class="item-name">
+          <input type="text" name="system.chargeBonuses.{{index}}.bonus" value="{{entry.bonus}}"
+            data-dtype="Number" />
+        </div>
+        <div class="item-controls">
+          <a class="item-control item-delete" data-action="removeArrayEntry" data-field="chargeBonuses"
+            data-index="{{index}}" title="Remove">
+            <i class="fas fa-trash"></i>
+          </a>
+        </div>
+      </li>
+      {{/each}}
+    </ol>
+  </div>
+
 </section>
