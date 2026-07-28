@@ -211,6 +211,38 @@
       "ChargeBonuses": "Charge Bonuses",
       "Resource": "Resource"
     },
+    "Rest": {
+      "Title": "Spend Time",
+      "Segments": "Segments (30 min each)",
+      "HoursAbbr": "h",
+      "AsBreak": "As a Pause",
+      "TierLabel": "Pause Type",
+      "NoTier": "No Pause (too short)",
+      "TooShort": "Too short for any Pause tier - treated as plain time.",
+      "PlainTime": "Time Spent",
+      "Tier": {
+        "erholung": "Recovery Pause",
+        "anpassung": "Adjustment Pause",
+        "genesung": "Recuperation Pause"
+      },
+      "ManaPreview": "Passive Mana Regeneration",
+      "HealingCharges": "Regeneration Charges for Healing",
+      "ExhaustionCharges": "Regeneration Charges for Exhaustion",
+      "Available": "available",
+      "Max": "max",
+      "SkillIntegrationPreview": "Skills with pending points to integrate",
+      "MeditationRestorePreview": "Meditation Charges Restored",
+      "RegenerationRestorePreview": "Regeneration Charges Restored",
+      "NegativeLifeHealHint": "Regeneration charges spent on healing also heal that much Negative Life.",
+      "Confirm": "Apply",
+      "ManaGained": "Mana +{amount}",
+      "LifeGained": "Life +{amount}",
+      "NegativeLifeHealed": "Negative Life -{amount}",
+      "SkillsIntegrated": "{count} skill(s) had their pending points integrated.",
+      "ExhaustionHealed": "Exhaustion -{amount}",
+      "MeditationRestored": "Meditation Charges +{amount}",
+      "RegenerationRestored": "Regeneration Charges +{amount}"
+    },
     "Gender": {
       "Male": "Male",
       "Female": "Female",
@@ -453,7 +485,9 @@
         "DefenseCorrection": "Defense Correction",
         "CorpusImmortalis": "Corpus Immortalis",
         "Immortal": "Immortal"
-      }
+      },
+      "Gain": "Gain",
+      "GainHint": "Not-yet-integrated skill points - added to the real points (and reset to 0) once an Adjustment or Recuperation Pause is taken."
     },
     "SkillCategory": {
       "Weapons": "Weapon Skills",

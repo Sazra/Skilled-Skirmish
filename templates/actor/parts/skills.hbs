@@ -58,6 +58,9 @@
               {{else}}
               <input type="text" name="system.skills.{{skill.key}}.points" value="{{skill.points}}"
                 data-dtype="Number" title="Skill points" />
+              <input type="text" name="system.skills.{{skill.key}}.gain" value="{{skill.gain}}"
+                data-dtype="Number" class="skill-gain-input"
+                title="{{localize 'SKSK.Skill.GainHint'}}" placeholder="{{localize 'SKSK.Skill.Gain'}}" />
               {{/if}}
             </div>
           {{/if}}

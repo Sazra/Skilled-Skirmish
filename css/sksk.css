@@ -384,6 +384,13 @@
   width: 90px;
 }
 
+/* Not-yet-integrated skill points (see helpers/rest.mjs#applyRest) - kept
+   narrow since it sits right next to the main points input. */
+.sksk .skill-category-body .skill-gain-input {
+  width: 50px;
+  flex: 0 0 auto;
+}
+
 .sksk .skill-category-body .skill-level {
   flex: 0 0 auto;
   min-width: 50px;
@@ -1253,4 +1260,36 @@
   border-top: 1px solid var(--color-border-light-tertiary, #d9d8ce);
   padding-top: 2px;
   font-weight: bold;
+}
+
+/* Header clock button opening the "spend time / take a Pause" dialog
+   (apps/rest-dialog.mjs) - reuses .item-control's icon-button look. */
+.sksk .sheet-header .header-rest {
+  flex: 0 0 auto;
+  justify-content: center;
+}
+
+.sksk .sheet-header .header-rest .item-control {
+  font-size: 20px;
+}
+
+.sksk.rest-dialog .sksk-rest-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+}
+
+.sksk.rest-dialog .rest-preview-line,
+.sksk.rest-dialog .rest-tier-readout,
+.sksk.rest-dialog .rest-hint {
+  margin: 0;
+}
+
+.sksk.rest-dialog .rest-tier-readout.rest-tier-none strong {
+  color: var(--color-text-dark-secondary, #7a7971);
+}
+
+.sksk.rest-dialog .rest-hours-readout {
+  color: var(--color-text-dark-secondary, #7a7971);
 }

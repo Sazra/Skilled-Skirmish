@@ -105,6 +105,11 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       value: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
       max: new fields.NumberField({ ...requiredInteger, initial: 0 })
     });
+    // A status effect with up to 10 levels - the full effects/consequences
+    // of exhaustion aren't implemented yet, only this plain counter, which
+    // helpers/rest.mjs#applyRest can already heal via Regeneration charges
+    // during an Anpassungs-/Genesungspause.
+    schema.exhaustion = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0, max: 10 });
     // Attack rolls must exceed this to deal weapon damage. No longer
     // directly user-editable - overwritten every data preparation by
     // helpers/defense.mjs#computeArmorClass (see prepareDerivedData below).
@@ -273,6 +278,10 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
           formula: new fields.StringField({ required: true, blank: true }),
           // Favorited skills show just their level on the General tab.
           favorite: new fields.BooleanField({ initial: false }),
+          // Not-yet-integrated skill points, entered here as they're earned
+          // - only added into "points" (and reset to 0) once an Anpassungs-
+          // or Genesungspause is taken. See helpers/rest.mjs#applyRest.
+          gain: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
         });
       }
     }

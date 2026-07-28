@@ -19,6 +19,7 @@ import { getManaBreakdown } from '../helpers/mana.mjs';
 import { getArmorClassBreakdown, getMagicResistanceBreakdown } from '../helpers/defense.mjs';
 import { renderBreakdownHtml } from '../helpers/tooltips.mjs';
 import { rollMartialArtsAttack, rollRegeneration, rollMeditation, useMove, useDodge, useItem } from '../helpers/actions.mjs';
+import { SKSKRestDialog } from '../apps/rest-dialog.mjs';
 
 /**
  * Schema paths (relative to system.*) whose value input accepts the "+N"/
@@ -78,6 +79,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       useMove: SKSKActorSheet.#useMove,
       useDodge: SKSKActorSheet.#useDodge,
       useItem: SKSKActorSheet.#useItem,
+      openRestDialog: SKSKActorSheet.#openRestDialog,
     },
     // Drop target for assigning existing Items (of any type) to this actor
     // by dragging them from the sidebar, a compendium, or another sheet.
@@ -670,6 +672,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
           formula: data.formula ?? '',
           bonus: skillBonusTotals[key] ?? 0,
           favorite: data.favorite ?? false,
+          gain: data.gain ?? 0,
         };
 
         if (row.isStackable) {
@@ -1062,6 +1065,14 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
   static async #useItem(event, target) {
     const item = this.actor.items.get(target.dataset.itemId);
     if (item) await useItem(this.actor, item);
+  }
+
+  /**
+   * Open the "spend time / take a Pause" dialog (helpers/rest.mjs) from the
+   * sheet header's clock button.
+   */
+  static #openRestDialog(event, target) {
+    new SKSKRestDialog(this.actor).render(true);
   }
 
   /**

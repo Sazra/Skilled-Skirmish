@@ -211,6 +211,38 @@
             "ChargeBonuses": "Ladungsboni",
             "Resource": "Ressource"
         },
+        "Rest": {
+            "Title": "Zeit verbringen",
+            "Segments": "Abschnitte (je 30 Min.)",
+            "HoursAbbr": "Std.",
+            "AsBreak": "Als Pause",
+            "TierLabel": "Pausenart",
+            "NoTier": "Keine Pause (zu kurz)",
+            "TooShort": "Zu kurz für eine Pausenart - wird als normale Zeit behandelt.",
+            "PlainTime": "Verbrachte Zeit",
+            "Tier": {
+                "erholung": "Erholungspause",
+                "anpassung": "Anpassungspause",
+                "genesung": "Genesungspause"
+            },
+            "ManaPreview": "Passive Manaregeneration",
+            "HealingCharges": "Regenerationsladungen für Heilung",
+            "ExhaustionCharges": "Regenerationsladungen für Erschöpfung",
+            "Available": "verfügbar",
+            "Max": "max",
+            "SkillIntegrationPreview": "Fertigkeiten mit noch nicht integriertem Gewinn",
+            "MeditationRestorePreview": "Wiederhergestellte Meditationsladungen",
+            "RegenerationRestorePreview": "Wiederhergestellte Regenerationsladungen",
+            "NegativeLifeHealHint": "Für Heilung eingesetzte Regenerationsladungen heilen zusätzlich die gleiche Menge Negatives Leben.",
+            "Confirm": "Anwenden",
+            "ManaGained": "Mana +{amount}",
+            "LifeGained": "Leben +{amount}",
+            "NegativeLifeHealed": "Negatives Leben -{amount}",
+            "SkillsIntegrated": "Bei {count} Fertigkeit(en) wurde der Gewinn integriert.",
+            "ExhaustionHealed": "Erschöpfung -{amount}",
+            "MeditationRestored": "Meditationsladungen +{amount}",
+            "RegenerationRestored": "Regenerationsladungen +{amount}"
+        },
         "Gender": {
             "Male": "Männlich",
             "Female": "Weiblich",
@@ -466,7 +498,9 @@
                 "DefenseCorrection": "Verteidigungskorrektur",
                 "CorpusImmortalis": "Corpus Immortalis",
                 "Immortal": "Unsterblich"
-            }
+            },
+            "Gain": "Gewinn",
+            "GainHint": "Noch nicht integrierte Fertigkeitspunkte - werden bei einer Anpassungs- oder Genesungspause zu den normalen Punkten hinzugefügt (und danach zurückgesetzt)."
         },
         "SkillCategory": {
             "Weapons": "Waffenfertigkeiten",

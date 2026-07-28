@@ -1,0 +1,63 @@
+<div class="sksk-rest-dialog">
+
+  <div class="resource">
+    <label class="resource-label">{{localize 'SKSK.Rest.Segments'}}</label>
+    <div class="flexrow flex-center">
+      <input type="text" data-rest-field="segments" value="{{segments}}" />
+      <span class="rest-hours-readout">({{hours}} {{localize 'SKSK.Rest.HoursAbbr'}})</span>
+    </div>
+  </div>
+
+  <div class="resource">
+    <label class="resource-label">
+      <input type="checkbox" data-rest-field="isBreak" {{checked isBreak}} />
+      {{localize 'SKSK.Rest.AsBreak'}}
+    </label>
+  </div>
+
+  {{#if isBreak}}
+  <p class="rest-tier-readout {{#unless tier}}rest-tier-none{{/unless}}">
+    {{localize 'SKSK.Rest.TierLabel'}}:
+    <strong>{{#if tier}}{{localize tierLabelKey}}{{else}}{{localize 'SKSK.Rest.NoTier'}}{{/if}}</strong>
+  </p>
+  {{/if}}
+
+  <p class="rest-preview-line">{{localize 'SKSK.Rest.ManaPreview'}}: +{{manaGain}}</p>
+
+  {{#if healingUnlocked}}
+  <div class="resource">
+    <label class="resource-label">
+      {{localize 'SKSK.Rest.HealingCharges'}}
+      ({{localize 'SKSK.Rest.Available'}}: {{availableRegenerationCharges}})
+    </label>
+    <input type="text" data-rest-field="regenForHealing" value="{{regenForHealing}}" />
+  </div>
+  {{/if}}
+
+  {{#if skillIntegrationUnlocked}}
+  <p class="rest-preview-line">{{localize 'SKSK.Rest.SkillIntegrationPreview'}}: {{skillIntegrationCount}}</p>
+
+  {{#if exhaustionMax}}
+  <div class="resource">
+    <label class="resource-label">
+      {{localize 'SKSK.Rest.ExhaustionCharges'}}
+      ({{localize 'SKSK.Rest.Available'}}: {{availableRegenerationCharges}}, {{localize 'SKSK.Rest.Max'}}: {{exhaustionMax}})
+    </label>
+    <input type="text" data-rest-field="regenForExhaustion" value="{{regenForExhaustion}}" />
+  </div>
+  {{/if}}
+
+  <p class="rest-preview-line">{{localize 'SKSK.Rest.MeditationRestorePreview'}}: +{{meditationRestore}}</p>
+  {{/if}}
+
+  {{#if regenerationRestoreUnlocked}}
+  <p class="rest-preview-line">{{localize 'SKSK.Rest.RegenerationRestorePreview'}}: +{{regenerationRestore}}</p>
+  {{/if}}
+
+  {{#if negativeLifeHealUnlocked}}
+  <p class="rest-hint">{{localize 'SKSK.Rest.NegativeLifeHealHint'}}</p>
+  {{/if}}
+
+  <button type="button" data-action="confirm">{{localize 'SKSK.Rest.Confirm'}}</button>
+
+</div>

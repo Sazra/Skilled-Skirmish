@@ -12,7 +12,7 @@ import { computeMovementSpeeds } from "./movement.mjs";
  * @param {string} [extraHTML]
  * @return {Promise<ChatMessage>}
  */
-async function postActionChatCard(actor, title, roll, apCost, extraHTML = '') {
+export async function postActionChatCard(actor, title, roll, apCost, extraHTML = '') {
   const parts = [];
   if (roll) parts.push(await roll.render());
   if (apCost) {
@@ -112,7 +112,7 @@ export async function rollMartialArtsAttack(actor, index) {
  * @param {Actor} actor
  * @return {number[]}
  */
-function getRegenerationDieSizes(actor) {
+export function getRegenerationDieSizes(actor) {
   const level = actor.system.resources?.level?.value ?? 1;
   const hasAdvancedClass = actorHasAdvancedClass(actor);
   const sizes = [];
