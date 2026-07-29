@@ -21,12 +21,14 @@ export function computeMaxActionPoints(actor) {
  * system.reactionPoints.max with this every time). A base of 1, plus 1 per
  * every 2 points of (already computed) max Action Points, rounded down,
  * plus 1 per Reflexes skill level beyond the 3rd (so at most +2, since
- * Reflexes only goes up to level 5).
+ * Reflexes only goes up to level 5), plus a flat, Active-Effect-driven
+ * bonus (system.reactionPoints.bonus).
  * @param {Actor} actor
  * @return {number}
  */
 export function computeMaxReactionPoints(actor) {
   const reflexesLevel = getActorSkillLevel(actor, 'reflexes');
   const maxActionPoints = computeMaxActionPoints(actor);
-  return Math.max(0, Math.round(1 + Math.floor(maxActionPoints / 2) + Math.max(0, reflexesLevel - 3)));
+  const bonus = actor.system.reactionPoints?.bonus ?? 0;
+  return Math.max(0, Math.round(1 + Math.floor(maxActionPoints / 2) + Math.max(0, reflexesLevel - 3) + bonus));
 }

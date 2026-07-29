@@ -6,20 +6,81 @@
       <div class="item-name">{{localize 'SKSK.StatusEffect.Stacks'}}</div>
     </li>
     {{#each statusEffectRows as |row|}}
-    <li class="item flexrow">
-      <div class="item-name">
-        <img class="item-image" src="{{row.img}}" width="16" height="16" title="{{row.description}}" />
-        <span title="{{row.description}}">{{row.name}}</span>
+    <li class="item flexcol status-effect-row" data-status-id="{{row.id}}">
+      <div class="flexrow">
+        <div class="item-name">
+          <img class="item-image" src="{{row.img}}" width="16" height="16" title="{{row.description}}" />
+          <span title="{{row.description}}">{{row.name}}</span>
+        </div>
+
+        {{#if (eq row.kind "multiInstance")}}
+        <div class="item-controls flexrow flex-center">
+          <span class="status-effect-stacks" title="{{localize 'SKSK.StatusEffect.InstanceCount'}}">{{row.instanceCount}}x</span>
+          <span class="status-effect-total">= {{row.total}}</span>
+          <input type="number" class="status-effect-add-value" value="1" min="1" />
+          <a class="item-control" data-action="addStatusInstance" data-status-id="{{row.id}}"
+            title="{{localize 'SKSK.StatusEffect.AddInstance'}}">
+            <i class="fas fa-plus"></i>
+          </a>
+        </div>
+
+        {{else if (eq row.kind "cauterization")}}
+        <div class="item-controls flexrow flex-center">
+          <span class="status-effect-stacks">{{row.stacks}}</span>
+          <input type="number" class="status-effect-add-value" value="1" min="1" />
+          <a class="item-control" data-action="applyCauterization" data-status-id="{{row.id}}"
+            title="{{localize 'SKSK.StatusEffect.AddInstance'}}">
+            <i class="fas fa-plus"></i>
+          </a>
+        </div>
+
+        {{else if (eq row.kind "restrained")}}
+        <div class="item-controls flexrow flex-center">
+          <a class="item-control" data-action="decreaseStatusStack" data-status-id="{{row.id}}" title="-1">
+            <i class="fas fa-minus"></i>
+          </a>
+          <span class="status-effect-stacks">{{row.stacks}}</span>
+          <a class="item-control" data-action="increaseStatusStack" data-status-id="{{row.id}}" title="+1">
+            <i class="fas fa-plus"></i>
+          </a>
+        </div>
+
+        {{else}}
+        <div class="item-controls flexrow flex-center">
+          <a class="item-control" data-action="decreaseStatusStack" data-status-id="{{row.id}}" title="-1">
+            <i class="fas fa-minus"></i>
+          </a>
+          <span class="status-effect-stacks">{{row.stacks}}</span>
+          <a class="item-control" data-action="increaseStatusStack" data-status-id="{{row.id}}" title="+1">
+            <i class="fas fa-plus"></i>
+          </a>
+        </div>
+        {{/if}}
       </div>
-      <div class="item-controls flexrow flex-center">
-        <a class="item-control" data-action="decreaseStatusStack" data-status-id="{{row.id}}" title="-1">
-          <i class="fas fa-minus"></i>
-        </a>
-        <span class="status-effect-stacks">{{row.stacks}}</span>
-        <a class="item-control" data-action="increaseStatusStack" data-status-id="{{row.id}}" title="+1">
-          <i class="fas fa-plus"></i>
-        </a>
+
+      {{#if (eq row.kind "restrained")}}
+      <div class="grid grid-3col status-effect-restrained-config">
+        <div class="grid-span-1">
+          <label class="resource-label">{{localize 'SKSK.StatusEffect.Restrained.DC'}}</label>
+          <input type="text" class="restrained-dc-input" value="{{row.dc}}" data-dtype="Number" />
+        </div>
+        <div class="grid-span-1">
+          <label class="resource-label">{{localize 'SKSK.StatusEffect.Restrained.Timing'}}</label>
+          <select class="restrained-timing-select">
+            {{selectOptions ../restrainedTimingChoices selected=row.timing localize=true}}
+          </select>
+        </div>
+        <div class="grid-span-1">
+          <label class="resource-label">{{localize 'SKSK.StatusEffect.Restrained.ApCost'}}</label>
+          <input type="text" class="restrained-apcost-input" value="{{row.apCost}}" data-dtype="Number" />
+        </div>
       </div>
+      {{#if (eq row.timing "apCost")}}
+      <button type="button" data-action="attemptRestrainedEscape">
+        {{localize 'SKSK.StatusEffect.Restrained.AttemptEscape'}}
+      </button>
+      {{/if}}
+      {{/if}}
     </li>
     {{else}}
     <li class="item flexrow">

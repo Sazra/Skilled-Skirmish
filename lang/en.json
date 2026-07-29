@@ -191,6 +191,9 @@
     "Action": {
       "Regeneration": "Regeneration",
       "Meditation": "Meditation",
+      "Adrenalin": "Adrenalin",
+      "AdrenalinHint": "Costs no AP, but reduces Adrenalin charges by 1 and restores 1 AP. Each use rolls (lifetime uses - 1)d4 as new Max Life Damage - the first use costs no max Life yet.",
+      "NotEnoughAdrenalin": "No Adrenalin charges left.",
       "Move": "Move",
       "MoveHint": "The first use each Combat round is free; every further use that round costs 1 AP.",
       "MoveDistance": "Moves {speed}m ({label}).",
@@ -673,6 +676,16 @@
       "PredefinedHint": "This status effect's own automated mechanics are tied to it - it can't be removed, only re-named/re-iconned/re-described.",
       "DazedApDrained": "Action Points -{amount} (drained by Dazed)",
       "PoisonCheck": "Constitution check (DC {dc})",
+      "FrostbiteDamage": "{amount} {type} damage",
+      "WoundDamage": "{amount} damage from all Wounds",
+      "RestrainedCheck": "Strength check (DC {dc})",
+      "InstanceCount": "Instances",
+      "AddInstance": "Add",
+      "StatModifiers": "Stat Modifiers (per stack)",
+      "StatModifiersHint": "Applied automatically via a real Active Effect while this status is active on an actor, scaled by its stack count.",
+      "MovementSpellBlocked": "Can't cast a Movement spell while Prone or Restrained.",
+      "AttackBlocked": "Can't attack while Prone or Restrained.",
+      "MoveBlocked": "Can't move while Restrained.",
       "Exhaustion": {
         "Name": "Exhaustion",
         "Description": "-1 to all D20 rolls per level (up to level 9, no further malus at level 10). Reaching level 10 kills the creature outright (Life and Negative Life both set to 0)."
@@ -696,6 +709,37 @@
       "PoisonDeadly": {
         "Name": "Deadly Poisoning",
         "Description": "1d10 poison damage and a Constitution check (DC 19) every 10 rounds (first triggering 10 rounds after being poisoned). A successful check cures it."
+      },
+      "Prone": {
+        "Name": "Prone",
+        "Description": "Can't use weapon attacks (incl. Martial Arts Attacks) or cast spells with the Movement casting method. Can still move."
+      },
+      "Restrained": {
+        "Name": "Restrained",
+        "Description": "Can't move, use weapon attacks (incl. Martial Arts Attacks), or cast spells with the Movement casting method. Carries its own escape check difficulty and timing (an AP cost spendable any time, or an automatic check at the start/end of its own Combat turn) - a passed Strength check removes it entirely.",
+        "DC": "Escape DC",
+        "Timing": "Check Timing",
+        "ApCost": "AP Cost",
+        "TimingApCost": "For an AP Cost",
+        "TimingStart": "Start of Turn",
+        "TimingEnd": "End of Turn",
+        "AttemptEscape": "Attempt Escape"
+      },
+      "Frostbite": {
+        "Name": "Frostbite",
+        "Description": "Stackable, capped at (Constitution modifier + 4) - a stack beyond the cap applies 1 Dazed stack instead. Deals flat Cold damage (2x the first Class's Life value, plus the second Class's once unlocked) at the start of each round of the creature's turn, regardless of its own stack count."
+      },
+      "Wound": {
+        "Name": "Wound",
+        "Description": "Can be suffered multiple times, each with its own damage value. At the start of the creature's turn, it suffers the summed damage value of every Wound."
+      },
+      "MaxLifeDamage": {
+        "Name": "Max Life Damage",
+        "Description": "Can be suffered multiple times, from different sources - each instance permanently reduces max Life by its own value (and max Negative Life too, once Tenacity's buffer is exhausted)."
+      },
+      "Cauterization": {
+        "Name": "Cauterization",
+        "Description": "Comes with a value, subtracted directly from current Negative Life. A second application doesn't stack separately - it merges into the existing value instead."
       }
     },
     "Models": {

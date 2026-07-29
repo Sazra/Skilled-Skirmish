@@ -93,7 +93,39 @@ SKSK.predefinedStatusEffects = [
     id: 'poisonDeadly', img: 'icons/svg/poison.svg',
     nameKey: 'SKSK.StatusEffect.PoisonDeadly.Name', descriptionKey: 'SKSK.StatusEffect.PoisonDeadly.Description',
   },
+  {
+    id: 'prone', img: 'icons/svg/falling.svg',
+    nameKey: 'SKSK.StatusEffect.Prone.Name', descriptionKey: 'SKSK.StatusEffect.Prone.Description',
+  },
+  {
+    id: 'restrained', img: 'icons/svg/net.svg',
+    nameKey: 'SKSK.StatusEffect.Restrained.Name', descriptionKey: 'SKSK.StatusEffect.Restrained.Description',
+  },
+  {
+    id: 'frostbite', img: 'icons/svg/frozen.svg',
+    nameKey: 'SKSK.StatusEffect.Frostbite.Name', descriptionKey: 'SKSK.StatusEffect.Frostbite.Description',
+  },
+  {
+    id: 'wound', img: 'icons/svg/blood.svg',
+    nameKey: 'SKSK.StatusEffect.Wound.Name', descriptionKey: 'SKSK.StatusEffect.Wound.Description',
+  },
+  {
+    id: 'maxLifeDamage', img: 'icons/svg/skull.svg',
+    nameKey: 'SKSK.StatusEffect.MaxLifeDamage.Name', descriptionKey: 'SKSK.StatusEffect.MaxLifeDamage.Description',
+  },
+  {
+    id: 'cauterization', img: 'icons/svg/fire.svg',
+    nameKey: 'SKSK.StatusEffect.Cauterization.Name', descriptionKey: 'SKSK.StatusEffect.Cauterization.Description',
+  },
 ];
+
+// Restrained's own escape-check timing choices - see
+// helpers/statusEffects.mjs#setRestrainedConfig.
+SKSK.restrainedTimingChoices = {
+  apCost: 'SKSK.StatusEffect.Restrained.TimingApCost',
+  start: 'SKSK.StatusEffect.Restrained.TimingStart',
+  end: 'SKSK.StatusEffect.Restrained.TimingEnd',
+};
 
 // Per-severity damage die / DC / recheck interval (in rounds) for the
 // Vergiftung (Poison) status effects - see helpers/statusEffects.mjs.

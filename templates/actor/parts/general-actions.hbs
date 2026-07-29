@@ -23,6 +23,14 @@
   </div>
 
   <div class="resource action-row">
+    <label class="resource-label" title="{{localize 'SKSK.Action.AdrenalinHint'}}">{{localize 'SKSK.Action.Adrenalin'}}</label>
+    <div class="flexrow flex-center action-row-controls">
+      <span class="ap-cost-label">{{system.adrenalinCharges.value}} / {{system.adrenalinCharges.max}}</span>
+      <button type="button" data-action="rollAdrenalin">{{localize 'SKSK.Action.Use'}}</button>
+    </div>
+  </div>
+
+  <div class="resource action-row">
     <label class="resource-label" title="{{localize 'SKSK.Action.MoveHint'}}">{{localize 'SKSK.Action.Move'}}</label>
     <div class="flexrow flex-center action-row-controls">
       <select class="move-type-select">

@@ -18,10 +18,12 @@ import { getLifeBreakdown, getNegativeLifeBreakdown } from '../helpers/life.mjs'
 import { getManaBreakdown } from '../helpers/mana.mjs';
 import { getArmorClassBreakdown, getMagicResistanceBreakdown } from '../helpers/defense.mjs';
 import { renderBreakdownHtml } from '../helpers/tooltips.mjs';
-import { rollMartialArtsAttack, rollRegeneration, rollMeditation, useMove, useDodge, useItem } from '../helpers/actions.mjs';
+import { rollMartialArtsAttack, rollRegeneration, rollMeditation, rollAdrenalin, useMove, useDodge, useItem } from '../helpers/actions.mjs';
 import { SKSKRestDialog } from '../apps/rest-dialog.mjs';
 import {
   getStatusEffectDefinitions, getStatusStacks, increaseStatusStacks, decreaseStatusStacks, applyD20Malus,
+  getStatusEffect, getStatusInstances, getStatusInstancesTotal, addStatusInstance, applyCauterization,
+  setRestrainedConfig, attemptRestrainedEscapeManual,
 } from '../helpers/statusEffects.mjs';
 
 /**
@@ -79,12 +81,16 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       rollMartialArtsAttack: SKSKActorSheet.#rollMartialArtsAttack,
       rollRegeneration: SKSKActorSheet.#rollRegeneration,
       rollMeditation: SKSKActorSheet.#rollMeditation,
+      rollAdrenalin: SKSKActorSheet.#rollAdrenalin,
       useMove: SKSKActorSheet.#useMove,
       useDodge: SKSKActorSheet.#useDodge,
       useItem: SKSKActorSheet.#useItem,
       openRestDialog: SKSKActorSheet.#openRestDialog,
       increaseStatusStack: SKSKActorSheet.#increaseStatusStack,
       decreaseStatusStack: SKSKActorSheet.#decreaseStatusStack,
+      addStatusInstance: SKSKActorSheet.#addStatusInstance,
+      applyCauterization: SKSKActorSheet.#applyCauterization,
+      attemptRestrainedEscape: SKSKActorSheet.#attemptRestrainedEscape,
     },
     // Drop target for assigning existing Items (of any type) to this actor
     // by dragging them from the sidebar, a compendium, or another sheet.
@@ -424,10 +430,29 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     // GM-added custom status effects, each backed by (at most) one real
     // ActiveEffect on the actor whose flags.sksk.stacks this +/- control
     // adjusts - see helpers/statusEffects.mjs.
-    context.statusEffectRows = getStatusEffectDefinitions().map(def => ({
-      id: def.id, name: def.name, img: def.img, description: def.description,
-      stacks: getStatusStacks(actor, def.id),
-    }));
+    context.statusEffectRows = getStatusEffectDefinitions().map(def => {
+      const row = { id: def.id, name: def.name, img: def.img, description: def.description };
+      if (['wound', 'maxLifeDamage'].includes(def.id)) {
+        row.kind = 'multiInstance';
+        row.instanceCount = getStatusInstances(actor, def.id).length;
+        row.total = getStatusInstancesTotal(actor, def.id);
+      } else if (def.id === 'cauterization') {
+        row.kind = 'cauterization';
+        row.stacks = getStatusEffect(actor, def.id)?.getFlag('sksk', 'value') ?? 0;
+      } else if (def.id === 'restrained') {
+        row.kind = 'restrained';
+        row.stacks = getStatusStacks(actor, def.id);
+        const effect = getStatusEffect(actor, def.id);
+        row.dc = effect?.getFlag('sksk', 'dc') ?? 10;
+        row.timing = effect?.getFlag('sksk', 'timing') ?? 'start';
+        row.apCost = effect?.getFlag('sksk', 'apCost') ?? 0;
+      } else {
+        row.kind = 'simple';
+        row.stacks = getStatusStacks(actor, def.id);
+      }
+      return row;
+    });
+    context.restrainedTimingChoices = CONFIG.SKSK.restrainedTimingChoices;
 
     // Hover tooltips over the Life/Negative Life/Mana/AC/MR labels on the
     // resources sidebar, breaking each computed value down into its
@@ -878,6 +903,21 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     // Bind drop handling so existing Items (of any type) can be dragged
     // onto this sheet from the sidebar, a compendium, or another sheet.
     this.#dragDrop.forEach(d => d.bind(this.element));
+
+    // Restrained's DC/timing/AP-cost fields aren't real schema fields (they
+    // live as flags on its own ActiveEffect, not system.*), so the sheet's
+    // normal submitOnChange form binding can't reach them - read all three
+    // from this row directly instead whenever any of them changes.
+    const restrainedRow = this.element.querySelector('.status-effect-row[data-status-id="restrained"]');
+    restrainedRow?.addEventListener('change', (event) => {
+      if (!event.target.matches('.restrained-dc-input, .restrained-timing-select, .restrained-apcost-input')) return;
+      event.stopPropagation();
+      setRestrainedConfig(this.actor, {
+        dc: restrainedRow.querySelector('.restrained-dc-input')?.value,
+        timing: restrainedRow.querySelector('.restrained-timing-select')?.value,
+        apCost: restrainedRow.querySelector('.restrained-apcost-input')?.value,
+      });
+    });
   }
 
   /**
@@ -1052,6 +1092,10 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     await rollMeditation(this.actor);
   }
 
+  static async #rollAdrenalin(event, target) {
+    await rollAdrenalin(this.actor);
+  }
+
   /**
    * Use the Move action for the movement type currently chosen in the
    * Actions tab's selector - see helpers/actions.mjs#useMove.
@@ -1099,6 +1143,29 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
 
   static async #decreaseStatusStack(event, target) {
     await decreaseStatusStacks(this.actor, target.dataset.statusId, 1);
+  }
+
+  /**
+   * Add a new independent instance of a multi-instance status effect
+   * (Wound/Schaden am maximalen Leben), with the value entered in this
+   * row's own paired number input.
+   */
+  static async #addStatusInstance(event, target) {
+    const input = target.closest('.status-effect-row')?.querySelector('.status-effect-add-value');
+    const value = Number(input?.value) || 0;
+    if (value <= 0) return;
+    await addStatusInstance(this.actor, target.dataset.statusId, value);
+  }
+
+  static async #applyCauterization(event, target) {
+    const input = target.closest('.status-effect-row')?.querySelector('.status-effect-add-value');
+    const value = Number(input?.value) || 0;
+    if (value <= 0) return;
+    await applyCauterization(this.actor, value);
+  }
+
+  static async #attemptRestrainedEscape(event, target) {
+    await attemptRestrainedEscapeManual(this.actor);
   }
 
   /**

@@ -191,6 +191,9 @@
         "Action": {
             "Regeneration": "Regeneration",
             "Meditation": "Meditation",
+            "Adrenalin": "Adrenalin",
+            "AdrenalinHint": "Kostet keine AP, reduziert aber die Adrenalin-Ladungen um 1 und stellt 1 AP wieder her. Jede Nutzung würfelt (Nutzungen insgesamt - 1)d4 als neuen Schaden am maximalen Leben - die erste Nutzung kostet noch kein maximales Leben.",
+            "NotEnoughAdrenalin": "Keine Adrenalin-Ladungen mehr übrig.",
             "Move": "Bewegen",
             "MoveHint": "Die erste Nutzung jede Kampfrunde ist kostenlos, alle weiteren Nutzungen in dieser Runde kosten 1 AP.",
             "MoveDistance": "Bewegt sich {speed}m ({label}).",
@@ -673,6 +676,16 @@
             "PredefinedHint": "Dieser Statuseffekt hat eigene automatisierte Mechaniken - er kann nicht entfernt, nur umbenannt/mit neuem Symbol/neu beschrieben werden.",
             "DazedApDrained": "Aktionspunkte -{amount} (durch Benommenheit abgezogen)",
             "PoisonCheck": "Konstitutions-Check (SG {dc})",
+            "FrostbiteDamage": "{amount} {type}-Schaden",
+            "WoundDamage": "{amount} Schaden durch alle Wunden",
+            "RestrainedCheck": "Stärke-Check (SG {dc})",
+            "InstanceCount": "Instanzen",
+            "AddInstance": "Hinzufügen",
+            "StatModifiers": "Wertmodifikatoren (pro Stapel)",
+            "StatModifiersHint": "Wird automatisch über einen echten Active Effect angewendet, solange dieser Status auf einem Akteur aktiv ist, skaliert mit der Stapelanzahl.",
+            "MovementSpellBlocked": "Kann keinen Zauber mit der Wirkweise Bewegung wirken, während umgeworfen oder festgehalten.",
+            "AttackBlocked": "Kann nicht angreifen, während umgeworfen oder festgehalten.",
+            "MoveBlocked": "Kann sich nicht bewegen, während festgehalten.",
             "Exhaustion": {
                 "Name": "Erschöpfung",
                 "Description": "-1 auf alle D20-Würfe pro Stufe (bis Stufe 9, keine weitere Verschlechterung bei Stufe 10). Stufe 10 lässt die Kreatur sofort sterben (Leben und Negatives Leben werden auf 0 gesetzt)."
@@ -696,6 +709,37 @@
             "PoisonDeadly": {
                 "Name": "Tödliche Vergiftung",
                 "Description": "1d10 Giftschaden und ein Konstitutions-Check (SG 19) alle 10 Runden (beginnend 10 Runden nach der Vergiftung). Ein erfolgreicher Check heilt die Vergiftung."
+            },
+            "Prone": {
+                "Name": "Umgeworfen",
+                "Description": "Kann keine Waffenangriffe (inkl. Kampfkunstangriffe) nutzen und keine Zauber mit der Wirkweise Bewegung wirken. Kann sich weiterhin bewegen."
+            },
+            "Restrained": {
+                "Name": "Festgehalten",
+                "Description": "Kann sich nicht bewegen, keine Waffenangriffe (inkl. Kampfkunstangriffe) nutzen und keine Zauber mit der Wirkweise Bewegung wirken. Hat eine eigene Schwierigkeit und einen eigenen Zeitpunkt für den Befreiungs-Check (eine jederzeit einsetzbare AP-Kosten-Option, oder ein automatischer Check am Anfang/Ende der eigenen Kampfrunde) - ein erfolgreicher Stärke-Check entfernt den Status vollständig.",
+                "DC": "Befreiungs-SG",
+                "Timing": "Check-Zeitpunkt",
+                "ApCost": "AP-Kosten",
+                "TimingApCost": "Für AP-Kosten",
+                "TimingStart": "Anfang des Zuges",
+                "TimingEnd": "Ende des Zuges",
+                "AttemptEscape": "Befreiungsversuch"
+            },
+            "Frostbite": {
+                "Name": "Erfrierung",
+                "Description": "Stapelbar, maximal (Konstitutionsmodifikator + 4) Stapel - ein Stapel über dem Maximum fügt stattdessen 1 Stapel Benommenheit zu. Verursacht am Anfang jeder Runde des Zuges der Kreatur einen festen Kälteschaden (2x der Lebenswert der ersten Klasse, plus der Lebenswert der zweiten Klasse sobald freigeschaltet), unabhängig von der eigenen Stapelanzahl."
+            },
+            "Wound": {
+                "Name": "Wunde",
+                "Description": "Kann mehrfach erlitten werden, jeweils mit eigenem Schadenswert. Am Anfang des Zuges erleidet die Kreatur den summierten Schadenswert aller Wunden."
+            },
+            "MaxLifeDamage": {
+                "Name": "Schaden am maximalen Leben",
+                "Description": "Kann mehrfach erlitten werden, aus verschiedenen Quellen - jede Instanz reduziert das maximale Leben dauerhaft um ihren eigenen Wert (und das maximale Negative Leben ebenso, sobald der Zähigkeits-Puffer aufgebraucht ist)."
+            },
+            "Cauterization": {
+                "Name": "Kauterisierung",
+                "Description": "Kommt mit einem Wert, der direkt vom aktuellen Negativen Leben abgezogen wird. Eine weitere Anwendung stapelt nicht separat - sie erhöht stattdessen den bestehenden Wert."
             }
         },
         "Models": {

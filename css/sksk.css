@@ -1306,6 +1306,22 @@
   font-weight: bold;
 }
 
+.sksk .sksk-status-effects-section .status-effect-total {
+  color: var(--color-text-dark-secondary, #7a7971);
+}
+
+.sksk .sksk-status-effects-section .status-effect-add-value {
+  width: 40px;
+  flex: 0 0 auto;
+  text-align: center;
+}
+
+/* Restrained's DC/timing/AP-cost row (helpers/statusEffects.mjs#
+   setRestrainedConfig) - a second line under its name/stack row. */
+.sksk .sksk-status-effects-section .status-effect-restrained-config {
+  margin-top: 4px;
+}
+
 /* Status Effects settings menu (apps/status-effects-config.mjs) - a
    predefined entry's name/img/description stay editable but it can't be
    removed, shown via this badge instead of the usual delete button. */
@@ -1316,4 +1332,19 @@
   border: 1px solid var(--color-border-light-tertiary, #d9d8ce);
   border-radius: 3px;
   padding: 2px 6px;
+}
+
+/* Fixed window height (see DEFAULT_OPTIONS.position) makes this actually
+   scroll instead of just growing past the viewport - same pattern as
+   .sksk.materials-config. */
+.application.sksk.status-effects-config .window-content {
+  overflow-y: auto;
+}
+
+/* Description field - a rich-text editor like the Biography one, spanning
+   the full window width rather than sitting in a grid column. */
+.sksk.status-effects-config .status-effect-description {
+  display: block;
+  width: 100%;
+  min-height: 80px;
 }

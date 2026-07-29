@@ -1,6 +1,7 @@
 import { getActorSkillLevel } from "./skills.mjs";
 import { getClassAbilityLevels, actorHasAdvancedClass } from "./abilities.mjs";
 import { computeMovementSpeeds } from "./movement.mjs";
+import { canUseWeaponAttack, canMove, addStatusInstance } from "./statusEffects.mjs";
 
 /**
  * Post a simple chat card (an optional Roll, an AP-cost line, and a
@@ -94,6 +95,9 @@ function resolveMartialArtsAttributeBonus(actor, attributes, attributeUsage) {
 export async function rollMartialArtsAttack(actor, index) {
   const attack = actor.system.martialArtsAttacks?.[index];
   if (!attack) return;
+  if (!canUseWeaponAttack(actor)) {
+    return ui.notifications.warn(game.i18n.localize('SKSK.StatusEffect.AttackBlocked'));
+  }
   if (!hasEnoughActionPoints(actor, attack.apCost)) return;
 
   const bonus = resolveMartialArtsAttributeBonus(actor, attack.attributes, attack.attributeUsage);
@@ -176,6 +180,37 @@ export async function rollMeditation(actor) {
 }
 
 /**
+ * Use Adrenalin: costs no AP, but reduces the Adrenalin general resource
+ * (system.adrenalinCharges) by 1 and restores 1 AP. Each use rolls
+ * (this lifetime use count - 1)d4 damage as a new Schaden am maximalen
+ * Leben instance (see helpers/statusEffects.mjs#addStatusInstance) - the
+ * first use accordingly costs no max Life yet (0d4).
+ * @param {Actor} actor
+ * @return {Promise<ChatMessage|void>}
+ */
+export async function rollAdrenalin(actor) {
+  const charges = actor.system.adrenalinCharges?.value ?? 0;
+  if (charges <= 0) {
+    return ui.notifications.warn(game.i18n.localize('SKSK.Action.NotEnoughAdrenalin'));
+  }
+
+  const usedCount = (actor.system.adrenalinUsedCount ?? 0) + 1;
+  const diceCount = usedCount - 1;
+  const roll = await new Roll(diceCount > 0 ? `${diceCount}d4` : '0', actor.getRollData()).evaluate();
+
+  const ap = actor.system.actionPoints;
+  await actor.update({
+    'system.adrenalinCharges.value': charges - 1,
+    'system.adrenalinUsedCount': usedCount,
+    'system.actionPoints.value': Math.min(ap.max, ap.value + 1),
+  });
+
+  if (roll.total > 0) await addStatusInstance(actor, 'maxLifeDamage', roll.total);
+
+  return postActionChatCard(actor, game.i18n.localize('SKSK.Action.Adrenalin'), roll, 0);
+}
+
+/**
  * Move the actor by one of its movement speeds - free on the first use of
  * a given Combat round, 1 AP for every further use that round. Outside of
  * (or before) any active Combat, there's no "round" to track, so it's
@@ -185,6 +220,10 @@ export async function rollMeditation(actor) {
  * @return {Promise<ChatMessage|void>}
  */
 export async function useMove(actor, movementType) {
+  if (!canMove(actor)) {
+    return ui.notifications.warn(game.i18n.localize('SKSK.StatusEffect.MoveBlocked'));
+  }
+
   const round = game.combat?.round ?? null;
   const isFree = round === null || actor.system.lastFreeMoveRound !== round;
   const apCost = isFree ? 0 : 1;
@@ -215,6 +254,10 @@ export async function useMove(actor, movementType) {
  * @return {Promise<void>}
  */
 export async function useItem(actor, item) {
+  if (item.type === 'weapon' && !canUseWeaponAttack(actor)) {
+    return ui.notifications.warn(game.i18n.localize('SKSK.StatusEffect.AttackBlocked'));
+  }
+
   const apCost = item.system.useApCost ?? 0;
   if (!hasEnoughActionPoints(actor, apCost)) return;
 

@@ -72,7 +72,11 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       // No longer directly user-editable - overwritten every data
       // preparation by helpers/points.mjs#computeMaxReactionPoints (see
       // prepareDerivedData below).
-      max: new fields.NumberField({ ...requiredInteger, initial: 1 })
+      max: new fields.NumberField({ ...requiredInteger, initial: 1 }),
+      // Flat bonus added on top of the computed max RP - not meant to be
+      // hand-edited, but targeted by Active Effects via
+      // "system.reactionPoints.bonus".
+      bonus: new fields.NumberField({ ...requiredInteger, initial: 0 })
     });
     // General resources every creature tracks charges for (General tab's
     // Overview sub-tab, alongside the user-extensible customResources, but
@@ -247,6 +251,10 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // meant to be hand-edited. null outside of (or before ever using Move
     // in) combat. See helpers/actions.mjs#useMove.
     schema.lastFreeMoveRound = new fields.NumberField({ required: true, nullable: true, integer: true, initial: null });
+    // Lifetime count of Adrenalin uses - never reset automatically (not
+    // even by a Rest), since each use permanently costs more max Life than
+    // the last. Not meant to be hand-edited. See helpers/actions.mjs#rollAdrenalin.
+    schema.adrenalinUsedCount = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
 
     const attributeKeys = Object.keys(CONFIG.SKSK.attributes);
     const attributesSchema = {};

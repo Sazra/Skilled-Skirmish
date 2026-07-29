@@ -1,4 +1,5 @@
 import { postActionChatCard } from './actions.mjs';
+import { getClassAbilityLevels, actorHasAdvancedClass } from './abilities.mjs';
 
 /**
  * Movement types (CONFIG.SKSK.movementTypes) Dazed does NOT reduce.
@@ -9,6 +10,23 @@ const DAZED_EXEMPT_MOVEMENT_TYPES = ['hovering'];
  * Attributes whose checks Dazed applies a malus to.
  */
 const DAZED_MALUS_ATTRIBUTES = ['str', 'dex', 'con', 'app'];
+
+/**
+ * A custom (GM-added) status effect's optional flat-per-stack modifier
+ * fields, and the actual actor schema path each targets via a real
+ * ActiveEffect change (see buildStatModifierChanges) - the "Reductions/
+ * increases of max Life, max Mana, AP, RP, AC and MR can be user-defined"
+ * requirement. Predefined effects manage their own consequences elsewhere
+ * and never carry these.
+ */
+const CUSTOM_STAT_MODIFIER_FIELDS = {
+  lifeBonus: 'system.life.bonus',
+  manaBonus: 'system.mana.bonus',
+  apBonus: 'system.actionPoints.bonus',
+  rpBonus: 'system.reactionPoints.bonus',
+  acBonus: 'system.customArmorClassBonus',
+  mrBonus: 'system.customMagicResistanceBonus',
+};
 
 /**
  * The world's full list of status effect definitions - the predefined,
@@ -73,6 +91,25 @@ function getStatusEffectName(id) {
 }
 
 /**
+ * Real ActiveEffect "changes" (key/mode/value) for a custom (GM-added,
+ * non-predefined) status effect's optional flat stat modifiers - each
+ * configured per-stack amount is multiplied by the current stack count.
+ * @param {object|undefined} def
+ * @param {number} stacks
+ * @return {Array<object>}
+ */
+function buildStatModifierChanges(def, stacks) {
+  if (!def || def.predefined) return [];
+  const changes = [];
+  for (const [field, key] of Object.entries(CUSTOM_STAT_MODIFIER_FIELDS)) {
+    const perStack = Number(def[field]) || 0;
+    if (!perStack) continue;
+    changes.push({ key, mode: CONST.ACTIVE_EFFECT_MODES.ADD, value: String(perStack * stacks) });
+  }
+  return changes;
+}
+
+/**
  * An actor's ActiveEffect backing one status id, if any - the single
  * source of truth for that status's presence/stack count (see
  * getStatusStacks/setStatusStacks below), rather than a separate schema
@@ -122,13 +159,14 @@ export async function setStatusStacks(actor, id, stacks) {
 
   const def = getStatusEffectDefinitions().find(d => d.id === id);
   const name = `${def?.name || id} (${clamped})`;
+  const changes = buildStatModifierChanges(def, clamped);
 
   if (effect) {
-    await effect.update({ name, disabled: false, 'flags.sksk.stacks': clamped });
+    await effect.update({ name, disabled: false, changes, 'flags.sksk.stacks': clamped });
   } else {
     await actor.createEmbeddedDocuments('ActiveEffect', [{
       name, img: def?.img || 'icons/svg/aura.svg', statuses: [id],
-      origin: actor.uuid, flags: { sksk: { stacks: clamped } },
+      origin: actor.uuid, flags: { sksk: { stacks: clamped } }, changes,
     }]);
   }
 
@@ -168,6 +206,244 @@ export async function increaseStatusStacks(actor, id, amount = 1) {
  */
 export async function decreaseStatusStacks(actor, id, amount = 1) {
   await setStatusStacks(actor, id, getStatusStacks(actor, id) - amount);
+}
+
+/**
+ * Create a new, independent instance of a multi-instance status effect
+ * (Wound/Schaden am maximalen Leben) - unlike every other status effect,
+ * each occurrence keeps its own value rather than sharing one "stacks"
+ * counter, so several can coexist and each is removed individually (via
+ * the normal Effects tab). Schaden am maximalen Leben's instance directly
+ * reduces max Life via a real ActiveEffect change (system.life.bonus, ADD
+ * mode) - Foundry's own effect-application pipeline then automatically
+ * cascades into max Negative Life too, once Tenacity's buffer is
+ * exhausted (see helpers/life.mjs#computeMaxNegativeLife).
+ * @param {Actor} actor
+ * @param {string} id   "wound" or "maxLifeDamage".
+ * @param {number} value
+ * @return {Promise<ActiveEffect>}
+ */
+export async function addStatusInstance(actor, id, value) {
+  const amount = Math.max(0, Math.round(Number(value) || 0));
+  const def = getStatusEffectDefinitions().find(d => d.id === id);
+  const name = `${def?.name || id} (${amount})`;
+  const changes = id === 'maxLifeDamage'
+    ? [{ key: 'system.life.bonus', mode: CONST.ACTIVE_EFFECT_MODES.ADD, value: String(-amount) }]
+    : [];
+  const [effect] = await actor.createEmbeddedDocuments('ActiveEffect', [{
+    name, img: def?.img || 'icons/svg/aura.svg', statuses: [id],
+    origin: actor.uuid, flags: { sksk: { value: amount } }, changes,
+  }]);
+  return effect;
+}
+
+/**
+ * Every independent instance of a multi-instance status effect currently
+ * on the actor (see addStatusInstance).
+ * @param {Actor} actor
+ * @param {string} id
+ * @return {ActiveEffect[]}
+ */
+export function getStatusInstances(actor, id) {
+  return actor.effects.filter(e => e.statuses.has(id) && !e.disabled);
+}
+
+/**
+ * The summed value of every instance of a multi-instance status effect -
+ * Wound's own per-turn damage, or Schaden am maximalen Leben's total (for
+ * display; the actual max-Life reduction is automatic via each instance's
+ * own ActiveEffect change, not this sum).
+ * @param {Actor} actor
+ * @param {string} id
+ * @return {number}
+ */
+export function getStatusInstancesTotal(actor, id) {
+  return getStatusInstances(actor, id).reduce((sum, e) => sum + (e.getFlag('sksk', 'value') ?? 0), 0);
+}
+
+/**
+ * Apply (or merge into an existing) Cauterization - unlike every other
+ * status effect, a second application doesn't create a separate instance
+ * or bump a shared stack count; it merges into the existing one's value
+ * instead. Each application (the merge amount, not the resulting total)
+ * immediately heals that much off the actor's current Negative Life.
+ * @param {Actor} actor
+ * @param {number} value
+ * @return {Promise<void>}
+ */
+export async function applyCauterization(actor, value) {
+  const amount = Math.max(0, Math.round(Number(value) || 0));
+  if (!amount) return;
+
+  const effect = getStatusEffect(actor, 'cauterization');
+  const def = getStatusEffectDefinitions().find(d => d.id === 'cauterization');
+  const newTotal = (effect?.getFlag('sksk', 'value') ?? 0) + amount;
+  const name = `${def?.name || 'cauterization'} (${newTotal})`;
+
+  if (effect) {
+    await effect.update({ name, 'flags.sksk.value': newTotal });
+  } else {
+    await actor.createEmbeddedDocuments('ActiveEffect', [{
+      name, img: def?.img || 'icons/svg/aura.svg', statuses: ['cauterization'],
+      origin: actor.uuid, flags: { sksk: { value: newTotal } },
+    }]);
+  }
+
+  const negativeLife = actor.system.negativeLife;
+  const newNegativeLife = Math.max(0, negativeLife.value - amount);
+  if (newNegativeLife !== negativeLife.value) {
+    await actor.update({ 'system.negativeLife.value': newNegativeLife });
+  }
+}
+
+/**
+ * Apply one stack of Frostbite - capped at (Constitution modifier + 4); a
+ * stack that would exceed the cap applies 1 Dazed stack instead.
+ * @param {Actor} actor
+ * @return {Promise<void>}
+ */
+export async function applyFrostbiteStack(actor) {
+  const conMod = actor.system.attributes?.con?.mod ?? 0;
+  const cap = conMod + 4;
+  const current = getStatusStacks(actor, 'frostbite');
+  if (current >= cap) {
+    await increaseStatusStacks(actor, 'dazed', 1);
+  } else {
+    await increaseStatusStacks(actor, 'frostbite', 1);
+  }
+}
+
+/**
+ * The flat Cold damage Frostbite deals each round (regardless of its own
+ * stack count, like Poison's damage dice) - double the first Class's own
+ * flat life value, plus the second Class's (once unlocked, same threshold
+ * as Life/Regeneration - see helpers/life.mjs/actions.mjs).
+ * @param {Actor} actor
+ * @return {number}
+ */
+function computeFrostbiteDamage(actor) {
+  const level = actor.system.resources?.level?.value ?? 1;
+  const hasAdvancedClass = actorHasAdvancedClass(actor);
+  let total = 0;
+  for (const item of actor.items) {
+    if (item.type !== 'class' || !item.system.life) continue;
+    if (item.system.classType === 'first') {
+      total += 2 * item.system.life;
+    } else if (item.system.classType === 'second') {
+      const [threshold] = getClassAbilityLevels('second', hasAdvancedClass);
+      if (level >= threshold) total += item.system.life;
+    }
+  }
+  return total;
+}
+
+/**
+ * Whether the actor may currently use a weapon attack (incl. Martial Arts
+ * Attacks) - blocked while Prone or Restrained.
+ * @param {Actor} actor
+ * @return {boolean}
+ */
+export function canUseWeaponAttack(actor) {
+  return getStatusStacks(actor, 'prone') <= 0 && getStatusStacks(actor, 'restrained') <= 0;
+}
+
+/**
+ * Whether the actor may currently cast a spell with the Movement casting
+ * method (system.castingMethods.movement) - blocked while Prone or
+ * Restrained.
+ * @param {Actor} actor
+ * @return {boolean}
+ */
+export function canCastMovementSpell(actor) {
+  return getStatusStacks(actor, 'prone') <= 0 && getStatusStacks(actor, 'restrained') <= 0;
+}
+
+/**
+ * Whether the actor may currently use the Move action - blocked only
+ * while Restrained (a Prone creature can still move, e.g. crawl).
+ * @param {Actor} actor
+ * @return {boolean}
+ */
+export function canMove(actor) {
+  return getStatusStacks(actor, 'restrained') <= 0;
+}
+
+/**
+ * Apply Restrained with its own escape-check configuration - unlike a
+ * plain stack count, this status carries a difficulty and a timing choice
+ * (an AP cost the restrained creature can spend any time to attempt an
+ * escape, or an automatic check at the start or end of its own Combat
+ * turn), so applying/editing it goes through its own function rather than
+ * increaseStatusStacks.
+ * @param {Actor} actor
+ * @param {{dc: number, timing: ("apCost"|"start"|"end"), apCost: number}} config
+ * @return {Promise<void>}
+ */
+export async function setRestrainedConfig(actor, config) {
+  const def = getStatusEffectDefinitions().find(d => d.id === 'restrained');
+  const flags = {
+    sksk: {
+      stacks: 1,
+      dc: Math.max(0, Math.round(Number(config.dc) || 0)),
+      timing: ['apCost', 'start', 'end'].includes(config.timing) ? config.timing : 'start',
+      apCost: Math.max(0, Math.round(Number(config.apCost) || 0)),
+    },
+  };
+  const effect = getStatusEffect(actor, 'restrained');
+  if (effect) {
+    await effect.update({ name: def?.name || 'restrained', img: def?.img, flags });
+  } else {
+    await actor.createEmbeddedDocuments('ActiveEffect', [{
+      name: def?.name || 'restrained', img: def?.img || 'icons/svg/aura.svg',
+      statuses: ['restrained'], origin: actor.uuid, flags,
+    }]);
+  }
+}
+
+/**
+ * Roll Restrained's escape check (Strength) against its own configured
+ * DC - success removes the status entirely (matching Poison's "a passed
+ * check cures it" convention); failure leaves it in place. Used both by
+ * the automatic start/end-of-turn timings and (with an AP cost gate
+ * first) the player-triggered one - see attemptRestrainedEscapeManual.
+ * @param {Actor} actor
+ * @return {Promise<void>}
+ */
+export async function attemptRestrainedEscape(actor) {
+  const effect = getStatusEffect(actor, 'restrained');
+  if (!effect) return;
+
+  const dc = effect.getFlag('sksk', 'dc') ?? 0;
+  const strMod = actor.system.attributes?.str?.mod ?? 0;
+  const formula = applyD20Malus(`1d20 + ${strMod}`, actor, 'str');
+  const roll = await new Roll(formula, actor.getRollData()).evaluate();
+  const success = roll.total >= dc;
+
+  if (success) await setStatusStacks(actor, 'restrained', 0);
+
+  const outcome = game.i18n.localize(success ? 'SKSK.Spell.Roll.Success' : 'SKSK.Spell.Roll.Failure');
+  const extraHTML = `<div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.RestrainedCheck', { dc })}: ${outcome}</div>`;
+  await postActionChatCard(actor, getStatusEffectName('restrained'), roll, 0, extraHTML);
+}
+
+/**
+ * Player-triggered escape attempt (Restrained's "apCost" timing) - spends
+ * its configured AP cost first (if any), aborting if the actor can't
+ * afford it.
+ * @param {Actor} actor
+ * @return {Promise<void>}
+ */
+export async function attemptRestrainedEscapeManual(actor) {
+  const effect = getStatusEffect(actor, 'restrained');
+  if (!effect) return;
+
+  const apCost = effect.getFlag('sksk', 'apCost') ?? 0;
+  if (apCost > 0) {
+    const ap = actor.system.actionPoints.value;
+    if (ap < apCost) return ui.notifications.warn(game.i18n.localize('SKSK.Action.NotEnoughAP'));
+    await actor.update({ 'system.actionPoints.value': ap - apCost });
+  }
+  await attemptRestrainedEscape(actor);
 }
 
 /**
@@ -314,9 +590,57 @@ async function handlePoisonTurnStart(actor, round) {
 }
 
 /**
+ * Frostbite's own combat-turn-start handling: a flat Cold damage tick
+ * (narrated only, like every other damage source in this system),
+ * regardless of its own stack count - see computeFrostbiteDamage.
+ * @param {Actor} actor
+ * @return {Promise<void>}
+ */
+async function handleFrostbiteTurnStart(actor) {
+  if (getStatusStacks(actor, 'frostbite') <= 0) return;
+  const damage = computeFrostbiteDamage(actor);
+  const typeLabel = game.i18n.localize(CONFIG.SKSK.damageTypes.cold);
+  const extraHTML = `<div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.FrostbiteDamage', { amount: damage, type: typeLabel })}</div>`;
+  await postActionChatCard(actor, getStatusEffectName('frostbite'), null, 0, extraHTML);
+}
+
+/**
+ * Wound's own combat-turn-start handling: the summed damage value of
+ * every Wound instance currently on the actor (narrated only).
+ * @param {Actor} actor
+ * @return {Promise<void>}
+ */
+async function handleWoundTurnStart(actor) {
+  const total = getStatusInstancesTotal(actor, 'wound');
+  if (!total) return;
+  const extraHTML = `<div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.WoundDamage', { amount: total })}</div>`;
+  await postActionChatCard(actor, getStatusEffectName('wound'), null, 0, extraHTML);
+}
+
+/**
+ * Restrained's own combat-turn-start/end handling: an automatic escape
+ * check, only when its own configured timing matches.
+ * @param {Actor} actor
+ * @return {Promise<void>}
+ */
+async function handleRestrainedTurnStart(actor) {
+  const effect = getStatusEffect(actor, 'restrained');
+  if (!effect || effect.getFlag('sksk', 'timing') !== 'start') return;
+  await attemptRestrainedEscape(actor);
+}
+
+async function handleRestrainedTurnEnd(actor) {
+  const effect = getStatusEffect(actor, 'restrained');
+  if (!effect || effect.getFlag('sksk', 'timing') !== 'end') return;
+  await attemptRestrainedEscape(actor);
+}
+
+/**
  * Called once for whichever actor's Combat turn is beginning (see the
- * "combatTurn" hook in sksk.mjs) - runs Dazed's AP drain and every active
- * Poison severity's damage/check cycle.
+ * "combatTurn" hook in sksk.mjs) - runs Dazed's AP drain, every active
+ * Poison severity's damage/check cycle, Frostbite's damage tick, Wound's
+ * summed damage, and Restrained's automatic escape check (if timed to
+ * "start").
  * @param {Actor} actor
  * @param {number} round
  * @return {Promise<void>}
@@ -324,4 +648,18 @@ async function handlePoisonTurnStart(actor, round) {
 export async function handleCombatTurnStart(actor, round) {
   await handleDazedTurnStart(actor);
   await handlePoisonTurnStart(actor, round);
+  await handleFrostbiteTurnStart(actor);
+  await handleWoundTurnStart(actor);
+  await handleRestrainedTurnStart(actor);
+}
+
+/**
+ * Called once for whichever actor's Combat turn is ending (the OUTGOING
+ * combatant, right before the "combatTurn" hook's own turn advances) -
+ * runs Restrained's automatic escape check (if timed to "end").
+ * @param {Actor} actor
+ * @return {Promise<void>}
+ */
+export async function handleCombatTurnEnd(actor) {
+  await handleRestrainedTurnEnd(actor);
 }

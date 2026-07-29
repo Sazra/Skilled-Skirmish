@@ -35,8 +35,42 @@
         </div>
       </div>
 
+      {{#unless entry.predefined}}
+      <label class="resource-label">{{localize 'SKSK.StatusEffect.StatModifiers'}}</label>
+      <p class="hint">{{localize 'SKSK.StatusEffect.StatModifiersHint'}}</p>
+      <div class="grid grid-3col status-effect-stat-modifiers">
+        <div class="grid-span-1">
+          <label class="resource-label">{{localize 'SKSK.Resource.Life'}}</label>
+          <input type="text" name="statusEffects.{{index}}.lifeBonus" value="{{entry.lifeBonus}}" data-dtype="Number" placeholder="0" />
+        </div>
+        <div class="grid-span-1">
+          <label class="resource-label">{{localize 'SKSK.Resource.Mana'}}</label>
+          <input type="text" name="statusEffects.{{index}}.manaBonus" value="{{entry.manaBonus}}" data-dtype="Number" placeholder="0" />
+        </div>
+        <div class="grid-span-1">
+          <label class="resource-label">{{localize 'SKSK.Resource.AP'}}</label>
+          <input type="text" name="statusEffects.{{index}}.apBonus" value="{{entry.apBonus}}" data-dtype="Number" placeholder="0" />
+        </div>
+        <div class="grid-span-1">
+          <label class="resource-label">{{localize 'SKSK.Resource.RP'}}</label>
+          <input type="text" name="statusEffects.{{index}}.rpBonus" value="{{entry.rpBonus}}" data-dtype="Number" placeholder="0" />
+        </div>
+        <div class="grid-span-1">
+          <label class="resource-label">{{localize 'SKSK.Resource.AC'}}</label>
+          <input type="text" name="statusEffects.{{index}}.acBonus" value="{{entry.acBonus}}" data-dtype="Number" placeholder="0" />
+        </div>
+        <div class="grid-span-1">
+          <label class="resource-label">{{localize 'SKSK.Resource.MR'}}</label>
+          <input type="text" name="statusEffects.{{index}}.mrBonus" value="{{entry.mrBonus}}" data-dtype="Number" placeholder="0" />
+        </div>
+      </div>
+      {{/unless}}
+
       <label class="resource-label">{{localize 'SKSK.StatusEffect.Description'}}</label>
-      <textarea name="statusEffects.{{index}}.description" rows="2">{{entry.description}}</textarea>
+      <prose-mirror name="statusEffects.{{index}}.description" class="status-effect-description" toggled
+        value="{{entry.description}}">
+        {{{entry.descriptionHTML}}}
+      </prose-mirror>
     </li>
     {{else}}
     <li class="item flexrow">

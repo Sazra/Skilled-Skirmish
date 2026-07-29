@@ -1,6 +1,6 @@
 import { computeDamageBonus, computeSavingThrowValue, computeSpellManaCost, computeSpellApCost } from './spells.mjs';
 import { getActorSkillLevel, getSkillLabel } from './skills.mjs';
-import { applyD20Malus } from './statusEffects.mjs';
+import { applyD20Malus, canCastMovementSpell } from './statusEffects.mjs';
 
 /**
  * Roll one damage entry (its formula plus any attribute/skill scaling) and
@@ -60,6 +60,14 @@ function renderSavingThrowButton(save, index, item) {
 export async function rollSpellItem(item) {
   const actor = item.actor;
   const system = item.system;
+
+  // Prone/Restrained block any spell whose casting method is Movement -
+  // see helpers/statusEffects.mjs#canCastMovementSpell.
+  if (actor && system.castingMethods?.movement && !canCastMovementSpell(actor)) {
+    ui.notifications.warn(game.i18n.localize('SKSK.StatusEffect.MovementSpellBlocked'));
+    return;
+  }
+
   const parts = [];
 
   const descriptionHTML = await foundry.applications.ux.TextEditor.implementation.enrichHTML(
