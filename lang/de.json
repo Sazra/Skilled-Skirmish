@@ -739,7 +739,7 @@
             },
             "Cauterization": {
                 "Name": "Kauterisierung",
-                "Description": "Kommt mit einem Wert, der direkt vom aktuellen Negativen Leben abgezogen wird. Eine weitere Anwendung stapelt nicht separat - sie erhöht stattdessen den bestehenden Wert."
+                "Description": "Kommt mit einem Wert, der das maximale Leben reduziert (wie Schaden am maximalen Leben, und das maximale Negative Leben ebenso, sobald der Zähigkeits-Puffer aufgebraucht ist). Eine weitere Anwendung stapelt nicht separat - sie erhöht stattdessen den bestehenden Wert."
             }
         },
         "Models": {

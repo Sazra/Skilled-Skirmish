@@ -739,7 +739,7 @@
       },
       "Cauterization": {
         "Name": "Cauterization",
-        "Description": "Comes with a value, subtracted directly from current Negative Life. A second application doesn't stack separately - it merges into the existing value instead."
+        "Description": "Comes with a value that reduces max Life (like Max Life Damage, and Negative Life too once Tenacity's buffer is exhausted). A second application doesn't stack separately - it merges into the existing value instead."
       }
     },
     "Models": {

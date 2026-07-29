@@ -265,8 +265,9 @@ export function getStatusInstancesTotal(actor, id) {
  * Apply (or merge into an existing) Cauterization - unlike every other
  * status effect, a second application doesn't create a separate instance
  * or bump a shared stack count; it merges into the existing one's value
- * instead. Each application (the merge amount, not the resulting total)
- * immediately heals that much off the actor's current Negative Life.
+ * instead. Like Adrenalin/Schaden am maximalen Leben, its value reduces
+ * max Life via a real ActiveEffect change (system.life.bonus) - not
+ * Negative Life (an earlier description of this had a typo).
  * @param {Actor} actor
  * @param {number} value
  * @return {Promise<void>}
@@ -279,20 +280,15 @@ export async function applyCauterization(actor, value) {
   const def = getStatusEffectDefinitions().find(d => d.id === 'cauterization');
   const newTotal = (effect?.getFlag('sksk', 'value') ?? 0) + amount;
   const name = `${def?.name || 'cauterization'} (${newTotal})`;
+  const changes = [{ key: 'system.life.bonus', mode: CONST.ACTIVE_EFFECT_MODES.ADD, value: String(-newTotal) }];
 
   if (effect) {
-    await effect.update({ name, 'flags.sksk.value': newTotal });
+    await effect.update({ name, changes, 'flags.sksk.value': newTotal });
   } else {
     await actor.createEmbeddedDocuments('ActiveEffect', [{
       name, img: def?.img || 'icons/svg/aura.svg', statuses: ['cauterization'],
-      origin: actor.uuid, flags: { sksk: { value: newTotal } },
+      origin: actor.uuid, flags: { sksk: { value: newTotal } }, changes,
     }]);
-  }
-
-  const negativeLife = actor.system.negativeLife;
-  const newNegativeLife = Math.max(0, negativeLife.value - amount);
-  if (newNegativeLife !== negativeLife.value) {
-    await actor.update({ 'system.negativeLife.value': newNegativeLife });
   }
 }
 
