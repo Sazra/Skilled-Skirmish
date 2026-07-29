@@ -22,6 +22,11 @@
         "Name": "Models",
         "Hint": "Weapon Models (by weapon type) and Armor Models (Light Armor, Heavy Armor, Shield) selectable on Weapons/Armor.",
         "Label": "Configure Models"
+      },
+      "StatusEffects": {
+        "Name": "Status Effects",
+        "Hint": "Status effects selectable/toggleable on tokens and actors. Predefined ones (Exhaustion, Dazed, the four Poisoning severities) carry their own automated mechanics and can't be removed, only re-named/re-iconned/re-described; custom ones you add are flavor-only.",
+        "Label": "Configure Status Effects"
       }
     },
     "Movement": {
@@ -654,6 +659,44 @@
       "Temporary": "Temporary Effects",
       "Passive": "Passive Effects",
       "Inactive": "Inactive Effects"
+    },
+    "StatusEffect": {
+      "SectionTitle": "Status Effects",
+      "Stacks": "Stacks",
+      "Name": "Name",
+      "Icon": "Icon",
+      "Description": "Description",
+      "Add": "Add status effect",
+      "Remove": "Remove",
+      "None": "No status effects defined yet.",
+      "Predefined": "Predefined",
+      "PredefinedHint": "This status effect's own automated mechanics are tied to it - it can't be removed, only re-named/re-iconned/re-described.",
+      "DazedApDrained": "Action Points -{amount} (drained by Dazed)",
+      "PoisonCheck": "Constitution check (DC {dc})",
+      "Exhaustion": {
+        "Name": "Exhaustion",
+        "Description": "-1 to all D20 rolls per level (up to level 9, no further malus at level 10). Reaching level 10 kills the creature outright (Life and Negative Life both set to 0)."
+      },
+      "Dazed": {
+        "Name": "Dazed",
+        "Description": "At the start of each of the creature's turns, drains Action Points equal to its stacks (always leaving at least 2 AP), reducing stacks by the same amount. Reduces every movement speed but Hovering by 1 per stack (floored at half); grants a malus on Strength/Dexterity/Constitution/Appearance checks equal to its stacks (capped at that attribute's own modifier + 5)."
+      },
+      "PoisonMild": {
+        "Name": "Mild Poisoning",
+        "Description": "1d4 poison damage at the start of the poisoned creature's turn, followed by a Constitution check (DC 10) every round. A successful check cures it."
+      },
+      "PoisonMedium": {
+        "Name": "Medium Poisoning",
+        "Description": "1d6 poison damage and a Constitution check (DC 13) every 3 rounds (first triggering 3 rounds after being poisoned). A successful check cures it."
+      },
+      "PoisonSevere": {
+        "Name": "Severe Poisoning",
+        "Description": "1d8 poison damage and a Constitution check (DC 16) every 5 rounds (first triggering 5 rounds after being poisoned). A successful check cures it."
+      },
+      "PoisonDeadly": {
+        "Name": "Deadly Poisoning",
+        "Description": "1d10 poison damage and a Constitution check (DC 19) every 10 rounds (first triggering 10 rounds after being poisoned). A successful check cures it."
+      }
     },
     "Models": {
       "Name": "Name",

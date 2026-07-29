@@ -105,11 +105,6 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       value: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
       max: new fields.NumberField({ ...requiredInteger, initial: 0 })
     });
-    // A status effect with up to 10 levels - the full effects/consequences
-    // of exhaustion aren't implemented yet, only this plain counter, which
-    // helpers/rest.mjs#applyRest can already heal via Regeneration charges
-    // during an Anpassungs-/Genesungspause.
-    schema.exhaustion = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0, max: 10 });
     // Attack rolls must exceed this to deal weapon damage. No longer
     // directly user-editable - overwritten every data preparation by
     // helpers/defense.mjs#computeArmorClass (see prepareDerivedData below).

@@ -20,6 +20,9 @@ import { getArmorClassBreakdown, getMagicResistanceBreakdown } from '../helpers/
 import { renderBreakdownHtml } from '../helpers/tooltips.mjs';
 import { rollMartialArtsAttack, rollRegeneration, rollMeditation, useMove, useDodge, useItem } from '../helpers/actions.mjs';
 import { SKSKRestDialog } from '../apps/rest-dialog.mjs';
+import {
+  getStatusEffectDefinitions, getStatusStacks, increaseStatusStacks, decreaseStatusStacks, applyD20Malus,
+} from '../helpers/statusEffects.mjs';
 
 /**
  * Schema paths (relative to system.*) whose value input accepts the "+N"/
@@ -80,6 +83,8 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       useDodge: SKSKActorSheet.#useDodge,
       useItem: SKSKActorSheet.#useItem,
       openRestDialog: SKSKActorSheet.#openRestDialog,
+      increaseStatusStack: SKSKActorSheet.#increaseStatusStack,
+      decreaseStatusStack: SKSKActorSheet.#decreaseStatusStack,
     },
     // Drop target for assigning existing Items (of any type) to this actor
     // by dragging them from the sidebar, a compendium, or another sheet.
@@ -414,6 +419,15 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       // as well as any items
       actor.allApplicableEffects()
     );
+
+    // Predefined (Exhaustion/Dazed/the four Poison severities) and any
+    // GM-added custom status effects, each backed by (at most) one real
+    // ActiveEffect on the actor whose flags.sksk.stacks this +/- control
+    // adjusts - see helpers/statusEffects.mjs.
+    context.statusEffectRows = getStatusEffectDefinitions().map(def => ({
+      id: def.id, name: def.name, img: def.img, description: def.description,
+      stacks: getStatusStacks(actor, def.id),
+    }));
 
     // Hover tooltips over the Life/Negative Life/Mana/AC/MR labels on the
     // resources sidebar, breaking each computed value down into its
@@ -1076,6 +1090,18 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
   }
 
   /**
+   * +/- one stack of a status effect (helpers/statusEffects.mjs) from the
+   * Effects tab's Status Effects section.
+   */
+  static async #increaseStatusStack(event, target) {
+    await increaseStatusStacks(this.actor, target.dataset.statusId, 1);
+  }
+
+  static async #decreaseStatusStack(event, target) {
+    await decreaseStatusStacks(this.actor, target.dataset.statusId, 1);
+  }
+
+  /**
    * Handle active effect management.
    * @param {PointerEvent} event   The originating click event.
    * @param {HTMLElement} target   The capturing HTML element.
@@ -1109,10 +1135,14 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       }
     }
 
-    // Handle rolls that supply the formula directly.
+    // Handle rolls that supply the formula directly - attribute checks
+    // (attributes.hbs) carry their own attribute key too, so Exhaustion's
+    // universal D20 malus and Dazed's Str/Dex/Con/App-specific one (see
+    // helpers/statusEffects.mjs) can be folded in.
     if (dataset.roll) {
       let label = dataset.label ? `[attribute] ${dataset.label}` : '';
-      let roll = new Roll(dataset.roll, this.actor.getRollData());
+      const formula = applyD20Malus(dataset.roll, this.actor, dataset.attributeKey ?? null);
+      let roll = new Roll(formula, this.actor.getRollData());
       roll.toMessage({
         speaker: ChatMessage.getSpeaker({ actor: this.actor }),
         flavor: label,

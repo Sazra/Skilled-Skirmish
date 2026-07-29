@@ -1,5 +1,6 @@
 import { SKSKMaterialsConfig } from '../apps/materials-config.mjs';
 import { SKSKModelsConfig } from '../apps/models-config.mjs';
+import { SKSKStatusEffectsConfig } from '../apps/status-effects-config.mjs';
 
 /**
  * Register world-scoped game settings for the system.
@@ -81,6 +82,27 @@ export function registerSettings() {
     label: 'SKSK.Settings.Models.Label',
     icon: 'fas fa-shapes',
     type: SKSKModelsConfig,
+    restricted: true,
+  });
+
+  // GM-configurable list of status effects (each entry {id, predefined,
+  // name, img, description}) - see apps/status-effects-config.mjs and
+  // helpers/statusEffects.mjs. Seeded with the system's predefined,
+  // mechanically-automated effects (CONFIG.SKSK.predefinedStatusEffects) on
+  // "ready" if missing; a GM can also add fully custom, flavor-only ones.
+  game.settings.register('sksk', 'statusEffects', {
+    scope: 'world',
+    config: false,
+    type: Array,
+    default: [],
+  });
+
+  game.settings.registerMenu('sksk', 'statusEffectsMenu', {
+    name: 'SKSK.Settings.StatusEffects.Name',
+    hint: 'SKSK.Settings.StatusEffects.Hint',
+    label: 'SKSK.Settings.StatusEffects.Label',
+    icon: 'fas fa-skull-crossbones',
+    type: SKSKStatusEffectsConfig,
     restricted: true,
   });
 }

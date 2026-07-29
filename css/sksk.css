@@ -1293,3 +1293,27 @@
 .sksk.rest-dialog .rest-hours-readout {
   color: var(--color-text-dark-secondary, #7a7971);
 }
+
+/* Effects tab's Status Effects section (see helpers/statusEffects.mjs) -
+   a +/- stack control per registered status effect definition. */
+.sksk .sksk-status-effects-section .item-name img {
+  margin-right: 4px;
+}
+
+.sksk .sksk-status-effects-section .status-effect-stacks {
+  min-width: 20px;
+  text-align: center;
+  font-weight: bold;
+}
+
+/* Status Effects settings menu (apps/status-effects-config.mjs) - a
+   predefined entry's name/img/description stay editable but it can't be
+   removed, shown via this badge instead of the usual delete button. */
+.sksk.status-effects-config .status-effect-predefined-badge {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: var(--color-text-dark-secondary, #7a7971);
+  border: 1px solid var(--color-border-light-tertiary, #d9d8ce);
+  border-radius: 3px;
+  padding: 2px 6px;
+}

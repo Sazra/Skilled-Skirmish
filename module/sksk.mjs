@@ -7,6 +7,7 @@ import { SKSK } from './helpers/config.mjs';
 import { registerSettings } from './helpers/settings.mjs';
 import { rollSavingThrowFromChat } from './helpers/spell-rolls.mjs';
 import { computeSpeciesAura } from './helpers/attributes.mjs';
+import { ensurePredefinedStatusEffects, registerConfigStatusEffects, handleCombatTurnStart } from './helpers/statusEffects.mjs';
 import * as models from './data/_module.mjs';
 
 Hooks.once('init', function () {
@@ -78,7 +79,15 @@ Handlebars.registerHelper('concat', function (...args) {
   return args.join('');
 });
 
-Hooks.once('ready', function () {
+Hooks.once('ready', async function () {
+  // Seed the world's predefined status effects (Exhaustion/Dazed/the four
+  // Poison severities - see helpers/statusEffects.mjs) if missing, and
+  // register every status effect (predefined + GM-added custom ones) as a
+  // normal Foundry status so it shows up on the Token HUD. Must await the
+  // seeding write before reading the setting back for registration.
+  await ensurePredefinedStatusEffects();
+  registerConfigStatusEffects();
+
   Hooks.on('hotbarDrop', (bar, data, slot) => createItemMacro(data, slot));
 
   // Delegated (not per-message-render) so it keeps working for every chat
@@ -133,6 +142,20 @@ Hooks.once('ready', function () {
       'system.quantity': newQuantity,
       'system.charges.value': newQuantity > 0 ? item.system.charges.max : 0,
     });
+  });
+
+  // Dazed's AP drain and every active Poison severity's damage/check cycle
+  // (see helpers/statusEffects.mjs#handleCombatTurnStart) trigger at the
+  // start of the incoming combatant's own turn. Only the GM's client acts,
+  // since this modifies arbitrary actors regardless of who owns them -
+  // updateData.turn (the new turn index about to be applied) is used
+  // rather than combat.turn/combat.combatant, which still reflect the
+  // OUTGOING combatant at the point this hook fires.
+  Hooks.on('combatTurn', (combat, updateData, updateOptions) => {
+    if (!game.user.isGM) return;
+    const turnIndex = updateData.turn ?? combat.turn;
+    const actor = combat.turns[turnIndex]?.actor;
+    if (actor) handleCombatTurnStart(actor, updateData.round ?? combat.round);
   });
 });
 

@@ -1,5 +1,6 @@
 import { computeDamageBonus, computeSavingThrowValue, computeSpellManaCost, computeSpellApCost } from './spells.mjs';
 import { getActorSkillLevel, getSkillLabel } from './skills.mjs';
+import { applyD20Malus } from './statusEffects.mjs';
 
 /**
  * Roll one damage entry (its formula plus any attribute/skill scaling) and
@@ -78,7 +79,8 @@ export async function rollSpellItem(item) {
   if (system.attackRoll.enabled) {
     const attackDamages = system.damages.filter(d => d.trigger === 'attack');
     for (let i = 1; i <= system.attackRoll.count; i++) {
-      const attackRoll = await new Roll('1d20', actor?.getRollData()).evaluate();
+      const attackFormula = actor ? applyD20Malus('1d20', actor) : '1d20';
+      const attackRoll = await new Roll(attackFormula, actor?.getRollData()).evaluate();
       const rendered = await attackRoll.render();
       parts.push(`<div class="sksk-roll-attack"><strong>${game.i18n.format('SKSK.Spell.Roll.Attack', { number: i })}</strong></div>${rendered}`);
 
@@ -143,19 +145,20 @@ export async function rollSavingThrowFromChat(itemUuid, saveIndex) {
     if (!enabled) continue;
     const mod = actor.system.attributes?.[attributeKey]?.mod ?? 0;
     if (!best || mod > best.value) {
-      best = { label: game.i18n.localize(CONFIG.SKSK.attributeAbbreviations[attributeKey]).toUpperCase(), value: mod };
+      best = { label: game.i18n.localize(CONFIG.SKSK.attributeAbbreviations[attributeKey]).toUpperCase(), value: mod, attributeKey };
     }
   }
   for (const skillKey of save.testSkills ?? []) {
     const level = getActorSkillLevel(actor, skillKey);
     if (!best || level > best.value) {
-      best = { label: game.i18n.localize(getSkillLabel(skillKey)), value: level };
+      best = { label: game.i18n.localize(getSkillLabel(skillKey)), value: level, attributeKey: null };
     }
   }
-  best ??= { label: '', value: 0 };
+  best ??= { label: '', value: 0, attributeKey: null };
 
   const dc = computeSavingThrowValue(save, item.actor);
-  const roll = await new Roll(`1d20 + ${best.value}`, actor.getRollData()).evaluate();
+  const formula = applyD20Malus(`1d20 + ${best.value}`, actor, best.attributeKey);
+  const roll = await new Roll(formula, actor.getRollData()).evaluate();
   const success = roll.total >= dc;
   const saveLabel = save.label || game.i18n.format('SKSK.Spell.SavingThrow.Numbered', { number: saveIndex + 1 });
   const outcome = game.i18n.localize(success ? 'SKSK.Spell.Roll.Success' : 'SKSK.Spell.Roll.Failure');

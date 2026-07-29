@@ -1,3 +1,5 @@
+import { applyDazedMovementReduction } from './statusEffects.mjs';
+
 /**
  * Item types whose movementBonuses entries can grant an actor a bonus to
  * one specific movement type, or to all of them at once.
@@ -84,7 +86,9 @@ export function computeMovementSpeeds(actor) {
     }
   }
 
-  return speeds;
+  // Dazed reduces every type but Hovering, floored at half of what's
+  // already been computed above - see helpers/statusEffects.mjs.
+  return applyDazedMovementReduction(actor, speeds);
 }
 
 /**

@@ -62,6 +62,50 @@ SKSK.chargeResources = {
   luck: 'SKSK.GeneralResource.Luck',
 };
 
+// Status effects always present in a fresh/updated world (seeded into the
+// "statusEffects" world setting by helpers/statusEffects.mjs#
+// ensurePredefinedStatusEffects, then editable - besides their id, which
+// every bespoke mechanical hook is keyed on - like any GM-added entry).
+// GM-added custom entries get no "id" here (one is generated for them) and
+// no automated mechanics - see helpers/statusEffects.mjs.
+SKSK.predefinedStatusEffects = [
+  {
+    id: 'exhaustion', img: 'icons/svg/downgrade.svg',
+    nameKey: 'SKSK.StatusEffect.Exhaustion.Name', descriptionKey: 'SKSK.StatusEffect.Exhaustion.Description',
+  },
+  {
+    id: 'dazed', img: 'icons/svg/daze.svg',
+    nameKey: 'SKSK.StatusEffect.Dazed.Name', descriptionKey: 'SKSK.StatusEffect.Dazed.Description',
+  },
+  {
+    id: 'poisonMild', img: 'icons/svg/poison.svg',
+    nameKey: 'SKSK.StatusEffect.PoisonMild.Name', descriptionKey: 'SKSK.StatusEffect.PoisonMild.Description',
+  },
+  {
+    id: 'poisonMedium', img: 'icons/svg/poison.svg',
+    nameKey: 'SKSK.StatusEffect.PoisonMedium.Name', descriptionKey: 'SKSK.StatusEffect.PoisonMedium.Description',
+  },
+  {
+    id: 'poisonSevere', img: 'icons/svg/poison.svg',
+    nameKey: 'SKSK.StatusEffect.PoisonSevere.Name', descriptionKey: 'SKSK.StatusEffect.PoisonSevere.Description',
+  },
+  {
+    id: 'poisonDeadly', img: 'icons/svg/poison.svg',
+    nameKey: 'SKSK.StatusEffect.PoisonDeadly.Name', descriptionKey: 'SKSK.StatusEffect.PoisonDeadly.Description',
+  },
+];
+
+// Per-severity damage die / DC / recheck interval (in rounds) for the
+// Vergiftung (Poison) status effects - see helpers/statusEffects.mjs.
+// Mild has no interval - it triggers every round of the poisoned
+// creature's own turn, unconditionally.
+SKSK.poisonSeverities = {
+  poisonMild: { damageDie: 4, dc: 10, intervalRounds: 1 },
+  poisonMedium: { damageDie: 6, dc: 13, intervalRounds: 3 },
+  poisonSevere: { damageDie: 8, dc: 16, intervalRounds: 5 },
+  poisonDeadly: { damageDie: 10, dc: 19, intervalRounds: 10 },
+};
+
 // A creature's size category - defaults per Species (see species.mjs),
 // shown as a simple readonly indicator on the General tab.
 SKSK.sizeCategories = {

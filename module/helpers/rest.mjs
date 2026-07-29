@@ -1,5 +1,6 @@
 import { getActorSkillLevel } from './skills.mjs';
 import { postActionChatCard, getRegenerationDieSizes } from './actions.mjs';
+import { getStatusStacks, decreaseStatusStacks } from './statusEffects.mjs';
 
 /**
  * A time segment - the atomic unit "spending time" is measured in.
@@ -194,15 +195,12 @@ export async function applyRest(actor, options) {
       if (integratedCount > 0) lines.push(game.i18n.format('SKSK.Rest.SkillsIntegrated', { count: integratedCount }));
 
       const exhaustionMax = computeExhaustionChargeMax(actor, tier);
-      const exhaustionSpend = Math.min(regenForExhaustion, exhaustionMax, regenerationCharges);
+      const currentExhaustion = getStatusStacks(actor, 'exhaustion');
+      const exhaustionSpend = Math.min(regenForExhaustion, exhaustionMax, regenerationCharges, currentExhaustion);
       if (exhaustionSpend > 0) {
         regenerationCharges -= exhaustionSpend;
-        const currentExhaustion = actor.system.exhaustion ?? 0;
-        const newExhaustion = Math.max(0, currentExhaustion - exhaustionSpend);
-        if (newExhaustion !== currentExhaustion) {
-          updates['system.exhaustion'] = newExhaustion;
-          lines.push(game.i18n.format('SKSK.Rest.ExhaustionHealed', { amount: currentExhaustion - newExhaustion }));
-        }
+        await decreaseStatusStacks(actor, 'exhaustion', exhaustionSpend);
+        lines.push(game.i18n.format('SKSK.Rest.ExhaustionHealed', { amount: exhaustionSpend }));
       }
 
       const medLevel = getActorSkillLevel(actor, 'meditation');

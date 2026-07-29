@@ -22,6 +22,11 @@
                 "Name": "Modelle",
                 "Hint": "Waffenmodelle (nach Waffenart) und Rüstungsmodelle (Leichte Rüstung, Schwere Rüstung, Schild), die in Waffen/Rüstungen ausgewählt werden können.",
                 "Label": "Modelle konfigurieren"
+            },
+            "StatusEffects": {
+                "Name": "Statuseffekte",
+                "Hint": "Statuseffekte, die auf Tokens/Akteuren ausgewählt/umgeschaltet werden können. Vordefinierte (Erschöpfung, Benommenheit, die vier Vergiftungs-Schweregrade) tragen eigene automatisierte Mechaniken und können nicht entfernt werden, nur umbenannt/mit neuem Symbol/neu beschrieben werden; selbst hinzugefügte sind rein kosmetisch.",
+                "Label": "Statuseffekte konfigurieren"
             }
         },
         "Movement": {
@@ -654,6 +659,44 @@
             "Temporary": "Temporäre Effekte",
             "Passive": "Passive Effekte",
             "Inactive": "Inaktive Effekte"
+        },
+        "StatusEffect": {
+            "SectionTitle": "Statuseffekte",
+            "Stacks": "Stapel",
+            "Name": "Name",
+            "Icon": "Symbol",
+            "Description": "Beschreibung",
+            "Add": "Statuseffekt hinzufügen",
+            "Remove": "Entfernen",
+            "None": "Noch keine Statuseffekte definiert.",
+            "Predefined": "Vordefiniert",
+            "PredefinedHint": "Dieser Statuseffekt hat eigene automatisierte Mechaniken - er kann nicht entfernt, nur umbenannt/mit neuem Symbol/neu beschrieben werden.",
+            "DazedApDrained": "Aktionspunkte -{amount} (durch Benommenheit abgezogen)",
+            "PoisonCheck": "Konstitutions-Check (SG {dc})",
+            "Exhaustion": {
+                "Name": "Erschöpfung",
+                "Description": "-1 auf alle D20-Würfe pro Stufe (bis Stufe 9, keine weitere Verschlechterung bei Stufe 10). Stufe 10 lässt die Kreatur sofort sterben (Leben und Negatives Leben werden auf 0 gesetzt)."
+            },
+            "Dazed": {
+                "Name": "Benommenheit",
+                "Description": "Zu Beginn jedes Zuges der Kreatur werden AP gleich der Stapel abgezogen (mindestens 2 AP bleiben immer übrig), Stapel sinken um den gleichen Betrag. Reduziert alle Bewegungsgeschwindigkeiten außer Schweben um 1 pro Stapel (Minimum die Hälfte); verleiht einen Malus auf Stärke-/Geschicklichkeits-/Konstitutions-/Aussehenswürfe gleich der Stapel (Maximum gleich dem jeweiligen Modifikator + 5)."
+            },
+            "PoisonMild": {
+                "Name": "Leichte Vergiftung",
+                "Description": "1d4 Giftschaden zu Beginn des Zuges der vergifteten Kreatur, gefolgt von einem Konstitutions-Check (SG 10) jede Runde. Ein erfolgreicher Check heilt die Vergiftung."
+            },
+            "PoisonMedium": {
+                "Name": "Mittlere Vergiftung",
+                "Description": "1d6 Giftschaden und ein Konstitutions-Check (SG 13) alle 3 Runden (beginnend 3 Runden nach der Vergiftung). Ein erfolgreicher Check heilt die Vergiftung."
+            },
+            "PoisonSevere": {
+                "Name": "Schwere Vergiftung",
+                "Description": "1d8 Giftschaden und ein Konstitutions-Check (SG 16) alle 5 Runden (beginnend 5 Runden nach der Vergiftung). Ein erfolgreicher Check heilt die Vergiftung."
+            },
+            "PoisonDeadly": {
+                "Name": "Tödliche Vergiftung",
+                "Description": "1d10 Giftschaden und ein Konstitutions-Check (SG 19) alle 10 Runden (beginnend 10 Runden nach der Vergiftung). Ein erfolgreicher Check heilt die Vergiftung."
+            }
         },
         "Models": {
             "Name": "Name",

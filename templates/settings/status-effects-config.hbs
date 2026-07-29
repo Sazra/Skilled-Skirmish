@@ -1,0 +1,47 @@
+<div class="sksk-status-effects-config">
+  <p class="hint">{{localize 'SKSK.Settings.StatusEffects.Hint'}}</p>
+
+  <ol class="items-list">
+    <li class="item flexrow items-header">
+      <div class="item-name">{{localize 'SKSK.StatusEffect.Name'}}</div>
+      <div class="item-controls">
+        <a class="item-control" data-action="addStatusEffect" title="{{localize 'SKSK.StatusEffect.Add'}}">
+          <i class="fas fa-plus"></i>
+        </a>
+      </div>
+    </li>
+    {{#each statusEffects as |entry index|}}
+    <li class="item flexcol model-entry">
+      <div class="flexrow flex-between">
+        <img class="item-image" src="{{entry.img}}" width="24" height="24" />
+        <input type="text" name="statusEffects.{{index}}.name" value="{{entry.name}}"
+          placeholder="{{localize 'SKSK.StatusEffect.Name'}}" />
+        {{#if entry.predefined}}
+        <span class="status-effect-predefined-badge" title="{{localize 'SKSK.StatusEffect.PredefinedHint'}}">
+          {{localize 'SKSK.StatusEffect.Predefined'}}
+        </span>
+        {{else}}
+        <a class="item-control item-delete" data-action="removeStatusEffect" data-index="{{index}}"
+          title="{{localize 'SKSK.StatusEffect.Remove'}}">
+          <i class="fas fa-trash"></i>
+        </a>
+        {{/if}}
+      </div>
+
+      <div class="grid grid-2col">
+        <div class="grid-span-1">
+          <label class="resource-label">{{localize 'SKSK.StatusEffect.Icon'}}</label>
+          <input type="text" name="statusEffects.{{index}}.img" value="{{entry.img}}" placeholder="icons/svg/aura.svg" />
+        </div>
+      </div>
+
+      <label class="resource-label">{{localize 'SKSK.StatusEffect.Description'}}</label>
+      <textarea name="statusEffects.{{index}}.description" rows="2">{{entry.description}}</textarea>
+    </li>
+    {{else}}
+    <li class="item flexrow">
+      <div class="item-name">{{localize 'SKSK.StatusEffect.None'}}</div>
+    </li>
+    {{/each}}
+  </ol>
+</div>
