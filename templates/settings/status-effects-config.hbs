@@ -64,6 +64,19 @@
           <input type="text" name="statusEffects.{{index}}.mrBonus" value="{{entry.mrBonus}}" data-dtype="Number" placeholder="0" />
         </div>
       </div>
+
+      <label class="resource-label">{{localize 'SKSK.StatusEffect.TurnStartTicks'}}</label>
+      <p class="hint">{{localize 'SKSK.StatusEffect.TurnStartTicksHint'}}</p>
+      <div class="grid grid-2col status-effect-turn-start-ticks">
+        <div class="grid-span-1">
+          <label class="resource-label">{{localize 'SKSK.StatusEffect.LifeChangePerStack'}}</label>
+          <input type="text" name="statusEffects.{{index}}.lifeChangePerStack" value="{{entry.lifeChangePerStack}}" data-dtype="Number" placeholder="0" />
+        </div>
+        <div class="grid-span-1">
+          <label class="resource-label">{{localize 'SKSK.StatusEffect.ManaChangePerStack'}}</label>
+          <input type="text" name="statusEffects.{{index}}.manaChangePerStack" value="{{entry.manaChangePerStack}}" data-dtype="Number" placeholder="0" />
+        </div>
+      </div>
       {{/unless}}
 
       <label class="resource-label">{{localize 'SKSK.StatusEffect.Description'}}</label>

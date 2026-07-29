@@ -29,6 +29,17 @@ const CUSTOM_STAT_MODIFIER_FIELDS = {
 };
 
 /**
+ * A custom (GM-added) status effect's optional flat-per-stack turn-start
+ * tick fields - the "damage/healing, or Mana regeneration/loss, at the
+ * start of the turn" requirement for custom status effects (see
+ * handleCustomTurnStart). Unlike CUSTOM_STAT_MODIFIER_FIELDS above (a
+ * standing Active Effect change applied for as long as the status is
+ * active), these fire once per combat turn start instead. Predefined
+ * effects manage their own consequences elsewhere and never carry these.
+ */
+export const CUSTOM_TURN_START_FIELDS = ['lifeChangePerStack', 'manaChangePerStack'];
+
+/**
  * The world's full list of status effect definitions - the predefined,
  * mechanically-automated ones (seeded by ensurePredefinedStatusEffects,
  * each {id, predefined: true, name, img, description}) plus any GM-added
@@ -614,6 +625,48 @@ async function handleWoundTurnStart(actor) {
 }
 
 /**
+ * Custom (GM-added) status effects' own combat-turn-start handling: for
+ * every custom definition carrying a non-zero lifeChangePerStack and/or
+ * manaChangePerStack, scaled by the actor's current stack count for that
+ * status (see CUSTOM_TURN_START_FIELDS). Life change is narrated only
+ * (posted to chat, sign determining damage vs. healing wording) - never
+ * written to system.life.value directly, matching every other Life-
+ * affecting status effect in this system (Wound, Frostbite, Poison). Mana
+ * change is instead applied directly to system.mana.value (clamped to
+ * [0, max]), matching Mana's other automatic regeneration paths
+ * (Meditation, Rest) rather than Life's narrated-only convention.
+ * @param {Actor} actor
+ * @return {Promise<void>}
+ */
+async function handleCustomTurnStart(actor) {
+  for (const def of getStatusEffectDefinitions()) {
+    if (def.predefined) continue;
+    const stacks = getStatusStacks(actor, def.id);
+    if (stacks <= 0) continue;
+
+    const lifeChange = (Number(def.lifeChangePerStack) || 0) * stacks;
+    if (lifeChange) {
+      const key = lifeChange > 0 ? 'SKSK.StatusEffect.CustomLifeHealing' : 'SKSK.StatusEffect.CustomLifeDamage';
+      const extraHTML = `<div class="sksk-roll-line">${game.i18n.format(key, { amount: Math.abs(lifeChange) })}</div>`;
+      await postActionChatCard(actor, getStatusEffectName(def.id), null, 0, extraHTML);
+    }
+
+    const manaChange = (Number(def.manaChangePerStack) || 0) * stacks;
+    if (manaChange) {
+      const mana = actor.system.mana;
+      const newValue = Math.max(0, Math.min(mana.max, mana.value + manaChange));
+      const applied = newValue - mana.value;
+      if (applied) {
+        await actor.update({ 'system.mana.value': newValue });
+        const key = manaChange > 0 ? 'SKSK.StatusEffect.CustomManaGain' : 'SKSK.StatusEffect.CustomManaLoss';
+        const extraHTML = `<div class="sksk-roll-line">${game.i18n.format(key, { amount: Math.abs(applied) })}</div>`;
+        await postActionChatCard(actor, getStatusEffectName(def.id), null, 0, extraHTML);
+      }
+    }
+  }
+}
+
+/**
  * Restrained's own combat-turn-start/end handling: an automatic escape
  * check, only when its own configured timing matches.
  * @param {Actor} actor
@@ -633,10 +686,10 @@ async function handleRestrainedTurnEnd(actor) {
 
 /**
  * Called once for whichever actor's Combat turn is beginning (see the
- * "combatTurn" hook in sksk.mjs) - runs Dazed's AP drain, every active
+ * "combatTurnChange" hook in sksk.mjs) - runs Dazed's AP drain, every active
  * Poison severity's damage/check cycle, Frostbite's damage tick, Wound's
- * summed damage, and Restrained's automatic escape check (if timed to
- * "start").
+ * summed damage, custom status effects' own Life/Mana turn-start ticks, and
+ * Restrained's automatic escape check (if timed to "start").
  * @param {Actor} actor
  * @param {number} round
  * @return {Promise<void>}
@@ -646,6 +699,7 @@ export async function handleCombatTurnStart(actor, round) {
   await handlePoisonTurnStart(actor, round);
   await handleFrostbiteTurnStart(actor);
   await handleWoundTurnStart(actor);
+  await handleCustomTurnStart(actor);
   await handleRestrainedTurnStart(actor);
 }
 

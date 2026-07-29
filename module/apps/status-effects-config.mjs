@@ -1,3 +1,5 @@
+import { CUSTOM_TURN_START_FIELDS } from '../helpers/statusEffects.mjs';
+
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
 /**
@@ -6,6 +8,13 @@ const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
  * editable for non-predefined entries.
  */
 const STAT_MODIFIER_FIELDS = ['lifeBonus', 'manaBonus', 'apBonus', 'rpBonus', 'acBonus', 'mrBonus'];
+
+/**
+ * A custom status effect's optional flat-per-stack turn-start ticks (see
+ * helpers/statusEffects.mjs#CUSTOM_TURN_START_FIELDS/handleCustomTurnStart) -
+ * also only ever shown/editable for non-predefined entries.
+ */
+const NUMERIC_FIELDS = [...STAT_MODIFIER_FIELDS, ...CUSTOM_TURN_START_FIELDS];
 
 /**
  * GM-only settings menu app for managing the world's list of status
@@ -77,10 +86,10 @@ export class SKSKStatusEffectsConfig extends HandlebarsApplicationMixin(Applicat
         img: entry.img ?? 'icons/svg/aura.svg',
         description: entry.description ?? '',
       };
-      // Flat stat modifiers are custom-entry-only - predefined effects
-      // manage their own consequences in code instead.
+      // Flat stat modifiers and turn-start ticks are custom-entry-only -
+      // predefined effects manage their own consequences in code instead.
       if (!predefined) {
-        for (const field of STAT_MODIFIER_FIELDS) result[field] = Number(entry[field]) || 0;
+        for (const field of NUMERIC_FIELDS) result[field] = Number(entry[field]) || 0;
       }
       return result;
     });
@@ -93,7 +102,7 @@ export class SKSKStatusEffectsConfig extends HandlebarsApplicationMixin(Applicat
     const entry = {
       id: foundry.utils.randomID(), predefined: false, name: '', img: 'icons/svg/aura.svg', description: '',
     };
-    for (const field of STAT_MODIFIER_FIELDS) entry[field] = 0;
+    for (const field of NUMERIC_FIELDS) entry[field] = 0;
     statusEffects.push(entry);
     await game.settings.set('sksk', 'statusEffects', statusEffects);
     this.render();

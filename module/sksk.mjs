@@ -147,23 +147,24 @@ Hooks.once('ready', async function () {
   });
 
   // Dazed's AP drain, every active Poison severity's damage/check cycle,
-  // Frostbite's damage tick, Wound's summed damage, and Restrained's
-  // automatic escape check (see helpers/statusEffects.mjs#
-  // handleCombatTurnStart/handleCombatTurnEnd) trigger at the start of the
-  // incoming combatant's own turn (or, for Restrained's "end" timing, the
-  // end of the OUTGOING one's). Only the GM's client acts, since this
-  // modifies arbitrary actors regardless of who owns them. updateData.turn
-  // (the new turn index about to be applied) resolves the incoming
-  // combatant; combat.combatant (still unchanged at this point) resolves
-  // the outgoing one.
-  Hooks.on('combatTurn', (combat, updateData, updateOptions) => {
+  // Frostbite's damage tick, Wound's summed damage, custom status effects'
+  // own turn-start Life/Mana ticks, and Restrained's automatic escape check
+  // (see helpers/statusEffects.mjs#handleCombatTurnStart/handleCombatTurnEnd)
+  // trigger at the start of the incoming combatant's own turn (or, for
+  // Restrained's "end" timing, the end of the OUTGOING one's). Only the GM's
+  // client acts, since this modifies arbitrary actors regardless of who owns
+  // them. Uses "combatTurnChange" (fires on every client, after the Combat's
+  // database update, for every turn advancement) rather than "combatTurn" -
+  // the latter is never fired when a round rolls over (Combat#nextRound only
+  // calls Hooks.callAll("combatRound", ...)), which silently skipped every
+  // turn-start effect for whoever's turn began a new round.
+  Hooks.on('combatTurnChange', (combat, prior, current) => {
     if (!game.user.isGM) return;
-    const outgoingActor = combat.combatant?.actor;
+    const outgoingActor = combat.combatants.get(prior.combatantId)?.actor;
     if (outgoingActor) handleCombatTurnEnd(outgoingActor);
 
-    const turnIndex = updateData.turn ?? combat.turn;
-    const incomingActor = combat.turns[turnIndex]?.actor;
-    if (incomingActor) handleCombatTurnStart(incomingActor, updateData.round ?? combat.round);
+    const incomingActor = combat.combatants.get(current.combatantId)?.actor;
+    if (incomingActor) handleCombatTurnStart(incomingActor, current.round);
   });
 });
 
