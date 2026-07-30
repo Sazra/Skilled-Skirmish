@@ -207,17 +207,20 @@ export async function renderAttackPairHTML([rollA, rollB], comparisonType) {
 /**
  * Handle a click on an Angriffswurf's "Evaluate" button: resolves the
  * defender as whoever the clicking user is currently targeting (their
- * first target), falling back to their own assigned character if they
- * have no target selected, then compares both of the attack's already-
- * rolled d20 totals against that defender's Armor Class or Magic
- * Resistance (per the button's own data-comparison-type) and posts the
- * outcome as a new chat message, speaking as the defender.
+ * first target); a GM or Assistant GM with no target set can instead just
+ * have a token selected on the canvas (of anyone's, not only their own),
+ * without needing to formally target it; anyone else without a target
+ * falls back to their own assigned character. Then compares both of the
+ * attack's already-rolled d20 totals against that defender's Armor Class
+ * or Magic Resistance (per the button's own data-comparison-type) and
+ * posts the outcome as a new chat message, speaking as the defender.
  * @param {HTMLElement} button
  * @return {Promise<ChatMessage|void>}
  */
 export async function resolveHitEvaluationFromChat(button) {
   const targets = Array.from(game.user.targets ?? []);
-  const defender = targets[0]?.actor ?? game.user.character;
+  const controlled = game.user.isGM ? (canvas.tokens?.controlled ?? []) : [];
+  const defender = targets[0]?.actor ?? controlled[0]?.actor ?? game.user.character;
   if (!defender) return ui.notifications.warn(game.i18n.localize('SKSK.AttackRoll.NoDefender'));
 
   const comparisonType = button.dataset.comparisonType;
