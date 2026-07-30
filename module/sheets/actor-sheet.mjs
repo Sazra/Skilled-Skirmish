@@ -23,7 +23,7 @@ import { SKSKRestDialog } from '../apps/rest-dialog.mjs';
 import {
   getStatusEffectDefinitions, getStatusStacks, increaseStatusStacks, decreaseStatusStacks, applyD20Malus,
   getStatusEffect, getStatusInstances, getStatusInstancesTotal, addStatusInstance, applyCauterization,
-  setRestrainedConfig, attemptRestrainedEscapeManual,
+  getAdrenalinDamage, setRestrainedConfig, attemptRestrainedEscapeManual,
 } from '../helpers/statusEffects.mjs';
 
 /**
@@ -439,6 +439,12 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       } else if (def.id === 'cauterization') {
         row.kind = 'cauterization';
         row.stacks = getStatusEffect(actor, def.id)?.getFlag('sksk', 'value') ?? 0;
+      } else if (def.id === 'adrenalinDamage') {
+        // Read-only here - only ever changed by rollAdrenalin (see
+        // helpers/actions.mjs) or healed by a qualifying Pause (see
+        // helpers/rest.mjs), never manually.
+        row.kind = 'adrenalinDamage';
+        row.stacks = getAdrenalinDamage(actor);
       } else if (def.id === 'restrained') {
         row.kind = 'restrained';
         row.stacks = getStatusStacks(actor, def.id);

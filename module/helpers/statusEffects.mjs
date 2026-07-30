@@ -397,23 +397,84 @@ export function getStatusInstancesTotal(actor, id) {
  * @return {Promise<void>}
  */
 export async function applyCauterization(actor, value) {
+  return applyMergedLifeDamage(actor, 'cauterization', value);
+}
+
+/**
+ * Shared merge-value status effect logic behind applyCauterization and
+ * applyAdrenalinDamage - unlike a stack count or a multi-instance status
+ * (Wound/Schaden am maximalen Leben), a second application doesn't create
+ * a separate instance or bump a shared stack count; it merges into the
+ * existing one's value instead. The value reduces max Life via a real
+ * ActiveEffect change (system.life.bonus) - not Negative Life directly
+ * (though Negative Life cascades in too, once Tenacity's buffer is
+ * exhausted - see helpers/life.mjs). Cauterization and Adrenalin Damage
+ * are kept as two separate status ids specifically so either can be
+ * healed/cleared independently of the other (see clearAdrenalinDamage).
+ * @param {Actor} actor
+ * @param {string} id
+ * @param {number} value
+ * @return {Promise<void>}
+ */
+async function applyMergedLifeDamage(actor, id, value) {
   const amount = Math.max(0, Math.round(Number(value) || 0));
   if (!amount) return;
 
-  const effect = getStatusEffect(actor, 'cauterization');
-  const def = getStatusEffectDefinitions().find(d => d.id === 'cauterization');
+  const effect = getStatusEffect(actor, id);
+  const def = getStatusEffectDefinitions().find(d => d.id === id);
   const newTotal = (effect?.getFlag('sksk', 'value') ?? 0) + amount;
-  const name = `${def?.name || 'cauterization'} (${newTotal})`;
+  const name = `${def?.name || id} (${newTotal})`;
   const changes = [{ key: 'system.life.bonus', mode: CONST.ACTIVE_EFFECT_MODES.ADD, value: String(-newTotal) }];
 
   if (effect) {
     await effect.update({ name, changes, 'flags.sksk.value': newTotal });
   } else {
     await actor.createEmbeddedDocuments('ActiveEffect', [{
-      name, img: def?.img || 'icons/svg/aura.svg', statuses: ['cauterization'],
+      name, img: def?.img || 'icons/svg/aura.svg', statuses: [id],
       origin: actor.uuid, flags: { sksk: { value: newTotal } }, changes,
     }]);
   }
+}
+
+/**
+ * Apply (or merge into an existing) Adrenalin Damage - see
+ * applyMergedLifeDamage. Kept separate from the general Schaden am
+ * maximalen Leben status (see addStatusInstance) specifically so any
+ * qualifying Pause can reliably clear exactly the portion of max-Life
+ * damage Adrenalin itself caused (see clearAdrenalinDamage), without
+ * touching max-Life damage from any other source.
+ * @param {Actor} actor
+ * @param {number} value
+ * @return {Promise<void>}
+ */
+export async function applyAdrenalinDamage(actor, value) {
+  return applyMergedLifeDamage(actor, 'adrenalinDamage', value);
+}
+
+/**
+ * Adrenalin Damage's current accumulated value (see applyAdrenalinDamage)
+ * - 0 if none.
+ * @param {Actor} actor
+ * @return {number}
+ */
+export function getAdrenalinDamage(actor) {
+  return getStatusEffect(actor, 'adrenalinDamage')?.getFlag('sksk', 'value') ?? 0;
+}
+
+/**
+ * Fully clear Adrenalin Damage (see applyAdrenalinDamage) - removes the
+ * backing Active Effect outright, restoring the max Life (and max
+ * Negative Life, once Tenacity's buffer is exhausted) it was reducing.
+ * Used by any qualifying Pause (see helpers/rest.mjs#applyRest).
+ * @param {Actor} actor
+ * @return {Promise<number>} The amount that was cleared (0 if none).
+ */
+export async function clearAdrenalinDamage(actor) {
+  const effect = getStatusEffect(actor, 'adrenalinDamage');
+  if (!effect) return 0;
+  const amount = effect.getFlag('sksk', 'value') ?? 0;
+  await effect.delete();
+  return amount;
 }
 
 /**

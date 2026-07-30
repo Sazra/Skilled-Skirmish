@@ -34,6 +34,11 @@
           </a>
         </div>
 
+        {{else if (eq row.kind "adrenalinDamage")}}
+        <div class="item-controls flexrow flex-center">
+          <span class="status-effect-stacks">{{row.stacks}}</span>
+        </div>
+
         {{else if (eq row.kind "restrained")}}
         <div class="item-controls flexrow flex-center">
           <a class="item-control" data-action="decreaseStatusStack" data-status-id="{{row.id}}" title="-1">

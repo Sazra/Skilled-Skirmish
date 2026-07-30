@@ -24,6 +24,13 @@
 
   <p class="rest-preview-line">{{localize 'SKSK.Rest.ManaPreview'}}: +{{manaGain}}</p>
 
+  {{#if adrenalinUsedCountToReset}}
+  <p class="rest-preview-line">{{localize 'SKSK.Rest.AdrenalinUsedCountResetPreview'}}: -{{adrenalinUsedCountToReset}}</p>
+  {{/if}}
+  {{#if adrenalinDamageToHeal}}
+  <p class="rest-preview-line">{{localize 'SKSK.Rest.AdrenalinDamageHealPreview'}}: -{{adrenalinDamageToHeal}}</p>
+  {{/if}}
+
   {{#if healingUnlocked}}
   <div class="resource">
     <label class="resource-label">
@@ -51,9 +58,6 @@
 
   {{#if adrenalinChargesRestore}}
   <p class="rest-preview-line">{{localize 'SKSK.Rest.AdrenalinRestorePreview'}}: +{{adrenalinChargesRestore}}</p>
-  {{/if}}
-  {{#if adrenalinReduction}}
-  <p class="rest-preview-line">{{localize 'SKSK.Rest.AdrenalinReductionPreview'}}: -{{adrenalinReduction}}</p>
   {{/if}}
   {{/if}}
 

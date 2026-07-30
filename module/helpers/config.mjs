@@ -118,6 +118,10 @@ SKSK.predefinedStatusEffects = [
     nameKey: 'SKSK.StatusEffect.Cauterization.Name', descriptionKey: 'SKSK.StatusEffect.Cauterization.Description',
   },
   {
+    id: 'adrenalinDamage', img: 'icons/svg/lightning.svg',
+    nameKey: 'SKSK.StatusEffect.AdrenalinDamage.Name', descriptionKey: 'SKSK.StatusEffect.AdrenalinDamage.Description',
+  },
+  {
     id: 'charmed', img: 'icons/svg/eye.svg',
     nameKey: 'SKSK.StatusEffect.Charmed.Name', descriptionKey: 'SKSK.StatusEffect.Charmed.Description',
   },

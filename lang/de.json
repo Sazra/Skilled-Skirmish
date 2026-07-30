@@ -242,7 +242,8 @@
             "MeditationRestorePreview": "Wiederhergestellte Meditationsladungen",
             "RegenerationRestorePreview": "Wiederhergestellte Regenerationsladungen",
             "AdrenalinRestorePreview": "Wiederhergestellte Adrenalinladungen",
-            "AdrenalinReductionPreview": "Verringerter Adrenalinschaden",
+            "AdrenalinUsedCountResetPreview": "Benutztes Adrenalin zurückgesetzt",
+            "AdrenalinDamageHealPreview": "Geheilter Adrenalinschaden",
             "NegativeLifeHealHint": "Für Heilung eingesetzte Regenerationsladungen heilen zusätzlich die gleiche Menge Negatives Leben.",
             "Confirm": "Anwenden",
             "ManaGained": "Mana +{amount}",
@@ -253,7 +254,8 @@
             "MeditationRestored": "Meditationsladungen +{amount}",
             "RegenerationRestored": "Regenerationsladungen +{amount}",
             "AdrenalinChargesRestored": "Adrenalinladungen +{amount}",
-            "AdrenalinDamageReduced": "Der angesammelte Adrenalinschaden wurde um {amount} Anwendung(en) verringert"
+            "AdrenalinUsedCountReset": "Benutztes Adrenalin auf 0 zurückgesetzt (war {amount})",
+            "AdrenalinDamageHealed": "Adrenalinschaden -{amount} (vollständig geheilt)"
         },
         "Gender": {
             "Male": "Männlich",
@@ -759,6 +761,10 @@
             "Cauterization": {
                 "Name": "Kauterisierung",
                 "Description": "Kommt mit einem Wert, der das maximale Leben reduziert (wie Schaden am maximalen Leben, und das maximale Negative Leben ebenso, sobald der Zähigkeits-Puffer aufgebraucht ist). Eine weitere Anwendung stapelt nicht separat - sie erhöht stattdessen den bestehenden Wert."
+            },
+            "AdrenalinDamage": {
+                "Name": "Adrenalinschaden",
+                "Description": "Kommt mit einem Wert, der das maximale Leben reduziert (wie Schaden am maximalen Leben/Kauterisierung, und das maximale Negative Leben ebenso, sobald der Zähigkeits-Puffer aufgebraucht ist), verursacht speziell durch den eigenen eskalierenden Schaden von Adrenalin. Eine weitere Anwendung stapelt nicht separat - sie erhöht stattdessen den bestehenden Wert. Wird durch jede ausreichende Pause (Erholungspause oder höher) vollständig geheilt, wobei auch das benutzte Adrenalin zurückgesetzt wird."
             },
             "Charmed": {
                 "Name": "Bezaubert",

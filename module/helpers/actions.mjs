@@ -1,7 +1,7 @@
 import { getActorSkillLevel } from "./skills.mjs";
 import { getClassAbilityLevels, actorHasAdvancedClass } from "./abilities.mjs";
 import { computeMovementSpeeds } from "./movement.mjs";
-import { canUseWeaponAttack, canMove, addStatusInstance } from "./statusEffects.mjs";
+import { canUseWeaponAttack, canMove, applyAdrenalinDamage } from "./statusEffects.mjs";
 
 /**
  * Post a simple chat card (an optional Roll, an AP-cost line, and a
@@ -182,9 +182,12 @@ export async function rollMeditation(actor) {
 /**
  * Use Adrenalin: costs no AP, but reduces the Adrenalin general resource
  * (system.adrenalinCharges) by 1 and restores 1 AP. Each use rolls
- * (this lifetime use count - 1)d4 damage as a new Schaden am maximalen
- * Leben instance (see helpers/statusEffects.mjs#addStatusInstance) - the
- * first use accordingly costs no max Life yet (0d4).
+ * (this lifetime use count - 1)d4 damage, merged into its own dedicated
+ * Adrenalin Damage status effect (see helpers/statusEffects.mjs#
+ * applyAdrenalinDamage) rather than the general Schaden am maximalen
+ * Leben status - kept separate so any qualifying Pause can reliably heal
+ * exactly the damage Adrenalin itself caused (see helpers/rest.mjs#
+ * applyRest). The first use accordingly costs no max Life yet (0d4).
  * @param {Actor} actor
  * @return {Promise<ChatMessage|void>}
  */
@@ -205,7 +208,7 @@ export async function rollAdrenalin(actor) {
     'system.actionPoints.value': Math.min(ap.max, ap.value + 1),
   });
 
-  if (roll.total > 0) await addStatusInstance(actor, 'maxLifeDamage', roll.total);
+  if (roll.total > 0) await applyAdrenalinDamage(actor, roll.total);
 
   return postActionChatCard(actor, game.i18n.localize('SKSK.Action.Adrenalin'), roll, 0);
 }

@@ -1,6 +1,6 @@
 import { getActorSkillLevel } from './skills.mjs';
 import { postActionChatCard, getRegenerationDieSizes } from './actions.mjs';
-import { getStatusStacks, decreaseStatusStacks } from './statusEffects.mjs';
+import { getStatusStacks, decreaseStatusStacks, getAdrenalinDamage, clearAdrenalinDamage } from './statusEffects.mjs';
 
 /**
  * A time segment - the atomic unit "spending time" is measured in.
@@ -89,9 +89,11 @@ export function computeRestPreview(actor, state) {
   const adrenalinChargesRestore = skillIntegrationUnlocked
     ? Math.max(0, adrenalinCharges.max - adrenalinCharges.value)
     : 0;
-  const adrenalinReduction = skillIntegrationUnlocked
-    ? Math.min(actor.system.adrenalinUsedCount, tier === 'genesung' ? Math.max(level, conMod) : conMod)
-    : 0;
+
+  // Any qualifying Pause (Erholungspause or higher) fully resets Adrenalin's
+  // escalating damage cycle - see applyRest.
+  const adrenalinUsedCountToReset = tier ? actor.system.adrenalinUsedCount : 0;
+  const adrenalinDamageToHeal = tier ? getAdrenalinDamage(actor) : 0;
 
   return {
     segments,
@@ -110,7 +112,8 @@ export function computeRestPreview(actor, state) {
     regenerationRestore,
     negativeLifeHealUnlocked: tier === 'genesung',
     adrenalinChargesRestore,
-    adrenalinReduction,
+    adrenalinUsedCountToReset,
+    adrenalinDamageToHeal,
   };
 }
 
@@ -118,6 +121,12 @@ export function computeRestPreview(actor, state) {
  * Apply "spending time" (optionally as a Pause) to an actor, per the design
  * spreadsheet, and post a chat summary. Mirrors computeRestPreview's own
  * tier/amount logic; keep the two in sync.
+ *
+ * Any qualifying tier (Erholungspause or higher) fully resets Adrenalin's
+ * own escalating damage cycle: the "lifetime uses" count driving its
+ * (uses-1)d4 formula back to 0, and its accumulated Adrenalin Damage
+ * status effect (see helpers/statusEffects.mjs#applyAdrenalinDamage/
+ * clearAdrenalinDamage) healed away entirely.
  *
  * Every tier includes the lower tiers' effects:
  * - Erholungspause (>= 2 segments): doubles passive Mana regen for the
@@ -127,19 +136,14 @@ export function computeRestPreview(actor, state) {
  * - Anpassungspause (>= 16 segments, sleeping): integrates every skill's
  *   pending "gain" into its real points; up to 1 Regeneration charge can
  *   heal 1 Exhaustion level; restores Meditation charges/Meditation
- *   skill level + 1; refills Adrenalin charges to max and reduces the
- *   "lifetime uses" count driving Adrenalin's own (uses-1)d4 damage by
- *   the Constitution modifier.
+ *   skill level + 1; refills Adrenalin charges to max.
  * - Genesungspause (>= 32 segments, not required to be contiguous):
  *   restores Meditation charges/(2 + Meditation skill level * 2) instead
  *   (replacing, not stacking with, Anpassungspause's own restore);
  *   restores Regeneration charges/min(1 + Constitution modifier, level);
  *   the Life-healing Regeneration rolls above also heal that much
  *   Negative Life; up to (Constitution modifier, at least 1) Regeneration
- *   charges can instead heal that many Exhaustion levels; reduces
- *   Adrenalin's own "lifetime uses" count by whichever is higher between
- *   Character level and Constitution modifier instead (replacing, not
- *   stacking with, Anpassungspause's own reduction).
+ *   charges can instead heal that many Exhaustion levels.
  *
  * @param {Actor} actor
  * @param {{segments: number, isBreak: boolean, regenForHealing?: number, regenForExhaustion?: number}} options
@@ -171,6 +175,18 @@ export async function applyRest(actor, options) {
   let meditationCharges = actor.system.meditationCharges.value;
 
   if (tier) {
+    // Any qualifying Pause fully resets Adrenalin's own escalating damage
+    // cycle - see the doc comment above.
+    const adrenalinUsedCount = actor.system.adrenalinUsedCount;
+    if (adrenalinUsedCount > 0) {
+      updates['system.adrenalinUsedCount'] = 0;
+      lines.push(game.i18n.format('SKSK.Rest.AdrenalinUsedCountReset', { amount: adrenalinUsedCount }));
+    }
+    const adrenalinDamageHealed = await clearAdrenalinDamage(actor);
+    if (adrenalinDamageHealed > 0) {
+      lines.push(game.i18n.format('SKSK.Rest.AdrenalinDamageHealed', { amount: adrenalinDamageHealed }));
+    }
+
     if (segments >= 8 && regenForHealing > 0) {
       const spend = Math.min(regenForHealing, regenerationCharges);
       if (spend > 0) {
@@ -226,27 +242,13 @@ export async function applyRest(actor, options) {
       }
       meditationCharges = newMeditationCharges;
 
-      // Adrenalin: charges refill to max either tier; the accumulated
-      // "lifetime uses" count driving its (uses-1)d4 damage is reduced by
-      // the Constitution modifier at Anpassungspause, or by whichever is
-      // higher between Character level and Constitution modifier at
-      // Genesungspause (replacing, not stacking with, Anpassungspause's
-      // own reduction).
-      const conMod = actor.system.attributes?.con?.mod ?? 0;
-      const level = actor.system.resources.level.value;
-      const adrenalinReduction = tier === 'genesung' ? Math.max(level, conMod) : conMod;
-
+      // Adrenalin charges refill to max at Anpassungspause or higher (the
+      // used-count/Adrenalin Damage reset above applies at every tier,
+      // including Erholungspause).
       const adrenalinCharges = actor.system.adrenalinCharges;
       if (adrenalinCharges.value !== adrenalinCharges.max) {
         updates['system.adrenalinCharges.value'] = adrenalinCharges.max;
         lines.push(game.i18n.format('SKSK.Rest.AdrenalinChargesRestored', { amount: adrenalinCharges.max - adrenalinCharges.value }));
-      }
-
-      const adrenalinUsedCount = actor.system.adrenalinUsedCount;
-      const newAdrenalinUsedCount = Math.max(0, adrenalinUsedCount - adrenalinReduction);
-      if (newAdrenalinUsedCount !== adrenalinUsedCount) {
-        updates['system.adrenalinUsedCount'] = newAdrenalinUsedCount;
-        lines.push(game.i18n.format('SKSK.Rest.AdrenalinDamageReduced', { amount: adrenalinUsedCount - newAdrenalinUsedCount }));
       }
     }
 

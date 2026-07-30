@@ -242,7 +242,8 @@
       "MeditationRestorePreview": "Meditation Charges Restored",
       "RegenerationRestorePreview": "Regeneration Charges Restored",
       "AdrenalinRestorePreview": "Adrenalin Charges Restored",
-      "AdrenalinReductionPreview": "Adrenalin Damage Reduced",
+      "AdrenalinUsedCountResetPreview": "Used Adrenalin Count Reset",
+      "AdrenalinDamageHealPreview": "Adrenalin Damage Healed",
       "NegativeLifeHealHint": "Regeneration charges spent on healing also heal that much Negative Life.",
       "Confirm": "Apply",
       "ManaGained": "Mana +{amount}",
@@ -253,7 +254,8 @@
       "MeditationRestored": "Meditation Charges +{amount}",
       "RegenerationRestored": "Regeneration Charges +{amount}",
       "AdrenalinChargesRestored": "Adrenalin Charges +{amount}",
-      "AdrenalinDamageReduced": "Adrenalin's accumulated damage reduced by {amount} use(s)"
+      "AdrenalinUsedCountReset": "Used Adrenalin reset to 0 (was {amount})",
+      "AdrenalinDamageHealed": "Adrenalin Damage -{amount} (fully healed)"
     },
     "Gender": {
       "Male": "Male",
@@ -759,6 +761,10 @@
       "Cauterization": {
         "Name": "Cauterization",
         "Description": "Comes with a value that reduces max Life (like Max Life Damage, and Negative Life too once Tenacity's buffer is exhausted). A second application doesn't stack separately - it merges into the existing value instead."
+      },
+      "AdrenalinDamage": {
+        "Name": "Adrenalin Damage",
+        "Description": "Comes with a value that reduces max Life (like Max Life Damage/Cauterization, and Negative Life too once Tenacity's buffer is exhausted), caused specifically by Adrenalin's own escalating damage. A second application doesn't stack separately - it merges into the existing value instead. Fully healed by any qualifying Pause (Erholungspause or higher), which also resets Adrenalin's used count."
       },
       "Charmed": {
         "Name": "Charmed",
