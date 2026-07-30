@@ -1,6 +1,6 @@
 import { getActorSkillLevel } from './skills.mjs';
 import { postActionChatCard, getRegenerationDieSizes } from './actions.mjs';
-import { getStatusStacks, decreaseStatusStacks, getAdrenalinDamage, clearAdrenalinDamage } from './statusEffects.mjs';
+import { getStatusStacks, decreaseStatusStacks, getAdrenalinDamage, reduceAdrenalinDamage } from './statusEffects.mjs';
 
 /**
  * A time segment - the atomic unit "spending time" is measured in.
@@ -90,10 +90,15 @@ export function computeRestPreview(actor, state) {
     ? Math.max(0, adrenalinCharges.max - adrenalinCharges.value)
     : 0;
 
-  // Any qualifying Pause (Erholungspause or higher) fully resets Adrenalin's
-  // escalating damage cycle - see applyRest.
+  // Any qualifying Pause resets Adrenalin's used count (driving its future
+  // (uses-1)d4 rolls) to 0 - but its Adrenalin Damage status (the max-Life
+  // damage already dealt) is a separate thing, only ever REDUCED (not
+  // fully healed), and only at Anpassungspause/Genesungspause - see
+  // applyRest.
   const adrenalinUsedCountToReset = tier ? actor.system.adrenalinUsedCount : 0;
-  const adrenalinDamageToHeal = tier ? getAdrenalinDamage(actor) : 0;
+  const adrenalinDamageToReduce = skillIntegrationUnlocked
+    ? Math.min(getAdrenalinDamage(actor), tier === 'genesung' ? Math.max(level, conMod) : conMod)
+    : 0;
 
   return {
     segments,
@@ -113,7 +118,7 @@ export function computeRestPreview(actor, state) {
     negativeLifeHealUnlocked: tier === 'genesung',
     adrenalinChargesRestore,
     adrenalinUsedCountToReset,
-    adrenalinDamageToHeal,
+    adrenalinDamageToReduce,
   };
 }
 
@@ -122,11 +127,13 @@ export function computeRestPreview(actor, state) {
  * spreadsheet, and post a chat summary. Mirrors computeRestPreview's own
  * tier/amount logic; keep the two in sync.
  *
- * Any qualifying tier (Erholungspause or higher) fully resets Adrenalin's
- * own escalating damage cycle: the "lifetime uses" count driving its
- * (uses-1)d4 formula back to 0, and its accumulated Adrenalin Damage
+ * Any qualifying tier (Erholungspause or higher) resets Adrenalin's own
+ * used count (the "lifetime uses" driving its (uses-1)d4 formula) back to
+ * 0. This is deliberately separate from its accumulated Adrenalin Damage
  * status effect (see helpers/statusEffects.mjs#applyAdrenalinDamage/
- * clearAdrenalinDamage) healed away entirely.
+ * reduceAdrenalinDamage) - the max-Life damage already dealt - which is
+ * only ever REDUCED (not fully healed), and only at Anpassungspause/
+ * Genesungspause (see below).
  *
  * Every tier includes the lower tiers' effects:
  * - Erholungspause (>= 2 segments): doubles passive Mana regen for the
@@ -136,14 +143,18 @@ export function computeRestPreview(actor, state) {
  * - Anpassungspause (>= 16 segments, sleeping): integrates every skill's
  *   pending "gain" into its real points; up to 1 Regeneration charge can
  *   heal 1 Exhaustion level; restores Meditation charges/Meditation
- *   skill level + 1; refills Adrenalin charges to max.
+ *   skill level + 1; refills Adrenalin charges to max; reduces Adrenalin
+ *   Damage by the Constitution modifier.
  * - Genesungspause (>= 32 segments, not required to be contiguous):
  *   restores Meditation charges/(2 + Meditation skill level * 2) instead
  *   (replacing, not stacking with, Anpassungspause's own restore);
  *   restores Regeneration charges/min(1 + Constitution modifier, level);
  *   the Life-healing Regeneration rolls above also heal that much
  *   Negative Life; up to (Constitution modifier, at least 1) Regeneration
- *   charges can instead heal that many Exhaustion levels.
+ *   charges can instead heal that many Exhaustion levels; reduces
+ *   Adrenalin Damage by whichever is higher between Character level and
+ *   Constitution modifier instead (replacing, not stacking with,
+ *   Anpassungspause's own reduction).
  *
  * @param {Actor} actor
  * @param {{segments: number, isBreak: boolean, regenForHealing?: number, regenForExhaustion?: number}} options
@@ -175,16 +186,13 @@ export async function applyRest(actor, options) {
   let meditationCharges = actor.system.meditationCharges.value;
 
   if (tier) {
-    // Any qualifying Pause fully resets Adrenalin's own escalating damage
-    // cycle - see the doc comment above.
+    // Any qualifying Pause resets Adrenalin's used count - see the doc
+    // comment above. Its Adrenalin Damage status is handled separately,
+    // below, only at Anpassungspause/Genesungspause.
     const adrenalinUsedCount = actor.system.adrenalinUsedCount;
     if (adrenalinUsedCount > 0) {
       updates['system.adrenalinUsedCount'] = 0;
       lines.push(game.i18n.format('SKSK.Rest.AdrenalinUsedCountReset', { amount: adrenalinUsedCount }));
-    }
-    const adrenalinDamageHealed = await clearAdrenalinDamage(actor);
-    if (adrenalinDamageHealed > 0) {
-      lines.push(game.i18n.format('SKSK.Rest.AdrenalinDamageHealed', { amount: adrenalinDamageHealed }));
     }
 
     if (segments >= 8 && regenForHealing > 0) {
@@ -243,12 +251,24 @@ export async function applyRest(actor, options) {
       meditationCharges = newMeditationCharges;
 
       // Adrenalin charges refill to max at Anpassungspause or higher (the
-      // used-count/Adrenalin Damage reset above applies at every tier,
-      // including Erholungspause).
+      // used-count reset above applies at every tier, including
+      // Erholungspause). Adrenalin Damage - the max-Life damage already
+      // dealt - is instead only REDUCED here, by the Constitution
+      // modifier at Anpassungspause, or by whichever is higher between
+      // Character level and Constitution modifier at Genesungspause
+      // (replacing, not stacking with, Anpassungspause's own reduction).
       const adrenalinCharges = actor.system.adrenalinCharges;
       if (adrenalinCharges.value !== adrenalinCharges.max) {
         updates['system.adrenalinCharges.value'] = adrenalinCharges.max;
         lines.push(game.i18n.format('SKSK.Rest.AdrenalinChargesRestored', { amount: adrenalinCharges.max - adrenalinCharges.value }));
+      }
+
+      const conMod = actor.system.attributes?.con?.mod ?? 0;
+      const level = actor.system.resources.level.value;
+      const adrenalinDamageReduction = tier === 'genesung' ? Math.max(level, conMod) : conMod;
+      const adrenalinDamageReduced = await reduceAdrenalinDamage(actor, adrenalinDamageReduction);
+      if (adrenalinDamageReduced > 0) {
+        lines.push(game.i18n.format('SKSK.Rest.AdrenalinDamageReduced', { amount: adrenalinDamageReduced }));
       }
     }
 

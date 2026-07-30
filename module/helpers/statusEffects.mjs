@@ -462,19 +462,39 @@ export function getAdrenalinDamage(actor) {
 }
 
 /**
- * Fully clear Adrenalin Damage (see applyAdrenalinDamage) - removes the
- * backing Active Effect outright, restoring the max Life (and max
- * Negative Life, once Tenacity's buffer is exhausted) it was reducing.
- * Used by any qualifying Pause (see helpers/rest.mjs#applyRest).
+ * Reduce Adrenalin Damage's accumulated value by `amount` (see
+ * applyAdrenalinDamage) - floored at 0, deleting the backing Active
+ * Effect entirely once it reaches 0 (restoring however much max Life, and
+ * max Negative Life once Tenacity's buffer is exhausted, that portion was
+ * reducing). Distinct from Adrenalin's used-count reset (see
+ * helpers/rest.mjs#applyRest): the used count drives future (uses-1)d4
+ * rolls and resets to 0 at any qualifying Pause, while this only reduces
+ * the damage already dealt, and only at Anpassungspause/Genesungspause.
  * @param {Actor} actor
- * @return {Promise<number>} The amount that was cleared (0 if none).
+ * @param {number} amount
+ * @return {Promise<number>} The amount actually reduced (less than
+ *   requested if less than that remained).
  */
-export async function clearAdrenalinDamage(actor) {
+export async function reduceAdrenalinDamage(actor, amount) {
+  const reduceBy = Math.max(0, Math.round(Number(amount) || 0));
+  if (!reduceBy) return 0;
+
   const effect = getStatusEffect(actor, 'adrenalinDamage');
   if (!effect) return 0;
-  const amount = effect.getFlag('sksk', 'value') ?? 0;
-  await effect.delete();
-  return amount;
+  const current = effect.getFlag('sksk', 'value') ?? 0;
+  const applied = Math.min(current, reduceBy);
+  const newTotal = current - applied;
+
+  if (newTotal <= 0) {
+    await effect.delete();
+  } else {
+    const def = getStatusEffectDefinitions().find(d => d.id === 'adrenalinDamage');
+    const name = `${def?.name || 'adrenalinDamage'} (${newTotal})`;
+    const changes = [{ key: 'system.life.bonus', mode: CONST.ACTIVE_EFFECT_MODES.ADD, value: String(-newTotal) }];
+    await effect.update({ name, changes, 'flags.sksk.value': newTotal });
+  }
+
+  return applied;
 }
 
 /**

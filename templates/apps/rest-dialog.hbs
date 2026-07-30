@@ -27,9 +27,6 @@
   {{#if adrenalinUsedCountToReset}}
   <p class="rest-preview-line">{{localize 'SKSK.Rest.AdrenalinUsedCountResetPreview'}}: -{{adrenalinUsedCountToReset}}</p>
   {{/if}}
-  {{#if adrenalinDamageToHeal}}
-  <p class="rest-preview-line">{{localize 'SKSK.Rest.AdrenalinDamageHealPreview'}}: -{{adrenalinDamageToHeal}}</p>
-  {{/if}}
 
   {{#if healingUnlocked}}
   <div class="resource">
@@ -58,6 +55,9 @@
 
   {{#if adrenalinChargesRestore}}
   <p class="rest-preview-line">{{localize 'SKSK.Rest.AdrenalinRestorePreview'}}: +{{adrenalinChargesRestore}}</p>
+  {{/if}}
+  {{#if adrenalinDamageToReduce}}
+  <p class="rest-preview-line">{{localize 'SKSK.Rest.AdrenalinReductionPreview'}}: -{{adrenalinDamageToReduce}}</p>
   {{/if}}
   {{/if}}
 

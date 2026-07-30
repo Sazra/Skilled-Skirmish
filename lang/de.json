@@ -243,7 +243,7 @@
             "RegenerationRestorePreview": "Wiederhergestellte Regenerationsladungen",
             "AdrenalinRestorePreview": "Wiederhergestellte Adrenalinladungen",
             "AdrenalinUsedCountResetPreview": "Benutztes Adrenalin zurückgesetzt",
-            "AdrenalinDamageHealPreview": "Geheilter Adrenalinschaden",
+            "AdrenalinReductionPreview": "Verringerter Adrenalinschaden",
             "NegativeLifeHealHint": "Für Heilung eingesetzte Regenerationsladungen heilen zusätzlich die gleiche Menge Negatives Leben.",
             "Confirm": "Anwenden",
             "ManaGained": "Mana +{amount}",
@@ -255,7 +255,7 @@
             "RegenerationRestored": "Regenerationsladungen +{amount}",
             "AdrenalinChargesRestored": "Adrenalinladungen +{amount}",
             "AdrenalinUsedCountReset": "Benutztes Adrenalin auf 0 zurückgesetzt (war {amount})",
-            "AdrenalinDamageHealed": "Adrenalinschaden -{amount} (vollständig geheilt)"
+            "AdrenalinDamageReduced": "Adrenalinschaden -{amount}"
         },
         "Gender": {
             "Male": "Männlich",
@@ -764,7 +764,7 @@
             },
             "AdrenalinDamage": {
                 "Name": "Adrenalinschaden",
-                "Description": "Kommt mit einem Wert, der das maximale Leben reduziert (wie Schaden am maximalen Leben/Kauterisierung, und das maximale Negative Leben ebenso, sobald der Zähigkeits-Puffer aufgebraucht ist), verursacht speziell durch den eigenen eskalierenden Schaden von Adrenalin. Eine weitere Anwendung stapelt nicht separat - sie erhöht stattdessen den bestehenden Wert. Wird durch jede ausreichende Pause (Erholungspause oder höher) vollständig geheilt, wobei auch das benutzte Adrenalin zurückgesetzt wird."
+                "Description": "Kommt mit einem Wert, der das maximale Leben reduziert (wie Schaden am maximalen Leben/Kauterisierung, und das maximale Negative Leben ebenso, sobald der Zähigkeits-Puffer aufgebraucht ist), verursacht speziell durch den eigenen eskalierenden Schaden von Adrenalin. Eine weitere Anwendung stapelt nicht separat - sie erhöht stattdessen den bestehenden Wert. Wird durch eine Anpassungspause (Konstitutionsmodifikator) oder Genesungspause (Konstitutionsmodifikator oder Charakterlevel, der höhere Wert gilt) verringert, aber nicht vollständig geheilt - das separate benutzte Adrenalin, das zukünftige Würfe bestimmt, wird stattdessen bei jeder ausreichenden Pause auf 0 zurückgesetzt."
             },
             "Charmed": {
                 "Name": "Bezaubert",
