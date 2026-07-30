@@ -1,6 +1,7 @@
 import { postActionChatCard } from './actions.mjs';
 import { getClassAbilityLevels, actorHasAdvancedClass } from './abilities.mjs';
 import { getActorSkillLevel } from './skills.mjs';
+import { handlePendingSpellTurnStart } from './spell-rolls.mjs';
 
 /**
  * Movement types (CONFIG.SKSK.movementTypes) Dazed does NOT reduce.
@@ -162,13 +163,39 @@ async function applyLifeChange(actor, delta) {
 }
 
 /**
+ * Pay a Mana cost (e.g. casting a spell) - drains system.mana.value first;
+ * whatever the cost exceeds that by is deducted from Life instead (and
+ * Negative Life too, once Life bottoms out - see applyLifeChange), rather
+ * than blocking the action outright.
+ * @param {Actor} actor
+ * @param {number} cost
+ * @return {Promise<{manaPaid: number, lifeDelta: number, negativeLifeDelta: number}>}
+ */
+export async function payManaCost(actor, cost) {
+  const amount = Math.max(0, Math.round(Number(cost) || 0));
+  if (!amount) return { manaPaid: 0, lifeDelta: 0, negativeLifeDelta: 0 };
+
+  const mana = actor.system.mana;
+  const manaPaid = Math.min(mana.value, amount);
+  if (manaPaid) await actor.update({ 'system.mana.value': mana.value - manaPaid });
+
+  const deficit = amount - manaPaid;
+  const { lifeDelta, negativeLifeDelta } = deficit > 0
+    ? await applyLifeChange(actor, -deficit)
+    : { lifeDelta: 0, negativeLifeDelta: 0 };
+
+  return { manaPaid, lifeDelta, negativeLifeDelta };
+}
+
+/**
  * The extra chat line noting Negative Life overflow (see applyLifeChange),
  * or '' if none occurred - shared by every turn-start Life-damage handler
- * below.
+ * below (and by helpers/spell-rolls.mjs, for Mana shortfalls paid from
+ * Life).
  * @param {number} negativeLifeDelta
  * @return {string}
  */
-function negativeLifeOverflowHTML(negativeLifeDelta) {
+export function negativeLifeOverflowHTML(negativeLifeDelta) {
   if (!negativeLifeDelta) return '';
   return `<div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.NegativeLifeOverflow', { amount: negativeLifeDelta })}</div>`;
 }
@@ -824,10 +851,24 @@ export async function checkConcentration(actor, damage) {
   const roll = await new Roll(formula, actor.getRollData()).evaluate();
   const success = roll.total >= dc;
 
-  if (!success) await setStatusStacks(actor, 'concentration', 0);
+  // A failed check breaks Concentration outright - if a spell (see
+  // helpers/spell-rolls.mjs#rollSpellItem) was still being paid off in AP
+  // instalments, that cancels it too: its remaining AP debt is forgiven,
+  // but the Mana it already cost at cast time is not refunded.
+  let cancelledSpell = false;
+  if (!success) {
+    await setStatusStacks(actor, 'concentration', 0);
+    if (actor.system.pendingSpell?.apCost) {
+      await actor.update({ 'system.pendingSpell': { itemId: '', apCost: 0 } });
+      cancelledSpell = true;
+    }
+  }
 
   const outcome = game.i18n.localize(success ? 'SKSK.Spell.Roll.Success' : 'SKSK.Spell.Roll.Failure');
-  const extraHTML = `<div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.ConcentrationCheck', { dc })}: ${outcome}</div>`;
+  const extraHTML = `
+    <div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.ConcentrationCheck', { dc })}: ${outcome}</div>
+    ${cancelledSpell ? `<div class="sksk-roll-line">${game.i18n.localize('SKSK.Spell.Roll.SpellCancelled')}</div>` : ''}
+  `;
   await postActionChatCard(actor, getStatusEffectName('concentration'), roll, 0, extraHTML);
 }
 
@@ -851,6 +892,11 @@ export async function handleCombatTurnStart(actor, round) {
   totalDamage += await handleWoundTurnStart(actor);
   totalDamage += await handleCustomTurnStart(actor);
   await checkConcentration(actor, totalDamage);
+  // Runs after checkConcentration so a Concentration break from this same
+  // turn's damage (which already zeroes pendingSpell.apCost) correctly
+  // finds nothing left to pay off, rather than paying AP toward a spell
+  // that just got cancelled.
+  await handlePendingSpellTurnStart(actor);
   await handleRestrainedTurnStart(actor);
 }
 

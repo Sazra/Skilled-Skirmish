@@ -1,6 +1,8 @@
 import { computeDamageBonus, computeSavingThrowValue, computeSpellManaCost, computeSpellApCost } from './spells.mjs';
 import { getActorSkillLevel, getSkillLabel } from './skills.mjs';
-import { applyD20Malus, canCastMovementSpell } from './statusEffects.mjs';
+import {
+  applyD20Malus, canCastMovementSpell, getStatusStacks, setStatusStacks, payManaCost, negativeLifeOverflowHTML,
+} from './statusEffects.mjs';
 
 /**
  * Roll one damage entry (its formula plus any attribute/skill scaling) and
@@ -50,39 +52,38 @@ function renderSavingThrowButton(save, index, item) {
 }
 
 /**
- * Cast a spell: post one chat message with its description, any attack
- * rolls (and the damage tied to each), any saving throws to request (and
- * the damage/status effects tied to them), and any unconditional damage/
- * status effects. See SKSKItem#roll for how this is invoked.
- * @param {Item} item   The spell item being cast.
+ * Post a spell's chat card (own helper so both an immediate cast and a
+ * later payoff - see handlePendingSpellTurnStart - share the exact same
+ * message shape).
+ * @param {Item} item
+ * @param {string[]} parts
  * @return {Promise<ChatMessage>}
  */
-export async function rollSpellItem(item) {
+async function postSpellChatCard(item, parts) {
+  const messageData = {
+    speaker: ChatMessage.getSpeaker({ actor: item.actor }),
+    flavor: item.name,
+    content: `<div class="sksk-chat-card sksk-spell-card">${parts.join('')}</div>`,
+  };
+  ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));
+  return ChatMessage.create(messageData);
+}
+
+/**
+ * Render every effect part of a spell - any attack rolls (and the damage
+ * tied to each), any saving throws to request (and the damage/status
+ * effects tied to them), and any unconditional damage/status effects.
+ * Split out from rollSpellItem so a spell whose AP cost couldn't be fully
+ * paid at cast time (see rollSpellItem/handlePendingSpellTurnStart) can
+ * defer this until the debt is paid off, instead of the spell taking
+ * effect the instant it's cast.
+ * @param {Item} item   The spell item.
+ * @return {Promise<string[]>}
+ */
+async function renderSpellEffectParts(item) {
   const actor = item.actor;
   const system = item.system;
-
-  // Prone/Restrained block any spell whose casting method is Movement -
-  // see helpers/statusEffects.mjs#canCastMovementSpell.
-  if (actor && system.castingMethods?.movement && !canCastMovementSpell(actor)) {
-    ui.notifications.warn(game.i18n.localize('SKSK.StatusEffect.MovementSpellBlocked'));
-    return;
-  }
-
   const parts = [];
-
-  const descriptionHTML = await foundry.applications.ux.TextEditor.implementation.enrichHTML(
-    system.description ?? '', { relativeTo: item, secrets: item.isOwner }
-  );
-  parts.push(`<div class="sksk-roll-description">${descriptionHTML}</div>`);
-
-  if (actor) {
-    const { cost, increased } = computeSpellManaCost(system, actor);
-    const costClass = increased ? 'sksk-roll-mana-cost-increased' : '';
-    parts.push(`<div class="sksk-roll-mana-cost"><strong>${game.i18n.localize('SKSK.Spell.ManaCost')}:</strong> <span class="${costClass}">${cost}</span></div>`);
-
-    const apCost = computeSpellApCost(system, actor);
-    parts.push(`<div class="sksk-roll-ap-cost"><strong>${game.i18n.localize('SKSK.Spell.APCost')}:</strong> ${apCost}</div>`);
-  }
 
   if (system.attackRoll.enabled) {
     const attackDamages = system.damages.filter(d => d.trigger === 'attack');
@@ -120,13 +121,138 @@ export async function rollSpellItem(item) {
     parts.push(renderStatusEffect(effect));
   }
 
-  const messageData = {
-    speaker: ChatMessage.getSpeaker({ actor }),
-    flavor: item.name,
-    content: `<div class="sksk-chat-card sksk-spell-card">${parts.join('')}</div>`,
-  };
-  ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));
-  return ChatMessage.create(messageData);
+  return parts;
+}
+
+/**
+ * Cast a spell: post one chat message with its description, its Mana/AP
+ * cost, and (unless its AP cost couldn't be fully paid right away - see
+ * below) its full effect (attack rolls, damage, saving throws).
+ *
+ * Mana cost is paid immediately - drains Mana first, then Life (and
+ * Negative Life, once Life bottoms out) for whatever's left over (see
+ * helpers/statusEffects.mjs#payManaCost). AP cost is paid immediately too,
+ * as much as current AP allows; if that doesn't cover it, the remainder is
+ * stored on system.pendingSpell and Concentration is turned on - the spell
+ * doesn't take effect yet. From then on, helpers/statusEffects.mjs#
+ * handlePendingSpellTurnStart pays down that remainder at the start of
+ * each of the caster's later Combat turns (while Concentration holds),
+ * and the spell finally takes effect once it reaches 0. Should
+ * Concentration break first (see checkConcentration), the spell is
+ * cancelled outright - the AP debt is forgiven, but the Mana already
+ * spent at cast time is not.
+ *
+ * Casting is blocked entirely while a previous spell of this actor's is
+ * still awaiting its AP payoff.
+ * @param {Item} item   The spell item being cast.
+ * @return {Promise<ChatMessage|void>}
+ */
+export async function rollSpellItem(item) {
+  const actor = item.actor;
+  const system = item.system;
+
+  // Prone/Restrained block any spell whose casting method is Movement -
+  // see helpers/statusEffects.mjs#canCastMovementSpell.
+  if (actor && system.castingMethods?.movement && !canCastMovementSpell(actor)) {
+    ui.notifications.warn(game.i18n.localize('SKSK.StatusEffect.MovementSpellBlocked'));
+    return;
+  }
+
+  if (actor && (actor.system.pendingSpell?.apCost ?? 0) > 0) {
+    ui.notifications.warn(game.i18n.localize('SKSK.Spell.Roll.AlreadyConcentrating'));
+    return;
+  }
+
+  const parts = [];
+
+  const descriptionHTML = await foundry.applications.ux.TextEditor.implementation.enrichHTML(
+    system.description ?? '', { relativeTo: item, secrets: item.isOwner }
+  );
+  parts.push(`<div class="sksk-roll-description">${descriptionHTML}</div>`);
+
+  let deferred = false;
+
+  if (actor) {
+    const { cost: manaCost, increased } = computeSpellManaCost(system, actor);
+    const costClass = increased ? 'sksk-roll-mana-cost-increased' : '';
+    parts.push(`<div class="sksk-roll-mana-cost"><strong>${game.i18n.localize('SKSK.Spell.ManaCost')}:</strong> <span class="${costClass}">${manaCost}</span></div>`);
+
+    const apCost = computeSpellApCost(system, actor);
+    parts.push(`<div class="sksk-roll-ap-cost"><strong>${game.i18n.localize('SKSK.Spell.APCost')}:</strong> ${apCost}</div>`);
+
+    const { lifeDelta, negativeLifeDelta } = await payManaCost(actor, manaCost);
+    if (lifeDelta || negativeLifeDelta) {
+      const fromLife = -lifeDelta + negativeLifeDelta;
+      parts.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.ManaShortfallFromLife', { amount: fromLife })}</div>`);
+      parts.push(negativeLifeOverflowHTML(negativeLifeDelta));
+    }
+
+    const ap = actor.system.actionPoints.value;
+    const paidNow = Math.min(ap, apCost);
+    const remaining = apCost - paidNow;
+    if (paidNow) await actor.update({ 'system.actionPoints.value': ap - paidNow });
+
+    if (remaining > 0) {
+      await actor.update({ 'system.pendingSpell': { itemId: item.id, apCost: remaining } });
+      await setStatusStacks(actor, 'concentration', 1);
+      parts.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.ApOwed', { paid: paidNow, remaining })}</div>`);
+      deferred = true;
+    }
+  }
+
+  if (!deferred) {
+    parts.push(...(await renderSpellEffectParts(item)));
+  }
+
+  return postSpellChatCard(item, parts);
+}
+
+/**
+ * Pay down a pending spell's still-owed AP cost (see rollSpellItem) at the
+ * start of this actor's Combat turn - pays as much as current AP allows,
+ * repeating on however many further turns it takes to reach 0. Once fully
+ * paid, the spell finally takes effect (its deferred parts - see
+ * renderSpellEffectParts - are posted now, in their own chat message) and
+ * Concentration is turned off. A no-op outside of Concentration (a failed
+ * Concentration check already reset apCost to 0 itself - see
+ * helpers/statusEffects.mjs#checkConcentration - which is what actually
+ * cancels the spell).
+ * @param {Actor} actor
+ * @return {Promise<void>}
+ */
+export async function handlePendingSpellTurnStart(actor) {
+  const pending = actor.system.pendingSpell;
+  if (!pending?.apCost || getStatusStacks(actor, 'concentration') <= 0) return;
+
+  const item = actor.items.get(pending.itemId);
+  const label = item?.name ?? game.i18n.localize('SKSK.StatusEffect.Concentration.Name');
+
+  const ap = actor.system.actionPoints.value;
+  const paid = Math.min(ap, pending.apCost);
+  const remaining = pending.apCost - paid;
+  await actor.update({
+    'system.actionPoints.value': ap - paid,
+    'system.pendingSpell.apCost': remaining,
+  });
+
+  if (remaining > 0) {
+    const parts = [`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.ApPaidTowardSpell', { paid, remaining })}</div>`];
+    const messageData = {
+      speaker: ChatMessage.getSpeaker({ actor }),
+      flavor: label,
+      content: `<div class="sksk-chat-card sksk-action-card">${parts.join('')}</div>`,
+    };
+    ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));
+    await ChatMessage.create(messageData);
+    return;
+  }
+
+  await actor.update({ 'system.pendingSpell.itemId': '' });
+  await setStatusStacks(actor, 'concentration', 0);
+  if (!item) return;
+
+  const parts = await renderSpellEffectParts(item);
+  await postSpellChatCard(item, parts);
 }
 
 /**

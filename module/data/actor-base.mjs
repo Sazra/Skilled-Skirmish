@@ -255,6 +255,16 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // even by a Rest), since each use permanently costs more max Life than
     // the last. Not meant to be hand-edited. See helpers/actions.mjs#rollAdrenalin.
     schema.adrenalinUsedCount = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+    // A spell whose AP cost couldn't be fully paid at cast time - itemId
+    // (blank = none pending) references the spell Item still owed apCost
+    // AP, paid off gradually at the start of this actor's later Combat
+    // turns while Concentration remains active. Not meant to be
+    // hand-edited. See helpers/spell-rolls.mjs#rollSpellItem/
+    // handlePendingSpellTurnStart.
+    schema.pendingSpell = new fields.SchemaField({
+      itemId: new fields.StringField({ required: true, blank: true, initial: "" }),
+      apCost: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+    });
 
     const attributeKeys = Object.keys(CONFIG.SKSK.attributes);
     const attributesSchema = {};

@@ -631,7 +631,12 @@
         "Success": "Success",
         "Failure": "Failure",
         "NoCharacter": "You have no character assigned - cannot roll.",
-        "ItemNotFound": "Could not find the spell for this saving throw."
+        "ItemNotFound": "Could not find the spell for this saving throw.",
+        "ManaShortfallFromLife": "{amount} of that Mana cost is paid from Life instead",
+        "ApOwed": "Not enough AP - {paid} paid now, {remaining} still owed. Concentration is required to finish casting.",
+        "ApPaidTowardSpell": "{paid} AP paid toward the pending spell ({remaining} still owed)",
+        "AlreadyConcentrating": "Finish casting (or let Concentration break on) your current spell before casting another.",
+        "SpellCancelled": "The spell being channeled is cancelled - its Mana cost is lost."
       }
     },
     "DamageType": {

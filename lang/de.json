@@ -631,7 +631,12 @@
                 "Success": "Erfolg",
                 "Failure": "Misserfolg",
                 "NoCharacter": "Dir ist kein Charakter zugewiesen - kann nicht würfeln.",
-                "ItemNotFound": "Zauber für diesen Rettungswurf nicht gefunden."
+                "ItemNotFound": "Zauber für diesen Rettungswurf nicht gefunden.",
+                "ManaShortfallFromLife": "{amount} dieser Manakosten werden stattdessen vom Leben bezahlt",
+                "ApOwed": "Nicht genug AP - {paid} jetzt bezahlt, {remaining} noch offen. Konzentration ist nötig, um den Zauber fertigzustellen.",
+                "ApPaidTowardSpell": "{paid} AP für den ausstehenden Zauber bezahlt ({remaining} noch offen)",
+                "AlreadyConcentrating": "Beende erst den aktuellen Zauber (oder lass die Konzentration brechen), bevor du einen weiteren wirkst.",
+                "SpellCancelled": "Der kanalisierte Zauber wird abgebrochen - seine Manakosten sind verloren."
             }
         },
         "DamageType": {
