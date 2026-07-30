@@ -102,6 +102,44 @@ function getStatusEffectName(id) {
 }
 
 /**
+ * The clamped result of applying `delta` to a resource's current value -
+ * healing/gain clamps at `max` (never exceeds it); damage/loss only floors
+ * at 0, without an upper clamp. A plain clamp(value + delta, 0, max) would
+ * be wrong for damage whenever `max` has shrunk below the resource's
+ * current value since it was last clamped (e.g. Cauterization/Adrenalin/
+ * Schaden am maximalen Leben reducing max Life via an Active Effect, or
+ * anything reducing max Mana) - it would incorrectly snap the value up to
+ * that lower max as a side effect of unrelated damage, rather than simply
+ * reducing it further.
+ * @param {number} value
+ * @param {number} max
+ * @param {number} delta
+ * @return {number}
+ */
+function clampResourceChange(value, max, delta) {
+  return delta > 0 ? Math.max(0, Math.min(max, value + delta)) : Math.max(0, value + delta);
+}
+
+/**
+ * Directly apply a Life change (damage or healing) to system.life.value,
+ * clamped via clampResourceChange - every turn-start effect that affects
+ * current Life (Poison, Frostbite, Wound, custom Life ticks) goes through
+ * this rather than only narrating the amount in chat.
+ * @param {Actor} actor
+ * @param {number} delta   Positive to heal, negative to damage.
+ * @return {Promise<number>} The amount actually applied (may differ from
+ *   delta once clamped).
+ */
+async function applyLifeChange(actor, delta) {
+  if (!delta) return 0;
+  const life = actor.system.life;
+  const newValue = clampResourceChange(life.value, life.max, delta);
+  const applied = newValue - life.value;
+  if (applied) await actor.update({ 'system.life.value': newValue });
+  return applied;
+}
+
+/**
  * Real ActiveEffect "changes" (key/mode/value) for a custom (GM-added,
  * non-predefined) status effect's optional flat stat modifiers - each
  * configured per-stack amount is multiplied by the current stack count.
@@ -553,14 +591,13 @@ async function handleDazedTurnStart(actor) {
 
 /**
  * Poison's own combat-turn-start handling: for every Poison severity
- * currently active on the actor, roll its damage die (narrated only, like
- * every other damage source in this system - not applied to Life
- * automatically) and an automatic Constitution check against its DC once
- * its own recheck timer allows (every round for Mild; every 3/5/10 rounds,
- * first triggering that many rounds after being poisoned, for Medium/
- * Severe/Deadly). A passed check cures that severity entirely; a failed
- * one just reschedules the next recheck (Mild has none to reschedule - it
- * always triggers).
+ * currently active on the actor, roll its damage die and apply it directly
+ * to system.life.value (clamped to [0, max]), then run an automatic
+ * Constitution check against its DC once its own recheck timer allows
+ * (every round for Mild; every 3/5/10 rounds, first triggering that many
+ * rounds after being poisoned, for Medium/Severe/Deadly). A passed check
+ * cures that severity entirely; a failed one just reschedules the next
+ * recheck (Mild has none to reschedule - it always triggers).
  * @param {Actor} actor
  * @param {number} round
  * @return {Promise<void>}
@@ -575,6 +612,7 @@ async function handlePoisonTurnStart(actor, round) {
     if (!triggers) continue;
 
     const damageRoll = await new Roll(`1d${def.damageDie}`, actor.getRollData()).evaluate();
+    await applyLifeChange(actor, -damageRoll.total);
     const conMod = actor.system.attributes?.con?.mod ?? 0;
     const checkFormula = applyD20Malus(`1d20 + ${conMod}`, actor, 'con');
     const checkRoll = await new Roll(checkFormula, actor.getRollData()).evaluate();
@@ -597,15 +635,16 @@ async function handlePoisonTurnStart(actor, round) {
 }
 
 /**
- * Frostbite's own combat-turn-start handling: a flat Cold damage tick
- * (narrated only, like every other damage source in this system),
- * regardless of its own stack count - see computeFrostbiteDamage.
+ * Frostbite's own combat-turn-start handling: a flat Cold damage tick,
+ * applied directly to system.life.value (clamped to [0, max]), regardless
+ * of its own stack count - see computeFrostbiteDamage.
  * @param {Actor} actor
  * @return {Promise<void>}
  */
 async function handleFrostbiteTurnStart(actor) {
   if (getStatusStacks(actor, 'frostbite') <= 0) return;
   const damage = computeFrostbiteDamage(actor);
+  await applyLifeChange(actor, -damage);
   const typeLabel = game.i18n.localize(CONFIG.SKSK.damageTypes.cold);
   const extraHTML = `<div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.FrostbiteDamage', { amount: damage, type: typeLabel })}</div>`;
   await postActionChatCard(actor, getStatusEffectName('frostbite'), null, 0, extraHTML);
@@ -613,13 +652,15 @@ async function handleFrostbiteTurnStart(actor) {
 
 /**
  * Wound's own combat-turn-start handling: the summed damage value of
- * every Wound instance currently on the actor (narrated only).
+ * every Wound instance currently on the actor, applied directly to
+ * system.life.value (clamped to [0, max]).
  * @param {Actor} actor
  * @return {Promise<void>}
  */
 async function handleWoundTurnStart(actor) {
   const total = getStatusInstancesTotal(actor, 'wound');
   if (!total) return;
+  await applyLifeChange(actor, -total);
   const extraHTML = `<div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.WoundDamage', { amount: total })}</div>`;
   await postActionChatCard(actor, getStatusEffectName('wound'), null, 0, extraHTML);
 }
@@ -628,13 +669,12 @@ async function handleWoundTurnStart(actor) {
  * Custom (GM-added) status effects' own combat-turn-start handling: for
  * every custom definition carrying a non-zero lifeChangePerStack and/or
  * manaChangePerStack, scaled by the actor's current stack count for that
- * status (see CUSTOM_TURN_START_FIELDS). Life change is narrated only
- * (posted to chat, sign determining damage vs. healing wording) - never
- * written to system.life.value directly, matching every other Life-
- * affecting status effect in this system (Wound, Frostbite, Poison). Mana
- * change is instead applied directly to system.mana.value (clamped to
- * [0, max]), matching Mana's other automatic regeneration paths
- * (Meditation, Rest) rather than Life's narrated-only convention.
+ * status (see CUSTOM_TURN_START_FIELDS). Life change is applied directly
+ * to system.life.value (clamped to [0, max]) via applyLifeChange, matching
+ * every other Life-affecting status effect in this system (Wound,
+ * Frostbite, Poison). Mana change is likewise applied directly to
+ * system.mana.value (clamped to [0, max]), matching Mana's other automatic
+ * regeneration paths (Meditation, Rest).
  * @param {Actor} actor
  * @return {Promise<void>}
  */
@@ -646,15 +686,18 @@ async function handleCustomTurnStart(actor) {
 
     const lifeChange = (Number(def.lifeChangePerStack) || 0) * stacks;
     if (lifeChange) {
-      const key = lifeChange > 0 ? 'SKSK.StatusEffect.CustomLifeHealing' : 'SKSK.StatusEffect.CustomLifeDamage';
-      const extraHTML = `<div class="sksk-roll-line">${game.i18n.format(key, { amount: Math.abs(lifeChange) })}</div>`;
-      await postActionChatCard(actor, getStatusEffectName(def.id), null, 0, extraHTML);
+      const applied = await applyLifeChange(actor, lifeChange);
+      if (applied) {
+        const key = applied > 0 ? 'SKSK.StatusEffect.CustomLifeHealing' : 'SKSK.StatusEffect.CustomLifeDamage';
+        const extraHTML = `<div class="sksk-roll-line">${game.i18n.format(key, { amount: Math.abs(applied) })}</div>`;
+        await postActionChatCard(actor, getStatusEffectName(def.id), null, 0, extraHTML);
+      }
     }
 
     const manaChange = (Number(def.manaChangePerStack) || 0) * stacks;
     if (manaChange) {
       const mana = actor.system.mana;
-      const newValue = Math.max(0, Math.min(mana.max, mana.value + manaChange));
+      const newValue = clampResourceChange(mana.value, mana.max, manaChange);
       const applied = newValue - mana.value;
       if (applied) {
         await actor.update({ 'system.mana.value': newValue });

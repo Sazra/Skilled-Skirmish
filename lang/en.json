@@ -684,7 +684,7 @@
       "StatModifiers": "Stat Modifiers (per stack)",
       "StatModifiersHint": "Applied automatically via a real Active Effect while this status is active on an actor, scaled by its stack count.",
       "TurnStartTicks": "Turn Start Effects (per stack)",
-      "TurnStartTicksHint": "Triggers at the start of the actor's own Combat turn, scaled by its stack count. Life change is only narrated in chat (positive heals, negative damages); Mana change is applied directly (clamped between 0 and max Mana).",
+      "TurnStartTicksHint": "Triggers at the start of the actor's own Combat turn, scaled by its stack count. Life change is applied directly (clamped between 0 and max Life, positive heals, negative damages); Mana change is applied directly too (clamped between 0 and max Mana).",
       "LifeChangePerStack": "Life Change",
       "ManaChangePerStack": "Mana Change",
       "CustomLifeDamage": "{amount} damage",

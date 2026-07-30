@@ -684,7 +684,7 @@
             "StatModifiers": "Wertmodifikatoren (pro Stapel)",
             "StatModifiersHint": "Wird automatisch über einen echten Active Effect angewendet, solange dieser Status auf einem Akteur aktiv ist, skaliert mit der Stapelanzahl.",
             "TurnStartTicks": "Effekte zu Zugbeginn (pro Stapel)",
-            "TurnStartTicksHint": "Löst zu Beginn des eigenen Kampfzuges des Akteurs aus, skaliert mit der Stapelanzahl. Die Lebensänderung wird nur im Chat erzählt (positiv heilt, negativ verursacht Schaden); die Manaänderung wird direkt angewendet (begrenzt zwischen 0 und maximalem Mana).",
+            "TurnStartTicksHint": "Löst zu Beginn des eigenen Kampfzuges des Akteurs aus, skaliert mit der Stapelanzahl. Die Lebensänderung wird direkt angewendet (begrenzt zwischen 0 und maximalem Leben, positiv heilt, negativ verursacht Schaden); die Manaänderung wird ebenfalls direkt angewendet (begrenzt zwischen 0 und maximalem Mana).",
             "LifeChangePerStack": "Lebensänderung",
             "ManaChangePerStack": "Manaänderung",
             "CustomLifeDamage": "{amount} Schaden",
