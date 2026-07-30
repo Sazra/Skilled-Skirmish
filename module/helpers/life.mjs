@@ -181,7 +181,12 @@ export function getNegativeLifeBreakdown(actor) {
     subtotal,
     multiplier: {
       label: game.i18n.format('SKSK.Breakdown.ToughnessMultiplier', { level: tenacityLevel }),
-      factor: toughnessMultiplier,
+      // Only genuinely in effect for Negative Life when includeToughness
+      // is on (see computeMaxNegativeLife/withoutToughness below) - shown
+      // as ×1 otherwise so the tooltip's own "a ×1 multiplier changes
+      // nothing" rule hides it, rather than always displaying the
+      // Tenacity bonus even while its checkbox is off.
+      factor: includeToughness ? toughnessMultiplier : 1,
     },
     withoutToughness: Math.round(subtotal * (includeToughness ? toughnessMultiplier : 1)),
     withToughness: Math.round(subtotal * toughnessMultiplier + flatBonus),
