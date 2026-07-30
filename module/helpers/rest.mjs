@@ -90,6 +90,16 @@ export function computeRestPreview(actor, state) {
     ? Math.max(0, adrenalinCharges.max - adrenalinCharges.value)
     : 0;
 
+  const inspirationCharges = actor.system.inspirationCharges;
+  const inspirationChargesRestore = skillIntegrationUnlocked
+    ? Math.max(0, inspirationCharges.max - inspirationCharges.value)
+    : 0;
+
+  const luckCharges = actor.system.luckCharges;
+  const luckChargesRestore = skillIntegrationUnlocked
+    ? Math.max(0, luckCharges.max - luckCharges.value)
+    : 0;
+
   // Any qualifying Pause resets Adrenalin's used count (driving its future
   // (uses-1)d4 rolls) to 0 - but its Adrenalin Damage status (the max-Life
   // damage already dealt) is a separate thing, only ever REDUCED (not
@@ -119,6 +129,8 @@ export function computeRestPreview(actor, state) {
     adrenalinChargesRestore,
     adrenalinUsedCountToReset,
     adrenalinDamageToReduce,
+    inspirationChargesRestore,
+    luckChargesRestore,
   };
 }
 
@@ -143,8 +155,8 @@ export function computeRestPreview(actor, state) {
  * - Anpassungspause (>= 16 segments, sleeping): integrates every skill's
  *   pending "gain" into its real points; up to 1 Regeneration charge can
  *   heal 1 Exhaustion level; restores Meditation charges/Meditation
- *   skill level + 1; refills Adrenalin charges to max; reduces Adrenalin
- *   Damage by the Constitution modifier.
+ *   skill level + 1; refills Adrenalin/Inspiration/Luck charges to max;
+ *   reduces Adrenalin Damage by the Constitution modifier.
  * - Genesungspause (>= 32 segments, not required to be contiguous):
  *   restores Meditation charges/(2 + Meditation skill level * 2) instead
  *   (replacing, not stacking with, Anpassungspause's own restore);
@@ -250,10 +262,10 @@ export async function applyRest(actor, options) {
       }
       meditationCharges = newMeditationCharges;
 
-      // Adrenalin charges refill to max at Anpassungspause or higher (the
-      // used-count reset above applies at every tier, including
-      // Erholungspause). Adrenalin Damage - the max-Life damage already
-      // dealt - is instead only REDUCED here, by the Constitution
+      // Adrenalin/Inspiration/Luck charges refill to max at Anpassungspause
+      // or higher (the used-count reset above applies at every tier,
+      // including Erholungspause). Adrenalin Damage - the max-Life damage
+      // already dealt - is instead only REDUCED here, by the Constitution
       // modifier at Anpassungspause, or by whichever is higher between
       // Character level and Constitution modifier at Genesungspause
       // (replacing, not stacking with, Anpassungspause's own reduction).
@@ -261,6 +273,18 @@ export async function applyRest(actor, options) {
       if (adrenalinCharges.value !== adrenalinCharges.max) {
         updates['system.adrenalinCharges.value'] = adrenalinCharges.max;
         lines.push(game.i18n.format('SKSK.Rest.AdrenalinChargesRestored', { amount: adrenalinCharges.max - adrenalinCharges.value }));
+      }
+
+      const inspirationCharges = actor.system.inspirationCharges;
+      if (inspirationCharges.value !== inspirationCharges.max) {
+        updates['system.inspirationCharges.value'] = inspirationCharges.max;
+        lines.push(game.i18n.format('SKSK.Rest.InspirationChargesRestored', { amount: inspirationCharges.max - inspirationCharges.value }));
+      }
+
+      const luckCharges = actor.system.luckCharges;
+      if (luckCharges.value !== luckCharges.max) {
+        updates['system.luckCharges.value'] = luckCharges.max;
+        lines.push(game.i18n.format('SKSK.Rest.LuckChargesRestored', { amount: luckCharges.max - luckCharges.value }));
       }
 
       const conMod = actor.system.attributes?.con?.mod ?? 0;

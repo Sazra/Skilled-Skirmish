@@ -59,6 +59,12 @@
   {{#if adrenalinDamageToReduce}}
   <p class="rest-preview-line">{{localize 'SKSK.Rest.AdrenalinReductionPreview'}}: -{{adrenalinDamageToReduce}}</p>
   {{/if}}
+  {{#if inspirationChargesRestore}}
+  <p class="rest-preview-line">{{localize 'SKSK.Rest.InspirationRestorePreview'}}: +{{inspirationChargesRestore}}</p>
+  {{/if}}
+  {{#if luckChargesRestore}}
+  <p class="rest-preview-line">{{localize 'SKSK.Rest.LuckRestorePreview'}}: +{{luckChargesRestore}}</p>
+  {{/if}}
   {{/if}}
 
   {{#if regenerationRestoreUnlocked}}

@@ -242,6 +242,8 @@
       "MeditationRestorePreview": "Meditation Charges Restored",
       "RegenerationRestorePreview": "Regeneration Charges Restored",
       "AdrenalinRestorePreview": "Adrenalin Charges Restored",
+      "InspirationRestorePreview": "Inspiration Charges Restored",
+      "LuckRestorePreview": "Luck Charges Restored",
       "AdrenalinUsedCountResetPreview": "Used Adrenalin Count Reset",
       "AdrenalinReductionPreview": "Adrenalin Damage Reduced",
       "NegativeLifeHealHint": "Regeneration charges spent on healing also heal that much Negative Life.",
@@ -254,6 +256,8 @@
       "MeditationRestored": "Meditation Charges +{amount}",
       "RegenerationRestored": "Regeneration Charges +{amount}",
       "AdrenalinChargesRestored": "Adrenalin Charges +{amount}",
+      "InspirationChargesRestored": "Inspiration Charges +{amount}",
+      "LuckChargesRestored": "Luck Charges +{amount}",
       "AdrenalinUsedCountReset": "Used Adrenalin reset to 0 (was {amount})",
       "AdrenalinDamageReduced": "Adrenalin Damage -{amount}"
     },

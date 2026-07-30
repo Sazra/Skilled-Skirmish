@@ -242,6 +242,8 @@
             "MeditationRestorePreview": "Wiederhergestellte Meditationsladungen",
             "RegenerationRestorePreview": "Wiederhergestellte Regenerationsladungen",
             "AdrenalinRestorePreview": "Wiederhergestellte Adrenalinladungen",
+            "InspirationRestorePreview": "Wiederhergestellte Inspirationsladungen",
+            "LuckRestorePreview": "Wiederhergestellte Glücksladungen",
             "AdrenalinUsedCountResetPreview": "Benutztes Adrenalin zurückgesetzt",
             "AdrenalinReductionPreview": "Verringerter Adrenalinschaden",
             "NegativeLifeHealHint": "Für Heilung eingesetzte Regenerationsladungen heilen zusätzlich die gleiche Menge Negatives Leben.",
@@ -254,6 +256,8 @@
             "MeditationRestored": "Meditationsladungen +{amount}",
             "RegenerationRestored": "Regenerationsladungen +{amount}",
             "AdrenalinChargesRestored": "Adrenalinladungen +{amount}",
+            "InspirationChargesRestored": "Inspirationsladungen +{amount}",
+            "LuckChargesRestored": "Glücksladungen +{amount}",
             "AdrenalinUsedCountReset": "Benutztes Adrenalin auf 0 zurückgesetzt (war {amount})",
             "AdrenalinDamageReduced": "Adrenalinschaden -{amount}"
         },
