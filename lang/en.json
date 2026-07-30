@@ -679,6 +679,7 @@
       "FrostbiteDamage": "{amount} {type} damage",
       "WoundDamage": "{amount} damage from all Wounds",
       "NegativeLifeOverflow": "{amount} of that overflows into Negative Life",
+      "ConcentrationCheck": "Concentration check (DC {dc})",
       "RestrainedCheck": "Strength check (DC {dc})",
       "InstanceCount": "Instances",
       "AddInstance": "Add",
@@ -749,6 +750,26 @@
       "Cauterization": {
         "Name": "Cauterization",
         "Description": "Comes with a value that reduces max Life (like Max Life Damage, and Negative Life too once Tenacity's buffer is exhausted). A second application doesn't stack separately - it merges into the existing value instead."
+      },
+      "Charmed": {
+        "Name": "Charmed",
+        "Description": "This creature has been charmed by another creature. It can't attack the source of this status effect, nor target it with negative spells or other negative effects. The source of this status effect has advantage on all rolls resulting from a social interaction with this creature."
+      },
+      "Feared": {
+        "Name": "Fear",
+        "Description": "This creature is in a state of panicked fear of something or someone. It can't voluntarily move closer to the source of this status effect, and suffers disadvantage on all rolls while it can see, hear, or otherwise perceive the source."
+      },
+      "Petrified": {
+        "Name": "Petrified",
+        "Description": "This creature has been petrified. While this status effect applies, this creature and everything it's carrying turns to magical stone. While petrified, its weight increases tenfold and it stops aging. It is completely immobile, can't speak, and perceives nothing of its surroundings. It is immune to Poison damage and Poisoning; if it was already poisoned before this status effect took effect, the poisoning isn't cured, only paused. Should this creature be forced to make Strength, Dexterity, sight-based Wisdom, or Charisma checks, they automatically fail (this doesn't count as a critical failure). This creature takes halved damage from all sources except Aether, Earth, and Blunt damage while petrified, and attacks against it are always made with advantage."
+      },
+      "Blind": {
+        "Name": "Blind",
+        "Description": "This creature is blind in at least one eye. If blind in only one eye, it has disadvantage on Wisdom checks and attack rolls. If completely blind, sight-based Wisdom checks and ranged attacks automatically fail; melee attacks still only have disadvantage."
+      },
+      "Concentration": {
+        "Name": "Concentration",
+        "Description": "This creature is concentrating on a task. If it takes damage, it must pass a Concentration check (1d20 + Constitution modifier + Concentration skill level) against a DC of (damage / 2, minimum 5), or its concentration breaks (this status effect is removed). Multiple \"damage at the start of the turn\" sources are summed together and checked only once per round."
       }
     },
     "Models": {

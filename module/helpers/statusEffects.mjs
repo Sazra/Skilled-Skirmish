@@ -1,5 +1,6 @@
 import { postActionChatCard } from './actions.mjs';
 import { getClassAbilityLevels, actorHasAdvancedClass } from './abilities.mjs';
+import { getActorSkillLevel } from './skills.mjs';
 
 /**
  * Movement types (CONFIG.SKSK.movementTypes) Dazed does NOT reduce.
@@ -170,6 +171,20 @@ async function applyLifeChange(actor, delta) {
 function negativeLifeOverflowHTML(negativeLifeDelta) {
   if (!negativeLifeDelta) return '';
   return `<div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.NegativeLifeOverflow', { amount: negativeLifeDelta })}</div>`;
+}
+
+/**
+ * How much actual damage a single applyLifeChange call dealt (Life
+ * consumed plus any Negative Life overflow, combined into one positive
+ * magnitude) - 0 for a pure heal. Used to accumulate a Combat turn's total
+ * damage for Concentration's check (see checkConcentration), which sums
+ * every turn-start Life-damage source together rather than checking once
+ * per source.
+ * @param {{lifeDelta: number, negativeLifeDelta: number}} change
+ * @return {number}
+ */
+function damageDealtFrom({ lifeDelta, negativeLifeDelta }) {
+  return Math.max(0, -lifeDelta) + negativeLifeDelta;
 }
 
 /**
@@ -633,9 +648,11 @@ async function handleDazedTurnStart(actor) {
  * recheck (Mild has none to reschedule - it always triggers).
  * @param {Actor} actor
  * @param {number} round
- * @return {Promise<void>}
+ * @return {Promise<number>} Total damage dealt across every severity this
+ *   call, for Concentration's check (see checkConcentration).
  */
 async function handlePoisonTurnStart(actor, round) {
+  let totalDamage = 0;
   for (const [severityId, def] of Object.entries(CONFIG.SKSK.poisonSeverities)) {
     const effect = getStatusEffect(actor, severityId);
     if (!effect) continue;
@@ -645,7 +662,9 @@ async function handlePoisonTurnStart(actor, round) {
     if (!triggers) continue;
 
     const damageRoll = await new Roll(`1d${def.damageDie}`, actor.getRollData()).evaluate();
-    const { negativeLifeDelta } = await applyLifeChange(actor, -damageRoll.total);
+    const lifeChange = await applyLifeChange(actor, -damageRoll.total);
+    const { negativeLifeDelta } = lifeChange;
+    totalDamage += damageDealtFrom(lifeChange);
     const conMod = actor.system.attributes?.con?.mod ?? 0;
     const checkFormula = applyD20Malus(`1d20 + ${conMod}`, actor, 'con');
     const checkRoll = await new Roll(checkFormula, actor.getRollData()).evaluate();
@@ -666,6 +685,7 @@ async function handlePoisonTurnStart(actor, round) {
     `;
     await postActionChatCard(actor, getStatusEffectName(severityId), damageRoll, 0, extraHTML);
   }
+  return totalDamage;
 }
 
 /**
@@ -673,18 +693,20 @@ async function handlePoisonTurnStart(actor, round) {
  * applied directly to system.life.value (clamped to [0, max]), regardless
  * of its own stack count - see computeFrostbiteDamage.
  * @param {Actor} actor
- * @return {Promise<void>}
+ * @return {Promise<number>} Damage dealt, for Concentration's check (see
+ *   checkConcentration).
  */
 async function handleFrostbiteTurnStart(actor) {
-  if (getStatusStacks(actor, 'frostbite') <= 0) return;
+  if (getStatusStacks(actor, 'frostbite') <= 0) return 0;
   const damage = computeFrostbiteDamage(actor);
-  const { negativeLifeDelta } = await applyLifeChange(actor, -damage);
+  const lifeChange = await applyLifeChange(actor, -damage);
   const typeLabel = game.i18n.localize(CONFIG.SKSK.damageTypes.cold);
   const extraHTML = `
     <div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.FrostbiteDamage', { amount: damage, type: typeLabel })}</div>
-    ${negativeLifeOverflowHTML(negativeLifeDelta)}
+    ${negativeLifeOverflowHTML(lifeChange.negativeLifeDelta)}
   `;
   await postActionChatCard(actor, getStatusEffectName('frostbite'), null, 0, extraHTML);
+  return damageDealtFrom(lifeChange);
 }
 
 /**
@@ -692,17 +714,19 @@ async function handleFrostbiteTurnStart(actor) {
  * every Wound instance currently on the actor, applied directly to
  * system.life.value (clamped to [0, max]).
  * @param {Actor} actor
- * @return {Promise<void>}
+ * @return {Promise<number>} Damage dealt, for Concentration's check (see
+ *   checkConcentration).
  */
 async function handleWoundTurnStart(actor) {
   const total = getStatusInstancesTotal(actor, 'wound');
-  if (!total) return;
-  const { negativeLifeDelta } = await applyLifeChange(actor, -total);
+  if (!total) return 0;
+  const lifeChange = await applyLifeChange(actor, -total);
   const extraHTML = `
     <div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.WoundDamage', { amount: total })}</div>
-    ${negativeLifeOverflowHTML(negativeLifeDelta)}
+    ${negativeLifeOverflowHTML(lifeChange.negativeLifeDelta)}
   `;
   await postActionChatCard(actor, getStatusEffectName('wound'), null, 0, extraHTML);
+  return damageDealtFrom(lifeChange);
 }
 
 /**
@@ -716,17 +740,21 @@ async function handleWoundTurnStart(actor) {
  * system.mana.value (clamped to [0, max]), matching Mana's other automatic
  * regeneration paths (Meditation, Rest).
  * @param {Actor} actor
- * @return {Promise<void>}
+ * @return {Promise<number>} Total Life damage dealt across every custom
+ *   definition this call (healing doesn't count), for Concentration's
+ *   check (see checkConcentration).
  */
 async function handleCustomTurnStart(actor) {
+  let totalDamage = 0;
   for (const def of getStatusEffectDefinitions()) {
     if (def.predefined) continue;
     const stacks = getStatusStacks(actor, def.id);
     if (stacks <= 0) continue;
 
-    const lifeChange = (Number(def.lifeChangePerStack) || 0) * stacks;
-    if (lifeChange) {
-      const { lifeDelta, negativeLifeDelta } = await applyLifeChange(actor, lifeChange);
+    const requestedLifeChange = (Number(def.lifeChangePerStack) || 0) * stacks;
+    if (requestedLifeChange) {
+      const lifeChange = await applyLifeChange(actor, requestedLifeChange);
+      const { lifeDelta, negativeLifeDelta } = lifeChange;
       const total = lifeDelta - negativeLifeDelta;
       if (total) {
         const key = total > 0 ? 'SKSK.StatusEffect.CustomLifeHealing' : 'SKSK.StatusEffect.CustomLifeDamage';
@@ -736,6 +764,7 @@ async function handleCustomTurnStart(actor) {
         `;
         await postActionChatCard(actor, getStatusEffectName(def.id), null, 0, extraHTML);
       }
+      totalDamage += damageDealtFrom(lifeChange);
     }
 
     const manaChange = (Number(def.manaChangePerStack) || 0) * stacks;
@@ -751,6 +780,7 @@ async function handleCustomTurnStart(actor) {
       }
     }
   }
+  return totalDamage;
 }
 
 /**
@@ -772,21 +802,55 @@ async function handleRestrainedTurnEnd(actor) {
 }
 
 /**
+ * Concentration's own damage-response check - exported for reuse anywhere
+ * else in the system that deals real damage to an actor (not just the
+ * turn-start sources below), per the "implement this in the background,
+ * we'll use it in various places" requirement. A no-op if the actor isn't
+ * Concentrating or no damage was actually dealt. DC is (damage / 2,
+ * rounded down, minimum 5); the roll is 1d20 + Constitution modifier +
+ * Concentration skill level. Failure breaks Concentration outright
+ * (removes the status); success leaves it in place.
+ * @param {Actor} actor
+ * @param {number} damage
+ * @return {Promise<void>}
+ */
+export async function checkConcentration(actor, damage) {
+  if (damage <= 0 || getStatusStacks(actor, 'concentration') <= 0) return;
+
+  const dc = Math.max(5, Math.floor(damage / 2));
+  const conMod = actor.system.attributes?.con?.mod ?? 0;
+  const concentrationLevel = getActorSkillLevel(actor, 'concentration');
+  const formula = applyD20Malus(`1d20 + ${conMod} + ${concentrationLevel}`, actor, 'con');
+  const roll = await new Roll(formula, actor.getRollData()).evaluate();
+  const success = roll.total >= dc;
+
+  if (!success) await setStatusStacks(actor, 'concentration', 0);
+
+  const outcome = game.i18n.localize(success ? 'SKSK.Spell.Roll.Success' : 'SKSK.Spell.Roll.Failure');
+  const extraHTML = `<div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.ConcentrationCheck', { dc })}: ${outcome}</div>`;
+  await postActionChatCard(actor, getStatusEffectName('concentration'), roll, 0, extraHTML);
+}
+
+/**
  * Called once for whichever actor's Combat turn is beginning (see the
  * "combatTurnChange" hook in sksk.mjs) - runs Dazed's AP drain, every active
  * Poison severity's damage/check cycle, Frostbite's damage tick, Wound's
- * summed damage, custom status effects' own Life/Mana turn-start ticks, and
- * Restrained's automatic escape check (if timed to "start").
+ * summed damage, custom status effects' own Life/Mana turn-start ticks,
+ * Concentration's check against however much of that combined damage
+ * actually landed (checked once for the round's total, not once per
+ * source), and Restrained's automatic escape check (if timed to "start").
  * @param {Actor} actor
  * @param {number} round
  * @return {Promise<void>}
  */
 export async function handleCombatTurnStart(actor, round) {
   await handleDazedTurnStart(actor);
-  await handlePoisonTurnStart(actor, round);
-  await handleFrostbiteTurnStart(actor);
-  await handleWoundTurnStart(actor);
-  await handleCustomTurnStart(actor);
+  let totalDamage = 0;
+  totalDamage += await handlePoisonTurnStart(actor, round);
+  totalDamage += await handleFrostbiteTurnStart(actor);
+  totalDamage += await handleWoundTurnStart(actor);
+  totalDamage += await handleCustomTurnStart(actor);
+  await checkConcentration(actor, totalDamage);
   await handleRestrainedTurnStart(actor);
 }
 

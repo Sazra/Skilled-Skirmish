@@ -679,6 +679,7 @@
             "FrostbiteDamage": "{amount} {type}-Schaden",
             "WoundDamage": "{amount} Schaden durch alle Wunden",
             "NegativeLifeOverflow": "{amount} davon geht in das negative Leben über",
+            "ConcentrationCheck": "Konzentrations-Check (SG {dc})",
             "RestrainedCheck": "Stärke-Check (SG {dc})",
             "InstanceCount": "Instanzen",
             "AddInstance": "Hinzufügen",
@@ -749,6 +750,26 @@
             "Cauterization": {
                 "Name": "Kauterisierung",
                 "Description": "Kommt mit einem Wert, der das maximale Leben reduziert (wie Schaden am maximalen Leben, und das maximale Negative Leben ebenso, sobald der Zähigkeits-Puffer aufgebraucht ist). Eine weitere Anwendung stapelt nicht separat - sie erhöht stattdessen den bestehenden Wert."
+            },
+            "Charmed": {
+                "Name": "Bezaubert",
+                "Description": "Diese Kreatur wurde von einer anderen Kreatur gecharmed. Sie kann den Ursprung dieses Statuseffekts nicht angreifen und nicht mit negativen Zaubern oder anderen negativen Effekten belegen. Die Quelle des Statuseffekts hat Vorteil auf alle Würfe, die sich in Folge einer sozialen Auseinandersetzung mit dieser Kreatur ergeben."
+            },
+            "Feared": {
+                "Name": "Angst",
+                "Description": "Diese Kreatur hat panische Angst vor etwas oder jemanden. Sie kann sich nicht freiwillig der Quelle dieses Statuseffekts nähern und erleidet Nachteil auf alle Würfe, während sie die Quelle sehen, hören oder sonstwie wahrnehmen kann."
+            },
+            "Petrified": {
+                "Name": "Versteinert",
+                "Description": "Diese Kreatur wurde versteinert. Solange dieser Statuseffekt gilt, wird diese Kreatur und alles was sie an sich trägt zu magischem Stein. Während sie versteinert ist, erhöht sich das Gewicht dieser Kreatur um das Zehnfache und sie hört auf zu altern. Sie ist komplett unbeweglich, kann nicht sprechen und bekommt nichts von ihrer Umgebung mit. Sie ist immun gegen Giftschaden und Vergiftungen; sollte sie vor dem Inkrafttreten dieses Statuseffekts vergiftet worden sein, wird die Vergiftung nicht aufgehoben, sondern lediglich pausiert. Sollte diese Kreatur gezwungen sein, Stärke-, Geschicklichkeits-, auf Sicht basierende Weisheits- oder Charismawürfe zu machen, schlagen diese automatisch fehl (dies gilt jedoch nicht als kritischer Fehler). Diese Kreatur nimmt während der Versteinerung halbierten Schaden aus allen Quellen außer Äther-, Erd- und Schlagschaden, und Angriffe gegen diese Kreatur werden immer mit Vorteil gemacht."
+            },
+            "Blind": {
+                "Name": "Blind",
+                "Description": "Diese Kreatur ist blind auf mindestens einem Auge. Ist sie nur auf einem Auge blind, erhält sie Nachteil auf Weisheitswürfe und Angriffswürfe. Ist sie komplett blind, schlagen auf Sicht basierende Weisheitswürfe und Fernkampfangriffe automatisch fehl; Nahkampfangriffe besitzen weiterhin nur Nachteil."
+            },
+            "Concentration": {
+                "Name": "Konzentration",
+                "Description": "Diese Kreatur konzentriert sich auf eine Aufgabe. Erleidet sie Schaden, muss sie einen Konzentrations-Check (1W20 + Konstitutionsmodifikator + Fertigkeitsstufe Konzentration) gegen eine Schwierigkeit von (Schaden / 2, mindestens 5) bestehen, sonst bricht ihre Konzentration (dieser Statuseffekt wird entfernt). Mehrere \"Schaden am Anfang des Zuges\"-Quellen werden für diesen Check in derselben Runde zusammengerechnet und nur einmal geprüft."
             }
         },
         "Models": {

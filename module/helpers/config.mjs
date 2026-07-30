@@ -117,6 +117,26 @@ SKSK.predefinedStatusEffects = [
     id: 'cauterization', img: 'icons/svg/fire.svg',
     nameKey: 'SKSK.StatusEffect.Cauterization.Name', descriptionKey: 'SKSK.StatusEffect.Cauterization.Description',
   },
+  {
+    id: 'charmed', img: 'icons/svg/eye.svg',
+    nameKey: 'SKSK.StatusEffect.Charmed.Name', descriptionKey: 'SKSK.StatusEffect.Charmed.Description',
+  },
+  {
+    id: 'feared', img: 'icons/svg/terror.svg',
+    nameKey: 'SKSK.StatusEffect.Feared.Name', descriptionKey: 'SKSK.StatusEffect.Feared.Description',
+  },
+  {
+    id: 'petrified', img: 'icons/svg/statue.svg',
+    nameKey: 'SKSK.StatusEffect.Petrified.Name', descriptionKey: 'SKSK.StatusEffect.Petrified.Description',
+  },
+  {
+    id: 'blind', img: 'icons/svg/blind.svg',
+    nameKey: 'SKSK.StatusEffect.Blind.Name', descriptionKey: 'SKSK.StatusEffect.Blind.Description',
+  },
+  {
+    id: 'concentration', img: 'icons/svg/aura.svg',
+    nameKey: 'SKSK.StatusEffect.Concentration.Name', descriptionKey: 'SKSK.StatusEffect.Concentration.Description',
+  },
 ];
 
 // Restrained's own escape-check timing choices - see
