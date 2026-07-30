@@ -261,6 +261,17 @@
             "AdrenalinUsedCountReset": "Benutztes Adrenalin auf 0 zurückgesetzt (war {amount})",
             "AdrenalinDamageReduced": "Adrenalinschaden -{amount}"
         },
+        "AttackRoll": {
+            "Attack": "Angriff",
+            "RollA": "Wurf A",
+            "RollB": "Wurf B",
+            "Evaluate": "Treffer auswerten",
+            "NoDefender": "Du hast weder ein Ziel ausgewählt noch einen zugewiesenen Charakter - kann nicht ausgewertet werden.",
+            "EvaluationTitle": "Trefferauswertung ({defender})",
+            "EvaluationLine": "{label} ({total}) gegen {statLabel} ({statValue}): {outcome}",
+            "Hit": "Treffer",
+            "Miss": "Verfehlt"
+        },
         "Gender": {
             "Male": "Männlich",
             "Female": "Weiblich",
@@ -809,7 +820,10 @@
             "NoModel": "Keins",
             "WeaponType": "Waffenart",
             "ArmorType": "Rüstungsart",
-            "PropertyOverrides": "Eigenschaften-Anpassungen"
+            "PropertyOverrides": "Eigenschaften-Anpassungen",
+            "AttributeOverride": "Attribut-Überschreibung",
+            "AttributeOverrideHint": "Der Angriffsbonus dieser Waffe durch Attribute stammt normalerweise aus den genutzten Attributsmodifikatoren ihres Modells. Aktiviere dies für eine einzigartige Variante dieses Modells, die stattdessen andere Attribute nutzen soll.",
+            "AttributeOverrideEnabled": "Attribute dieser Waffe überschreiben"
         },
         "ModelProperty": {
             "Heavy": {

@@ -6,10 +6,12 @@ import { preloadHandlebarsTemplates } from './helpers/templates.mjs';
 import { SKSK } from './helpers/config.mjs';
 import { registerSettings } from './helpers/settings.mjs';
 import { rollSavingThrowFromChat } from './helpers/spell-rolls.mjs';
+import { resolveHitEvaluationFromChat } from './helpers/attackRolls.mjs';
 import { computeSpeciesAura } from './helpers/attributes.mjs';
 import {
   ensurePredefinedStatusEffects, registerConfigStatusEffects, handleCombatTurnStart, handleCombatTurnEnd,
 } from './helpers/statusEffects.mjs';
+import { clampSingleAttributeSelection } from './helpers/models.mjs';
 import * as models from './data/_module.mjs';
 
 Hooks.once('init', function () {
@@ -99,6 +101,43 @@ Hooks.once('ready', async function () {
     if (!button) return;
     event.preventDefault();
     rollSavingThrowFromChat(button.dataset.itemUuid, Number(button.dataset.saveIndex));
+  });
+
+  // Angriffswurf (attack roll) chat cards' "Evaluate" button - see
+  // helpers/attackRolls.mjs#resolveHitEvaluationFromChat.
+  document.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-action="resolveHitEvaluation"]');
+    if (!button) return;
+    event.preventDefault();
+    resolveHitEvaluationFromChat(button);
+  });
+
+  // A weapon's attributeOverride enforces the same single-attribute rule
+  // as its Weapon Model (see helpers/models.mjs#clampSingleAttributeSelection)
+  // unless Refined or Masterful is active - a Weapon Model is a plain world
+  // setting whose own config app clamps it directly (models-config.mjs),
+  // but a weapon Item is a real embedded Document, so this clamps the
+  // incoming change itself before it commits. Runs only on the initiating
+  // client (preUpdate hooks aren't broadcast), so no game.user.id guard is
+  // needed here unlike the post-update hooks below.
+  Hooks.on('preUpdateItem', (item, changes, options, userId) => {
+    if (item.type !== 'weapon') return;
+    const incoming = foundry.utils.getProperty(changes, 'system.attributeOverride.attributes');
+    if (!incoming) return;
+
+    const properties = item.system.effectiveProperties?.map(p => p.property) ?? [];
+    const previousAttributes = Object.entries(item.system.attributeOverride?.attributes ?? {})
+      .filter(([, checked]) => checked).map(([key]) => key);
+    const submittedAttributes = Object.entries({ ...item.system.attributeOverride?.attributes, ...incoming })
+      .filter(([, checked]) => checked).map(([key]) => key);
+
+    const clamped = clampSingleAttributeSelection(submittedAttributes, properties, previousAttributes);
+    if (clamped.length === submittedAttributes.length && clamped.every(key => submittedAttributes.includes(key))) return;
+
+    const clampedMap = Object.fromEntries(
+      ['str', 'dex', 'con', 'per', 'wil', 'aur', 'cha', 'app'].map(key => [key, clamped.includes(key)])
+    );
+    foundry.utils.setProperty(changes, 'system.attributeOverride.attributes', clampedMap);
   });
 
   // Aura is otherwise a normal user-editable attribute, but the moment a

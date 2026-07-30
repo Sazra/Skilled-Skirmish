@@ -1,4 +1,4 @@
-import { getWeaponModels, getArmorModels, getModelPropertiesFor } from '../helpers/models.mjs';
+import { getWeaponModels, getArmorModels, getModelPropertiesFor, clampSingleAttributeSelection } from '../helpers/models.mjs';
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
@@ -183,19 +183,25 @@ export class SKSKModelsConfig extends HandlebarsApplicationMixin(ApplicationV2) 
     const expanded = foundry.utils.expandObject(formData.object);
     const existingWeaponModels = getWeaponModels();
     const existingArmorModels = getArmorModels();
-    const weaponModels = Object.entries(expanded.weaponModels ?? {}).map(([index, m]) => ({
-      name: m.name ?? '',
-      weaponType: existingWeaponModels[index]?.weaponType ?? 'axe',
-      diceFormula: m.diceFormula ?? '',
-      flatBonus: Number(m.flatBonus) || 0,
-      attributes: selectedKeys(m.attributes),
-      properties: selectedKeys(m.properties),
-      heavyRequirement: Number(m.heavyRequirement) || 0,
-      demandingRequirement: Number(m.demandingRequirement) || 0,
-      drainingRequirement: Number(m.drainingRequirement) || 0,
-      reachRange: Number(m.reachRange) || 0,
-      rangedRange: Number(m.rangedRange) || 0,
-    }));
+    const weaponModels = Object.entries(expanded.weaponModels ?? {}).map(([index, m]) => {
+      const properties = selectedKeys(m.properties);
+      const attributes = clampSingleAttributeSelection(
+        selectedKeys(m.attributes), properties, existingWeaponModels[index]?.attributes ?? []
+      );
+      return {
+        name: m.name ?? '',
+        weaponType: existingWeaponModels[index]?.weaponType ?? 'axe',
+        diceFormula: m.diceFormula ?? '',
+        flatBonus: Number(m.flatBonus) || 0,
+        attributes,
+        properties,
+        heavyRequirement: Number(m.heavyRequirement) || 0,
+        demandingRequirement: Number(m.demandingRequirement) || 0,
+        drainingRequirement: Number(m.drainingRequirement) || 0,
+        reachRange: Number(m.reachRange) || 0,
+        rangedRange: Number(m.rangedRange) || 0,
+      };
+    });
     const armorModels = Object.entries(expanded.armorModels ?? {}).map(([index, m]) => ({
       name: m.name ?? '',
       armorType: existingArmorModels[index]?.armorType ?? 'lightArmor',

@@ -172,7 +172,7 @@ const COST_REDUCTION_ITEM_TYPES = ['talent', 'class', 'species', 'item', 'armor'
  * @param {object} spellSystem
  * @return {string}
  */
-function getSpellSchool(spellSystem) {
+export function getSpellSchool(spellSystem) {
   if (spellSystem.spellType === 'simple' || spellSystem.spellType === 'advanced') return spellSystem.magicSchool;
   if (spellSystem.spellType === 'combined') return spellSystem.combinedSchool;
   return spellSystem.systemlessCategory;

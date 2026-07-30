@@ -1,4 +1,5 @@
 import { rollSpellItem } from '../helpers/spell-rolls.mjs';
+import { rollWeaponItem } from '../helpers/actions.mjs';
 
 /**
  * Extend the basic Item document.
@@ -21,6 +22,7 @@ export class SKSKItem extends Item {
   /** @override */
   async roll() {
     if (this.type === 'spell') return rollSpellItem(this);
+    if (this.type === 'weapon') return rollWeaponItem(this);
 
     const item = this;
     const speaker = ChatMessage.getSpeaker({ actor: this.actor });

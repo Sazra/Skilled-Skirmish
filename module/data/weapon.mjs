@@ -96,6 +96,18 @@ export default class SKSKWeapon extends SKSKItemBase {
       mode: new fields.StringField({ required: true, blank: false, initial: "add", choices: ["add", "remove"] }),
       value: new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 }),
     }));
+    // Per-item override of the Model's shared `attributes` list - e.g. a
+    // unique variant of a Model normally shared by many weapons. When
+    // disabled (the default), this weapon's Angriffswurf (attack roll)
+    // attribute bonus is computed from its resolvedModel's own attributes
+    // instead - see helpers/attackRolls.mjs#getWeaponAttributeKeys. Keys
+    // hardcoded (same reasoning as weaponType above).
+    schema.attributeOverride = new fields.SchemaField({
+      enabled: new fields.BooleanField({ initial: false }),
+      attributes: new fields.SchemaField(Object.fromEntries(
+        ["str", "dex", "con", "per", "wil", "aur", "cha", "app"].map(key => [key, new fields.BooleanField({ initial: false })])
+      )),
+    });
 
     return schema;
   }

@@ -2,6 +2,7 @@ import { getActorSkillLevel } from "./skills.mjs";
 import { getClassAbilityLevels, actorHasAdvancedClass } from "./abilities.mjs";
 import { computeMovementSpeeds } from "./movement.mjs";
 import { canUseWeaponAttack, canMove, applyAdrenalinDamage } from "./statusEffects.mjs";
+import { computeWeaponAttackBonus, computeMartialArtsAttackBonus, rollAttackPair, renderAttackPairHTML } from "./attackRolls.mjs";
 
 /**
  * Post a simple chat card (an optional Roll, an AP-cost line, and a
@@ -26,6 +27,47 @@ export async function postActionChatCard(actor, title, roll, apCost, extraHTML =
     flavor: title,
     content: `<div class="sksk-chat-card sksk-action-card">${parts.join('')}</div>`,
     rolls: roll ? [roll] : [],
+  };
+  ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));
+  return ChatMessage.create(messageData);
+}
+
+/**
+ * Roll a weapon item: its Angriffswurf (attack roll) - two d20s plus
+ * computeWeaponAttackBonus, see helpers/attackRolls.mjs - followed by its
+ * existing damage formula (or plain description, if it has no formula),
+ * both in one chat card. See documents/item.mjs#roll, which routes every
+ * weapon-type Item here (mirrors the existing spell-type routing to
+ * helpers/spell-rolls.mjs#rollSpellItem).
+ * @param {Item} item   The weapon item being used.
+ * @return {Promise<ChatMessage>}
+ */
+export async function rollWeaponItem(item) {
+  const actor = item.actor;
+  const parts = [];
+
+  if (actor) {
+    const attackBonus = computeWeaponAttackBonus(actor, item);
+    const rolls = await rollAttackPair(attackBonus, actor);
+    const rendered = await renderAttackPairHTML(rolls, 'armorClass');
+    parts.push(`<div class="sksk-roll-attack"><strong>${game.i18n.localize('SKSK.AttackRoll.Attack')}</strong></div>${rendered}`);
+  }
+
+  if (item.system.formula) {
+    const roll = await new Roll(item.system.formula, item.getRollData()).evaluate();
+    const rendered = await roll.render();
+    parts.push(`<div class="sksk-roll-line"><strong>${game.i18n.localize('SKSK.Spell.Roll.Damage')}</strong></div>${rendered}`);
+  } else if (item.system.description) {
+    const descriptionHTML = await foundry.applications.ux.TextEditor.implementation.enrichHTML(
+      item.system.description ?? '', { relativeTo: item, secrets: item.isOwner }
+    );
+    parts.push(`<div class="sksk-roll-description">${descriptionHTML}</div>`);
+  }
+
+  const messageData = {
+    speaker: ChatMessage.getSpeaker({ actor }),
+    flavor: item.name,
+    content: `<div class="sksk-chat-card sksk-action-card">${parts.join('')}</div>`,
   };
   ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));
   return ChatMessage.create(messageData);
@@ -85,9 +127,12 @@ function resolveMartialArtsAttributeBonus(actor, attributes, attributeUsage) {
 
 /**
  * Roll one of the actor's GM-defined Martial Arts Attacks (see
- * data/actor-base.mjs#martialArtsAttacks): its own dice formula plus the
- * attribute bonus resolved per its attributeUsage, deducting its own AP
- * cost.
+ * data/actor-base.mjs#martialArtsAttacks): its Angriffswurf (attack roll -
+ * two d20s plus computeMartialArtsAttackBonus, see helpers/attackRolls.mjs)
+ * followed by its own dice formula plus the attribute bonus resolved per
+ * its own attributeUsage (a separate rule from the attack roll's own
+ * attribute bonus - attributeUsage only ever governed this damage roll),
+ * deducting its own AP cost.
  * @param {Actor} actor
  * @param {number} index   Index into actor.system.martialArtsAttacks.
  * @return {Promise<ChatMessage|void>}
@@ -100,12 +145,28 @@ export async function rollMartialArtsAttack(actor, index) {
   }
   if (!hasEnoughActionPoints(actor, attack.apCost)) return;
 
+  const attackBonus = computeMartialArtsAttackBonus(actor, attack);
+  const rolls = await rollAttackPair(attackBonus, actor);
+  const attackHTML = `<div class="sksk-roll-attack"><strong>${game.i18n.localize('SKSK.AttackRoll.Attack')}</strong></div>${await renderAttackPairHTML(rolls, 'armorClass')}`;
+
   const bonus = resolveMartialArtsAttributeBonus(actor, attack.attributes, attack.attributeUsage);
   const formula = bonus ? `${attack.formula} + ${bonus}` : attack.formula;
   const roll = await new Roll(formula, actor.getRollData()).evaluate();
+  const renderedDamage = await roll.render();
 
   await actor.update(spendActionPoints(actor, attack.apCost));
-  return postActionChatCard(actor, attack.name || game.i18n.localize('SKSK.Action.MartialArtsAttack'), roll, attack.apCost);
+
+  const apCostHTML = attack.apCost
+    ? `<div class="sksk-roll-ap-cost"><strong>${game.i18n.localize('SKSK.Spell.APCost')}:</strong> ${attack.apCost}</div>`
+    : '';
+  const messageData = {
+    speaker: ChatMessage.getSpeaker({ actor }),
+    flavor: attack.name || game.i18n.localize('SKSK.Action.MartialArtsAttack'),
+    content: `<div class="sksk-chat-card sksk-action-card">${attackHTML}${renderedDamage}${apCostHTML}</div>`,
+    rolls: [roll],
+  };
+  ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));
+  return ChatMessage.create(messageData);
 }
 
 /**

@@ -38,6 +38,32 @@ export function getArmorModel(name) {
 }
 
 /**
+ * Enforce a Weapon Model/weapon Item's own attribute-selection rule for
+ * its Angriffswurf (attack roll) attribute bonus (see helpers/
+ * attackRolls.mjs#computeWeaponAttackBonus): normally only one attribute
+ * may be selected at a time (same as the Specialized property's own
+ * behavior, just without its doubling) - Refined and Masterful are the
+ * only two properties that allow multiple. Diffing the newly-submitted
+ * selection against the previously-stored one identifies whichever single
+ * checkbox the user just clicked, so checking a new attribute correctly
+ * deselects whichever was checked before (per-request behavior, not just
+ * a hard cap) - falls back to keeping the first if nothing looks "newly
+ * checked" (e.g. Specialized/no-property just got toggled on while
+ * several were already selected).
+ * @param {string[]} attributes    The newly-submitted selection.
+ * @param {string[]} properties    That same Model/weapon's own effective
+ *   properties (property keys only).
+ * @param {string[]} previousAttributes   The selection before this change.
+ * @return {string[]}
+ */
+export function clampSingleAttributeSelection(attributes, properties, previousAttributes) {
+  if (properties.includes('refined') || properties.includes('masterful')) return attributes;
+  if (attributes.length <= 1) return attributes;
+  const newlyChecked = attributes.filter(key => !previousAttributes.includes(key));
+  return newlyChecked.length ? [newlyChecked[newlyChecked.length - 1]] : [attributes[0]];
+}
+
+/**
  * Whether a CONFIG.SKSK.modelProperties entry can be granted via a Model -
  * true unless its own "sources" list is set and excludes "model" (most
  * properties are Model-only and don't set "sources" at all).

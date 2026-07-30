@@ -261,6 +261,17 @@
       "AdrenalinUsedCountReset": "Used Adrenalin reset to 0 (was {amount})",
       "AdrenalinDamageReduced": "Adrenalin Damage -{amount}"
     },
+    "AttackRoll": {
+      "Attack": "Attack",
+      "RollA": "Roll A",
+      "RollB": "Roll B",
+      "Evaluate": "Evaluate Hit",
+      "NoDefender": "You have no target selected and no assigned character - cannot evaluate.",
+      "EvaluationTitle": "Hit Evaluation ({defender})",
+      "EvaluationLine": "{label} ({total}) vs {statLabel} ({statValue}): {outcome}",
+      "Hit": "Hit",
+      "Miss": "Miss"
+    },
     "Gender": {
       "Male": "Male",
       "Female": "Female",
@@ -809,7 +820,10 @@
       "NoModel": "None",
       "WeaponType": "Weapon Type",
       "ArmorType": "Armor Type",
-      "PropertyOverrides": "Property Overrides"
+      "PropertyOverrides": "Property Overrides",
+      "AttributeOverride": "Attribute Override",
+      "AttributeOverrideHint": "This weapon's Angriffswurf (attack roll) attribute bonus normally draws from its Model's own Attribute Modifiers Used. Enable this for a unique variant of that Model that should use different attributes instead.",
+      "AttributeOverrideEnabled": "Override this weapon's attributes"
     },
     "ModelProperty": {
       "Heavy": {

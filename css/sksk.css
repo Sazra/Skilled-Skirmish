@@ -1121,6 +1121,25 @@
   line-height: normal;
 }
 
+/* Angriffswurf (attack roll): two independent d20s shown side by side,
+   never combined into one - see helpers/attackRolls.mjs. */
+.sksk-chat-card .sksk-attack-roll-pair {
+  display: flex;
+  gap: 8px;
+  margin: 4px 0;
+}
+
+.sksk-chat-card .sksk-attack-roll-single {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.sksk-chat-card .sksk-roll-hit-eval {
+  width: auto;
+  line-height: normal;
+  margin: 2px 0 6px;
+}
+
 /* General tab: horizontal movement-speed list, and a two-column layout
    with favorite skills on the left, custom resources on the right. */
 .sksk .movement-speed-entry {

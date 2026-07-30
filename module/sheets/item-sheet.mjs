@@ -348,6 +348,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       const effective = item.system.effectiveProperties ?? [];
       context.effectivePropertyKeys = effective.map(e => e.property);
       context.effectivePropertyValues = Object.fromEntries(effective.map(e => [e.property, e.value ?? 0]));
+      context.attributeChoices = CONFIG.SKSK.attributes;
     }
 
     if (item.type === 'species' || item.type === 'class') {

@@ -139,6 +139,26 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       bonus: new fields.NumberField({ ...requiredInteger, initial: 0 }),
       value: new fields.NumberField({ ...requiredInteger, initial: 0 }),
     });
+
+    // A variable per-magic-school Angriffswurf (attack roll) bonus/malus -
+    // not meant to be hand-edited, purely an Active Effect target (e.g.
+    // "system.magicSchoolAttackBonus.fire"), same convention as
+    // naturalMaterialBonus.bonus above. Keys hardcoded (static schema
+    // fields evaluate before the init hook populates CONFIG.SKSK) as the
+    // union of CONFIG.SKSK.simpleMagicSchools + .advancedMagicSchools -
+    // every value a Simple/Advanced spell's own magicSchool field can take.
+    // See helpers/attackRolls.mjs#computeSpellAttackBonus.
+    schema.magicSchoolAttackBonus = new fields.SchemaField(Object.fromEntries([
+      'fire', 'water', 'earth', 'air', 'life', 'death', 'light', 'nature', 'dark', 'trickery',
+      'martialArts', 'bardic', 'space', 'time', 'blood', 'divination',
+    ].map(key => [key, new fields.NumberField({ ...requiredInteger, initial: 0 })])));
+    // The same, but for a Combined spell's own combinedSchool - keys
+    // hardcoded from CONFIG.SKSK.combinedMagicSchools for the same reason.
+    schema.combinedMagicSchoolAttackBonus = new fields.SchemaField(Object.fromEntries([
+      'stormancy', 'chaomancy', 'demomancy', 'drakomancy', 'necromancy', 'miracles',
+      'feymancy', 'geomancy', 'biomancy', 'cryomancy', 'witchery',
+    ].map(key => [key, new fields.NumberField({ ...requiredInteger, initial: 0 })])));
+
     schema.biography = new fields.StringField({ required: true, blank: true });
 
     // Character tab's "Data" section - free-flavor fields shown alongside

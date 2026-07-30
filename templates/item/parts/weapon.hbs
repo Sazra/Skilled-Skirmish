@@ -51,6 +51,24 @@
   </div>
   {{/if}}
 
+  <details class="model-properties-details" data-sync="weapon-attribute-override">
+    <summary class="resource-label">{{localize 'SKSK.Models.AttributeOverride'}}</summary>
+    <p class="hint">{{localize 'SKSK.Models.AttributeOverrideHint'}}</p>
+    <label class="casting-method-option">
+      <input type="checkbox" name="system.attributeOverride.enabled" {{checked system.attributeOverride.enabled}} />
+      {{localize 'SKSK.Models.AttributeOverrideEnabled'}}
+    </label>
+    <div class="grid grid-4col model-checkbox-grid">
+      {{#each attributeChoices as |label key|}}
+      <label class="casting-method-option">
+        <input type="checkbox" name="system.attributeOverride.attributes.{{key}}"
+          {{checked (lookup ../system.attributeOverride.attributes key)}} />
+        {{localize label}}
+      </label>
+      {{/each}}
+    </div>
+  </details>
+
   <details class="model-properties-details property-overrides-section" data-sync="weapon-property-overrides">
     <summary class="resource-label">{{localize 'SKSK.Models.PropertyOverrides'}}</summary>
     <div class="grid grid-3col model-checkbox-grid">
