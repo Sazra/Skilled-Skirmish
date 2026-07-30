@@ -48,6 +48,13 @@
   {{/if}}
 
   <p class="rest-preview-line">{{localize 'SKSK.Rest.MeditationRestorePreview'}}: +{{meditationRestore}}</p>
+
+  {{#if adrenalinChargesRestore}}
+  <p class="rest-preview-line">{{localize 'SKSK.Rest.AdrenalinRestorePreview'}}: +{{adrenalinChargesRestore}}</p>
+  {{/if}}
+  {{#if adrenalinReduction}}
+  <p class="rest-preview-line">{{localize 'SKSK.Rest.AdrenalinReductionPreview'}}: -{{adrenalinReduction}}</p>
+  {{/if}}
   {{/if}}
 
   {{#if regenerationRestoreUnlocked}}

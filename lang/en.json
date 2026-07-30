@@ -241,6 +241,8 @@
       "SkillIntegrationPreview": "Skills with pending points to integrate",
       "MeditationRestorePreview": "Meditation Charges Restored",
       "RegenerationRestorePreview": "Regeneration Charges Restored",
+      "AdrenalinRestorePreview": "Adrenalin Charges Restored",
+      "AdrenalinReductionPreview": "Adrenalin Damage Reduced",
       "NegativeLifeHealHint": "Regeneration charges spent on healing also heal that much Negative Life.",
       "Confirm": "Apply",
       "ManaGained": "Mana +{amount}",
@@ -249,7 +251,9 @@
       "SkillsIntegrated": "{count} skill(s) had their pending points integrated.",
       "ExhaustionHealed": "Exhaustion -{amount}",
       "MeditationRestored": "Meditation Charges +{amount}",
-      "RegenerationRestored": "Regeneration Charges +{amount}"
+      "RegenerationRestored": "Regeneration Charges +{amount}",
+      "AdrenalinChargesRestored": "Adrenalin Charges +{amount}",
+      "AdrenalinDamageReduced": "Adrenalin's accumulated damage reduced by {amount} use(s)"
     },
     "Gender": {
       "Male": "Male",

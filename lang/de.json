@@ -241,6 +241,8 @@
             "SkillIntegrationPreview": "Fertigkeiten mit noch nicht integriertem Gewinn",
             "MeditationRestorePreview": "Wiederhergestellte Meditationsladungen",
             "RegenerationRestorePreview": "Wiederhergestellte Regenerationsladungen",
+            "AdrenalinRestorePreview": "Wiederhergestellte Adrenalinladungen",
+            "AdrenalinReductionPreview": "Verringerter Adrenalinschaden",
             "NegativeLifeHealHint": "Für Heilung eingesetzte Regenerationsladungen heilen zusätzlich die gleiche Menge Negatives Leben.",
             "Confirm": "Anwenden",
             "ManaGained": "Mana +{amount}",
@@ -249,7 +251,9 @@
             "SkillsIntegrated": "Bei {count} Fertigkeit(en) wurde der Gewinn integriert.",
             "ExhaustionHealed": "Erschöpfung -{amount}",
             "MeditationRestored": "Meditationsladungen +{amount}",
-            "RegenerationRestored": "Regenerationsladungen +{amount}"
+            "RegenerationRestored": "Regenerationsladungen +{amount}",
+            "AdrenalinChargesRestored": "Adrenalinladungen +{amount}",
+            "AdrenalinDamageReduced": "Der angesammelte Adrenalinschaden wurde um {amount} Anwendung(en) verringert"
         },
         "Gender": {
             "Male": "Männlich",
