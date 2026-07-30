@@ -124,19 +124,52 @@ function clampResourceChange(value, max, delta) {
  * Directly apply a Life change (damage or healing) to system.life.value,
  * clamped via clampResourceChange - every turn-start effect that affects
  * current Life (Poison, Frostbite, Wound, custom Life ticks) goes through
- * this rather than only narrating the amount in chat.
+ * this rather than only narrating the amount in chat. Damage that would
+ * take Life below 0 doesn't just get floored away - whatever's left over
+ * once Life hits 0 carries through onto system.negativeLife.value instead
+ * (clamped at its own max), regardless of which of the above dealt it.
+ * Healing never interacts with Negative Life here (Rest already handles
+ * healing it directly, on its own tiers).
  * @param {Actor} actor
  * @param {number} delta   Positive to heal, negative to damage.
- * @return {Promise<number>} The amount actually applied (may differ from
- *   delta once clamped).
+ * @return {Promise<{lifeDelta: number, negativeLifeDelta: number}>} The
+ *   amounts actually applied to each (may differ from delta once clamped);
+ *   negativeLifeDelta is positive when Negative Life worsens.
  */
 async function applyLifeChange(actor, delta) {
-  if (!delta) return 0;
+  if (!delta) return { lifeDelta: 0, negativeLifeDelta: 0 };
   const life = actor.system.life;
-  const newValue = clampResourceChange(life.value, life.max, delta);
-  const applied = newValue - life.value;
-  if (applied) await actor.update({ 'system.life.value': newValue });
-  return applied;
+  const newLifeValue = clampResourceChange(life.value, life.max, delta);
+  const lifeDelta = newLifeValue - life.value;
+
+  const updates = {};
+  if (lifeDelta) updates['system.life.value'] = newLifeValue;
+
+  let negativeLifeDelta = 0;
+  if (delta < 0) {
+    const overflow = -delta + lifeDelta; // damage magnitude Life itself couldn't absorb
+    if (overflow > 0) {
+      const negativeLife = actor.system.negativeLife;
+      const newNegativeLifeValue = Math.min(negativeLife.max, negativeLife.value + overflow);
+      negativeLifeDelta = newNegativeLifeValue - negativeLife.value;
+      if (negativeLifeDelta) updates['system.negativeLife.value'] = newNegativeLifeValue;
+    }
+  }
+
+  if (Object.keys(updates).length) await actor.update(updates);
+  return { lifeDelta, negativeLifeDelta };
+}
+
+/**
+ * The extra chat line noting Negative Life overflow (see applyLifeChange),
+ * or '' if none occurred - shared by every turn-start Life-damage handler
+ * below.
+ * @param {number} negativeLifeDelta
+ * @return {string}
+ */
+function negativeLifeOverflowHTML(negativeLifeDelta) {
+  if (!negativeLifeDelta) return '';
+  return `<div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.NegativeLifeOverflow', { amount: negativeLifeDelta })}</div>`;
 }
 
 /**
@@ -612,7 +645,7 @@ async function handlePoisonTurnStart(actor, round) {
     if (!triggers) continue;
 
     const damageRoll = await new Roll(`1d${def.damageDie}`, actor.getRollData()).evaluate();
-    await applyLifeChange(actor, -damageRoll.total);
+    const { negativeLifeDelta } = await applyLifeChange(actor, -damageRoll.total);
     const conMod = actor.system.attributes?.con?.mod ?? 0;
     const checkFormula = applyD20Malus(`1d20 + ${conMod}`, actor, 'con');
     const checkRoll = await new Roll(checkFormula, actor.getRollData()).evaluate();
@@ -627,6 +660,7 @@ async function handlePoisonTurnStart(actor, round) {
     const checkRendered = await checkRoll.render();
     const outcome = game.i18n.localize(success ? 'SKSK.Spell.Roll.Success' : 'SKSK.Spell.Roll.Failure');
     const extraHTML = `
+      ${negativeLifeOverflowHTML(negativeLifeDelta)}
       <div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.PoisonCheck', { dc: def.dc })}: ${outcome}</div>
       ${checkRendered}
     `;
@@ -644,9 +678,12 @@ async function handlePoisonTurnStart(actor, round) {
 async function handleFrostbiteTurnStart(actor) {
   if (getStatusStacks(actor, 'frostbite') <= 0) return;
   const damage = computeFrostbiteDamage(actor);
-  await applyLifeChange(actor, -damage);
+  const { negativeLifeDelta } = await applyLifeChange(actor, -damage);
   const typeLabel = game.i18n.localize(CONFIG.SKSK.damageTypes.cold);
-  const extraHTML = `<div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.FrostbiteDamage', { amount: damage, type: typeLabel })}</div>`;
+  const extraHTML = `
+    <div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.FrostbiteDamage', { amount: damage, type: typeLabel })}</div>
+    ${negativeLifeOverflowHTML(negativeLifeDelta)}
+  `;
   await postActionChatCard(actor, getStatusEffectName('frostbite'), null, 0, extraHTML);
 }
 
@@ -660,8 +697,11 @@ async function handleFrostbiteTurnStart(actor) {
 async function handleWoundTurnStart(actor) {
   const total = getStatusInstancesTotal(actor, 'wound');
   if (!total) return;
-  await applyLifeChange(actor, -total);
-  const extraHTML = `<div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.WoundDamage', { amount: total })}</div>`;
+  const { negativeLifeDelta } = await applyLifeChange(actor, -total);
+  const extraHTML = `
+    <div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.WoundDamage', { amount: total })}</div>
+    ${negativeLifeOverflowHTML(negativeLifeDelta)}
+  `;
   await postActionChatCard(actor, getStatusEffectName('wound'), null, 0, extraHTML);
 }
 
@@ -686,10 +726,14 @@ async function handleCustomTurnStart(actor) {
 
     const lifeChange = (Number(def.lifeChangePerStack) || 0) * stacks;
     if (lifeChange) {
-      const applied = await applyLifeChange(actor, lifeChange);
-      if (applied) {
-        const key = applied > 0 ? 'SKSK.StatusEffect.CustomLifeHealing' : 'SKSK.StatusEffect.CustomLifeDamage';
-        const extraHTML = `<div class="sksk-roll-line">${game.i18n.format(key, { amount: Math.abs(applied) })}</div>`;
+      const { lifeDelta, negativeLifeDelta } = await applyLifeChange(actor, lifeChange);
+      const total = lifeDelta - negativeLifeDelta;
+      if (total) {
+        const key = total > 0 ? 'SKSK.StatusEffect.CustomLifeHealing' : 'SKSK.StatusEffect.CustomLifeDamage';
+        const extraHTML = `
+          <div class="sksk-roll-line">${game.i18n.format(key, { amount: Math.abs(total) })}</div>
+          ${negativeLifeOverflowHTML(negativeLifeDelta)}
+        `;
         await postActionChatCard(actor, getStatusEffectName(def.id), null, 0, extraHTML);
       }
     }

@@ -678,6 +678,7 @@
             "PoisonCheck": "Konstitutions-Check (SG {dc})",
             "FrostbiteDamage": "{amount} {type}-Schaden",
             "WoundDamage": "{amount} Schaden durch alle Wunden",
+            "NegativeLifeOverflow": "{amount} davon geht in das negative Leben über",
             "RestrainedCheck": "Stärke-Check (SG {dc})",
             "InstanceCount": "Instanzen",
             "AddInstance": "Hinzufügen",

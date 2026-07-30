@@ -678,6 +678,7 @@
       "PoisonCheck": "Constitution check (DC {dc})",
       "FrostbiteDamage": "{amount} {type} damage",
       "WoundDamage": "{amount} damage from all Wounds",
+      "NegativeLifeOverflow": "{amount} of that overflows into Negative Life",
       "RestrainedCheck": "Strength check (DC {dc})",
       "InstanceCount": "Instances",
       "AddInstance": "Add",
