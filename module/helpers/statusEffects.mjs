@@ -665,6 +665,31 @@ async function handleDazedTurnStart(actor) {
 }
 
 /**
+ * AP/RP's own combat-turn-start handling, in a fixed order since each
+ * step spends from whatever the step before it left behind: 1) AP and RP
+ * are refilled to their max, 2) Dazed's own drain applies against that
+ * fresh AP (see handleDazedTurnStart), 3) any pending spell's AP debt is
+ * paid down against whatever AP steps 1-2 left behind (see
+ * handlePendingSpellTurnStart) - a Concentration break from this same
+ * turn's damage (checked afterwards, in handleCombatTurnStart) already
+ * zeroes that debt itself if it occurs, so paying it down first here
+ * doesn't conflict with that.
+ * @param {Actor} actor
+ * @return {Promise<void>}
+ */
+async function handleActionPointsTurnStart(actor) {
+  const ap = actor.system.actionPoints;
+  const rp = actor.system.reactionPoints;
+  const updates = {};
+  if (ap.value !== ap.max) updates['system.actionPoints.value'] = ap.max;
+  if (rp.value !== rp.max) updates['system.reactionPoints.value'] = rp.max;
+  if (Object.keys(updates).length) await actor.update(updates);
+
+  await handleDazedTurnStart(actor);
+  await handlePendingSpellTurnStart(actor);
+}
+
+/**
  * Poison's own combat-turn-start handling: for every Poison severity
  * currently active on the actor, roll its damage die and apply it directly
  * to system.life.value (clamped to [0, max]), then run an automatic
@@ -874,9 +899,11 @@ export async function checkConcentration(actor, damage) {
 
 /**
  * Called once for whichever actor's Combat turn is beginning (see the
- * "combatTurnChange" hook in sksk.mjs) - runs Dazed's AP drain, every active
- * Poison severity's damage/check cycle, Frostbite's damage tick, Wound's
- * summed damage, custom status effects' own Life/Mana turn-start ticks,
+ * "combatTurnChange" hook in sksk.mjs) - refills AP/RP, runs Dazed's AP
+ * drain, and pays down any pending spell's AP debt (see
+ * handleActionPointsTurnStart, in that fixed order), every active Poison
+ * severity's damage/check cycle, Frostbite's damage tick, Wound's summed
+ * damage, custom status effects' own Life/Mana turn-start ticks,
  * Concentration's check against however much of that combined damage
  * actually landed (checked once for the round's total, not once per
  * source), and Restrained's automatic escape check (if timed to "start").
@@ -885,18 +912,13 @@ export async function checkConcentration(actor, damage) {
  * @return {Promise<void>}
  */
 export async function handleCombatTurnStart(actor, round) {
-  await handleDazedTurnStart(actor);
+  await handleActionPointsTurnStart(actor);
   let totalDamage = 0;
   totalDamage += await handlePoisonTurnStart(actor, round);
   totalDamage += await handleFrostbiteTurnStart(actor);
   totalDamage += await handleWoundTurnStart(actor);
   totalDamage += await handleCustomTurnStart(actor);
   await checkConcentration(actor, totalDamage);
-  // Runs after checkConcentration so a Concentration break from this same
-  // turn's damage (which already zeroes pendingSpell.apCost) correctly
-  // finds nothing left to pay off, rather than paying AP toward a spell
-  // that just got cancelled.
-  await handlePendingSpellTurnStart(actor);
   await handleRestrainedTurnStart(actor);
 }
 
