@@ -128,6 +128,16 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // helpers/defense.mjs#computeArmorClass/computeMagicResistance).
     schema.customArmorClassBonus = new fields.NumberField({ ...requiredInteger, initial: 0 });
     schema.customMagicResistanceBonus = new fields.NumberField({ ...requiredInteger, initial: 0 });
+    // Angriffswurf (attack roll) critical thresholds - a natural d20 result
+    // at or above criticalHitThreshold is a critical success; at or below
+    // criticalFailureThreshold, a critical failure (see helpers/
+    // criticalRolls.mjs#getAttackCriticalThresholds). Plain fields, directly
+    // user-editable on the GM tab and equally targetable by Active Effects,
+    // same convention as baseArmorClass above. Every other (non-attack) D20
+    // roll always uses a fixed natural 20/1 instead - see
+    // helpers/criticalRolls.mjs#getGenericCriticalType.
+    schema.criticalHitThreshold = new fields.NumberField({ ...requiredInteger, initial: 20, min: 10, max: 20 });
+    schema.criticalFailureThreshold = new fields.NumberField({ ...requiredInteger, initial: 1, min: 1, max: 10 });
     // A creature's innate "natural armor" bonus, scaling with level - see
     // helpers/defense.mjs#computeNaturalMaterialBonus. adjustment is a
     // plain, user-editable (GM tab) flat modifier; bonus is not meant to be

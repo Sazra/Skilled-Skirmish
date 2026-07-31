@@ -168,7 +168,11 @@
       "CustomArmorClassBonus": "Custom AC Bonus",
       "CustomArmorClassBonusHint": "A flat AC bonus (positive or negative) on top of every other AC component.",
       "CustomMagicResistanceBonus": "Custom MR Bonus",
-      "CustomMagicResistanceBonusHint": "A flat MR bonus (positive or negative) on top of every other MR component."
+      "CustomMagicResistanceBonusHint": "A flat MR bonus (positive or negative) on top of every other MR component.",
+      "CriticalHitThreshold": "Critical Hit Threshold",
+      "CriticalHitThresholdHint": "The lowest natural d20 result (on an Angriffswurf/attack roll only) that counts as a critical success. 20 by default; lowering it to e.g. 15 means 15-20 all critically hit.",
+      "CriticalFailureThreshold": "Critical Failure Threshold",
+      "CriticalFailureThresholdHint": "The highest natural d20 result (on an Angriffswurf/attack roll only) that counts as a critical failure. 1 by default; raising it to e.g. 5 means 1-5 all critically fail."
     },
     "AttributeUsage": {
       "HighestSingle": "Use Highest (Only One Attribute)",
@@ -270,7 +274,9 @@
       "EvaluationTitle": "Hit Evaluation ({defender})",
       "EvaluationLine": "{label} ({total}) vs {statLabel} ({statValue}): {outcome}",
       "Hit": "Hit",
-      "Miss": "Miss"
+      "Miss": "Miss",
+      "CriticalHit": "Critical Hit",
+      "CriticalMiss": "Critical Miss"
     },
     "Gender": {
       "Male": "Male",
@@ -651,6 +657,8 @@
         "Vs": "vs",
         "Success": "Success",
         "Failure": "Failure",
+        "CriticalSuccess": "Critical Success",
+        "CriticalFailure": "Critical Failure",
         "NoCharacter": "You have no character assigned - cannot roll.",
         "ItemNotFound": "Could not find the spell for this saving throw.",
         "ManaShortfallFromLife": "{amount} of that Mana cost is paid from Life instead",

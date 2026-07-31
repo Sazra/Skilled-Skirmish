@@ -1140,6 +1140,22 @@
   margin: 2px 0 6px;
 }
 
+/* Critical successes/failures (see helpers/criticalRolls.mjs): green/red on
+   the die's own rendered total, and on any inline outcome label wrapped the
+   same way. Not scoped to .sksk-chat-card - the plain attribute-check
+   rolls in sheets/actor-sheet.mjs use these too. */
+.sksk-critical-success .dice-total,
+span.sksk-critical-success {
+  color: var(--color-level-success, #3dd68c);
+  font-weight: bold;
+}
+
+.sksk-critical-failure .dice-total,
+span.sksk-critical-failure {
+  color: var(--color-level-error, #ff6060);
+  font-weight: bold;
+}
+
 /* General tab: horizontal movement-speed list, and a two-column layout
    with favorite skills on the left, custom resources on the right. */
 .sksk .movement-speed-entry {

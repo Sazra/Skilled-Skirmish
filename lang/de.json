@@ -168,7 +168,11 @@
             "CustomArmorClassBonus": "Eigener AC-Bonus",
             "CustomArmorClassBonusHint": "Ein fester AC-Bonus (positiv oder negativ) zusätzlich zu jeder anderen AC-Komponente.",
             "CustomMagicResistanceBonus": "Eigener MR-Bonus",
-            "CustomMagicResistanceBonusHint": "Ein fester MR-Bonus (positiv oder negativ) zusätzlich zu jeder anderen MR-Komponente."
+            "CustomMagicResistanceBonusHint": "Ein fester MR-Bonus (positiv oder negativ) zusätzlich zu jeder anderen MR-Komponente.",
+            "CriticalHitThreshold": "Schwelle für kritischen Erfolg",
+            "CriticalHitThresholdHint": "Der niedrigste natürliche W20-Wurf (nur bei einem Angriffswurf), der als kritischer Erfolg zählt. Standardmäßig 20; wird er z.B. auf 15 gesenkt, lösen 15 bis 20 alle einen kritischen Erfolg aus.",
+            "CriticalFailureThreshold": "Schwelle für kritischen Fehlschlag",
+            "CriticalFailureThresholdHint": "Der höchste natürliche W20-Wurf (nur bei einem Angriffswurf), der als kritischer Fehlschlag zählt. Standardmäßig 1; wird er z.B. auf 5 erhöht, lösen 1 bis 5 alle einen kritischen Fehlschlag aus."
         },
         "AttributeUsage": {
             "HighestSingle": "Nutze Höchsten (Nur Ein Attribut)",
@@ -270,7 +274,9 @@
             "EvaluationTitle": "Trefferauswertung ({defender})",
             "EvaluationLine": "{label} ({total}) gegen {statLabel} ({statValue}): {outcome}",
             "Hit": "Treffer",
-            "Miss": "Verfehlt"
+            "Miss": "Verfehlt",
+            "CriticalHit": "Kritischer Treffer",
+            "CriticalMiss": "Kritisch Verfehlt"
         },
         "Gender": {
             "Male": "Männlich",
@@ -651,6 +657,8 @@
                 "Vs": "gegen",
                 "Success": "Erfolg",
                 "Failure": "Misserfolg",
+                "CriticalSuccess": "Kritischer Erfolg",
+                "CriticalFailure": "Kritischer Misserfolg",
                 "NoCharacter": "Dir ist kein Charakter zugewiesen - kann nicht würfeln.",
                 "ItemNotFound": "Zauber für diesen Rettungswurf nicht gefunden.",
                 "ManaShortfallFromLife": "{amount} dieser Manakosten werden stattdessen vom Leben bezahlt",

@@ -2,6 +2,7 @@ import { postActionChatCard } from './actions.mjs';
 import { getClassAbilityLevels, actorHasAdvancedClass } from './abilities.mjs';
 import { getActorSkillLevel } from './skills.mjs';
 import { handlePendingSpellTurnStart } from './spell-rolls.mjs';
+import { getGenericCriticalType, resolveCheckSuccess, wrapCriticalBlock } from './criticalRolls.mjs';
 
 /**
  * Movement types (CONFIG.SKSK.movementTypes) Dazed does NOT reduce.
@@ -618,13 +619,17 @@ export async function attemptRestrainedEscape(actor) {
   const strMod = actor.system.attributes?.str?.mod ?? 0;
   const formula = applyD20Malus(`1d20 + ${strMod}`, actor, 'str');
   const roll = await new Roll(formula, actor.getRollData()).evaluate();
-  const success = roll.total >= dc;
+  const criticalType = getGenericCriticalType(roll);
+  const success = resolveCheckSuccess(roll.total, dc, criticalType);
 
   if (success) await setStatusStacks(actor, 'restrained', 0);
 
-  const outcome = game.i18n.localize(success ? 'SKSK.Spell.Roll.Success' : 'SKSK.Spell.Roll.Failure');
+  const outcomeKey = criticalType === 'success' ? 'SKSK.Spell.Roll.CriticalSuccess'
+    : criticalType === 'failure' ? 'SKSK.Spell.Roll.CriticalFailure'
+    : success ? 'SKSK.Spell.Roll.Success' : 'SKSK.Spell.Roll.Failure';
+  const outcome = game.i18n.localize(outcomeKey);
   const extraHTML = `<div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.RestrainedCheck', { dc })}: ${outcome}</div>`;
-  await postActionChatCard(actor, getStatusEffectName('restrained'), roll, 0, extraHTML);
+  await postActionChatCard(actor, getStatusEffectName('restrained'), roll, 0, extraHTML, criticalType);
 }
 
 /**
@@ -801,7 +806,8 @@ async function handlePoisonTurnStart(actor, round) {
     const conMod = actor.system.attributes?.con?.mod ?? 0;
     const checkFormula = applyD20Malus(`1d20 + ${conMod}`, actor, 'con');
     const checkRoll = await new Roll(checkFormula, actor.getRollData()).evaluate();
-    const success = checkRoll.total >= def.dc;
+    const criticalType = getGenericCriticalType(checkRoll);
+    const success = resolveCheckSuccess(checkRoll.total, def.dc, criticalType);
 
     if (success) {
       await setStatusStacks(actor, severityId, 0);
@@ -809,8 +815,11 @@ async function handlePoisonTurnStart(actor, round) {
       await effect.setFlag('sksk', 'nextCheckRound', round + def.intervalRounds);
     }
 
-    const checkRendered = await checkRoll.render();
-    const outcome = game.i18n.localize(success ? 'SKSK.Spell.Roll.Success' : 'SKSK.Spell.Roll.Failure');
+    const checkRendered = wrapCriticalBlock(await checkRoll.render(), criticalType);
+    const outcomeKey = criticalType === 'success' ? 'SKSK.Spell.Roll.CriticalSuccess'
+      : criticalType === 'failure' ? 'SKSK.Spell.Roll.CriticalFailure'
+      : success ? 'SKSK.Spell.Roll.Success' : 'SKSK.Spell.Roll.Failure';
+    const outcome = game.i18n.localize(outcomeKey);
     const extraHTML = `
       ${negativeLifeOverflowHTML(negativeLifeDelta)}
       <div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.PoisonCheck', { dc: def.dc })}: ${outcome}</div>
@@ -955,7 +964,8 @@ export async function checkConcentration(actor, damage) {
   const concentrationLevel = getActorSkillLevel(actor, 'concentration');
   const formula = applyD20Malus(`1d20 + ${conMod} + ${concentrationLevel}`, actor, 'con');
   const roll = await new Roll(formula, actor.getRollData()).evaluate();
-  const success = roll.total >= dc;
+  const criticalType = getGenericCriticalType(roll);
+  const success = resolveCheckSuccess(roll.total, dc, criticalType);
 
   // A failed check breaks Concentration outright - if a spell (see
   // helpers/spell-rolls.mjs#rollSpellItem) was still being paid off in AP
@@ -970,12 +980,15 @@ export async function checkConcentration(actor, damage) {
     }
   }
 
-  const outcome = game.i18n.localize(success ? 'SKSK.Spell.Roll.Success' : 'SKSK.Spell.Roll.Failure');
+  const outcomeKey = criticalType === 'success' ? 'SKSK.Spell.Roll.CriticalSuccess'
+    : criticalType === 'failure' ? 'SKSK.Spell.Roll.CriticalFailure'
+    : success ? 'SKSK.Spell.Roll.Success' : 'SKSK.Spell.Roll.Failure';
+  const outcome = game.i18n.localize(outcomeKey);
   const extraHTML = `
     <div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.ConcentrationCheck', { dc })}: ${outcome}</div>
     ${cancelledSpell ? `<div class="sksk-roll-line">${game.i18n.localize('SKSK.Spell.Roll.SpellCancelled')}</div>` : ''}
   `;
-  await postActionChatCard(actor, getStatusEffectName('concentration'), roll, 0, extraHTML);
+  await postActionChatCard(actor, getStatusEffectName('concentration'), roll, 0, extraHTML, criticalType);
 }
 
 /**

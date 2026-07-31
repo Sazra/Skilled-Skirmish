@@ -43,6 +43,21 @@
     </div>
   </div>
 
+  <div class="grid grid-2col">
+    <div class="grid-span-1">
+      <label class="resource-label" title="{{localize 'SKSK.GM.CriticalHitThresholdHint'}}">
+        {{localize 'SKSK.GM.CriticalHitThreshold'}}
+      </label>
+      <input type="text" name="system.criticalHitThreshold" value="{{system.criticalHitThreshold}}" data-dtype="Number" />
+    </div>
+    <div class="grid-span-1">
+      <label class="resource-label" title="{{localize 'SKSK.GM.CriticalFailureThresholdHint'}}">
+        {{localize 'SKSK.GM.CriticalFailureThreshold'}}
+      </label>
+      <input type="text" name="system.criticalFailureThreshold" value="{{system.criticalFailureThreshold}}" data-dtype="Number" />
+    </div>
+  </div>
+
   <div class="resource">
     <label class="resource-label">{{localize 'SKSK.MartialArtsAttack.SectionTitle'}}</label>
     <ol class="items-list">

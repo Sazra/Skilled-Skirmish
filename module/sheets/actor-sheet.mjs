@@ -25,6 +25,7 @@ import {
   getStatusEffect, getStatusInstances, getStatusInstancesTotal, addStatusInstance, applyCauterization,
   getAdrenalinDamage, setRestrainedConfig, attemptRestrainedEscapeManual,
 } from '../helpers/statusEffects.mjs';
+import { getGenericCriticalType, wrapCriticalBlock } from '../helpers/criticalRolls.mjs';
 
 /**
  * Schema paths (relative to system.*) whose value input accepts the "+N"/
@@ -1216,10 +1217,16 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       let label = dataset.label ? `[attribute] ${dataset.label}` : '';
       const formula = applyD20Malus(dataset.roll, this.actor, dataset.attributeKey ?? null);
       let roll = new Roll(formula, this.actor.getRollData());
-      roll.toMessage({
-        speaker: ChatMessage.getSpeaker({ actor: this.actor }),
-        flavor: label,
-        rollMode: game.settings.get('core', 'rollMode'),
+      roll.evaluate().then(async evaluated => {
+        const criticalType = getGenericCriticalType(evaluated);
+        const messageData = {
+          speaker: ChatMessage.getSpeaker({ actor: this.actor }),
+          flavor: label,
+          content: wrapCriticalBlock(await evaluated.render(), criticalType),
+          rolls: [evaluated],
+        };
+        ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));
+        return ChatMessage.create(messageData);
       });
       return roll;
     }

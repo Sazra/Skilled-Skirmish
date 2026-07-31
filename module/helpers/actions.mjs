@@ -3,20 +3,26 @@ import { getClassAbilityLevels, actorHasAdvancedClass } from "./abilities.mjs";
 import { computeMovementSpeeds } from "./movement.mjs";
 import { canUseWeaponAttack, canMove, applyAdrenalinDamage } from "./statusEffects.mjs";
 import { computeWeaponAttackBonus, computeMartialArtsAttackBonus, rollAttackPair, renderAttackPairHTML } from "./attackRolls.mjs";
+import { wrapCriticalBlock } from "./criticalRolls.mjs";
 
 /**
  * Post a simple chat card (an optional Roll, an AP-cost line, and a
- * flavor/title) on the given actor's behalf.
+ * flavor/title) on the given actor's behalf. criticalType (see
+ * helpers/criticalRolls.mjs) colors roll's own rendered HTML green/red when
+ * given - used by D20 checks (Restrained/Poison/Concentration, see
+ * helpers/statusEffects.mjs), left null by every non-D20 roll (Regeneration,
+ * Meditation, Adrenalin, ...).
  * @param {Actor} actor
  * @param {string} title
  * @param {Roll|null} roll
  * @param {number} apCost
  * @param {string} [extraHTML]
+ * @param {"success"|"failure"|null} [criticalType]
  * @return {Promise<ChatMessage>}
  */
-export async function postActionChatCard(actor, title, roll, apCost, extraHTML = '') {
+export async function postActionChatCard(actor, title, roll, apCost, extraHTML = '', criticalType = null) {
   const parts = [];
-  if (roll) parts.push(await roll.render());
+  if (roll) parts.push(wrapCriticalBlock(await roll.render(), criticalType));
   if (apCost) {
     parts.push(`<div class="sksk-roll-ap-cost"><strong>${game.i18n.localize('SKSK.Spell.APCost')}:</strong> ${apCost}</div>`);
   }
@@ -49,7 +55,7 @@ export async function rollWeaponItem(item) {
   if (actor) {
     const attackBonus = computeWeaponAttackBonus(actor, item);
     const rolls = await rollAttackPair(attackBonus, actor);
-    const rendered = await renderAttackPairHTML(rolls, 'armorClass');
+    const rendered = await renderAttackPairHTML(rolls, 'armorClass', actor);
     parts.push(`<div class="sksk-roll-attack"><strong>${game.i18n.localize('SKSK.AttackRoll.Attack')}</strong></div>${rendered}`);
   }
 
@@ -147,7 +153,7 @@ export async function rollMartialArtsAttack(actor, index) {
 
   const attackBonus = computeMartialArtsAttackBonus(actor, attack);
   const rolls = await rollAttackPair(attackBonus, actor);
-  const attackHTML = `<div class="sksk-roll-attack"><strong>${game.i18n.localize('SKSK.AttackRoll.Attack')}</strong></div>${await renderAttackPairHTML(rolls, 'armorClass')}`;
+  const attackHTML = `<div class="sksk-roll-attack"><strong>${game.i18n.localize('SKSK.AttackRoll.Attack')}</strong></div>${await renderAttackPairHTML(rolls, 'armorClass', actor)}`;
 
   const bonus = resolveMartialArtsAttributeBonus(actor, attack.attributes, attack.attributeUsage);
   const formula = bonus ? `${attack.formula} + ${bonus}` : attack.formula;

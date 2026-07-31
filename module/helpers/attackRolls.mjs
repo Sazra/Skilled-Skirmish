@@ -2,6 +2,7 @@ import { getActorSkillLevel } from './skills.mjs';
 import { getSpellSchool } from './spells.mjs';
 import { computeNaturalMaterialBonus } from './defense.mjs';
 import { applyD20Malus } from './statusEffects.mjs';
+import { getAttackCriticalType, resolveCheckSuccess, wrapCriticalBlock, wrapCriticalInline } from './criticalRolls.mjs';
 
 /**
  * The highest of a set of attribute modifiers, unless every one of them is
@@ -176,16 +177,23 @@ export async function rollAttackPair(bonus, actor) {
 
 /**
  * Render an Angriffswurf (attack roll) pair's chat HTML: both d20s shown
- * side by side (never summed), plus a button any user can click later
- * (see resolveHitEvaluationFromChat) to resolve hit/miss against a
- * defender's Armor Class or Magic Resistance.
+ * side by side (never summed), each colored green/red if its own natural
+ * die was a critical success/failure per the attacker's own thresholds
+ * (see helpers/criticalRolls.mjs#getAttackCriticalType), plus a button any
+ * user can click later (see resolveHitEvaluationFromChat) to resolve
+ * hit/miss against a defender's Armor Class or Magic Resistance - a
+ * critical success/failure there always hits/always misses regardless of
+ * the totals, so each roll's critical type is stashed on the button too.
  * @param {[Roll, Roll]} rolls
  * @param {"armorClass"|"magicResistance"} comparisonType
+ * @param {Actor|null} actor   The attacker, whose own critical thresholds apply.
  * @return {Promise<string>}
  */
-export async function renderAttackPairHTML([rollA, rollB], comparisonType) {
-  const renderedA = await rollA.render();
-  const renderedB = await rollB.render();
+export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor) {
+  const critA = getAttackCriticalType(rollA, actor);
+  const critB = getAttackCriticalType(rollB, actor);
+  const renderedA = wrapCriticalBlock(await rollA.render(), critA);
+  const renderedB = wrapCriticalBlock(await rollB.render(), critB);
   return `
     <div class="sksk-attack-roll-pair">
       <div class="sksk-attack-roll-single">
@@ -198,7 +206,8 @@ export async function renderAttackPairHTML([rollA, rollB], comparisonType) {
       </div>
     </div>
     <button type="button" class="sksk-roll-hit-eval" data-action="resolveHitEvaluation"
-      data-roll-a="${rollA.total}" data-roll-b="${rollB.total}" data-comparison-type="${comparisonType}">
+      data-roll-a="${rollA.total}" data-roll-b="${rollB.total}" data-comparison-type="${comparisonType}"
+      data-crit-a="${critA ?? ''}" data-crit-b="${critB ?? ''}">
       ${game.i18n.localize('SKSK.AttackRoll.Evaluate')}
     </button>
   `;
@@ -227,17 +236,20 @@ export async function resolveHitEvaluationFromChat(button) {
   const statValue = comparisonType === 'magicResistance' ? defender.system.magicResistance : defender.system.armorClass;
   const statLabel = game.i18n.localize(comparisonType === 'magicResistance' ? 'SKSK.Resource.MR' : 'SKSK.Resource.AC');
 
-  const renderLine = (rollTotal, rollLabel) => {
-    const hit = rollTotal >= statValue;
-    const outcome = game.i18n.localize(hit ? 'SKSK.AttackRoll.Hit' : 'SKSK.AttackRoll.Miss');
+  const renderLine = (rollTotal, rollLabel, criticalType) => {
+    const hit = resolveCheckSuccess(rollTotal, statValue, criticalType);
+    const outcomeKey = criticalType === 'success' ? 'SKSK.AttackRoll.CriticalHit'
+      : criticalType === 'failure' ? 'SKSK.AttackRoll.CriticalMiss'
+      : hit ? 'SKSK.AttackRoll.Hit' : 'SKSK.AttackRoll.Miss';
+    const outcome = wrapCriticalInline(game.i18n.localize(outcomeKey), criticalType);
     return `<div class="sksk-roll-line">${game.i18n.format('SKSK.AttackRoll.EvaluationLine', {
       label: rollLabel, total: rollTotal, statLabel, statValue, outcome,
     })}</div>`;
   };
 
   const content = `<div class="sksk-chat-card sksk-action-card">`
-    + renderLine(Number(button.dataset.rollA), game.i18n.localize('SKSK.AttackRoll.RollA'))
-    + renderLine(Number(button.dataset.rollB), game.i18n.localize('SKSK.AttackRoll.RollB'))
+    + renderLine(Number(button.dataset.rollA), game.i18n.localize('SKSK.AttackRoll.RollA'), button.dataset.critA || null)
+    + renderLine(Number(button.dataset.rollB), game.i18n.localize('SKSK.AttackRoll.RollB'), button.dataset.critB || null)
     + `</div>`;
 
   const messageData = {

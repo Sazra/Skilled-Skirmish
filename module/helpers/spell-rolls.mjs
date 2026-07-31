@@ -4,6 +4,7 @@ import {
   applyD20Malus, canCastMovementSpell, getStatusStacks, setStatusStacks, payManaCost, negativeLifeOverflowHTML,
 } from './statusEffects.mjs';
 import { computeSpellAttackBonus, rollAttackPair, renderAttackPairHTML } from './attackRolls.mjs';
+import { getGenericCriticalType, resolveCheckSuccess, wrapCriticalBlock, wrapCriticalInline } from './criticalRolls.mjs';
 
 /**
  * Roll one damage entry (its formula plus any attribute/skill scaling) and
@@ -91,7 +92,7 @@ async function renderSpellEffectParts(item) {
     const attackBonus = actor ? computeSpellAttackBonus(system, actor) : 0;
     for (let i = 1; i <= system.attackRoll.count; i++) {
       const rolls = await rollAttackPair(attackBonus, actor);
-      const rendered = await renderAttackPairHTML(rolls, 'magicResistance');
+      const rendered = await renderAttackPairHTML(rolls, 'magicResistance', actor);
       parts.push(`<div class="sksk-roll-attack"><strong>${game.i18n.format('SKSK.Spell.Roll.Attack', { number: i })}</strong></div>${rendered}`);
 
       for (const damage of attackDamages) {
@@ -294,12 +295,20 @@ export async function rollSavingThrowFromChat(itemUuid, saveIndex) {
   const dc = computeSavingThrowValue(save, item.actor);
   const formula = applyD20Malus(`1d20 + ${best.value}`, actor, best.attributeKey);
   const roll = await new Roll(formula, actor.getRollData()).evaluate();
-  const success = roll.total >= dc;
+  const criticalType = getGenericCriticalType(roll);
+  const success = resolveCheckSuccess(roll.total, dc, criticalType);
   const saveLabel = save.label || game.i18n.format('SKSK.Spell.SavingThrow.Numbered', { number: saveIndex + 1 });
-  const outcome = game.i18n.localize(success ? 'SKSK.Spell.Roll.Success' : 'SKSK.Spell.Roll.Failure');
+  const outcomeKey = criticalType === 'success' ? 'SKSK.Spell.Roll.CriticalSuccess'
+    : criticalType === 'failure' ? 'SKSK.Spell.Roll.CriticalFailure'
+    : success ? 'SKSK.Spell.Roll.Success' : 'SKSK.Spell.Roll.Failure';
+  const outcome = wrapCriticalInline(game.i18n.localize(outcomeKey), criticalType);
 
-  return roll.toMessage({
+  const messageData = {
     speaker: ChatMessage.getSpeaker({ actor }),
     flavor: `${saveLabel} (${best.label}) ${game.i18n.localize('SKSK.Spell.Roll.Vs')} DC ${dc}: ${outcome}`,
-  });
+    content: `<div class="sksk-chat-card sksk-action-card">${wrapCriticalBlock(await roll.render(), criticalType)}</div>`,
+    rolls: [roll],
+  };
+  ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));
+  return ChatMessage.create(messageData);
 }
