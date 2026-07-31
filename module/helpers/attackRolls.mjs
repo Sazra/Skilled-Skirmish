@@ -5,6 +5,12 @@ import { applyD20Malus } from './statusEffects.mjs';
 import { getAttackCriticalType, resolveCheckSuccess, wrapCriticalBlock, wrapCriticalInline } from './criticalRolls.mjs';
 
 /**
+ * Präzision's own minimum Präzisionswurf result, per skill level (1-5) -
+ * see maybeRollPrecision.
+ */
+const PRECISION_THRESHOLDS = { 1: 20, 2: 19, 3: 18, 4: 17, 5: 16 };
+
+/**
  * The highest of a set of attribute modifiers, unless every one of them is
  * equal - in which case they're all summed instead. Shared by Masterful
  * weapons and every Martial Arts attack (see computeWeaponAttackBonus/
@@ -176,6 +182,66 @@ export async function rollAttackPair(bonus, actor) {
 }
 
 /**
+ * The distinct die sizes (face counts) used by a damage formula, without
+ * evaluating it - e.g. "1d4 + 3d6 + 2" -> [4, 6]. Used to compute a
+ * critical Angriffswurf's bonus damage (see rollCriticalBonusDamage): one
+ * extra die of every distinct size already present in the attack's own
+ * damage formula(s), regardless of how many dice of that size the base
+ * formula itself rolls.
+ * @param {string} formula
+ * @return {number[]}
+ */
+export function getDamageDieSizes(formula) {
+  if (!formula) return [];
+  let terms;
+  try {
+    terms = new Roll(String(formula)).terms;
+  } catch {
+    return [];
+  }
+  return [...new Set(terms.filter(term => term instanceof foundry.dice.terms.Die).map(term => term.faces))];
+}
+
+/**
+ * Roll a critical Angriffswurf's bonus damage: one extra die of every
+ * distinct size in dieSizes (see getDamageDieSizes) - a baseline that
+ * applies to every critical attack roll regardless of skills - plus one
+ * further die of each size per level of the Brutality skill (so up to 6
+ * total per size, at Brutality's max level of 5). A no-op (returns null)
+ * if the attack's damage has no dice at all (a flat/descriptive weapon).
+ * @param {Actor|null} actor
+ * @param {number[]} dieSizes
+ * @return {Promise<Roll|null>}
+ */
+export async function rollCriticalBonusDamage(actor, dieSizes) {
+  if (!dieSizes.length) return null;
+  const diceCount = 1 + (actor ? getActorSkillLevel(actor, 'brutality') : 0);
+  const formula = dieSizes.map(size => `${diceCount}d${size}`).join(' + ');
+  return new Roll(formula, actor?.getRollData()).evaluate();
+}
+
+/**
+ * Präzision (Fighter skill, from level 1): once an ordinary (non-critical)
+ * Angriffswurf is confirmed a hit, roll one further, bonus-free
+ * Präzisionswurf (1d20) - if it reaches the attacker's own Präzision
+ * threshold (natural 20/19/18/17/16 for level 1-5), the attack roll
+ * retroactively counts as a critical success after all. A no-op (returns
+ * null) if the actor has no Präzision, or the attack roll wasn't an
+ * ordinary hit to begin with (already critical, or missed outright).
+ * @param {Actor|null} actor
+ * @param {boolean} isOrdinaryHit
+ * @return {Promise<{roll: Roll, success: boolean}|null>}
+ */
+export async function maybeRollPrecision(actor, isOrdinaryHit) {
+  if (!actor || !isOrdinaryHit) return null;
+  const level = getActorSkillLevel(actor, 'precision');
+  if (level < 1) return null;
+  const threshold = PRECISION_THRESHOLDS[Math.min(5, level)];
+  const roll = await new Roll('1d20').evaluate();
+  return { roll, success: roll.total >= threshold };
+}
+
+/**
  * Render an Angriffswurf (attack roll) pair's chat HTML: both d20s shown
  * side by side (never summed), each colored green/red if its own natural
  * die was a critical success/failure per the attacker's own thresholds
@@ -183,13 +249,20 @@ export async function rollAttackPair(bonus, actor) {
  * user can click later (see resolveHitEvaluationFromChat) to resolve
  * hit/miss against a defender's Armor Class or Magic Resistance - a
  * critical success/failure there always hits/always misses regardless of
- * the totals, so each roll's critical type is stashed on the button too.
+ * the totals, so each roll's critical type is stashed on the button too -
+ * along with the attacker's own uuid (for Präzision/Brutality, resolved
+ * only once a hit is confirmed - see resolveHitEvaluationFromChat) and the
+ * attack's own damage die sizes/whether Brutality's bonus damage was
+ * already granted for a natural critical (see getDamageDieSizes/
+ * rollCriticalBonusDamage and helpers/actions.mjs#rollWeaponItem et al).
  * @param {[Roll, Roll]} rolls
  * @param {"armorClass"|"magicResistance"} comparisonType
  * @param {Actor|null} actor   The attacker, whose own critical thresholds apply.
+ * @param {{dieSizes?: number[], brutalApplied?: boolean}} [damageInfo]
  * @return {Promise<string>}
  */
-export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor) {
+export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor, damageInfo = {}) {
+  const { dieSizes = [], brutalApplied = false } = damageInfo;
   const critA = getAttackCriticalType(rollA, actor);
   const critB = getAttackCriticalType(rollB, actor);
   const renderedA = wrapCriticalBlock(await rollA.render(), critA);
@@ -207,7 +280,8 @@ export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor
     </div>
     <button type="button" class="sksk-roll-hit-eval" data-action="resolveHitEvaluation"
       data-roll-a="${rollA.total}" data-roll-b="${rollB.total}" data-comparison-type="${comparisonType}"
-      data-crit-a="${critA ?? ''}" data-crit-b="${critB ?? ''}">
+      data-crit-a="${critA ?? ''}" data-crit-b="${critB ?? ''}" data-attacker-uuid="${actor?.uuid ?? ''}"
+      data-damage-die-sizes="${dieSizes.join(',')}" data-brutal-applied="${brutalApplied}">
       ${game.i18n.localize('SKSK.AttackRoll.Evaluate')}
     </button>
   `;
@@ -223,6 +297,17 @@ export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor
  * attack's already-rolled d20 totals against that defender's Armor Class
  * or Magic Resistance (per the button's own data-comparison-type) and
  * posts the outcome as a new chat message, speaking as the defender.
+ *
+ * An ordinary (non-critical) hit additionally gives the attacker's own
+ * Präzision a chance to retroactively promote it to a critical success
+ * (see maybeRollPrecision); a critical success arrived at this way, or
+ * already flagged as a natural critical at roll time, grants Brutality's
+ * bonus damage (see rollCriticalBonusDamage) - but at most once per attack,
+ * regardless of how many of the two d20s ended up critical (a natural
+ * critical already granted it immediately at roll time - see
+ * helpers/actions.mjs#rollWeaponItem/rollMartialArtsAttack and
+ * helpers/spell-rolls.mjs#renderSpellEffectParts - in which case
+ * data-brutal-applied is already "true" here).
  * @param {HTMLElement} button
  * @return {Promise<ChatMessage|void>}
  */
@@ -232,24 +317,48 @@ export async function resolveHitEvaluationFromChat(button) {
   const defender = targets[0]?.actor ?? controlled[0]?.actor ?? game.user.character;
   if (!defender) return ui.notifications.warn(game.i18n.localize('SKSK.AttackRoll.NoDefender'));
 
+  const attacker = button.dataset.attackerUuid ? await fromUuid(button.dataset.attackerUuid) : null;
+  const dieSizes = (button.dataset.damageDieSizes || '').split(',').filter(Boolean).map(Number);
+  let brutalApplied = button.dataset.brutalApplied === 'true';
+
   const comparisonType = button.dataset.comparisonType;
   const statValue = comparisonType === 'magicResistance' ? defender.system.magicResistance : defender.system.armorClass;
   const statLabel = game.i18n.localize(comparisonType === 'magicResistance' ? 'SKSK.Resource.MR' : 'SKSK.Resource.AC');
 
-  const renderLine = (rollTotal, rollLabel, criticalType) => {
+  const renderLine = async (rollTotal, rollLabel, initialCriticalType) => {
+    let criticalType = initialCriticalType;
     const hit = resolveCheckSuccess(rollTotal, statValue, criticalType);
+    let extraHTML = '';
+
+    if (criticalType === null && hit) {
+      const precision = await maybeRollPrecision(attacker, true);
+      if (precision) {
+        const precisionRendered = wrapCriticalBlock(await precision.roll.render(), precision.success ? 'success' : null);
+        extraHTML += `<div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.PrecisionRoll')}</div>${precisionRendered}`;
+        if (precision.success) criticalType = 'success';
+      }
+    }
+
+    if (criticalType === 'success' && !brutalApplied) {
+      brutalApplied = true;
+      const bonusRoll = await rollCriticalBonusDamage(attacker, dieSizes);
+      if (bonusRoll) {
+        extraHTML += `<div class="sksk-roll-line"><strong>${game.i18n.localize('SKSK.AttackRoll.CriticalBonusDamage')}</strong></div>${await bonusRoll.render()}`;
+      }
+    }
+
     const outcomeKey = criticalType === 'success' ? 'SKSK.AttackRoll.CriticalHit'
       : criticalType === 'failure' ? 'SKSK.AttackRoll.CriticalMiss'
       : hit ? 'SKSK.AttackRoll.Hit' : 'SKSK.AttackRoll.Miss';
     const outcome = wrapCriticalInline(game.i18n.localize(outcomeKey), criticalType);
     return `<div class="sksk-roll-line">${game.i18n.format('SKSK.AttackRoll.EvaluationLine', {
       label: rollLabel, total: rollTotal, statLabel, statValue, outcome,
-    })}</div>`;
+    })}</div>${extraHTML}`;
   };
 
   const content = `<div class="sksk-chat-card sksk-action-card">`
-    + renderLine(Number(button.dataset.rollA), game.i18n.localize('SKSK.AttackRoll.RollA'), button.dataset.critA || null)
-    + renderLine(Number(button.dataset.rollB), game.i18n.localize('SKSK.AttackRoll.RollB'), button.dataset.critB || null)
+    + (await renderLine(Number(button.dataset.rollA), game.i18n.localize('SKSK.AttackRoll.RollA'), button.dataset.critA || null))
+    + (await renderLine(Number(button.dataset.rollB), game.i18n.localize('SKSK.AttackRoll.RollB'), button.dataset.critB || null))
     + `</div>`;
 
   const messageData = {

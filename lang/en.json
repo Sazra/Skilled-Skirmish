@@ -276,7 +276,9 @@
       "Hit": "Hit",
       "Miss": "Miss",
       "CriticalHit": "Critical Hit",
-      "CriticalMiss": "Critical Miss"
+      "CriticalMiss": "Critical Miss",
+      "PrecisionRoll": "Precision Roll",
+      "CriticalBonusDamage": "Critical Bonus Damage"
     },
     "Gender": {
       "Male": "Male",

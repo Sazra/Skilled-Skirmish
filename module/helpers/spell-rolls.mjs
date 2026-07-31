@@ -3,8 +3,10 @@ import { getActorSkillLevel, getSkillLabel } from './skills.mjs';
 import {
   applyD20Malus, canCastMovementSpell, getStatusStacks, setStatusStacks, payManaCost, negativeLifeOverflowHTML,
 } from './statusEffects.mjs';
-import { computeSpellAttackBonus, rollAttackPair, renderAttackPairHTML } from './attackRolls.mjs';
-import { getGenericCriticalType, resolveCheckSuccess, wrapCriticalBlock, wrapCriticalInline } from './criticalRolls.mjs';
+import {
+  computeSpellAttackBonus, rollAttackPair, renderAttackPairHTML, getDamageDieSizes, rollCriticalBonusDamage,
+} from './attackRolls.mjs';
+import { getGenericCriticalType, getAttackCriticalType, resolveCheckSuccess, wrapCriticalBlock, wrapCriticalInline } from './criticalRolls.mjs';
 
 /**
  * Roll one damage entry (its formula plus any attribute/skill scaling) and
@@ -89,14 +91,23 @@ async function renderSpellEffectParts(item) {
 
   if (system.attackRoll.enabled) {
     const attackDamages = system.damages.filter(d => d.trigger === 'attack');
+    const dieSizes = [...new Set(attackDamages.flatMap(damage => getDamageDieSizes(damage.formula)))];
     const attackBonus = actor ? computeSpellAttackBonus(system, actor) : 0;
     for (let i = 1; i <= system.attackRoll.count; i++) {
       const rolls = await rollAttackPair(attackBonus, actor);
-      const rendered = await renderAttackPairHTML(rolls, 'magicResistance', actor);
+      const brutalApplied = rolls.some(roll => getAttackCriticalType(roll, actor) === 'success');
+      const rendered = await renderAttackPairHTML(rolls, 'magicResistance', actor, { dieSizes, brutalApplied });
       parts.push(`<div class="sksk-roll-attack"><strong>${game.i18n.format('SKSK.Spell.Roll.Attack', { number: i })}</strong></div>${rendered}`);
 
       for (const damage of attackDamages) {
         parts.push(await renderDamageRoll(damage, actor));
+      }
+
+      if (brutalApplied) {
+        const bonusRoll = await rollCriticalBonusDamage(actor, dieSizes);
+        if (bonusRoll) {
+          parts.push(`<div class="sksk-roll-line"><strong>${game.i18n.localize('SKSK.AttackRoll.CriticalBonusDamage')}</strong></div>${await bonusRoll.render()}`);
+        }
       }
 
       if (system.savingThrows.length) {

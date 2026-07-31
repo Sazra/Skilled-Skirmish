@@ -276,7 +276,9 @@
             "Hit": "Treffer",
             "Miss": "Verfehlt",
             "CriticalHit": "Kritischer Treffer",
-            "CriticalMiss": "Kritisch Verfehlt"
+            "CriticalMiss": "Kritisch Verfehlt",
+            "PrecisionRoll": "Präzisionswurf",
+            "CriticalBonusDamage": "Kritischer Zusatzschaden"
         },
         "Gender": {
             "Male": "Männlich",
