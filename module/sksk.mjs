@@ -70,6 +70,10 @@ Handlebars.registerHelper('eq', function (a, b) {
   return a === b;
 });
 
+Handlebars.registerHelper('gt', function (a, b) {
+  return a > b;
+});
+
 Handlebars.registerHelper('firstLetter', function (str) {
   return (str ?? '').charAt(0).toUpperCase();
 });
@@ -149,7 +153,7 @@ Hooks.once('ready', async function () {
   Hooks.on('createItem', (item, options, userId) => {
     if (item.type !== 'species' || !(item.parent instanceof Actor)) return;
     if (game.user.id !== userId) return;
-    item.parent.update({ 'system.attributes.aur.value': computeSpeciesAura(item.parent) });
+    item.parent.update({ 'system.attributes.aur.rawValue': computeSpeciesAura(item.parent) });
   });
 
   // Only one Light/Heavy Armor can ever be equipped at once (Shields are

@@ -154,6 +154,20 @@ export default class SKSKSpecies extends SKSKItemBase {
       bonus: new fields.NumberField({ required: true, nullable: false, initial: 0 }),
     }));
 
+    // Zero or more adjustments to an attribute's natural maximum (20 + 1
+    // per level of its own "Unbegrenzte X" skill + 5 if Umlimitiert is
+    // active) - add/subtract entries across every source apply first,
+    // then multiply/divide ones scale the result. See
+    // helpers/attributes.mjs#computeAttributeMax.
+    schema.attributeMaxModifiers = new fields.ArrayField(new fields.SchemaField({
+      attribute: new fields.StringField({ required: true, blank: false, initial: "str" }),
+      operation: new fields.StringField({
+        required: true, blank: false, initial: "add",
+        choices: ["add", "subtract", "multiply", "divide"]
+      }),
+      value: new fields.NumberField({ required: true, nullable: false, initial: 1 }),
+    }));
+
     return schema;
   }
 

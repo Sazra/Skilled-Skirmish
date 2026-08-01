@@ -156,7 +156,10 @@
       "ArmorSkillBonus": "Armor Skill Bonus",
       "ArmorBonus": "Armor Bonus",
       "ShieldBonus": "Shield Bonus",
-      "AntimagicBonus": "Antimagic ({name})"
+      "AntimagicBonus": "Antimagic ({name})",
+      "NaturalBase": "Natural Base",
+      "AttributeMax": "Max",
+      "AttributeSkillBonus": "Skill Bonus"
     },
     "GM": {
       "Switches": "Switches",
@@ -222,6 +225,15 @@
       "Luck": "Luck",
       "ChargeBonuses": "Charge Bonuses",
       "Resource": "Resource"
+    },
+    "AttributeMax": {
+      "ModifiersLabel": "Attribute Max Modifiers",
+      "Operation": {
+        "Add": "Add",
+        "Subtract": "Subtract",
+        "Multiply": "Multiply",
+        "Divide": "Divide"
+      }
     },
     "Rest": {
       "Title": "Spend Time",

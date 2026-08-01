@@ -51,6 +51,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       addApCostReduction: SKSKItemSheet.#addApCostReduction,
       addMovementBonus: SKSKItemSheet.#addMovementBonus,
       addChargeBonus: SKSKItemSheet.#addChargeBonus,
+      addAttributeMaxModifier: SKSKItemSheet.#addAttributeMaxModifier,
     }
   };
 
@@ -293,6 +294,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
     // helpers/generalResources.mjs.
     if (['species', 'class', 'talent'].includes(item.type)) {
       context.chargeResourceChoices = CONFIG.SKSK.chargeResources;
+      context.attributeMaxOperationChoices = CONFIG.SKSK.attributeMaxOperations;
     }
 
     // Material selection (Item/Armor/Weapon only) - see helpers/materials.mjs.
@@ -559,6 +561,10 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
 
   static async #addChargeBonus(event, target) {
     await this.#addArrayEntry('chargeBonuses', { resource: 'meditation', bonus: 0 });
+  }
+
+  static async #addAttributeMaxModifier(event, target) {
+    await this.#addArrayEntry('attributeMaxModifiers', { attribute: 'str', operation: 'add', value: 1 });
   }
 
   /**

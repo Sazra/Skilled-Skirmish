@@ -2,18 +2,20 @@
     <div class="side-tab-content flexcol">
         {{#each system.attributes as |attribute key|}}
         <div class="attribute flexcol flex-group-center">
-            <label for="system.attributes.{{key}}.value" class="resource-label rollable flexlarge align-left"
+            <label for="system.attributes.{{key}}.rawValue" class="resource-label rollable flexlarge align-left"
                 data-action="roll" data-roll="d20+@attributes.{{key}}.mod{{#if attribute.unlimitedBonus}}+{{attribute.unlimitedBonus}}{{/if}}"
                 data-attribute-key="{{key}}"
-                data-label="{{attribute.label}}">{{attribute.label}}</label>
+                data-label="{{attribute.label}}"
+                data-tooltip="{{attribute.label}}"
+                data-tooltip-html="{{lookup ../attributeTooltips key}}">{{attribute.label}}</label>
             <div class="flexrow flex-group-center">
-                <input type="text" name="system.attributes.{{key}}.value" value="{{attribute.value}}"
-                    data-dtype="Number" />
+                <input type="text" name="system.attributes.{{key}}.rawValue" value="{{attribute.rawValue}}"
+                    data-dtype="Number"
+                    class="{{#if (gt attribute.rawValue attribute.max)}}attribute-capped{{/if}}" />
                 <span class="attribute-mod rollable" data-action="roll"
                     data-roll="d20+@attributes.{{key}}.mod{{#if attribute.unlimitedBonus}}+{{attribute.unlimitedBonus}}{{/if}}"
                     data-attribute-key="{{key}}"
-                    data-label="{{attribute.label}}"
-                    title="{{#if attribute.unlimitedBonus}}Includes +{{attribute.unlimitedBonus}} from Unbegrenzte/Corpus Immortalis/Umlimitiert{{/if}}">{{numberFormat attribute.mod decimals=0 sign=true}}{{#if attribute.unlimitedBonus}} <span class="attribute-unlimited-bonus">(+{{attribute.unlimitedBonus}})</span>{{/if}}</span>
+                    data-label="{{attribute.label}}">{{numberFormat attribute.mod decimals=0 sign=true}}</span>
             </div>
         </div>
         {{/each}}

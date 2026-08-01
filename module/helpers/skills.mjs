@@ -205,7 +205,7 @@ export function evaluateBonusFormula(formula, value) {
  * @param {string} skillKey
  * @return {object|null}
  */
-function findSkillDefinition(skillKey) {
+export function findSkillDefinition(skillKey) {
   for (const category of Object.values(CONFIG.SKSK.skills)) {
     if (category[skillKey]) return category[skillKey];
   }
@@ -262,4 +262,21 @@ export function isActorSkillUnlocked(actor, skillKey) {
     return evaluateSkillFormula(data.formula ?? '', actor.getRollData()) === 1;
   }
   return !!data.toggle;
+}
+
+/**
+ * A skill's "level" for comparing against an attributeBonusThresholds
+ * entry's own level - getActorSkillLevel for a 5-/10-level skill, or 1/0
+ * for a binary skill depending on whether it's currently unlocked (its
+ * thresholds are always written as "level 1", matching the design sheet's
+ * "Auf Stufe 1" for e.g. Umlimitiert/Spruchlose Magie). Stackable skills
+ * have no bonus thresholds in practice, but would resolve to 0 here too.
+ * @param {Actor} actor
+ * @param {string} skillKey
+ * @return {number}
+ */
+export function getSkillThresholdLevel(actor, skillKey) {
+  const def = findSkillDefinition(skillKey);
+  if (def?.maxLevel === 1) return isActorSkillUnlocked(actor, skillKey) ? 1 : 0;
+  return getActorSkillLevel(actor, skillKey);
 }

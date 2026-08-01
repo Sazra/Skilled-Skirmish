@@ -156,7 +156,10 @@
             "ArmorSkillBonus": "Rüstungs-Fertigkeitsbonus",
             "ArmorBonus": "Rüstungsbonus",
             "ShieldBonus": "Schild-Rüstungsbonus",
-            "AntimagicBonus": "Magiestörend ({name})"
+            "AntimagicBonus": "Magiestörend ({name})",
+            "NaturalBase": "Natürliche Basis",
+            "AttributeMax": "Maximum",
+            "AttributeSkillBonus": "Fertigkeitsbonus"
         },
         "GM": {
             "Switches": "Schalter",
@@ -222,6 +225,15 @@
             "Luck": "Glück",
             "ChargeBonuses": "Ladungsboni",
             "Resource": "Ressource"
+        },
+        "AttributeMax": {
+            "ModifiersLabel": "Attributsmaximum-Modifikatoren",
+            "Operation": {
+                "Add": "Addieren",
+                "Subtract": "Subtrahieren",
+                "Multiply": "Multiplizieren",
+                "Divide": "Dividieren"
+            }
         },
         "Rest": {
             "Title": "Zeit verbringen",

@@ -1,5 +1,6 @@
 import { computeSkillBonusTotals, evaluateSkillFormula, getSkillLevel } from '../helpers/skills.mjs';
-import { computeUnlimitedAttributeBonus } from '../helpers/attributes.mjs';
+import { computeUnlimitedAttributeBonus, computeAttributeMax } from '../helpers/attributes.mjs';
+import { computeNpcAttributeThresholdBonuses } from '../helpers/attributeBonuses.mjs';
 import { computeMaxLife, computeMaxNegativeLife } from '../helpers/life.mjs';
 import { computeMaxMana } from '../helpers/mana.mjs';
 import { computeMaxActionPoints, computeMaxReactionPoints } from '../helpers/points.mjs';
@@ -10,6 +11,25 @@ import {
 } from '../helpers/generalResources.mjs';
 
 export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
+
+  /**
+   * Seed the new "rawValue" accumulator from pre-existing "value" data the
+   * first time an actor saved before that field existed loads - otherwise
+   * every actor's attributes would silently reset to the schema default
+   * instead of carrying forward whatever score they actually had.
+   * @param {object} source
+   * @return {object}
+   */
+  static migrateData(source) {
+    if (source.attributes) {
+      for (const attr of Object.values(source.attributes)) {
+        if (attr && attr.rawValue === undefined && attr.value !== undefined) {
+          attr.rawValue = attr.value;
+        }
+      }
+    }
+    return super.migrateData(source);
+  }
 
   static defineSchema() {
     const fields = foundry.data.fields;
@@ -301,7 +321,18 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     const attributesSchema = {};
     for (const attribute of attributeKeys) {
       attributesSchema[attribute] = new fields.SchemaField({
+        // The true, ever-growing accumulator (direct edits, Species/Class/
+        // Talent bonuses, skill-threshold bonuses) - never itself clamped
+        // to the attribute's max, so excess above a since-lowered max isn't
+        // lost, and "value" self-adjusts the instant the max rises again.
+        rawValue: new fields.NumberField({ ...requiredInteger, initial: 10, min: 0 }),
+        // Derived every data preparation: min(rawValue [+ an NPC's live
+        // skill-threshold bonus], max). "mod" is computed from THIS, not
+        // rawValue, so capped-out excess never affects the roll modifier.
         value: new fields.NumberField({ ...requiredInteger, initial: 10, min: 0 }),
+        // Derived every data preparation - see helpers/attributes.mjs#
+        // computeAttributeMax.
+        max: new fields.NumberField({ ...requiredInteger, initial: 20, min: 1 }),
         mod: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
         label: new fields.StringField({ required: true, blank: true }),
         // "Unbegrenzte X"/Corpus Immortalis/Umlimitiert bonus to this one
@@ -310,6 +341,23 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       });
     }
     schema.attributes = new fields.SchemaField(attributesSchema);
+
+    // One entry per (skill, threshold) pair for every skill with
+    // CONFIG.SKSK.skills[...].attributeBonusThresholds - the attribute
+    // chosen for that threshold ("" until chosen), or the sentinel
+    // "granted" for thresholds with no choice at all (attributeMode "all"/
+    // "and") once applied. See helpers/attributeBonuses.mjs.
+    const attributeBonusChoicesSchema = {};
+    for (const category of Object.values(CONFIG.SKSK.skills)) {
+      for (const [key, def] of Object.entries(category)) {
+        if (!def.attributeBonusThresholds?.length) continue;
+        attributeBonusChoicesSchema[key] = new fields.ArrayField(
+          new fields.StringField({ required: true, blank: true, initial: "" }),
+          { initial: def.attributeBonusThresholds.map(() => "") }
+        );
+      }
+    }
+    schema.skillAttributeBonusChoices = new fields.SchemaField(attributeBonusChoicesSchema);
 
     // One entry per skill, flattened across every category in
     // CONFIG.SKSK.skills (skill keys are unique across categories).
@@ -344,15 +392,34 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
   prepareDerivedData() {
     super.prepareDerivedData();
     if (!this.attributes) return;
+
+    // An NPC's skill-threshold attribute bonuses stay fully dynamic
+    // (never written to rawValue) so they track its formula-derived skill
+    // levels live - see helpers/attributeBonuses.mjs. A Character's own
+    // bonuses are instead permanent additions already folded into
+    // rawValue (via chooseAttributeBonus/applyPendingAutoGrants), so there
+    // is nothing further to add here for them.
+    const npcAttributeBonuses = (this.parent?.type === 'npc')
+      ? computeNpcAttributeThresholdBonuses(this.parent)
+      : null;
+
     for (const key in this.attributes) {
       if (!this.attributes[key]) continue;
-      this.attributes[key].mod = Math.floor((this.attributes[key].value - 10) / 2);
-      this.attributes[key].label = game.i18n.localize(CONFIG.SKSK.attributes[key]) ?? key;
+      const attribute = this.attributes[key];
+      // Derived every preparation - see helpers/attributes.mjs#computeAttributeMax.
+      attribute.max = this.parent ? computeAttributeMax(this.parent, key) : 20;
+      // rawValue never itself gets clamped, so a since-lowered max's
+      // excess isn't lost - "value" (and everything derived from it, like
+      // "mod" below) is simply re-capped fresh every preparation.
+      const dynamicBonus = npcAttributeBonuses ? (npcAttributeBonuses[key] ?? 0) : 0;
+      attribute.value = Math.min(attribute.rawValue + dynamicBonus, attribute.max);
+      attribute.mod = Math.floor((attribute.value - 10) / 2);
+      attribute.label = game.i18n.localize(CONFIG.SKSK.attributes[key]) ?? key;
       // "Unbegrenzte X"/Corpus Immortalis/Umlimitiert - see
       // helpers/attributes.mjs#computeUnlimitedAttributeBonus. Only ever
       // added to this one attribute's own "reiner" roll (attributes.hbs),
       // not to skill checks that merely use it as one of their modifiers.
-      this.attributes[key].unlimitedBonus = this.parent ? computeUnlimitedAttributeBonus(this.parent, key) : 0;
+      attribute.unlimitedBonus = this.parent ? computeUnlimitedAttributeBonus(this.parent, key) : 0;
     }
 
     // Depends on the Constitution modifier just computed above, so must

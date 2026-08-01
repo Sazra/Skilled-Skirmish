@@ -118,4 +118,39 @@
     </ol>
   </div>
 
+  <div class="resource">
+    <label class="resource-label">Attribute Bonuses (from Skill Thresholds)</label>
+    <ol class="items-list items-list-compact">
+      <li class="item flexrow items-header">
+        <div class="item-name">Skill</div>
+        <div class="item-name">Level</div>
+        <div class="item-name">Attribute(s)</div>
+        <div class="item-controls">
+          {{#if resolvedAttributeBonuses.length}}
+          <a class="item-control" data-action="resetAllAttributeBonuses" title="Reset all">
+            <i class="fas fa-undo"></i>
+          </a>
+          {{/if}}
+        </div>
+      </li>
+      {{#each resolvedAttributeBonuses as |entry|}}
+      <li class="item flexrow">
+        <div class="item-name">{{localize entry.skillLabel}}</div>
+        <div class="item-name">{{entry.level}}</div>
+        <div class="item-name">{{entry.attributeLabel}}</div>
+        <div class="item-controls">
+          <a class="item-control item-delete" data-action="resetAttributeBonus"
+            data-skill="{{entry.skillKey}}" data-index="{{entry.index}}" title="Reset">
+            <i class="fas fa-undo"></i>
+          </a>
+        </div>
+      </li>
+      {{else}}
+      <li class="item flexrow">
+        <div class="item-name">No attribute bonuses granted yet.</div>
+      </li>
+      {{/each}}
+    </ol>
+  </div>
+
 </section>

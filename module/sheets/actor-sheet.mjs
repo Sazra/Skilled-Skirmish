@@ -7,6 +7,11 @@ import {
 import { evaluateSkillFormula, computeSkillBonusTotals, getActorSkillLevel } from '../helpers/skills.mjs';
 import { getSkillCheckDefinition, rollSkillCheck, nonEmptyAttributeSubsets } from '../helpers/skillRolls.mjs';
 import {
+  getVisibleAttributeBonusDropdowns, getResolvedAttributeBonuses, chooseAttributeBonus,
+  resetAttributeBonusChoice, resetAllAttributeBonusChoices, applyPendingAutoGrants,
+} from '../helpers/attributeBonuses.mjs';
+import { getAttributeMaxBreakdown, getAttributeUnlimitedBonusBreakdown } from '../helpers/attributes.mjs';
+import {
   checkCombinedSpellPrerequisite,
   checkSimpleOrAdvancedSpellPrerequisite,
   computeSpellManaCost,
@@ -94,6 +99,8 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       addStatusInstance: SKSKActorSheet.#addStatusInstance,
       applyCauterization: SKSKActorSheet.#applyCauterization,
       attemptRestrainedEscape: SKSKActorSheet.#attemptRestrainedEscape,
+      resetAttributeBonus: SKSKActorSheet.#resetAttributeBonus,
+      resetAllAttributeBonuses: SKSKActorSheet.#resetAllAttributeBonuses,
     },
     // Drop target for assigning existing Items (of any type) to this actor
     // by dragging them from the sidebar, a compendium, or another sheet.
@@ -362,6 +369,8 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     context.movementTypeChoices = CONFIG.SKSK.movementTypes;
     context.attributeChoices = CONFIG.SKSK.attributes;
     context.attributeUsageChoices = CONFIG.SKSK.attributeUsageTypes;
+    // GM tab's attribute-bonus reset list - see helpers/attributeBonuses.mjs.
+    context.resolvedAttributeBonuses = getResolvedAttributeBonuses(actor);
     // Actions tab's Weapons/Usable Items containers - "usable" Items are
     // Consumable and/or have Charges enabled (see data/item.mjs#charges) -
     // see helpers/actions.mjs#useItem.
@@ -475,6 +484,17 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     context.magicResistanceTooltip = renderBreakdownHtml(
       game.i18n.localize('SKSK.Resource.MR'), getMagicResistanceBreakdown(actor)
     );
+
+    // Hover tooltip per attribute (attributes.hbs) breaking down its Max
+    // and "Verbessert X" skill bonus (see helpers/attributes.mjs) - shown
+    // on hover instead of inline, to keep the attribute bar compact.
+    context.attributeTooltips = {};
+    for (const key of Object.keys(CONFIG.SKSK.attributes)) {
+      const label = game.i18n.localize(CONFIG.SKSK.attributes[key]);
+      context.attributeTooltips[key] =
+        renderBreakdownHtml(`${label} ${game.i18n.localize('SKSK.Breakdown.AttributeMax')}`, getAttributeMaxBreakdown(actor, key))
+        + renderBreakdownHtml(`${label} ${game.i18n.localize('SKSK.Breakdown.AttributeSkillBonus')}`, getAttributeUnlimitedBonusBreakdown(actor, key));
+    }
 
     return context;
   }
@@ -726,6 +746,16 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
           // attribute assigned via the design sheet's "Attributsnutzung"
           // column do.
           rollable: !!def.attributes?.length,
+          // "Oder"-choice attribute-bonus thresholds this skill currently
+          // has an unresolved, visible dropdown for - see
+          // helpers/attributeBonuses.mjs#getVisibleAttributeBonusDropdowns.
+          // "all"/"and" mode thresholds need no dropdown at all, so they
+          // never appear here.
+          attributeBonusDropdowns: getVisibleAttributeBonusDropdowns(actor, key).map(d => ({
+            index: d.index,
+            level: d.level,
+            choices: Object.fromEntries(d.attributes.map(a => [a, CONFIG.SKSK.attributes[a]])),
+          })),
         };
 
         if (row.isStackable) {
@@ -816,9 +846,30 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
 
   /** @override */
   _onChangeForm(formConfig, event) {
+    if (this.#onChooseAttributeBonus(event.target)) return;
     this.#normalizeResourceInput(event.target);
     this.#enforceElementExclusivity(event.target);
     super._onChangeForm(formConfig, event);
+  }
+
+  /**
+   * Handle picking an attribute from a skill's attribute-bonus dropdown
+   * (skills.hbs) - unlike a normal form field, this has no "name" of its
+   * own (there's nothing to persist 1:1), so it's intercepted here rather
+   * than submitted normally. See helpers/attributeBonuses.mjs#
+   * chooseAttributeBonus for what actually happens (Character: permanent
+   * +1; NPC: choice stored, bonus stays dynamic).
+   * @param {HTMLElement} target
+   * @return {boolean} Whether this event was an attribute-bonus choice
+   *                    (and should NOT fall through to normal handling).
+   */
+  #onChooseAttributeBonus(target) {
+    const skillKey = target?.dataset?.attributeBonusSkill;
+    if (skillKey === undefined) return false;
+    const index = Number(target.dataset.attributeBonusIndex);
+    const attributeKey = target.value;
+    if (attributeKey) chooseAttributeBonus(this.actor, skillKey, index, attributeKey);
+    return true;
   }
 
   /**
@@ -932,6 +983,13 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
         apCost: restrainedRow.querySelector('.restrained-apcost-input')?.value,
       });
     });
+
+    // A Character's "all"/"and" mode attribute-threshold bonuses (no
+    // choice to make) have no single "skill level changed" event to hook,
+    // so they're lazily detected and applied here instead - a no-op for
+    // NPCs (their equivalent bonus stays fully dynamic) and once nothing
+    // is left pending. See helpers/attributeBonuses.mjs.
+    if (this.actor.isOwner) applyPendingAutoGrants(this.actor);
   }
 
   /**
@@ -1145,6 +1203,21 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
    */
   static #openRestDialog(event, target) {
     new SKSKRestDialog(this.actor).render(true);
+  }
+
+  /**
+   * GM tab: undo one resolved attribute-bonus threshold, letting its
+   * dropdown (if "choice" mode) reappear for re-selection - doesn't touch
+   * the underlying skill level/points. See helpers/attributeBonuses.mjs#
+   * resetAttributeBonusChoice.
+   */
+  static async #resetAttributeBonus(event, target) {
+    await resetAttributeBonusChoice(this.actor, target.dataset.skill, Number(target.dataset.index));
+  }
+
+  /** GM tab: undo every resolved attribute-bonus threshold on this actor at once. */
+  static async #resetAllAttributeBonuses(event, target) {
+    await resetAllAttributeBonusChoices(this.actor);
   }
 
   /**

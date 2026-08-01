@@ -392,4 +392,44 @@
     </ol>
   </div>
 
+  <div class="resource">
+    <label class="resource-label">{{localize 'SKSK.AttributeMax.ModifiersLabel'}}</label>
+    <ol class="items-list items-list-compact">
+      <li class="item flexrow items-header">
+        <div class="item-name">Attribute</div>
+        <div class="item-name">Operation</div>
+        <div class="item-name">Value</div>
+        <div class="item-controls">
+          <a class="item-control item-create" data-action="addAttributeMaxModifier" title="Add attribute max modifier">
+            <i class="fas fa-plus"></i>
+          </a>
+        </div>
+      </li>
+      {{#each system.attributeMaxModifiers as |entry index|}}
+      <li class="item flexrow">
+        <div class="item-name">
+          <select name="system.attributeMaxModifiers.{{index}}.attribute">
+            {{selectOptions ../attributeChoices selected=entry.attribute localize=true}}
+          </select>
+        </div>
+        <div class="item-name">
+          <select name="system.attributeMaxModifiers.{{index}}.operation">
+            {{selectOptions ../attributeMaxOperationChoices selected=entry.operation localize=true}}
+          </select>
+        </div>
+        <div class="item-name">
+          <input type="text" name="system.attributeMaxModifiers.{{index}}.value" value="{{entry.value}}"
+            data-dtype="Number" />
+        </div>
+        <div class="item-controls">
+          <a class="item-control item-delete" data-action="removeArrayEntry" data-field="attributeMaxModifiers"
+            data-index="{{index}}" title="Remove">
+            <i class="fas fa-trash"></i>
+          </a>
+        </div>
+      </li>
+      {{/each}}
+    </ol>
+  </div>
+
 </section>

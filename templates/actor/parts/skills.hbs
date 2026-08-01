@@ -71,6 +71,17 @@
             </div>
           {{/if}}
         </li>
+        {{#each skill.attributeBonusDropdowns as |dropdown|}}
+        <li class="item flexrow attribute-bonus-row">
+          <div class="item-name attribute-bonus-hint">Attribute bonus (Level {{dropdown.level}})</div>
+          <div class="item-controls">
+            <select data-attribute-bonus-skill="{{skill.key}}" data-attribute-bonus-index="{{dropdown.index}}">
+              <option value=""></option>
+              {{selectOptions dropdown.choices localize=true}}
+            </select>
+          </div>
+        </li>
+        {{/each}}
         {{/each}}
       </ol>
     </section>

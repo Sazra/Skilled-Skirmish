@@ -407,9 +407,9 @@
   color: #a22;
 }
 
-.sksk .attribute-unlimited-bonus {
-  color: var(--color-text-hyperlink, #00538d);
-  font-size: 0.85em;
+.sksk input.attribute-capped {
+  color: #a22;
+  font-weight: bold;
 }
 
 .sksk .skill-category-body .skill-toggle {
@@ -447,6 +447,17 @@
 .sksk .skill-favorite-toggle input[type="checkbox"]:checked + i {
   font-weight: 900;
   color: var(--color-level-warning, #ff8800);
+}
+
+.sksk .attribute-bonus-row {
+  background: rgba(255, 136, 0, 0.08);
+  border-left: 2px solid var(--color-level-warning, #ff8800);
+}
+
+.sksk .attribute-bonus-hint {
+  font-size: 11px;
+  font-style: italic;
+  color: var(--color-text-dark-secondary, #7a7971);
 }
 
 /* Spells tab: a vertical strip of 4 spell-type tabs (Simple/Advanced/
