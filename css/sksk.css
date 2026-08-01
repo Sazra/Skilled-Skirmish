@@ -407,6 +407,11 @@
   color: #a22;
 }
 
+.sksk .attribute-unlimited-bonus {
+  color: var(--color-text-hyperlink, #00538d);
+  font-size: 0.85em;
+}
+
 .sksk .skill-category-body .skill-toggle {
   flex: 0 0 auto;
   justify-content: center;

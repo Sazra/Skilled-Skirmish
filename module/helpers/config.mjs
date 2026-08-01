@@ -15,6 +15,21 @@ SKSK.attributes = {
   app: 'SKSK.Attribute.App.long',
 };
 
+// Each "Unbegrenzte X" skill (CONFIG.SKSK.skills.attribute) grants a bonus
+// to that one attribute's own roll - not to skill checks that merely use
+// the attribute as one of their modifiers - equal to its own skill level.
+// See helpers/attributes.mjs#computeUnlimitedAttributeBonus.
+SKSK.unlimitedAttributeSkills = {
+  str: 'unlimitedStrength',
+  dex: 'unlimitedDexterity',
+  con: 'unlimitedConstitution',
+  per: 'unlimitedPerception',
+  wil: 'unlimitedWillpower',
+  aur: 'unlimitedAura',
+  cha: 'unlimitedCharisma',
+  app: 'unlimitedAppearance',
+};
+
 // Character tab's Data section.
 SKSK.genders = {
   male: 'SKSK.Gender.Male',

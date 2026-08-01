@@ -1,4 +1,5 @@
 import { computeSkillBonusTotals, evaluateSkillFormula, getSkillLevel } from '../helpers/skills.mjs';
+import { computeUnlimitedAttributeBonus } from '../helpers/attributes.mjs';
 import { computeMaxLife, computeMaxNegativeLife } from '../helpers/life.mjs';
 import { computeMaxMana } from '../helpers/mana.mjs';
 import { computeMaxActionPoints, computeMaxReactionPoints } from '../helpers/points.mjs';
@@ -302,7 +303,10 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       attributesSchema[attribute] = new fields.SchemaField({
         value: new fields.NumberField({ ...requiredInteger, initial: 10, min: 0 }),
         mod: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
-        label: new fields.StringField({ required: true, blank: true })
+        label: new fields.StringField({ required: true, blank: true }),
+        // "Unbegrenzte X"/Corpus Immortalis/Umlimitiert bonus to this one
+        // attribute's own roll - see prepareDerivedData below.
+        unlimitedBonus: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 })
       });
     }
     schema.attributes = new fields.SchemaField(attributesSchema);
@@ -344,6 +348,11 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       if (!this.attributes[key]) continue;
       this.attributes[key].mod = Math.floor((this.attributes[key].value - 10) / 2);
       this.attributes[key].label = game.i18n.localize(CONFIG.SKSK.attributes[key]) ?? key;
+      // "Unbegrenzte X"/Corpus Immortalis/Umlimitiert - see
+      // helpers/attributes.mjs#computeUnlimitedAttributeBonus. Only ever
+      // added to this one attribute's own "reiner" roll (attributes.hbs),
+      // not to skill checks that merely use it as one of their modifiers.
+      this.attributes[key].unlimitedBonus = this.parent ? computeUnlimitedAttributeBonus(this.parent, key) : 0;
     }
 
     // Depends on the Constitution modifier just computed above, so must

@@ -243,3 +243,23 @@ export function getActorSkillLevel(actor, skillKey) {
 
   return getSkillLevel(points, def.maxLevel, bonus);
 }
+
+/**
+ * Whether a binary (maxLevel 1) skill is currently active for an actor -
+ * character: its own toggle; NPC: whether its formula currently evaluates
+ * to 1. Not meaningful for anything but a binary skill - always false
+ * otherwise.
+ * @param {Actor} actor
+ * @param {string} skillKey
+ * @return {boolean}
+ */
+export function isActorSkillUnlocked(actor, skillKey) {
+  const def = findSkillDefinition(skillKey);
+  if (!def || def.maxLevel !== 1) return false;
+
+  const data = actor.system.skills?.[skillKey] ?? {};
+  if (actor.type === 'npc') {
+    return evaluateSkillFormula(data.formula ?? '', actor.getRollData()) === 1;
+  }
+  return !!data.toggle;
+}
