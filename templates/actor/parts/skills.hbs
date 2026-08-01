@@ -14,7 +14,13 @@
       <ol class="items-list">
         {{#each skills as |skill|}}
         <li class="item flexrow">
-          <div class="item-name"><h4>{{localize skill.label}}</h4></div>
+          <div class="item-name">
+            {{#if skill.rollable}}
+            <h4 class="rollable" data-action="rollSkill" data-skill="{{skill.key}}" title="{{localize 'SKSK.Skill.RollButton'}}">{{localize skill.label}}</h4>
+            {{else}}
+            <h4>{{localize skill.label}}</h4>
+            {{/if}}
+          </div>
 
           {{#if skill.isBinary}}
             {{#if ../../isNpc}}

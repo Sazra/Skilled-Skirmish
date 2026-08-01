@@ -524,7 +524,10 @@
         "Immortal": "Immortal"
       },
       "Gain": "Gain",
-      "GainHint": "Not-yet-integrated skill points - added to the real points (and reset to 0) once an Adjustment or Recuperation Pause is taken."
+      "GainHint": "Not-yet-integrated skill points - added to the real points (and reset to 0) once an Adjustment or Recuperation Pause is taken.",
+      "ChooseAttributePrompt": "Choose which attribute to use:",
+      "CombineAttributePrompt": "Choose which attribute(s) to use:",
+      "RollButton": "Roll"
     },
     "SkillCategory": {
       "Weapons": "Weapon Skills",

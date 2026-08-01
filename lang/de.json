@@ -537,7 +537,10 @@
                 "Immortal": "Unsterblich"
             },
             "Gain": "Gewinn",
-            "GainHint": "Noch nicht integrierte Fertigkeitspunkte - werden bei einer Anpassungs- oder Genesungspause zu den normalen Punkten hinzugefügt (und danach zurückgesetzt)."
+            "GainHint": "Noch nicht integrierte Fertigkeitspunkte - werden bei einer Anpassungs- oder Genesungspause zu den normalen Punkten hinzugefügt (und danach zurückgesetzt).",
+            "ChooseAttributePrompt": "Wähle, welches Attribut verwendet werden soll:",
+            "CombineAttributePrompt": "Wähle, welche(s) Attribut(e) verwendet werden soll(en):",
+            "RollButton": "Würfeln"
         },
         "SkillCategory": {
             "Weapons": "Waffenfertigkeiten",

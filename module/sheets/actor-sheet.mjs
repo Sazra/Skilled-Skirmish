@@ -5,6 +5,7 @@ import {
   prepareActiveEffectCategories,
 } from '../helpers/effects.mjs';
 import { evaluateSkillFormula, computeSkillBonusTotals, getActorSkillLevel } from '../helpers/skills.mjs';
+import { getSkillCheckDefinition, rollSkillCheck, nonEmptyAttributeSubsets } from '../helpers/skillRolls.mjs';
 import {
   checkCombinedSpellPrerequisite,
   checkSimpleOrAdvancedSpellPrerequisite,
@@ -73,6 +74,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       delete: SKSKActorSheet.#onEffectAction,
       toggle: SKSKActorSheet.#onEffectAction,
       roll: SKSKActorSheet.#onRoll,
+      rollSkill: SKSKActorSheet.#rollSkill,
       addResource: SKSKActorSheet.#addResource,
       removeResource: SKSKActorSheet.#removeResource,
       addAdditionalData: SKSKActorSheet.#addAdditionalData,
@@ -719,6 +721,11 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
           bonus: skillBonusTotals[key] ?? 0,
           favorite: data.favorite ?? false,
           gain: data.gain ?? 0,
+          // Whether this skill carries a skill check at all (see
+          // helpers/skillRolls.mjs) - only levelled skills with an
+          // attribute assigned via the design sheet's "Attributsnutzung"
+          // column do.
+          rollable: !!def.attributes?.length,
         };
 
         if (row.isStackable) {
@@ -1230,6 +1237,52 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       });
       return roll;
     }
+  }
+
+  /**
+   * Handle clicking a skill (skills.hbs' name, or general-overview.hbs'
+   * favorited skill row) to roll its skill check: 1d20 + skill level +
+   * attribute modifier(s). Skills with a single fixed attribute roll
+   * immediately. Skills with more than one possible attribute prompt with
+   * one button per valid option - clicking a button both makes the choice
+   * and rolls with it in the same action, closing the dialog. An "oder"
+   * skill (attributeMode "choice") offers one button per individual
+   * attribute; an "und/oder" skill ("combine") instead offers one button
+   * per non-empty combination of its attributes (each summed together),
+   * since the player may want any subset, not just single attributes -
+   * see helpers/skillRolls.mjs.
+   * @param {PointerEvent} event   The originating click event.
+   * @param {HTMLElement} target   The capturing HTML element, carrying data-skill.
+   * @private
+   */
+  static async #rollSkill(event, target) {
+    event.preventDefault();
+    const skillKey = target.dataset.skill;
+    const def = getSkillCheckDefinition(skillKey);
+    if (!def) return;
+
+    const attributes = def.attributes;
+    if (attributes.length === 1) {
+      return rollSkillCheck(this.actor, skillKey, attributes);
+    }
+
+    const isCombine = def.attributeMode === 'combine';
+    const options = isCombine ? nonEmptyAttributeSubsets(attributes) : attributes.map(a => [a]);
+    const buttons = options.map((option, index) => ({
+      action: `option${index}`,
+      label: option.map(a => game.i18n.localize(CONFIG.SKSK.attributes[a])).join(' + '),
+      callback: () => option,
+    }));
+
+    const promptKey = isCombine ? 'SKSK.Skill.CombineAttributePrompt' : 'SKSK.Skill.ChooseAttributePrompt';
+    const chosen = await foundry.applications.api.DialogV2.wait({
+      window: { title: game.i18n.localize(def.label) },
+      content: `<p>${game.i18n.localize(promptKey)}</p>`,
+      buttons,
+      rejectClose: false,
+    });
+    if (!chosen?.length) return;
+    return rollSkillCheck(this.actor, skillKey, chosen);
   }
 
   /**
