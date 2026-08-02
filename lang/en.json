@@ -607,7 +607,8 @@
       "General": "General",
       "Character": "Character",
       "Actions": "Actions",
-      "GM": "GM"
+      "GM": "GM",
+      "ConfigureToken": "Configure Token"
     },
     "Species": {
       "Type": {

@@ -71,6 +71,20 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     form: {
       submitOnChange: true
     },
+    // Appended to DocumentSheetV2's own window.controls (Configure Sheet/
+    // Configure Ownership) - Foundry merges these arrays across the
+    // inheritance chain rather than replacing them, so this shows up
+    // alongside those in the same "..." header menu next to Copy Document
+    // UUID.
+    window: {
+      controls: [
+        {
+          icon: 'fa-solid fa-circle-user',
+          label: 'SKSK.SheetLabels.ConfigureToken',
+          action: 'configureToken',
+        },
+      ],
+    },
     actions: {
       editItem: SKSKActorSheet.#editItem,
       createItem: SKSKActorSheet.#createItem,
@@ -103,6 +117,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       attemptRestrainedEscape: SKSKActorSheet.#attemptRestrainedEscape,
       resetAttributeBonus: SKSKActorSheet.#resetAttributeBonus,
       resetAllAttributeBonuses: SKSKActorSheet.#resetAllAttributeBonuses,
+      configureToken: SKSKActorSheet.#configureToken,
     },
     // Drop target for assigning existing Items (of any type) to this actor
     // by dragging them from the sidebar, a compendium, or another sheet.
@@ -1214,6 +1229,15 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
    */
   static #openTrainingDialog(event, target) {
     new SKSKTrainingDialog(this.actor).render(true);
+  }
+
+  /**
+   * Open this actor's Prototype Token configuration directly from the
+   * sheet, without needing a placed token on a scene first - added via
+   * DEFAULT_OPTIONS.window.controls to the sheet's "..." header menu.
+   */
+  static #configureToken(event, target) {
+    new CONFIG.Token.prototypeSheetClass({ prototype: this.actor.prototypeToken }).render(true);
   }
 
   /**

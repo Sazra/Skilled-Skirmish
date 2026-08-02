@@ -394,7 +394,8 @@
             "General": "Allgemein",
             "Character": "Charakter",
             "Actions": "Aktionen",
-            "GM": "GM"
+            "GM": "GM",
+            "ConfigureToken": "Token konfigurieren"
         },
         "Skill": {
             "Weapon": {
