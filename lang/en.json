@@ -32,6 +32,19 @@
         "Name": "Training Methods",
         "Hint": "Training methods Characters can use (via the sheet header's Training button) to generate pending FP for a main skill and any number of secondary skills, per hour spent training.",
         "Label": "Configure Training Methods"
+      },
+      "ExportImport": {
+        "Name": "Export/Import Settings",
+        "Hint": "Export this world's SKSK settings (skill point costs, carry weight formula, Materials, Models, Status Effects, Training Methods) to a JSON file, or import them from one - e.g. to back up a world's configuration or copy it to another world.",
+        "Label": "Export/Import Settings",
+        "Export": "Export Settings",
+        "Import": "Import Settings",
+        "ImportHint": "Importing overwrites the current values of any setting present in the chosen file. Settings not present in the file are left untouched.",
+        "InvalidFile": "That file isn't a valid SKSK settings export.",
+        "NothingToImport": "The chosen file contains none of this system's settings.",
+        "ImportConfirmTitle": "Import Settings?",
+        "ImportConfirmContent": "This will overwrite {count} setting(s) with the values from the chosen file. This cannot be undone. Continue?",
+        "ImportSuccess": "{count} setting(s) imported."
       }
     },
     "Movement": {

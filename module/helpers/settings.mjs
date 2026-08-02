@@ -2,6 +2,7 @@ import { SKSKMaterialsConfig } from '../apps/materials-config.mjs';
 import { SKSKModelsConfig } from '../apps/models-config.mjs';
 import { SKSKStatusEffectsConfig } from '../apps/status-effects-config.mjs';
 import { SKSKTrainingMethodsConfig } from '../apps/training-methods-config.mjs';
+import { SKSKSettingsExportImport } from '../apps/settings-export-import.mjs';
 
 /**
  * Register world-scoped game settings for the system.
@@ -125,6 +126,18 @@ export function registerSettings() {
     label: 'SKSK.Settings.TrainingMethods.Label',
     icon: 'fas fa-dumbbell',
     type: SKSKTrainingMethodsConfig,
+    restricted: true,
+  });
+
+  // GM-only export/import of every world setting above as one JSON file -
+  // see apps/settings-export-import.mjs. No backing setting of its own,
+  // just a menu opening the export/import app.
+  game.settings.registerMenu('sksk', 'exportImportMenu', {
+    name: 'SKSK.Settings.ExportImport.Name',
+    hint: 'SKSK.Settings.ExportImport.Hint',
+    label: 'SKSK.Settings.ExportImport.Label',
+    icon: 'fas fa-file-export',
+    type: SKSKSettingsExportImport,
     restricted: true,
   });
 }

@@ -32,6 +32,19 @@
                 "Name": "Trainingsmethoden",
                 "Hint": "Trainingsmethoden, die Charaktere (über den Trainings-Button im Kopfbereich) nutzen können, um pro trainierter Stunde noch nicht integrierte FP für eine Hauptfertigkeit und beliebig viele Nebenfertigkeiten zu generieren.",
                 "Label": "Trainingsmethoden konfigurieren"
+            },
+            "ExportImport": {
+                "Name": "Einstellungen exportieren/importieren",
+                "Hint": "Exportiert die SKSK-Einstellungen dieser Welt (Fertigkeitspunktkosten, Formel für Tragegewicht, Materialien, Modelle, Statuseffekte, Trainingsmethoden) als JSON-Datei, oder importiert sie aus einer solchen - z.B. um die Konfiguration einer Welt zu sichern oder in eine andere Welt zu übertragen.",
+                "Label": "Einstellungen exportieren/importieren",
+                "Export": "Einstellungen exportieren",
+                "Import": "Einstellungen importieren",
+                "ImportHint": "Beim Import werden die aktuellen Werte jeder in der gewählten Datei enthaltenen Einstellung überschrieben. Nicht enthaltene Einstellungen bleiben unverändert.",
+                "InvalidFile": "Diese Datei ist kein gültiger SKSK-Einstellungsexport.",
+                "NothingToImport": "Die gewählte Datei enthält keine Einstellungen dieses Systems.",
+                "ImportConfirmTitle": "Einstellungen importieren?",
+                "ImportConfirmContent": "Dadurch werden {count} Einstellung(en) mit den Werten aus der gewählten Datei überschrieben. Dies kann nicht rückgängig gemacht werden. Fortfahren?",
+                "ImportSuccess": "{count} Einstellung(en) importiert."
             }
         },
         "Movement": {
