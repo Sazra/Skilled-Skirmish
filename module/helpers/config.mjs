@@ -156,6 +156,10 @@ SKSK.predefinedStatusEffects = [
     id: 'concentration', img: 'icons/svg/aura.svg',
     nameKey: 'SKSK.StatusEffect.Concentration.Name', descriptionKey: 'SKSK.StatusEffect.Concentration.Description',
   },
+  {
+    id: 'concealed', img: 'icons/svg/invisible.svg',
+    nameKey: 'SKSK.StatusEffect.Concealed.Name', descriptionKey: 'SKSK.StatusEffect.Concealed.Description',
+  },
 ];
 
 // Restrained's own escape-check timing choices - see

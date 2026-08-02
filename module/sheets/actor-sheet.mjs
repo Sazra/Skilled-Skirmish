@@ -5,7 +5,7 @@ import {
   prepareActiveEffectCategories,
 } from '../helpers/effects.mjs';
 import { evaluateSkillFormula, computeSkillBonusTotals, getActorSkillLevel } from '../helpers/skills.mjs';
-import { getSkillCheckDefinition, rollSkillCheck, nonEmptyAttributeSubsets } from '../helpers/skillRolls.mjs';
+import { getSkillCheckDefinition, rollSkillCheck, nonEmptyAttributeSubsets, chooseSkillRollVariant } from '../helpers/skillRolls.mjs';
 import {
   getVisibleAttributeBonusDropdowns, getResolvedAttributeBonuses, chooseAttributeBonus,
   resetAttributeBonusChoice, resetAllAttributeBonusChoices, applyPendingAutoGrants,
@@ -1361,15 +1361,18 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
   /**
    * Handle clicking a skill (skills.hbs' name, or general-overview.hbs'
    * favorited skill row) to roll its skill check: 1d20 + skill level +
-   * attribute modifier(s). Skills with a single fixed attribute roll
-   * immediately. Skills with more than one possible attribute prompt with
-   * one button per valid option - clicking a button both makes the choice
-   * and rolls with it in the same action, closing the dialog. An "oder"
-   * skill (attributeMode "choice") offers one button per individual
-   * attribute; an "und/oder" skill ("combine") instead offers one button
-   * per non-empty combination of its attributes (each summed together),
-   * since the player may want any subset, not just single attributes -
-   * see helpers/skillRolls.mjs.
+   * attribute modifier(s). Some skills (see helpers/skillRolls.mjs#
+   * SKILL_ROLL_VARIANTS) first prompt for which variant of their roll is
+   * being made (e.g. Fallen: setting vs. disarming a trap) - same roll,
+   * different flavor/FP trigger; skipped entirely for skills with none
+   * defined. Skills with a single fixed attribute then roll immediately.
+   * Skills with more than one possible attribute prompt with one button
+   * per valid option - clicking a button both makes the choice and rolls
+   * with it in the same action, closing the dialog. An "oder" skill
+   * (attributeMode "choice") offers one button per individual attribute;
+   * an "und/oder" skill ("combine") instead offers one button per
+   * non-empty combination of its attributes (each summed together), since
+   * the player may want any subset, not just single attributes.
    * @param {PointerEvent} event   The originating click event.
    * @param {HTMLElement} target   The capturing HTML element, carrying data-skill.
    * @private
@@ -1380,9 +1383,12 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     const def = getSkillCheckDefinition(skillKey);
     if (!def) return;
 
+    const { chosen, variant } = await chooseSkillRollVariant(skillKey, def);
+    if (!chosen) return;
+
     const attributes = def.attributes;
     if (attributes.length === 1) {
-      return rollSkillCheck(this.actor, skillKey, attributes);
+      return rollSkillCheck(this.actor, skillKey, attributes, variant);
     }
 
     const isCombine = def.attributeMode === 'combine';
@@ -1394,14 +1400,14 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     }));
 
     const promptKey = isCombine ? 'SKSK.Skill.CombineAttributePrompt' : 'SKSK.Skill.ChooseAttributePrompt';
-    const chosen = await foundry.applications.api.DialogV2.wait({
+    const chosenAttributes = await foundry.applications.api.DialogV2.wait({
       window: { title: game.i18n.localize(def.label) },
       content: `<p>${game.i18n.localize(promptKey)}</p>`,
       buttons,
       rejectClose: false,
     });
-    if (!chosen?.length) return;
-    return rollSkillCheck(this.actor, skillKey, chosen);
+    if (!chosenAttributes?.length) return;
+    return rollSkillCheck(this.actor, skillKey, chosenAttributes, variant);
   }
 
   /**

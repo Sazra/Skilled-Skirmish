@@ -7,7 +7,7 @@ import {
   computeSpellAttackBonus, rollAttackPair, renderAttackPairHTML, getDamageDieSizes, rollCriticalBonusDamage,
 } from './attackRolls.mjs';
 import { getGenericCriticalType, getAttackCriticalType, resolveCheckSuccess, wrapCriticalBlock, wrapCriticalInline } from './criticalRolls.mjs';
-import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
+import { grantSkillUsageFp, formatSkillFpGrantLine, grantFlatSkillFp, checkReflexActionTrigger } from './skillFp.mjs';
 
 /**
  * Roll one damage entry (its formula plus any attribute/skill scaling) and
@@ -108,6 +108,7 @@ async function renderSpellEffectParts(item) {
         const bonusRoll = await rollCriticalBonusDamage(actor, dieSizes);
         if (bonusRoll) {
           parts.push(`<div class="sksk-roll-line"><strong>${game.i18n.localize('SKSK.AttackRoll.CriticalBonusDamage')}</strong></div>${await bonusRoll.render()}`);
+          parts.push(formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'brutality', 'criticalBonusDamagePoint', bonusRoll.total)));
         }
       }
 
@@ -191,6 +192,14 @@ export async function rollSpellItem(item) {
     const costClass = increased ? 'sksk-roll-mana-cost-increased' : '';
     parts.push(`<div class="sksk-roll-mana-cost"><strong>${game.i18n.localize('SKSK.Spell.ManaCost')}:</strong> <span class="${costClass}">${manaCost}</span></div>`);
 
+    // Manakapazität's own FP accumulator (see helpers/rest.mjs#applyRest,
+    // which turns this into FP on the next Anpassungs-/Genesungspause) -
+    // the real mana cost above (after mali/boni), regardless of whether it
+    // actually got paid from Mana or overflowed into Life/Negative Life.
+    if (manaCost > 0) {
+      await actor.update({ 'system.manaCapacityAccumulator': (actor.system.manaCapacityAccumulator ?? 0) + manaCost });
+    }
+
     const apCost = computeSpellApCost(system, actor);
     parts.push(`<div class="sksk-roll-ap-cost"><strong>${game.i18n.localize('SKSK.Spell.APCost')}:</strong> ${apCost}</div>`);
 
@@ -204,7 +213,10 @@ export async function rollSpellItem(item) {
     const ap = actor.system.actionPoints.value;
     const paidNow = Math.min(ap, apCost);
     const remaining = apCost - paidNow;
-    if (paidNow) await actor.update({ 'system.actionPoints.value': ap - paidNow });
+    if (paidNow) {
+      await actor.update({ 'system.actionPoints.value': ap - paidNow });
+      parts.push(formatSkillFpGrantLine(await checkReflexActionTrigger(actor)));
+    }
 
     if (remaining > 0) {
       await actor.update({ 'system.pendingSpell': { itemId: item.id, apCost: remaining } });
@@ -221,7 +233,29 @@ export async function rollSpellItem(item) {
     if (system.spellType === 'simple' || system.spellType === 'advanced') {
       const fpGrant = await grantSkillUsageFp(actor, system.magicSchool, 'spellCastPerLevel', system.spellLevel);
       parts.push(formatSkillFpGrantLine(fpGrant));
+
+      // Bardic magic (an Advanced school) is also Singing's own "using
+      // Bardic magic" trigger - a flat grant alongside Bardic's own
+      // spellCastPerLevel above, not instead of it.
+      if (system.magicSchool === 'bardic') {
+        parts.push(formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'singing', 'bardicSpellCast')));
+      }
     }
+
+    // Magic Control and Chant Shortening both generate FP per spell cast,
+    // flat (not per level) and regardless of spellType (unlike the
+    // magic-school grant above) - Chant Shortening's own trigger is
+    // additionally gated on Magic Control being at least level 1, per the
+    // design spreadsheet.
+    parts.push(formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'magicControl', 'spellCast')));
+    if (getActorSkillLevel(actor, 'magicControl') >= 1) {
+      parts.push(formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'chantShortening', 'spellCast')));
+    }
+
+    // Manakern's own FP grant is a flat, spell-specific value (system.
+    // manaCoreFpGrant) rather than a GM-configured rate - see
+    // helpers/skillFp.mjs#grantFlatSkillFp.
+    parts.push(formatSkillFpGrantLine(await grantFlatSkillFp(actor, 'manaCore', system.manaCoreFpGrant)));
   }
 
   if (!deferred) {
@@ -258,9 +292,13 @@ export async function handlePendingSpellTurnStart(actor) {
     'system.actionPoints.value': ap - paid,
     'system.pendingSpell.apCost': remaining,
   });
+  const reflexGrant = paid > 0 ? await checkReflexActionTrigger(actor) : null;
 
   if (remaining > 0) {
-    const parts = [`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.ApPaidTowardSpell', { paid, remaining })}</div>`];
+    const parts = [
+      `<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.ApPaidTowardSpell', { paid, remaining })}</div>`,
+      formatSkillFpGrantLine(reflexGrant),
+    ];
     const messageData = {
       speaker: ChatMessage.getSpeaker({ actor }),
       flavor: label,
@@ -276,6 +314,7 @@ export async function handlePendingSpellTurnStart(actor) {
   if (!item) return;
 
   const parts = await renderSpellEffectParts(item);
+  parts.push(formatSkillFpGrantLine(reflexGrant));
   await postSpellChatCard(item, parts);
 }
 

@@ -154,7 +154,64 @@
             "ArmorsHint": "FP wird generiert, sobald der Charakter Ziel einer Angriffswurf-Bewertung einer Waffe oder eines Kampfkunstangriffs ist (Treffer oder Fehlschlag), für jede aktuell ausgerüstete Rüstungs-Fertigkeit (getragene Körperrüstung plus Schild, falls vorhanden).",
             "MagicSchoolsHint": "FP wird pro Zauberstufe generiert, sobald ein Einfacher oder Fortgeschrittener Zauber dieser Magieschule gewirkt wird (z.B. eine Rate von 1 und ein Zauber der Stufe 3 ergibt 3 FP).",
             "AttributeHint": "FP wird generiert, sobald der entsprechende reine Attributswurf (kein Fertigkeitswurf) durchgeführt wird - betrifft nur die 8 \"Unbegrenzte X\"-Fertigkeiten, je eine pro Attribut.",
-            "ResistancesHint": "FP wird generiert, sobald Schaden des entsprechenden Elements genommen wurde - noch nicht automatisiert, da das System keine automatische Schadensanwendung besitzt. Diese Spalte hat aktuell keine Wirkung."
+            "ResistancesHint": "FP wird generiert, sobald Schaden des entsprechenden Elements genommen wurde - noch nicht automatisiert, da das System keine automatische Schadensanwendung besitzt. Diese Spalte hat aktuell keine Wirkung.",
+            "ProductionHint": "Jedes Feld unten ist noch nicht automatisiert - es gibt noch kein Herstellungs-/Braukunst-System, das diese erkennen könnte.",
+            "RogueHint": "Der Fertigkeitswurf für Fallen lässt den Spieler zwischen \"Falle stellen\" und \"Falle entschärfen\" wählen (beides automatisiert); Fingerfertigkeit bietet ebenso eine Wahl zwischen Basis-Fertigkeitswurf, Schlossknacken und Taschendiebstahl (ebenfalls automatisiert). Attentat ist noch nicht automatisiert.",
+            "MagicHint": "Konzentrationswürfe, genutzte Meditationswürfel, jeder gewirkte Zauber (Magiekontrolle, Spruchkürzung sobald Magiekontrolle Stufe 1 erreicht), die Tagesabrechnung von Manakapazität/Manaregeneration (bei der nächsten Anpassungspause+) und Manakerns fester Wert pro Item sind automatisiert; alles andere unten ist noch nicht automatisiert - es gibt noch kein passendes System.",
+            "FighterHint": "Genutzte Trefferwürfel, Kampf-Bewegung, genutztes Ausweichen, Reflexaktion (4+ AP im eigenen Zug verbraucht), genutztes Adrenalin, kritische Treffer (inkl. Doppel-Krit) und Brutals Bonus-Schadenspunkte sind automatisiert; alles andere unten ist noch nicht automatisiert.",
+            "MiscHint": "Gewirkte Bardenmagie (Singen) und Getarnt-Sein zu Beginn des eigenen Zuges (Schleichen) sind automatisiert; alles andere unten ist noch nicht automatisiert - es gibt noch kein passendes System.",
+            "SpecialHint": "Ein gelandeter Treffer (Trefferkorrektur), ein abgewehrter Angriff (Verteidigungskorrektur) und 0 Leben mit verbleibendem negativen Leben zu Beginn des eigenen Zuges (Zähigkeit) sind automatisiert; alles andere unten ist noch nicht automatisiert.",
+            "PotionBrewed": "FP / Gebrauter Trank (noch nicht automatisiert)",
+            "ItemCrafted": "FP / Hergestellter Gegenstand (noch nicht automatisiert)",
+            "ItemCraftFailed": "FP / Fehlgeschlagene Herstellung (noch nicht automatisiert)",
+            "DishCooked": "FP / Gekochtes Gericht (noch nicht automatisiert)",
+            "CookFailed": "FP / Fehlgeschlagenes Kochen (noch nicht automatisiert)",
+            "EnchantmentLevel": "FP / Verzauberungsstufe (noch nicht automatisiert)",
+            "AssassinationAttack": "FP / Attentatsangriff (noch nicht automatisiert)",
+            "AssassinationKill": "FP / Attentatstötung (noch nicht automatisiert)",
+            "TrapSet": "FP / Falle gestellt",
+            "TrapDisarmed": "FP / Falle entschärft",
+            "StealthRound": "FP / Runde getarnt zu Zugbeginn",
+            "LockPicked": "FP / Schloss geknackt",
+            "Pickpocket": "FP / Taschendiebstahl durchgeführt",
+            "ConcentrationCheck": "FP / Konzentrationswurf",
+            "MeditationUsed": "FP / Genutzter Meditationswürfel",
+            "SummonLevel": "FP / Stufe der beschworenen Kreatur (noch nicht automatisiert)",
+            "SummonExistenceDay": "FP / Tag der Beschwörungs-Existenz (noch nicht automatisiert)",
+            "MagicControlSpellCast": "FP / Jeder gewirkte Zauber",
+            "DailyManaSpent": "FP / Angesammelter Betrag, bei der nächsten Anpassungspause+",
+            "RitualHour": "FP / Stunde mit Ritual verbracht (noch nicht automatisiert)",
+            "EnchantingHour": "FP / Stunde mit Verzauberung verbracht (noch nicht automatisiert)",
+            "ChantShorteningSpellCast": "FP / Jeder gewirkte Zauber (sobald Magiekontrolle Stufe 1 erreicht)",
+            "OverchargeUsed": "FP / Genutzte Überladung (noch nicht automatisiert)",
+            "SourceAbilityUsed": "FP / Genutzte Quellenfähigkeit (noch nicht automatisiert)",
+            "SourceOpened": "FP / Geöffnete Quelle (noch nicht automatisiert)",
+            "RegenerationUsed": "FP / Genutzter Trefferwürfel",
+            "CombatMovement": "FP / 20m Bewegung im Kampf",
+            "TechniqueCooldownRound": "FP / Runde Abklingzeit der Techniken (noch nicht automatisiert)",
+            "DodgeUsed": "FP / Genutztes Ausweichen",
+            "ReflexActionUsed": "FP / Reflexaktion (4+ AP in einem Zug verbraucht)",
+            "CriticalHit": "FP / Gelandeter kritischer Treffer",
+            "DoubleCriticalHit": "FP / Beide Würfe kritisch",
+            "CriticalBonusDamagePoint": "FP / Punkt Bonus-Schaden bei Krit",
+            "AdrenalinUsed": "FP / Genutztes Adrenalin",
+            "OffHandAttack": "FP / Nebenhand-Angriff",
+            "PassiveDetection": "FP / Passive Erkennung (noch nicht automatisiert)",
+            "Prayer": "FP / Gebet (noch nicht automatisiert)",
+            "HealedCreature": "FP / Geheilte Kreatur (noch nicht automatisiert)",
+            "BardicSpellCast": "FP / Gewirkte Bardenmagie",
+            "FlankAttack": "FP / Flankenangriff (noch nicht automatisiert)",
+            "InspirationUsed": "FP / Genutzter Inspirationswürfel (noch nicht automatisiert)",
+            "TotemBond": "FP / Totem-Bindung eingegangen (noch nicht automatisiert)",
+            "TotemUsed": "FP / Genutztes Totem (noch nicht automatisiert)",
+            "ZeroLifeRound": "FP / Runde bei 0 Leben (mit verbleibendem negativen Leben) zu Zugbeginn",
+            "CriticalRoll": "FP / Kritischer Wurf (noch nicht automatisiert)",
+            "DoubleCriticalRoll": "FP / Doppelt kritischer Wurf (noch nicht automatisiert)",
+            "MassKill": "FP / Massaker-Stufe (noch nicht automatisiert)",
+            "SoulPowerTraded": "FP / Eingetauschte Seelenmacht (noch nicht automatisiert)",
+            "AllMeditationDiceConsumed": "FP / Alle Meditationswürfel verbraucht (noch nicht automatisiert)",
+            "AttackHit": "FP / Gelandeter Angriff",
+            "AttackDefended": "FP / Abgewehrter Angriff"
         },
         "Life": {
             "MaxComputed": "Automatisch berechnet aus Klassen, Konstitution, Gesundheit, Zähigkeit und Fähigkeiten - nicht direkt bearbeitbar"
@@ -225,7 +282,11 @@
             "CriticalHitThreshold": "Schwelle für kritischen Erfolg",
             "CriticalHitThresholdHint": "Der niedrigste natürliche W20-Wurf (nur bei einem Angriffswurf), der als kritischer Erfolg zählt. Standardmäßig 20; wird er z.B. auf 15 gesenkt, lösen 15 bis 20 alle einen kritischen Erfolg aus.",
             "CriticalFailureThreshold": "Schwelle für kritischen Fehlschlag",
-            "CriticalFailureThresholdHint": "Der höchste natürliche W20-Wurf (nur bei einem Angriffswurf), der als kritischer Fehlschlag zählt. Standardmäßig 1; wird er z.B. auf 5 erhöht, lösen 1 bis 5 alle einen kritischen Fehlschlag aus."
+            "CriticalFailureThresholdHint": "Der höchste natürliche W20-Wurf (nur bei einem Angriffswurf), der als kritischer Fehlschlag zählt. Standardmäßig 1; wird er z.B. auf 5 erhöht, lösen 1 bis 5 alle einen kritischen Fehlschlag aus.",
+            "ManaCapacityAccumulator": "Manakapazität-FP-Sammler",
+            "ManaCapacityAccumulatorHint": "Reale Manakosten, die seit der letzten Anpassungs-/Genesungspause für gewirkte Zauber gezahlt wurden - wird bei der nächsten mit der Manakapazität-Rate aus den Fertigkeitsnutzungs-FP-Einstellungen multipliziert, abgerundet und dann auf 0 zurückgesetzt. Nicht zum manuellen Bearbeiten gedacht, aber hier bei Bedarf einsehbar/anpassbar.",
+            "ManaRegenerationAccumulator": "Manaregeneration-FP-Sammler",
+            "ManaRegenerationAccumulatorHint": "Tatsächlich wiederhergestelltes Mana (Meditation, passive Regeneration durch Zeit/Pausen) seit der letzten Anpassungs-/Genesungspause - wird bei der nächsten mit der Manaregeneration-Rate aus den Fertigkeitsnutzungs-FP-Einstellungen multipliziert, abgerundet und dann auf 0 zurückgesetzt. Nicht zum manuellen Bearbeiten gedacht, aber hier bei Bedarf einsehbar/anpassbar."
         },
         "AttributeUsage": {
             "HighestSingle": "Nutze Höchsten (Nur Ein Attribut)",
@@ -615,7 +676,15 @@
             "GainHint": "Noch nicht integrierte Fertigkeitspunkte - werden bei einer Anpassungs- oder Genesungspause zu den normalen Punkten hinzugefügt (und danach zurückgesetzt).",
             "ChooseAttributePrompt": "Wähle, welches Attribut verwendet werden soll:",
             "CombineAttributePrompt": "Wähle, welche(s) Attribut(e) verwendet werden soll(en):",
-            "RollButton": "Würfeln"
+            "RollButton": "Würfeln",
+            "ChooseVariantPrompt": "Wähle, was mit diesem Wurf getan wird:",
+            "Variant": {
+                "TrapSet": "Falle stellen",
+                "TrapDisarmed": "Falle entschärfen",
+                "SleightOfHandBase": "Basis-Fertigkeitswurf",
+                "LockPicked": "Schloss knacken",
+                "Pickpocket": "Taschendiebstahl"
+            }
         },
         "SkillCategory": {
             "Weapons": "Waffenfertigkeiten",
@@ -888,6 +957,10 @@
             "Concentration": {
                 "Name": "Konzentration",
                 "Description": "Diese Kreatur konzentriert sich auf eine Aufgabe. Erleidet sie Schaden, muss sie einen Konzentrations-Check (1W20 + Konstitutionsmodifikator + Fertigkeitsstufe Konzentration) gegen eine Schwierigkeit von (Schaden / 2, mindestens 5) bestehen, sonst bricht ihre Konzentration (dieser Statuseffekt wird entfernt). Mehrere \"Schaden am Anfang des Zuges\"-Quellen werden für diesen Check in derselben Runde zusammengerechnet und nur einmal geprüft."
+            },
+            "Concealed": {
+                "Name": "Tarnung",
+                "Description": "Diese Kreatur ist im Kampf getarnt/versteckt. Solange aktiv, generiert sie zu Beginn jedes eigenen Kampfzuges Schleichens eigene ausstehende FP (falls konfiguriert)."
             }
         },
         "Models": {
@@ -1054,6 +1127,10 @@
                 "Name": "Stachlig",
                 "Hint": "Kreaturen, die den Träger eines solchen Gegenstands mit einem Nahkampfwaffenangriff angreifen, erleiden 1d6 Spitzschaden."
             }
+        },
+        "ItemSheet": {
+            "ManaCoreFpGrant": "Manakern-FP-Gewinn",
+            "ManaCoreFpGrantHint": "Feste FP, die bei jeder Nutzung an die Fertigkeit Manakern vergeben werden - ein am Item selbst festgelegter Wert, keine GM-konfigurierte Rate."
         }
     },
     "TYPES": {

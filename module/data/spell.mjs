@@ -43,6 +43,11 @@ export default class SKSKSpell extends SKSKItemBase {
     schema.manaCost = new fields.NumberField({ ...requiredInteger, initial: 1, min: 0 });
     schema.apCost = new fields.NumberField({ ...requiredInteger, initial: 1, min: 1 });
 
+    // Manakern's own flat FP grant (to the "manaCore" skill) whenever this
+    // spell is cast - a designer-set value on the item itself, not a GM-
+    // configured rate. See helpers/skillFp.mjs#grantFlatSkillFp.
+    schema.manaCoreFpGrant = new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 });
+
     // One or more ranges, each paired with the indicator describing how
     // that leg of the spell travels/applies (e.g. a fireball is a 30m
     // Projectile followed by a 6m Radius explosion).

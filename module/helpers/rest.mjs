@@ -1,6 +1,7 @@
 import { getActorSkillLevel } from './skills.mjs';
 import { postActionChatCard, getRegenerationDieSizes } from './actions.mjs';
 import { getStatusStacks, decreaseStatusStacks, getAdrenalinDamage, reduceAdrenalinDamage } from './statusEffects.mjs';
+import { grantSkillUsageFp, formatSkillFpGrantText } from './skillFp.mjs';
 
 /**
  * A time segment - the atomic unit "spending time" is measured in.
@@ -185,6 +186,12 @@ export async function applyRest(actor, options) {
   const lines = [];
   let healingRoll = null;
 
+  // Manaregeneration's own FP accumulator (see helpers/skillFp.mjs and the
+  // tier block below) - tracked locally since this same call may both add
+  // to it (the passive regen just below) and settle/reset it (the tier
+  // block), before either ever gets persisted.
+  let manaRegenerationAccumulator = actor.system.manaRegenerationAccumulator ?? 0;
+
   const baseRate = computePassiveManaRegenPerSegment(actor);
   const manaGain = segments * baseRate * (tier ? 2 : 1);
   const mana = actor.system.mana;
@@ -192,6 +199,9 @@ export async function applyRest(actor, options) {
   if (newMana !== mana.value) {
     updates['system.mana.value'] = newMana;
     lines.push(game.i18n.format('SKSK.Rest.ManaGained', { amount: newMana - mana.value }));
+    // Passive regen "durch Zeit/Pausen" counts the same as Meditation's own
+    // restored amount (see helpers/actions.mjs#rollMeditation).
+    manaRegenerationAccumulator += (newMana - mana.value);
   }
 
   let regenerationCharges = actor.system.regenerationCharges.value;
@@ -244,6 +254,24 @@ export async function applyRest(actor, options) {
         }
       }
       if (integratedCount > 0) lines.push(game.i18n.format('SKSK.Rest.SkillsIntegrated', { count: integratedCount }));
+
+      // Manakapazität/Manaregeneration's own "Tagesabrechnung" FP - the
+      // accumulated real mana cost paid / mana actually restored since the
+      // last qualifying Pause (see helpers/skillFp.mjs, helpers/spell-
+      // rolls.mjs#rollSpellItem, helpers/actions.mjs#rollMeditation),
+      // multiplied by the skillUsageFp "dailyManaSpent" rate and floored,
+      // then reset for the next period regardless of the result.
+      const manaCapacityFpText = formatSkillFpGrantText(
+        await grantSkillUsageFp(actor, 'manaCapacity', 'dailyManaSpent', actor.system.manaCapacityAccumulator ?? 0)
+      );
+      if (manaCapacityFpText) lines.push(manaCapacityFpText);
+      updates['system.manaCapacityAccumulator'] = 0;
+
+      const manaRegenFpText = formatSkillFpGrantText(
+        await grantSkillUsageFp(actor, 'manaRegeneration', 'dailyManaSpent', manaRegenerationAccumulator)
+      );
+      if (manaRegenFpText) lines.push(manaRegenFpText);
+      manaRegenerationAccumulator = 0;
 
       const exhaustionMax = computeExhaustionChargeMax(actor, tier);
       const currentExhaustion = getStatusStacks(actor, 'exhaustion');
@@ -310,6 +338,7 @@ export async function applyRest(actor, options) {
 
   updates['system.regenerationCharges.value'] = regenerationCharges;
   updates['system.meditationCharges.value'] = meditationCharges;
+  updates['system.manaRegenerationAccumulator'] = manaRegenerationAccumulator;
   await actor.update(updates);
 
   const title = tier ? game.i18n.localize(`SKSK.Rest.Tier.${tier}`) : game.i18n.localize('SKSK.Rest.PlainTime');

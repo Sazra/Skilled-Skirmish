@@ -306,6 +306,18 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // even by a Rest), since each use permanently costs more max Life than
     // the last. Not meant to be hand-edited. See helpers/actions.mjs#rollAdrenalin.
     schema.adrenalinUsedCount = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+    // Mana Capacity/Mana Regeneration's own FP accumulators (GM tab,
+    // editable) - real mana cost paid for spells cast / mana actually
+    // restored (Meditation, passive regen from time/Rest), summed up since
+    // the last Anpassungs-/Genesungspause. Multiplied by the skillUsageFp
+    // "dailyManaSpent" rate and floored on the next qualifying Pause, then
+    // reset to 0 - see helpers/rest.mjs#applyRest.
+    schema.manaCapacityAccumulator = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+    schema.manaRegenerationAccumulator = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+    // Reflexe's own "Reflexaktion" FP trigger has already fired this Combat
+    // turn - reset to false every turn start. Not meant to be hand-edited.
+    // See helpers/skillFp.mjs#checkReflexActionTrigger.
+    schema.reflexActionGranted = new fields.BooleanField({ initial: false });
     // A spell whose AP cost couldn't be fully paid at cast time - itemId
     // (blank = none pending) references the spell Item still owed apCost
     // AP, paid off gradually at the start of this actor's later Combat

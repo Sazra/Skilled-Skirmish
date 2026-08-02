@@ -1,4 +1,4 @@
-import { getSkillLabel } from './skills.mjs';
+import { getSkillLabel, getActorSkillLevel } from './skills.mjs';
 
 /**
  * The GM-configured FP-per-usage rates (world setting, edited via the
@@ -49,6 +49,20 @@ export async function grantSkillUsageFp(actor, skillKey, trigger, multiplier = 1
 }
 
 /**
+ * Render a grantSkillUsageFp result as plain (unwrapped) text - for
+ * callers that build their own list of plain-text lines and wrap each in
+ * "sksk-roll-line" themselves (e.g. helpers/rest.mjs#applyRest), unlike
+ * formatSkillFpGrantLine below which wraps it itself. Empty string if
+ * nothing was granted.
+ * @param {{label: string, amount: number}|null} grant
+ * @return {string}
+ */
+export function formatSkillFpGrantText(grant) {
+  if (!grant) return '';
+  return game.i18n.format('SKSK.SkillFp.Gained', { skill: grant.label, amount: grant.amount });
+}
+
+/**
  * Render a grantSkillUsageFp result as a chat-card line, matching the style
  * used for Training's own FP grants (helpers/training.mjs). Empty string if
  * nothing was granted.
@@ -57,5 +71,53 @@ export async function grantSkillUsageFp(actor, skillKey, trigger, multiplier = 1
  */
 export function formatSkillFpGrantLine(grant) {
   if (!grant) return '';
-  return `<div class="sksk-roll-line">${game.i18n.format('SKSK.SkillFp.Gained', { skill: grant.label, amount: grant.amount })}</div>`;
+  return `<div class="sksk-roll-line">${formatSkillFpGrantText(grant)}</div>`;
+}
+
+/**
+ * Grant a flat, pre-determined amount of pending FP to a Character for
+ * using a skill - unlike grantSkillUsageFp, this isn't scaled by any GM-
+ * configured rate (there is none to look up); the amount is decided
+ * entirely by the caller, e.g. Mana Core's own per-item/per-spell
+ * "manaCoreFpGrant" field (see data/spell.mjs, data/item.mjs). Floored,
+ * Character-only, same as grantSkillUsageFp.
+ * @param {Actor} actor
+ * @param {string} skillKey
+ * @param {number} amount
+ * @return {Promise<{label: string, amount: number}|null>}
+ */
+export async function grantFlatSkillFp(actor, skillKey, amount) {
+  if (!actor || actor.type !== 'character') return null;
+  const flatAmount = Math.floor(Number(amount) || 0);
+  if (flatAmount <= 0) return null;
+
+  const current = actor.system.skills?.[skillKey]?.gain ?? 0;
+  await actor.update({ [`system.skills.${skillKey}.gain`]: current + flatAmount });
+  return { label: game.i18n.localize(getSkillLabel(skillKey)), amount: flatAmount };
+}
+
+/**
+ * Reflexe's own "Reflexaktion" FP trigger: once per Combat turn, the first
+ * time a Character with Reflexes at level 1+ has spent at least 4 AP that
+ * turn (tracked against system.actionPoints.max as the turn's starting
+ * baseline - AP is always refilled to max at turn start, see
+ * helpers/statusEffects.mjs#handleActionPointsTurnStart, which also resets
+ * system.reflexActionGranted back to false there). Safe to call after
+ * every AP-spending action; a no-op once already granted this turn.
+ * @param {Actor} actor
+ * @return {Promise<{label: string, amount: number}|null>}
+ */
+export async function checkReflexActionTrigger(actor) {
+  if (!actor || actor.type !== 'character') return null;
+  if (actor.system.reflexActionGranted) return null;
+  if (getActorSkillLevel(actor, 'reflexes') < 1) return null;
+
+  const ap = actor.system.actionPoints;
+  const spent = ap.max - ap.value;
+  if (spent < 4) return null;
+
+  const grant = await grantSkillUsageFp(actor, 'reflexes', 'reflexActionUsed');
+  if (!grant) return null;
+  await actor.update({ 'system.reflexActionGranted': true });
+  return grant;
 }

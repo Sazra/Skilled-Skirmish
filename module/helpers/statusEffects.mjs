@@ -1,8 +1,9 @@
 import { postActionChatCard } from './actions.mjs';
 import { getClassAbilityLevels, actorHasAdvancedClass } from './abilities.mjs';
-import { getActorSkillLevel } from './skills.mjs';
+import { getActorSkillLevel, getSkillLabel } from './skills.mjs';
 import { handlePendingSpellTurnStart } from './spell-rolls.mjs';
 import { getGenericCriticalType, resolveCheckSuccess, wrapCriticalBlock } from './criticalRolls.mjs';
+import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
 
 /**
  * Movement types (CONFIG.SKSK.movementTypes) Dazed does NOT reduce.
@@ -769,6 +770,10 @@ async function handleActionPointsTurnStart(actor) {
   const updates = {};
   if (ap.value !== ap.max) updates['system.actionPoints.value'] = ap.max;
   if (rp.value !== rp.max) updates['system.reactionPoints.value'] = rp.max;
+  // Reflexe's own "Reflexaktion" FP trigger (see helpers/skillFp.mjs#
+  // checkReflexActionTrigger) fires at most once per turn - reset here,
+  // before AP is actually spent on anything this turn.
+  if (actor.system.reflexActionGranted) updates['system.reflexActionGranted'] = false;
   if (Object.keys(updates).length) await actor.update(updates);
 
   await handleDazedTurnStart(actor);
@@ -984,11 +989,45 @@ export async function checkConcentration(actor, damage) {
     : criticalType === 'failure' ? 'SKSK.Spell.Roll.CriticalFailure'
     : success ? 'SKSK.Spell.Roll.Success' : 'SKSK.Spell.Roll.Failure';
   const outcome = game.i18n.localize(outcomeKey);
+  const fpGrant = await grantSkillUsageFp(actor, 'concentration', 'concentrationCheck');
   const extraHTML = `
     <div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.ConcentrationCheck', { dc })}: ${outcome}</div>
     ${cancelledSpell ? `<div class="sksk-roll-line">${game.i18n.localize('SKSK.Spell.Roll.SpellCancelled')}</div>` : ''}
+    ${formatSkillFpGrantLine(fpGrant)}
   `;
   await postActionChatCard(actor, getStatusEffectName('concentration'), roll, 0, extraHTML, criticalType);
+}
+
+/**
+ * Schleichen's own "im Kampf getarnt" FP trigger: while the Concealed
+ * status (see CONFIG.SKSK.predefinedStatusEffects) is active, grant
+ * Stealth's "stealthRound" FP every time this actor's own Combat turn
+ * begins. A no-op (posts nothing) if the GM hasn't configured a rate for
+ * it - keeps this silent by default rather than spamming a 0 FP line.
+ * @param {Actor} actor
+ * @return {Promise<void>}
+ */
+async function handleStealthTurnStart(actor) {
+  if (getStatusStacks(actor, 'concealed') <= 0) return;
+  const fpGrant = await grantSkillUsageFp(actor, 'stealth', 'stealthRound');
+  if (!fpGrant) return;
+  await postActionChatCard(actor, getStatusEffectName('concealed'), null, 0, formatSkillFpGrantLine(fpGrant));
+}
+
+/**
+ * Zähigkeit's own "0 Leben, aber noch negatives Leben" FP trigger: grants
+ * Tenacity's "zeroLifeRound" FP at the start of this actor's own Combat
+ * turn whenever it's at 0 Life but still has Negative Life left (i.e.
+ * still clinging on, not yet truly downed/dead). A no-op (posts nothing)
+ * if the GM hasn't configured a rate for it.
+ * @param {Actor} actor
+ * @return {Promise<void>}
+ */
+async function handleTenacityTurnStart(actor) {
+  if (actor.system.life.value > 0 || actor.system.negativeLife.value <= 0) return;
+  const fpGrant = await grantSkillUsageFp(actor, 'tenacity', 'zeroLifeRound');
+  if (!fpGrant) return;
+  await postActionChatCard(actor, game.i18n.localize(getSkillLabel('tenacity')), null, 0, formatSkillFpGrantLine(fpGrant));
 }
 
 /**
@@ -1000,7 +1039,9 @@ export async function checkConcentration(actor, damage) {
  * damage, custom status effects' own Life/Mana turn-start ticks,
  * Concentration's check against however much of that combined damage
  * actually landed (checked once for the round's total, not once per
- * source), and Restrained's automatic escape check (if timed to "start").
+ * source), Restrained's automatic escape check (if timed to "start"),
+ * Schleichen's Concealed-status FP trigger, and Zähigkeit's 0-Life FP
+ * trigger.
  * @param {Actor} actor
  * @param {number} round
  * @return {Promise<void>}
@@ -1014,6 +1055,8 @@ export async function handleCombatTurnStart(actor, round) {
   totalDamage += await handleCustomTurnStart(actor);
   await checkConcentration(actor, totalDamage);
   await handleRestrainedTurnStart(actor);
+  await handleStealthTurnStart(actor);
+  await handleTenacityTurnStart(actor);
 }
 
 /**

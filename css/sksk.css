@@ -1312,6 +1312,21 @@ span.sksk-critical-failure {
   text-align: center;
 }
 
+/* Production/Rogue/Magic/Fighter/Misc/Special tabs of the Skill Usage FP
+   config app - a per-skill card list instead of a uniform table, since
+   different skills there need different fields. */
+.sksk .skill-fp-panel {
+  align-items: stretch;
+  padding: 6px 4px;
+  gap: 4px;
+  border-bottom: 1px solid var(--color-border-light-tertiary, #7a7971);
+}
+
+.sksk .skill-fp-panel input {
+  width: 100%;
+  text-align: center;
+}
+
 /* Formula-breakdown hover tooltips (Life/Negative Life/Mana/AC/MR labels
    on the resources sidebar - see helpers/tooltips.mjs). NOT scoped under
    .sksk: Foundry's TooltipManager reparents the tooltip element onto
