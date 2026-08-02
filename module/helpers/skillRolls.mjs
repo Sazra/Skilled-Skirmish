@@ -2,6 +2,7 @@ import { getActorSkillLevel } from './skills.mjs';
 import { applyD20Malus, computeDazedAttributeMalus } from './statusEffects.mjs';
 import { getGenericCriticalType } from './criticalRolls.mjs';
 import { postActionChatCard } from './actions.mjs';
+import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
 
 /**
  * The skill's own config entry (CONFIG.SKSK.skills[category][skillKey]) if
@@ -76,5 +77,7 @@ export async function rollSkillCheck(actor, skillKey, chosenAttributes) {
   const roll = await new Roll(formula, actor.getRollData()).evaluate();
   const criticalType = getGenericCriticalType(roll);
   const label = game.i18n.localize(def.label);
-  return postActionChatCard(actor, `[skill] ${label}`, roll, 0, '', criticalType);
+
+  const fpGrant = await grantSkillUsageFp(actor, skillKey, 'skillCheck');
+  return postActionChatCard(actor, `[skill] ${label}`, roll, 0, formatSkillFpGrantLine(fpGrant), criticalType);
 }

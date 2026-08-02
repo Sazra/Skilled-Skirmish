@@ -7,6 +7,7 @@ import {
   getDamageDieSizes, rollCriticalBonusDamage,
 } from "./attackRolls.mjs";
 import { wrapCriticalBlock, getAttackCriticalType } from "./criticalRolls.mjs";
+import { grantSkillUsageFp, formatSkillFpGrantLine } from "./skillFp.mjs";
 
 /**
  * Post a simple chat card (an optional Roll, an AP-cost line, and a
@@ -63,6 +64,9 @@ export async function rollWeaponItem(item) {
     brutalApplied = rolls.some(roll => getAttackCriticalType(roll, actor) === 'success');
     const rendered = await renderAttackPairHTML(rolls, 'armorClass', actor, { dieSizes, brutalApplied });
     parts.push(`<div class="sksk-roll-attack"><strong>${game.i18n.localize('SKSK.AttackRoll.Attack')}</strong></div>${rendered}`);
+
+    const fpGrant = await grantSkillUsageFp(actor, item.system.weaponType, 'weaponAttack');
+    parts.push(formatSkillFpGrantLine(fpGrant));
   }
 
   if (item.system.formula) {
@@ -183,6 +187,8 @@ export async function rollMartialArtsAttack(actor, index) {
   }
 
   await actor.update(spendActionPoints(actor, attack.apCost));
+  const fpGrant = await grantSkillUsageFp(actor, 'martialArts', 'weaponAttack');
+  const fpHTML = formatSkillFpGrantLine(fpGrant);
 
   const apCostHTML = attack.apCost
     ? `<div class="sksk-roll-ap-cost"><strong>${game.i18n.localize('SKSK.Spell.APCost')}:</strong> ${attack.apCost}</div>`
@@ -190,7 +196,7 @@ export async function rollMartialArtsAttack(actor, index) {
   const messageData = {
     speaker: ChatMessage.getSpeaker({ actor }),
     flavor: attack.name || game.i18n.localize('SKSK.Action.MartialArtsAttack'),
-    content: `<div class="sksk-chat-card sksk-action-card">${attackHTML}${renderedDamage}${bonusDamageHTML}${apCostHTML}</div>`,
+    content: `<div class="sksk-chat-card sksk-action-card">${attackHTML}${renderedDamage}${bonusDamageHTML}${fpHTML}${apCostHTML}</div>`,
     rolls: [roll],
   };
   ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));

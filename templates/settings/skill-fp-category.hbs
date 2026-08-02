@@ -1,0 +1,27 @@
+<section class="tab {{tab.cssClass}}" data-group="primary" data-tab="{{tab.id}}">
+  <p class="hint">{{localize categoryHint}}</p>
+
+  <table class="skill-fp-table">
+    <thead>
+      <tr>
+        <th>{{localize 'SKSK.SkillFpConfig.Skill'}}</th>
+        {{#each fields as |field|}}
+        <th>{{localize field.label}}</th>
+        {{/each}}
+      </tr>
+    </thead>
+    <tbody>
+      {{#each skills as |skill|}}
+      <tr>
+        <td>{{localize skill.label}}</td>
+        {{#each ../fields as |field|}}
+        <td>
+          <input type="text" name="skillFp.{{skill.key}}.{{field.key}}" value="{{lookup skill.values field.key}}"
+            data-dtype="Number" placeholder="0" />
+        </td>
+        {{/each}}
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+</section>

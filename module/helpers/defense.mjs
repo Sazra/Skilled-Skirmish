@@ -61,6 +61,25 @@ function getEquippedArmorByType(actor, armorType) {
 }
 
 /**
+ * Every armor-category skill (CONFIG.SKSK.skills.armors) currently
+ * "active" on an actor via equipped gear - the worn body armor's own type
+ * (lightArmor/heavyArmor, mutually exclusive - see
+ * computeArmorClassComponents), plus "shield" if at least one Shield is
+ * equipped. Used to grant the "hitTaken" FP trigger (see
+ * helpers/skillFp.mjs) to every skill actually protecting the wearer right
+ * now, not just one.
+ * @param {Actor} actor
+ * @return {string[]}
+ */
+export function getEquippedArmorSkillKeys(actor) {
+  const keys = [];
+  if (getEquippedArmorByType(actor, 'lightArmor').length) keys.push('lightArmor');
+  else if (getEquippedArmorByType(actor, 'heavyArmor').length) keys.push('heavyArmor');
+  if (getEquippedArmorByType(actor, 'shield').length) keys.push('shield');
+  return keys;
+}
+
+/**
  * The shared building blocks behind computeArmorClass and
  * getArmorClassBreakdown (the tooltip shown over the AC label on the actor
  * sheet) - the single source of truth for both. AC-Boni, in order:

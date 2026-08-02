@@ -35,7 +35,7 @@
       },
       "ExportImport": {
         "Name": "Export/Import Settings",
-        "Hint": "Export this world's SKSK settings (skill point costs, carry weight formula, Materials, Models, Status Effects, Training Methods) to a JSON file, or import them from one - e.g. to back up a world's configuration or copy it to another world.",
+        "Hint": "Export this world's SKSK settings (skill point costs, carry weight formula, Materials, Models, Status Effects, Training Methods, Skill Usage FP) to a JSON file, or import them from one - e.g. to back up a world's configuration or copy it to another world.",
         "Label": "Export/Import Settings",
         "Export": "Export Settings",
         "Import": "Import Settings",
@@ -45,6 +45,11 @@
         "ImportConfirmTitle": "Import Settings?",
         "ImportConfirmContent": "This will overwrite {count} setting(s) with the values from the chosen file. This cannot be undone. Continue?",
         "ImportSuccess": "{count} setting(s) imported."
+      },
+      "SkillUsageFp": {
+        "Name": "Skill Usage FP",
+        "Hint": "How many FP a Character generates for using a skill (skill checks, weapon attacks, spells cast, attribute rolls, ...) - Characters only, per skill category.",
+        "Label": "Configure Skill Usage FP"
       }
     },
     "Movement": {
@@ -135,6 +140,21 @@
       "AddSecondarySkill": "Add Secondary Skill",
       "RemoveSecondarySkill": "Remove",
       "NoSecondarySkills": "No secondary skills yet."
+    },
+    "SkillFpConfig": {
+      "Skill": "Skill",
+      "SkillCheck": "FP / Skill Check",
+      "WeaponAttack": "FP / Weapon Attack",
+      "Kill": "FP / Kill (not yet automated)",
+      "HitTaken": "FP / Attack Suffered",
+      "SpellCastPerLevel": "FP / Spell Level Cast",
+      "AttributeRoll": "FP / Attribute Roll",
+      "DamageTaken": "FP / Damage Taken (not yet automated)",
+      "WeaponsHint": "FP generated per skill check and per weapon attack (including Martial Arts) using that skill, plus per kill in combat once a Character deals the finishing blow - kill detection isn't implemented yet, so that column has no effect for now.",
+      "ArmorsHint": "FP generated whenever the Character is the target of a weapon or Martial Arts attack evaluation (hit or miss), for every armor-category skill currently equipped (worn body armor plus Shield, if any).",
+      "MagicSchoolsHint": "FP generated per spell level whenever a Simple or Advanced spell of that magic school is cast (e.g. a rate of 1 and a level-3 spell grants 3 FP).",
+      "AttributeHint": "FP generated whenever the corresponding attribute's own roll (not a skill check) is made - only the 8 \"Unlimited X\" skills apply, one per attribute.",
+      "ResistancesHint": "FP generated whenever damage of the corresponding element is taken - not automated yet, since the system has no automatic damage application. This column has no effect for now."
     },
     "Life": {
       "MaxComputed": "Automatically calculated from Classes, Constitution, Health, Tenacity and abilities - not directly editable"
@@ -315,6 +335,9 @@
       "NoMethods": "No Training methods have been configured yet - ask your GM to add some in the Training Methods settings.",
       "NoGain": "No FP generated - too little time spent for any skill's rate.",
       "SkillGained": "{skill}: pending FP +{amount}"
+    },
+    "SkillFp": {
+      "Gained": "{skill}: pending FP +{amount}"
     },
     "AttackRoll": {
       "Attack": "Attack",

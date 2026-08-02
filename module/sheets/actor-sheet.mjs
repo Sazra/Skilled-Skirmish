@@ -33,6 +33,7 @@ import {
   getAdrenalinDamage, setRestrainedConfig, attemptRestrainedEscapeManual,
 } from '../helpers/statusEffects.mjs';
 import { getGenericCriticalType, wrapCriticalBlock } from '../helpers/criticalRolls.mjs';
+import { grantSkillUsageFp, formatSkillFpGrantLine } from '../helpers/skillFp.mjs';
 
 /**
  * Schema paths (relative to system.*) whose value input accepts the "+N"/
@@ -1334,10 +1335,20 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       let roll = new Roll(formula, this.actor.getRollData());
       roll.evaluate().then(async evaluated => {
         const criticalType = getGenericCriticalType(evaluated);
+
+        // A pure attribute roll (not a skill check) generates FP for that
+        // attribute's own "Unbegrenzte X" skill, if configured - see
+        // helpers/skillFp.mjs and CONFIG.SKSK.unlimitedAttributeSkills.
+        let fpHTML = '';
+        const unlimitedSkill = dataset.attributeKey ? CONFIG.SKSK.unlimitedAttributeSkills[dataset.attributeKey] : null;
+        if (unlimitedSkill) {
+          fpHTML = formatSkillFpGrantLine(await grantSkillUsageFp(this.actor, unlimitedSkill, 'attributeRoll'));
+        }
+
         const messageData = {
           speaker: ChatMessage.getSpeaker({ actor: this.actor }),
           flavor: label,
-          content: wrapCriticalBlock(await evaluated.render(), criticalType),
+          content: wrapCriticalBlock(await evaluated.render(), criticalType) + fpHTML,
           rolls: [evaluated],
         };
         ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));

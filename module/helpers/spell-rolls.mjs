@@ -7,6 +7,7 @@ import {
   computeSpellAttackBonus, rollAttackPair, renderAttackPairHTML, getDamageDieSizes, rollCriticalBonusDamage,
 } from './attackRolls.mjs';
 import { getGenericCriticalType, getAttackCriticalType, resolveCheckSuccess, wrapCriticalBlock, wrapCriticalInline } from './criticalRolls.mjs';
+import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
 
 /**
  * Roll one damage entry (its formula plus any attribute/skill scaling) and
@@ -210,6 +211,16 @@ export async function rollSpellItem(item) {
       await setStatusStacks(actor, 'concentration', 1);
       parts.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.ApOwed', { paid: paidNow, remaining })}</div>`);
       deferred = true;
+    }
+
+    // FP for casting a spell (per its own spellLevel) belongs to its magic
+    // school - only meaningful for Simple/Advanced spells, which each
+    // belong to exactly one (Combined/Systemless spells have none - see
+    // CONFIG.SKSK.simpleMagicSchools/advancedMagicSchools). Granted now,
+    // at cast time, regardless of whether its AP cost is still owed above.
+    if (system.spellType === 'simple' || system.spellType === 'advanced') {
+      const fpGrant = await grantSkillUsageFp(actor, system.magicSchool, 'spellCastPerLevel', system.spellLevel);
+      parts.push(formatSkillFpGrantLine(fpGrant));
     }
   }
 

@@ -3,6 +3,8 @@ import { getSpellSchool } from './spells.mjs';
 import { computeNaturalMaterialBonus } from './defense.mjs';
 import { applyD20Malus } from './statusEffects.mjs';
 import { getAttackCriticalType, resolveCheckSuccess, wrapCriticalBlock, wrapCriticalInline } from './criticalRolls.mjs';
+import { getEquippedArmorSkillKeys } from './defense.mjs';
+import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
 
 /**
  * Präzision's own minimum Präzisionswurf result, per skill level (1-5) -
@@ -308,6 +310,14 @@ export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor
  * helpers/actions.mjs#rollWeaponItem/rollMartialArtsAttack and
  * helpers/spell-rolls.mjs#renderSpellEffectParts - in which case
  * data-brutal-applied is already "true" here).
+ *
+ * For a weapon/Martial Arts attack (comparisonType "armorClass", not a
+ * spell's "magicResistance"), this whole evaluation also grants the
+ * "hitTaken" FP trigger (see helpers/skillFp.mjs) to every armor-category
+ * skill the defender currently has equipped (body armor + Shield - see
+ * helpers/defense.mjs#getEquippedArmorSkillKeys) - once per Evaluate click,
+ * not once per d20, and regardless of hit or miss (suffering an evaluated
+ * attack against one's own AC at all is what counts here).
  * @param {HTMLElement} button
  * @return {Promise<ChatMessage|void>}
  */
@@ -356,9 +366,17 @@ export async function resolveHitEvaluationFromChat(button) {
     })}</div>${extraHTML}`;
   };
 
+  let fpHTML = '';
+  if (comparisonType === 'armorClass') {
+    for (const skillKey of getEquippedArmorSkillKeys(defender)) {
+      fpHTML += formatSkillFpGrantLine(await grantSkillUsageFp(defender, skillKey, 'hitTaken'));
+    }
+  }
+
   const content = `<div class="sksk-chat-card sksk-action-card">`
     + (await renderLine(Number(button.dataset.rollA), game.i18n.localize('SKSK.AttackRoll.RollA'), button.dataset.critA || null))
     + (await renderLine(Number(button.dataset.rollB), game.i18n.localize('SKSK.AttackRoll.RollB'), button.dataset.critB || null))
+    + fpHTML
     + `</div>`;
 
   const messageData = {

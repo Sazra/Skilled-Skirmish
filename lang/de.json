@@ -35,7 +35,7 @@
             },
             "ExportImport": {
                 "Name": "Einstellungen exportieren/importieren",
-                "Hint": "Exportiert die SKSK-Einstellungen dieser Welt (Fertigkeitspunktkosten, Formel für Tragegewicht, Materialien, Modelle, Statuseffekte, Trainingsmethoden) als JSON-Datei, oder importiert sie aus einer solchen - z.B. um die Konfiguration einer Welt zu sichern oder in eine andere Welt zu übertragen.",
+                "Hint": "Exportiert die SKSK-Einstellungen dieser Welt (Fertigkeitspunktkosten, Formel für Tragegewicht, Materialien, Modelle, Statuseffekte, Trainingsmethoden, Fertigkeitsnutzungs-FP) als JSON-Datei, oder importiert sie aus einer solchen - z.B. um die Konfiguration einer Welt zu sichern oder in eine andere Welt zu übertragen.",
                 "Label": "Einstellungen exportieren/importieren",
                 "Export": "Einstellungen exportieren",
                 "Import": "Einstellungen importieren",
@@ -45,6 +45,11 @@
                 "ImportConfirmTitle": "Einstellungen importieren?",
                 "ImportConfirmContent": "Dadurch werden {count} Einstellung(en) mit den Werten aus der gewählten Datei überschrieben. Dies kann nicht rückgängig gemacht werden. Fortfahren?",
                 "ImportSuccess": "{count} Einstellung(en) importiert."
+            },
+            "SkillUsageFp": {
+                "Name": "Fertigkeitsnutzungs-FP",
+                "Hint": "Wie viele FP ein Charakter durch das Nutzen einer Fertigkeit generiert (Fertigkeitswürfe, Waffenangriffe, gewirkte Zauber, Attributswürfe, ...) - nur Charaktere, unterteilt nach Fertigkeiten-Kategorie.",
+                "Label": "Fertigkeitsnutzungs-FP konfigurieren"
             }
         },
         "Movement": {
@@ -135,6 +140,21 @@
             "AddSecondarySkill": "Nebenfertigkeit hinzufügen",
             "RemoveSecondarySkill": "Entfernen",
             "NoSecondarySkills": "Noch keine Nebenfertigkeiten."
+        },
+        "SkillFpConfig": {
+            "Skill": "Fertigkeit",
+            "SkillCheck": "FP / Fertigkeitswurf",
+            "WeaponAttack": "FP / Waffenangriff",
+            "Kill": "FP / Kill (noch nicht automatisiert)",
+            "HitTaken": "FP / Erlittener Angriff",
+            "SpellCastPerLevel": "FP / Gewirkte Zauberstufe",
+            "AttributeRoll": "FP / Attributswurf",
+            "DamageTaken": "FP / Erlittener Schaden (noch nicht automatisiert)",
+            "WeaponsHint": "FP wird pro Fertigkeitswurf und pro Waffenangriff (inkl. Kampfkunst) mit dieser Fertigkeit generiert, sowie pro Kill im Kampf, sobald ein Charakter den entscheidenden Treffer landet - die Kill-Erkennung ist noch nicht implementiert, diese Spalte hat also aktuell keine Wirkung.",
+            "ArmorsHint": "FP wird generiert, sobald der Charakter Ziel einer Angriffswurf-Bewertung einer Waffe oder eines Kampfkunstangriffs ist (Treffer oder Fehlschlag), für jede aktuell ausgerüstete Rüstungs-Fertigkeit (getragene Körperrüstung plus Schild, falls vorhanden).",
+            "MagicSchoolsHint": "FP wird pro Zauberstufe generiert, sobald ein Einfacher oder Fortgeschrittener Zauber dieser Magieschule gewirkt wird (z.B. eine Rate von 1 und ein Zauber der Stufe 3 ergibt 3 FP).",
+            "AttributeHint": "FP wird generiert, sobald der entsprechende reine Attributswurf (kein Fertigkeitswurf) durchgeführt wird - betrifft nur die 8 \"Unbegrenzte X\"-Fertigkeiten, je eine pro Attribut.",
+            "ResistancesHint": "FP wird generiert, sobald Schaden des entsprechenden Elements genommen wurde - noch nicht automatisiert, da das System keine automatische Schadensanwendung besitzt. Diese Spalte hat aktuell keine Wirkung."
         },
         "Life": {
             "MaxComputed": "Automatisch berechnet aus Klassen, Konstitution, Gesundheit, Zähigkeit und Fähigkeiten - nicht direkt bearbeitbar"
@@ -315,6 +335,9 @@
             "NoMethods": "Es wurden noch keine Trainingsmethoden konfiguriert - bitte den GM bitten, welche in den Trainingsmethoden-Einstellungen anzulegen.",
             "NoGain": "Keine FP generiert - zu wenig Zeit für die Rate jeder Fertigkeit aufgewendet.",
             "SkillGained": "{skill}: nicht integrierte FP +{amount}"
+        },
+        "SkillFp": {
+            "Gained": "{skill}: nicht integrierte FP +{amount}"
         },
         "AttackRoll": {
             "Attack": "Angriff",
