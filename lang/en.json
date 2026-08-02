@@ -27,6 +27,11 @@
         "Name": "Status Effects",
         "Hint": "Status effects selectable/toggleable on tokens and actors. Predefined ones (Exhaustion, Dazed, the four Poisoning severities) carry their own automated mechanics and can't be removed, only re-named/re-iconned/re-described; custom ones you add are flavor-only.",
         "Label": "Configure Status Effects"
+      },
+      "TrainingMethods": {
+        "Name": "Training Methods",
+        "Hint": "Training methods Characters can use (via the sheet header's Training button) to generate pending FP for a main skill and any number of secondary skills, per hour spent training.",
+        "Label": "Configure Training Methods"
       }
     },
     "Movement": {
@@ -105,6 +110,18 @@
       "DamageBonus": "Damage Bonus (Material)",
       "ArmorBonus": "Armor Bonus (Material)",
       "Properties": "Properties"
+    },
+    "TrainingMethod": {
+      "Name": "Name",
+      "Add": "Add Training Method",
+      "Remove": "Remove",
+      "None": "No Training methods defined yet.",
+      "MainSkill": "Main Skill",
+      "RatePerHour": "FP / Hour",
+      "SecondarySkills": "Secondary Skills",
+      "AddSecondarySkill": "Add Secondary Skill",
+      "RemoveSecondarySkill": "Remove",
+      "NoSecondarySkills": "No secondary skills yet."
     },
     "Life": {
       "MaxComputed": "Automatically calculated from Classes, Constitution, Health, Tenacity and abilities - not directly editable"
@@ -276,6 +293,15 @@
       "LuckChargesRestored": "Luck Charges +{amount}",
       "AdrenalinUsedCountReset": "Used Adrenalin reset to 0 (was {amount})",
       "AdrenalinDamageReduced": "Adrenalin Damage -{amount}"
+    },
+    "Training": {
+      "Title": "Training",
+      "Method": "Training Method",
+      "Hours": "Hours",
+      "Confirm": "Train",
+      "NoMethods": "No Training methods have been configured yet - ask your GM to add some in the Training Methods settings.",
+      "NoGain": "No FP generated - too little time spent for any skill's rate.",
+      "SkillGained": "{skill}: pending FP +{amount}"
     },
     "AttackRoll": {
       "Attack": "Attack",

@@ -26,6 +26,7 @@ import { getArmorClassBreakdown, getMagicResistanceBreakdown } from '../helpers/
 import { renderBreakdownHtml } from '../helpers/tooltips.mjs';
 import { rollMartialArtsAttack, rollRegeneration, rollMeditation, rollAdrenalin, useMove, useDodge, useItem } from '../helpers/actions.mjs';
 import { SKSKRestDialog } from '../apps/rest-dialog.mjs';
+import { SKSKTrainingDialog } from '../apps/training-dialog.mjs';
 import {
   getStatusEffectDefinitions, getStatusStacks, increaseStatusStacks, decreaseStatusStacks, applyD20Malus,
   getStatusEffect, getStatusInstances, getStatusInstancesTotal, addStatusInstance, applyCauterization,
@@ -94,6 +95,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       useDodge: SKSKActorSheet.#useDodge,
       useItem: SKSKActorSheet.#useItem,
       openRestDialog: SKSKActorSheet.#openRestDialog,
+      openTrainingDialog: SKSKActorSheet.#openTrainingDialog,
       increaseStatusStack: SKSKActorSheet.#increaseStatusStack,
       decreaseStatusStack: SKSKActorSheet.#decreaseStatusStack,
       addStatusInstance: SKSKActorSheet.#addStatusInstance,
@@ -1203,6 +1205,15 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
    */
   static #openRestDialog(event, target) {
     new SKSKRestDialog(this.actor).render(true);
+  }
+
+  /**
+   * Open the Training dialog (helpers/training.mjs) from the sheet
+   * header's dumbbell button - Character-only, see header.hbs (the NPC
+   * header template has no such button since NPCs don't generate FP).
+   */
+  static #openTrainingDialog(event, target) {
+    new SKSKTrainingDialog(this.actor).render(true);
   }
 
   /**

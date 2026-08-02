@@ -27,6 +27,11 @@
                 "Name": "Statuseffekte",
                 "Hint": "Statuseffekte, die auf Tokens/Akteuren ausgewählt/umgeschaltet werden können. Vordefinierte (Erschöpfung, Benommenheit, die vier Vergiftungs-Schweregrade) tragen eigene automatisierte Mechaniken und können nicht entfernt werden, nur umbenannt/mit neuem Symbol/neu beschrieben werden; selbst hinzugefügte sind rein kosmetisch.",
                 "Label": "Statuseffekte konfigurieren"
+            },
+            "TrainingMethods": {
+                "Name": "Trainingsmethoden",
+                "Hint": "Trainingsmethoden, die Charaktere (über den Trainings-Button im Kopfbereich) nutzen können, um pro trainierter Stunde noch nicht integrierte FP für eine Hauptfertigkeit und beliebig viele Nebenfertigkeiten zu generieren.",
+                "Label": "Trainingsmethoden konfigurieren"
             }
         },
         "Movement": {
@@ -105,6 +110,18 @@
             "DamageBonus": "Schadensbonus (Material)",
             "ArmorBonus": "Rüstungsbonus (Material)",
             "Properties": "Eigenschaften"
+        },
+        "TrainingMethod": {
+            "Name": "Name",
+            "Add": "Trainingsmethode hinzufügen",
+            "Remove": "Entfernen",
+            "None": "Noch keine Trainingsmethoden angelegt.",
+            "MainSkill": "Hauptfertigkeit",
+            "RatePerHour": "FP / Stunde",
+            "SecondarySkills": "Nebenfertigkeiten",
+            "AddSecondarySkill": "Nebenfertigkeit hinzufügen",
+            "RemoveSecondarySkill": "Entfernen",
+            "NoSecondarySkills": "Noch keine Nebenfertigkeiten."
         },
         "Life": {
             "MaxComputed": "Automatisch berechnet aus Klassen, Konstitution, Gesundheit, Zähigkeit und Fähigkeiten - nicht direkt bearbeitbar"
@@ -276,6 +293,15 @@
             "LuckChargesRestored": "Glücksladungen +{amount}",
             "AdrenalinUsedCountReset": "Benutztes Adrenalin auf 0 zurückgesetzt (war {amount})",
             "AdrenalinDamageReduced": "Adrenalinschaden -{amount}"
+        },
+        "Training": {
+            "Title": "Training",
+            "Method": "Trainingsmethode",
+            "Hours": "Stunden",
+            "Confirm": "Trainieren",
+            "NoMethods": "Es wurden noch keine Trainingsmethoden konfiguriert - bitte den GM bitten, welche in den Trainingsmethoden-Einstellungen anzulegen.",
+            "NoGain": "Keine FP generiert - zu wenig Zeit für die Rate jeder Fertigkeit aufgewendet.",
+            "SkillGained": "{skill}: nicht integrierte FP +{amount}"
         },
         "AttackRoll": {
             "Attack": "Angriff",

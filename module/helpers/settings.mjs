@@ -1,6 +1,7 @@
 import { SKSKMaterialsConfig } from '../apps/materials-config.mjs';
 import { SKSKModelsConfig } from '../apps/models-config.mjs';
 import { SKSKStatusEffectsConfig } from '../apps/status-effects-config.mjs';
+import { SKSKTrainingMethodsConfig } from '../apps/training-methods-config.mjs';
 
 /**
  * Register world-scoped game settings for the system.
@@ -103,6 +104,27 @@ export function registerSettings() {
     label: 'SKSK.Settings.StatusEffects.Label',
     icon: 'fas fa-skull-crossbones',
     type: SKSKStatusEffectsConfig,
+    restricted: true,
+  });
+
+  // GM-configurable list of Training methods (each entry {id, name,
+  // mainSkill, mainRate, secondarySkills: [{skill, rate}]}) - see
+  // apps/training-methods-config.mjs and helpers/training.mjs. Characters
+  // use the header's Training button to spend hours training via one of
+  // these, generating FP/hour into the trained skills' pending "gain".
+  game.settings.register('sksk', 'trainingMethods', {
+    scope: 'world',
+    config: false,
+    type: Array,
+    default: [],
+  });
+
+  game.settings.registerMenu('sksk', 'trainingMethodsMenu', {
+    name: 'SKSK.Settings.TrainingMethods.Name',
+    hint: 'SKSK.Settings.TrainingMethods.Hint',
+    label: 'SKSK.Settings.TrainingMethods.Label',
+    icon: 'fas fa-dumbbell',
+    type: SKSKTrainingMethodsConfig,
     restricted: true,
   });
 }

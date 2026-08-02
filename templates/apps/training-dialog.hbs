@@ -1,0 +1,28 @@
+<div class="sksk-training-dialog">
+  {{#if noMethods}}
+  <p class="rest-hint">{{localize 'SKSK.Training.NoMethods'}}</p>
+  {{else}}
+
+  <div class="resource">
+    <label class="resource-label">{{localize 'SKSK.Training.Method'}}</label>
+    <select data-training-field="methodId">
+      {{#each methods as |method|}}
+      <option value="{{method.id}}" {{#if (eq method.id ../methodId)}}selected{{/if}}>{{method.name}}</option>
+      {{/each}}
+    </select>
+  </div>
+
+  <div class="resource">
+    <label class="resource-label">{{localize 'SKSK.Training.Hours'}}</label>
+    <input type="text" data-training-field="hours" value="{{hours}}" />
+  </div>
+
+  <ul class="training-preview">
+    {{#each preview as |entry|}}
+    <li class="rest-preview-line">{{entry.label}}: +{{entry.gain}} FP ({{entry.rate}}/h)</li>
+    {{/each}}
+  </ul>
+
+  <button type="button" data-action="confirm">{{localize 'SKSK.Training.Confirm'}}</button>
+  {{/if}}
+</div>
