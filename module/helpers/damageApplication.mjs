@@ -79,7 +79,14 @@ export function renderApplyDamageButton(attacker, damageEntries, killSkillKey = 
  * data/actor-base.mjs#negativeLife) and it wasn't ALREADY true beforehand
  * (so re-applying damage to an already-dead target, e.g. overkill, never
  * grants Kill FP a second time) - grants the attacker a Kill FP for
- * killSkillKey. Posts a chat summary either way.
+ * killSkillKey. Also grants the defender's own "<type>Resistance" skill
+ * its "damageTaken" FP for every entry that actually dealt damage (not
+ * fully prevented by Immunity, nor converted into healing by Absorption -
+ * a Resistance row is hidden from the Skills tab entirely while either is
+ * active anyway, see sheets/actor-sheet.mjs#_prepareSkills, so there's
+ * nothing to reward it for reducing in those cases) - subject to
+ * Resistance's own special gain cap (see helpers/skillFp.mjs#
+ * capResistanceGain). Posts a chat summary either way.
  * @param {HTMLElement} button
  * @return {Promise<ChatMessage|void>}
  */
@@ -99,6 +106,9 @@ export async function applyDamageFromChat(button) {
     const typeLabel = game.i18n.localize(CONFIG.SKSK.damageTypes[damageType] ?? damageType);
     const outcomeKey = healing ? 'SKSK.AttackRoll.DamageAbsorbedIntoHealing' : 'SKSK.AttackRoll.DamageApplied';
     lines.push(`<div class="sksk-roll-line">${game.i18n.format(outcomeKey, { type: typeLabel, amount: adjusted })}</div>`);
+    if (!healing && adjusted > 0) {
+      lines.push(formatSkillFpGrantLine(await grantSkillUsageFp(defender, `${damageType}Resistance`, 'damageTaken', adjusted)));
+    }
   }
 
   const wasAlreadyDead = defender.system.life.value === 0 && defender.system.negativeLife.value >= defender.system.negativeLife.max;

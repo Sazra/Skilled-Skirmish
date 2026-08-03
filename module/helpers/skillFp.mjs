@@ -1,4 +1,39 @@
-import { getSkillLabel, getActorSkillLevel } from './skills.mjs';
+import {
+  getSkillLabel, getActorSkillLevel, findSkillDefinition, getSkillPointThreshold, computeSkillBonusTotals,
+} from './skills.mjs';
+
+/**
+ * Resistances' own special cap (the only skill category with one): pending
+ * "gain" for a Resistance skill can never accumulate (combined with its
+ * own already-integrated points) beyond what's needed to raise its
+ * points-driven level 3 levels past wherever an equipped Species/Class/
+ * Item's own skill bonus (computeSkillBonusTotals) already puts it - that
+ * bonus itself doesn't count against the cap, so e.g. a Species granting
+ * +5 to Fire Resistance still lets FP gain push the final displayed level
+ * to 8 (5 + 3), not just 3. Mirrors getSkillLevel's own baseline-
+ * subtraction math (helpers/skills.mjs) so "3 levels past the bonus" is
+ * computed the exact same way the final level itself is. Doesn't touch
+ * the skill's actual points at all - a GM/player can still raise or lower
+ * those directly without limit, unaffected. A no-op (returns amount
+ * unchanged) for every other skill category.
+ * @param {Actor} actor
+ * @param {string} skillKey
+ * @param {number} amount   The FP amount that would otherwise be granted.
+ * @return {number} The amount actually still grantable - may be less, or 0.
+ */
+function capResistanceGain(actor, skillKey, amount) {
+  if (!(skillKey in (CONFIG.SKSK.skills.resistances ?? {}))) return amount;
+  const maxLevel = findSkillDefinition(skillKey)?.maxLevel;
+  const bonus = computeSkillBonusTotals(actor)[skillKey] ?? 0;
+  const baseline = bonus > 0 ? getSkillPointThreshold(bonus, maxLevel) : 0;
+  const maxAllowedPoints = getSkillPointThreshold(bonus + 3, maxLevel) - baseline;
+  if (Number.isNaN(maxAllowedPoints)) return amount;
+
+  const data = actor.system.skills?.[skillKey] ?? {};
+  const alreadyAccumulated = (data.points ?? 0) + (data.gain ?? 0);
+  const room = Math.max(0, maxAllowedPoints - alreadyAccumulated);
+  return Math.min(amount, room);
+}
 
 /**
  * The GM-configured FP-per-usage rates (world setting, edited via the
@@ -36,11 +71,15 @@ export function getSkillFpRate(skillKey, trigger) {
  * @param {number} [multiplier=1]
  * @return {Promise<{label: string, amount: number}|null>} What was granted,
  *   for the caller to append a chat line with (see formatSkillFpGrantLine) -
- *   null if nothing was (NPC, no configured rate, or floors to 0).
+ *   null if nothing was (NPC, no configured rate, floors to 0, or a
+ *   Resistance already at its own level-3 gain cap - see capResistanceGain).
  */
 export async function grantSkillUsageFp(actor, skillKey, trigger, multiplier = 1) {
   if (!actor || actor.type !== 'character') return null;
-  const amount = Math.floor(getSkillFpRate(skillKey, trigger) * multiplier);
+  let amount = Math.floor(getSkillFpRate(skillKey, trigger) * multiplier);
+  if (amount <= 0) return null;
+
+  amount = capResistanceGain(actor, skillKey, amount);
   if (amount <= 0) return null;
 
   const current = actor.system.skills?.[skillKey]?.gain ?? 0;
@@ -88,7 +127,7 @@ export function formatSkillFpGrantLine(grant) {
  */
 export async function grantFlatSkillFp(actor, skillKey, amount) {
   if (!actor || actor.type !== 'character') return null;
-  const flatAmount = Math.floor(Number(amount) || 0);
+  const flatAmount = capResistanceGain(actor, skillKey, Math.floor(Number(amount) || 0));
   if (flatAmount <= 0) return null;
 
   const current = actor.system.skills?.[skillKey]?.gain ?? 0;
