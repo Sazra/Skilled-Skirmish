@@ -302,6 +302,7 @@
             "APCost": "AP-Kosten",
             "Attributes": "Attribute",
             "AttributeUsage": "Attributsnutzung",
+            "DamageType": "Schadenstyp",
             "Add": "Angriff hinzufügen",
             "Remove": "Entfernen",
             "None": "Noch keine Kampfkunstangriffe definiert."
@@ -400,6 +401,12 @@
         "SkillFp": {
             "Gained": "{skill}: nicht integrierte FP +{amount}"
         },
+        "KillDialog": {
+            "Title": "Kill markieren",
+            "Skill": "Waffenfertigkeit",
+            "Confirm": "Kill-FP vergeben",
+            "NoGain": "Keine FP generiert - für diese Fertigkeit ist keine Kill-Rate konfiguriert."
+        },
         "AttackRoll": {
             "Attack": "Angriff",
             "RollA": "Wurf A",
@@ -413,7 +420,12 @@
             "CriticalHit": "Kritischer Treffer",
             "CriticalMiss": "Kritisch Verfehlt",
             "PrecisionRoll": "Präzisionswurf",
-            "CriticalBonusDamage": "Kritischer Zusatzschaden"
+            "CriticalBonusDamage": "Kritischer Zusatzschaden",
+            "ApplyDamage": "Schaden anwenden",
+            "DamageApplied": "{type}-Schaden angewendet: {amount}",
+            "DamageAbsorbedIntoHealing": "{type}-Schaden absorbiert - stattdessen {amount} Heilung",
+            "DamageAppliedTitle": "Schaden angewendet ({defender})",
+            "KillConfirmed": "{defender} wurde besiegt!"
         },
         "Gender": {
             "Male": "Männlich",
@@ -967,6 +979,7 @@
             "Name": "Name",
             "DiceFormula": "Wurfformel",
             "FlatBonus": "Fester Wert",
+            "DamageType": "Schadenstyp",
             "Attributes": "Genutzte Attributsmodifikatoren",
             "Properties": "Eigenschaften",
             "HardenedValue": "Härte-Wert (X)",
@@ -984,7 +997,11 @@
             "PropertyOverrides": "Eigenschaften-Anpassungen",
             "AttributeOverride": "Attribut-Überschreibung",
             "AttributeOverrideHint": "Der Angriffsbonus dieser Waffe durch Attribute stammt normalerweise aus den genutzten Attributsmodifikatoren ihres Modells. Aktiviere dies für eine einzigartige Variante dieses Modells, die stattdessen andere Attribute nutzen soll.",
-            "AttributeOverrideEnabled": "Attribute dieser Waffe überschreiben"
+            "AttributeOverrideEnabled": "Attribute dieser Waffe überschreiben",
+            "DamageType": "Schadenstyp",
+            "DamageTypeOverride": "Schadenstyp-Überschreibung",
+            "DamageTypeOverrideHint": "Der Schadenstyp dieser Waffe (für Resistenz/Schwäche/Immunität/Absorption) stammt normalerweise aus dem Schadenstyp ihres Modells. Aktiviere dies für eine einzigartige Variante dieses Modells, die stattdessen einen anderen Schadenstyp verursachen soll.",
+            "DamageTypeOverrideEnabled": "Schadenstyp dieser Waffe überschreiben"
         },
         "ModelProperty": {
             "Heavy": {

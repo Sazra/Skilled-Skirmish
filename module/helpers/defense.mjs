@@ -1,4 +1,4 @@
-import { getActorSkillLevel } from "./skills.mjs";
+import { getActorSkillLevel, isActorSkillUnlocked, getSkillStacks } from "./skills.mjs";
 
 /**
  * The level-based component of a creature's "natural" material bonus -
@@ -199,4 +199,37 @@ export function getArmorClassBreakdown(actor) {
  */
 export function getMagicResistanceBreakdown(actor) {
   return computeMagicResistanceComponents(actor);
+}
+
+/**
+ * How a given amount of one element's damage is modified by the
+ * defender's Resistance/Weakness/Immunity/Absorption skills for that same
+ * element (CONFIG.SKSK.damageTypes key + "Resistance"/"Weakness"/
+ * "Immunity"/"Absorption") - mirrors (and shares helpers with) the Skills
+ * tab's own Resistance-row display logic (see sheets/actor-sheet.mjs#
+ * _prepareSkills), so the sheet and real damage math never disagree:
+ * - Absorption (binary): the entire amount is converted into healing
+ *   outright - highest priority, blocks both Immunity and Weakness/
+ *   Resistance from mattering at all.
+ * - Otherwise Immunity (binary): the damage is prevented entirely (0) -
+ *   also blocks Weakness/Resistance.
+ * - Otherwise Resistance (level 0-10, -10%/level capped at -99% at level
+ *   10) and Weakness (stackable, +100%/stack) net together on the same
+ *   amount: floor(amount * (1 + weaknessStacks - resistancePercent/100)),
+ *   floored at 0.
+ * @param {Actor} actor
+ * @param {string} damageType   A CONFIG.SKSK.damageTypes key.
+ * @param {number} amount       Positive raw damage before defenses.
+ * @return {{amount: number, healing: boolean}}
+ */
+export function applyElementalDefense(actor, damageType, amount) {
+  if (amount <= 0) return { amount: 0, healing: false };
+
+  if (isActorSkillUnlocked(actor, `${damageType}Absorption`)) return { amount, healing: true };
+  if (isActorSkillUnlocked(actor, `${damageType}Immunity`)) return { amount: 0, healing: false };
+
+  const resistancePercent = Math.min(99, getActorSkillLevel(actor, `${damageType}Resistance`) * 10);
+  const weaknessStacks = getSkillStacks(actor, `${damageType}Weakness`);
+  const netFraction = 1 + weaknessStacks - resistancePercent / 100;
+  return { amount: Math.max(0, Math.floor(amount * netFraction)), healing: false };
 }

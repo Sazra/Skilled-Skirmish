@@ -265,6 +265,26 @@ export function isActorSkillUnlocked(actor, skillKey) {
 }
 
 /**
+ * A stackable pseudo-skill's current stack count (e.g. a Weakness) -
+ * character: its own points field, entered directly; NPC: its formula
+ * result. Weaknesses aren't leveled skills at all - the raw value IS the
+ * stack count (see helpers/defense.mjs#applyElementalDefense, which nets
+ * this against the matching Resistance's level). 0 for anything but a
+ * stackable skill.
+ * @param {Actor} actor
+ * @param {string} skillKey
+ * @return {number}
+ */
+export function getSkillStacks(actor, skillKey) {
+  const def = findSkillDefinition(skillKey);
+  if (!def?.stackable) return 0;
+
+  const data = actor.system.skills?.[skillKey] ?? {};
+  if (actor.type === 'npc') return evaluateSkillFormula(data.formula ?? '', actor.getRollData());
+  return data.points ?? 0;
+}
+
+/**
  * A skill's "level" for comparing against an attributeBonusThresholds
  * entry's own level - getActorSkillLevel for a 5-/10-level skill, or 1/0
  * for a binary skill depending on whether it's currently unlocked (its

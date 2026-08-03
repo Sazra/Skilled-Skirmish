@@ -8,13 +8,17 @@ import {
 } from './attackRolls.mjs';
 import { getGenericCriticalType, getAttackCriticalType, resolveCheckSuccess, wrapCriticalBlock, wrapCriticalInline } from './criticalRolls.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine, grantFlatSkillFp, checkReflexActionTrigger } from './skillFp.mjs';
+import { renderApplyDamageButton } from './damageApplication.mjs';
 
 /**
  * Roll one damage entry (its formula plus any attribute/skill scaling) and
- * render it as a chat-card line.
+ * render it as a chat-card line - also returns its own {damageType,
+ * amount}, for the caller to feed into renderApplyDamageButton (Magic
+ * Schools have no configured "kill" rate, so a spell's own Apply Damage
+ * buttons are always rendered with a null killSkillKey).
  * @param {object} damage   An entry from SKSKSpell#damages.
  * @param {Actor} actor     The caster, for scaling bonuses.
- * @return {Promise<string>}
+ * @return {Promise<{html: string, entry: {damageType: string, amount: number}}>}
  */
 async function renderDamageRoll(damage, actor) {
   const bonus = computeDamageBonus(damage, actor);
@@ -24,7 +28,8 @@ async function renderDamageRoll(damage, actor) {
   const roll = await new Roll(formula, actor?.getRollData()).evaluate();
   const typeLabel = game.i18n.localize(CONFIG.SKSK.damageTypes[damage.damageType] ?? damage.damageType);
   const rendered = await roll.render();
-  return `<div class="sksk-roll-line"><strong>${typeLabel} ${game.i18n.localize('SKSK.Spell.Roll.Damage')}</strong></div>${rendered}`;
+  const html = `<div class="sksk-roll-line"><strong>${typeLabel} ${game.i18n.localize('SKSK.Spell.Roll.Damage')}</strong></div>${rendered}`;
+  return { html, entry: { damageType: damage.damageType, amount: roll.total } };
 }
 
 /**
@@ -92,25 +97,35 @@ async function renderSpellEffectParts(item) {
 
   if (system.attackRoll.enabled) {
     const attackDamages = system.damages.filter(d => d.trigger === 'attack');
-    const dieSizes = [...new Set(attackDamages.flatMap(damage => getDamageDieSizes(damage.formula)))];
+    const damageDice = attackDamages.map(damage => ({ damageType: damage.damageType, dieSizes: getDamageDieSizes(damage.formula) }));
     const attackBonus = actor ? computeSpellAttackBonus(system, actor) : 0;
     for (let i = 1; i <= system.attackRoll.count; i++) {
       const rolls = await rollAttackPair(attackBonus, actor);
       const brutalApplied = rolls.some(roll => getAttackCriticalType(roll, actor) === 'success');
-      const rendered = await renderAttackPairHTML(rolls, 'magicResistance', actor, { dieSizes, brutalApplied });
+      const rendered = await renderAttackPairHTML(rolls, 'magicResistance', actor, { damageDice, brutalApplied });
       parts.push(`<div class="sksk-roll-attack"><strong>${game.i18n.format('SKSK.Spell.Roll.Attack', { number: i })}</strong></div>${rendered}`);
 
+      const damageEntries = [];
       for (const damage of attackDamages) {
-        parts.push(await renderDamageRoll(damage, actor));
+        const { html, entry } = await renderDamageRoll(damage, actor);
+        parts.push(html);
+        damageEntries.push(entry);
       }
 
       if (brutalApplied) {
-        const bonusRoll = await rollCriticalBonusDamage(actor, dieSizes);
-        if (bonusRoll) {
-          parts.push(`<div class="sksk-roll-line"><strong>${game.i18n.localize('SKSK.AttackRoll.CriticalBonusDamage')}</strong></div>${await bonusRoll.render()}`);
-          parts.push(formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'brutality', 'criticalBonusDamagePoint', bonusRoll.total)));
+        const bonusResults = await rollCriticalBonusDamage(actor, damageDice);
+        let bonusTotal = 0;
+        for (const { damageType, roll } of bonusResults) {
+          const typeLabel = game.i18n.localize(CONFIG.SKSK.damageTypes[damageType] ?? damageType);
+          parts.push(`<div class="sksk-roll-line"><strong>${typeLabel} ${game.i18n.localize('SKSK.AttackRoll.CriticalBonusDamage')}</strong></div>${await roll.render()}`);
+          damageEntries.push({ damageType, amount: roll.total });
+          bonusTotal += roll.total;
+        }
+        if (bonusTotal) {
+          parts.push(formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'brutality', 'criticalBonusDamagePoint', bonusTotal)));
         }
       }
+      parts.push(renderApplyDamageButton(actor, damageEntries, null));
 
       if (system.savingThrows.length) {
         const buttons = system.savingThrows.map((save, index) => renderSavingThrowButton(save, index, item)).join('');
@@ -121,17 +136,25 @@ async function renderSpellEffectParts(item) {
     const buttons = system.savingThrows.map((save, index) => renderSavingThrowButton(save, index, item)).join('');
     parts.push(`<div class="sksk-roll-saves">${buttons}</div>`);
 
+    const saveDamageEntries = [];
     for (const damage of system.damages.filter(d => d.trigger === 'save')) {
-      parts.push(await renderDamageRoll(damage, actor));
+      const { html, entry } = await renderDamageRoll(damage, actor);
+      parts.push(html);
+      saveDamageEntries.push(entry);
     }
+    parts.push(renderApplyDamageButton(actor, saveDamageEntries, null));
     for (const effect of system.statusEffects.filter(e => e.trigger === 'save')) {
       parts.push(renderStatusEffect(effect));
     }
   }
 
+  const unconditionalDamageEntries = [];
   for (const damage of system.damages.filter(d => d.trigger === 'unconditional')) {
-    parts.push(await renderDamageRoll(damage, actor));
+    const { html, entry } = await renderDamageRoll(damage, actor);
+    parts.push(html);
+    unconditionalDamageEntries.push(entry);
   }
+  parts.push(renderApplyDamageButton(actor, unconditionalDamageEntries, null));
   for (const effect of system.statusEffects.filter(e => e.trigger === 'unconditional')) {
     parts.push(renderStatusEffect(effect));
   }

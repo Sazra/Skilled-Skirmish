@@ -108,6 +108,15 @@ export default class SKSKWeapon extends SKSKItemBase {
         ["str", "dex", "con", "per", "wil", "aur", "cha", "app"].map(key => [key, new fields.BooleanField({ initial: false })])
       )),
     });
+    // Per-item override of the Model's own damageType - same enabled/
+    // fallback pattern as attributeOverride above. When disabled (the
+    // default), this weapon's damage type for Resistance/Weakness/
+    // Immunity/Absorption purposes comes from its resolvedModel instead -
+    // see helpers/attackRolls.mjs#getWeaponDamageType.
+    schema.damageTypeOverride = new fields.SchemaField({
+      enabled: new fields.BooleanField({ initial: false }),
+      damageType: new fields.StringField({ required: true, blank: false, initial: "blunt" }),
+    });
 
     return schema;
   }

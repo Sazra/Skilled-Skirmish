@@ -131,6 +131,7 @@ export class SKSKModelsConfig extends HandlebarsApplicationMixin(ApplicationV2) 
     context.armorModelsByType = groupByType(getArmorModels(), 'armorType');
 
     context.attributeChoices = CONFIG.SKSK.attributes;
+    context.damageTypeChoices = CONFIG.SKSK.damageTypes;
     // Every weapon type shares the same property pool.
     context.weaponPropertyChoices = getModelPropertiesFor(['weapon']);
     // Armor properties are filtered per the model's own exact type now
@@ -193,6 +194,7 @@ export class SKSKModelsConfig extends HandlebarsApplicationMixin(ApplicationV2) 
         weaponType: existingWeaponModels[index]?.weaponType ?? 'axe',
         diceFormula: m.diceFormula ?? '',
         flatBonus: Number(m.flatBonus) || 0,
+        damageType: m.damageType ?? 'blunt',
         attributes,
         properties,
         heavyRequirement: Number(m.heavyRequirement) || 0,
@@ -221,7 +223,8 @@ export class SKSKModelsConfig extends HandlebarsApplicationMixin(ApplicationV2) 
   static async #addWeaponModel(event, target) {
     const models = foundry.utils.deepClone(getWeaponModels());
     models.push({
-      name: '', weaponType: target.dataset.weaponType, diceFormula: '', flatBonus: 0, attributes: [], properties: [],
+      name: '', weaponType: target.dataset.weaponType, diceFormula: '', flatBonus: 0, damageType: 'blunt',
+      attributes: [], properties: [],
       heavyRequirement: 0, demandingRequirement: 0, drainingRequirement: 0, reachRange: 0, rangedRange: 0,
     });
     await game.settings.set('sksk', 'weaponModels', models);

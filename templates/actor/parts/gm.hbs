@@ -95,7 +95,7 @@
           </a>
         </div>
 
-        <div class="grid grid-3col">
+        <div class="grid grid-4col">
           <div class="grid-span-1">
             <label class="resource-label">{{localize 'SKSK.MartialArtsAttack.Formula'}}</label>
             <input type="text" name="system.martialArtsAttacks.{{index}}.formula" value="{{attack.formula}}"
@@ -110,6 +110,12 @@
             <label class="resource-label">{{localize 'SKSK.MartialArtsAttack.AttributeUsage'}}</label>
             <select name="system.martialArtsAttacks.{{index}}.attributeUsage">
               {{selectOptions ../attributeUsageChoices selected=attack.attributeUsage localize=true}}
+            </select>
+          </div>
+          <div class="grid-span-1">
+            <label class="resource-label">{{localize 'SKSK.MartialArtsAttack.DamageType'}}</label>
+            <select name="system.martialArtsAttacks.{{index}}.damageType">
+              {{selectOptions ../damageTypeChoices selected=attack.damageType localize=true}}
             </select>
           </div>
         </div>
@@ -166,6 +172,13 @@
       </li>
       {{/each}}
     </ol>
+  </div>
+
+  <div class="resource">
+    <label class="resource-label">{{localize 'SKSK.KillDialog.Title'}}</label>
+    <a class="item-control" data-action="openKillDialog" title="{{localize 'SKSK.KillDialog.Title'}}">
+      <i class="fas fa-skull"></i> {{localize 'SKSK.KillDialog.Title'}}
+    </a>
   </div>
 
 </section>

@@ -4,10 +4,11 @@ import { computeMovementSpeeds } from "./movement.mjs";
 import { canUseWeaponAttack, canMove, applyAdrenalinDamage } from "./statusEffects.mjs";
 import {
   computeWeaponAttackBonus, computeMartialArtsAttackBonus, rollAttackPair, renderAttackPairHTML,
-  getDamageDieSizes, rollCriticalBonusDamage,
+  getDamageDieSizes, rollCriticalBonusDamage, getWeaponDamageType,
 } from "./attackRolls.mjs";
 import { wrapCriticalBlock, getAttackCriticalType } from "./criticalRolls.mjs";
 import { grantSkillUsageFp, formatSkillFpGrantLine, checkReflexActionTrigger } from "./skillFp.mjs";
+import { renderApplyDamageButton } from "./damageApplication.mjs";
 
 /**
  * Post a simple chat card (an optional Roll, an AP-cost line, and a
@@ -55,14 +56,16 @@ export async function postActionChatCard(actor, title, roll, apCost, extraHTML =
 export async function rollWeaponItem(item) {
   const actor = item.actor;
   const parts = [];
-  const dieSizes = getDamageDieSizes(item.system.formula);
+  const damageType = getWeaponDamageType(item.system);
+  const damageDice = [{ damageType, dieSizes: getDamageDieSizes(item.system.formula) }];
   let brutalApplied = false;
+  const damageEntries = [];
 
   if (actor) {
     const attackBonus = computeWeaponAttackBonus(actor, item);
     const rolls = await rollAttackPair(attackBonus, actor);
     brutalApplied = rolls.some(roll => getAttackCriticalType(roll, actor) === 'success');
-    const rendered = await renderAttackPairHTML(rolls, 'armorClass', actor, { dieSizes, brutalApplied });
+    const rendered = await renderAttackPairHTML(rolls, 'armorClass', actor, { damageDice, brutalApplied, killSkillKey: item.system.weaponType });
     parts.push(`<div class="sksk-roll-attack"><strong>${game.i18n.localize('SKSK.AttackRoll.Attack')}</strong></div>${rendered}`);
 
     const fpGrant = await grantSkillUsageFp(actor, item.system.weaponType, 'weaponAttack');
@@ -73,13 +76,20 @@ export async function rollWeaponItem(item) {
     const roll = await new Roll(item.system.formula, item.getRollData()).evaluate();
     const rendered = await roll.render();
     parts.push(`<div class="sksk-roll-line"><strong>${game.i18n.localize('SKSK.Spell.Roll.Damage')}</strong></div>${rendered}`);
+    damageEntries.push({ damageType, amount: roll.total });
     if (brutalApplied) {
-      const bonusRoll = await rollCriticalBonusDamage(actor, dieSizes);
-      if (bonusRoll) {
+      const bonusResults = await rollCriticalBonusDamage(actor, damageDice);
+      let bonusTotal = 0;
+      for (const { roll: bonusRoll } of bonusResults) {
         parts.push(`<div class="sksk-roll-line"><strong>${game.i18n.localize('SKSK.AttackRoll.CriticalBonusDamage')}</strong></div>${await bonusRoll.render()}`);
-        parts.push(formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'brutality', 'criticalBonusDamagePoint', bonusRoll.total)));
+        damageEntries.push({ damageType, amount: bonusRoll.total });
+        bonusTotal += bonusRoll.total;
+      }
+      if (bonusTotal) {
+        parts.push(formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'brutality', 'criticalBonusDamagePoint', bonusTotal)));
       }
     }
+    parts.push(renderApplyDamageButton(actor, damageEntries, item.system.weaponType));
   } else if (item.system.description) {
     const descriptionHTML = await foundry.applications.ux.TextEditor.implementation.enrichHTML(
       item.system.description ?? '', { relativeTo: item, secrets: item.isOwner }
@@ -168,28 +178,35 @@ export async function rollMartialArtsAttack(actor, index) {
   }
   if (!hasEnoughActionPoints(actor, attack.apCost)) return;
 
-  const dieSizes = getDamageDieSizes(attack.formula);
+  const damageDice = [{ damageType: attack.damageType, dieSizes: getDamageDieSizes(attack.formula) }];
   const attackBonus = computeMartialArtsAttackBonus(actor, attack);
   const rolls = await rollAttackPair(attackBonus, actor);
   const brutalApplied = rolls.some(roll => getAttackCriticalType(roll, actor) === 'success');
-  const attackHTML = `<div class="sksk-roll-attack"><strong>${game.i18n.localize('SKSK.AttackRoll.Attack')}</strong></div>${await renderAttackPairHTML(rolls, 'armorClass', actor, { dieSizes, brutalApplied })}`;
+  const attackHTML = `<div class="sksk-roll-attack"><strong>${game.i18n.localize('SKSK.AttackRoll.Attack')}</strong></div>${await renderAttackPairHTML(rolls, 'armorClass', actor, { damageDice, brutalApplied, killSkillKey: 'martialArts' })}`;
 
   const bonus = resolveMartialArtsAttributeBonus(actor, attack.attributes, attack.attributeUsage);
   const formula = bonus ? `${attack.formula} + ${bonus}` : attack.formula;
   const roll = await new Roll(formula, actor.getRollData()).evaluate();
   const renderedDamage = await roll.render();
+  const damageEntries = [{ damageType: attack.damageType, amount: roll.total }];
 
   let bonusDamageHTML = '';
   let bonusDamageFpHTML = '';
   if (brutalApplied) {
-    const bonusRoll = await rollCriticalBonusDamage(actor, dieSizes);
-    if (bonusRoll) {
-      bonusDamageHTML = `<div class="sksk-roll-line"><strong>${game.i18n.localize('SKSK.AttackRoll.CriticalBonusDamage')}</strong></div>${await bonusRoll.render()}`;
+    const bonusResults = await rollCriticalBonusDamage(actor, damageDice);
+    let bonusTotal = 0;
+    for (const { roll: bonusRoll } of bonusResults) {
+      bonusDamageHTML += `<div class="sksk-roll-line"><strong>${game.i18n.localize('SKSK.AttackRoll.CriticalBonusDamage')}</strong></div>${await bonusRoll.render()}`;
+      damageEntries.push({ damageType: attack.damageType, amount: bonusRoll.total });
+      bonusTotal += bonusRoll.total;
+    }
+    if (bonusTotal) {
       bonusDamageFpHTML = formatSkillFpGrantLine(
-        await grantSkillUsageFp(actor, 'brutality', 'criticalBonusDamagePoint', bonusRoll.total)
+        await grantSkillUsageFp(actor, 'brutality', 'criticalBonusDamagePoint', bonusTotal)
       );
     }
   }
+  const applyDamageHTML = renderApplyDamageButton(actor, damageEntries, 'martialArts');
 
   await actor.update(spendActionPoints(actor, attack.apCost));
   let fpHTML = formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'martialArts', 'weaponAttack'));
@@ -207,7 +224,7 @@ export async function rollMartialArtsAttack(actor, index) {
   const messageData = {
     speaker: ChatMessage.getSpeaker({ actor }),
     flavor: attack.name || game.i18n.localize('SKSK.Action.MartialArtsAttack'),
-    content: `<div class="sksk-chat-card sksk-action-card">${attackHTML}${renderedDamage}${bonusDamageHTML}${bonusDamageFpHTML}${fpHTML}${apCostHTML}</div>`,
+    content: `<div class="sksk-chat-card sksk-action-card">${attackHTML}${renderedDamage}${bonusDamageHTML}${applyDamageHTML}${bonusDamageFpHTML}${fpHTML}${apCostHTML}</div>`,
     rolls: [roll],
   };
   ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));

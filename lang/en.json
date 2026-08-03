@@ -302,6 +302,7 @@
       "APCost": "AP Cost",
       "Attributes": "Attributes",
       "AttributeUsage": "Attribute Usage",
+      "DamageType": "Damage Type",
       "Add": "Add Attack",
       "Remove": "Remove",
       "None": "No Martial Arts Attacks defined yet."
@@ -400,6 +401,12 @@
     "SkillFp": {
       "Gained": "{skill}: pending FP +{amount}"
     },
+    "KillDialog": {
+      "Title": "Mark Kill",
+      "Skill": "Weapon Skill",
+      "Confirm": "Grant Kill FP",
+      "NoGain": "No FP generated - no Kill rate configured for that skill."
+    },
     "AttackRoll": {
       "Attack": "Attack",
       "RollA": "Roll A",
@@ -413,7 +420,12 @@
       "CriticalHit": "Critical Hit",
       "CriticalMiss": "Critical Miss",
       "PrecisionRoll": "Precision Roll",
-      "CriticalBonusDamage": "Critical Bonus Damage"
+      "CriticalBonusDamage": "Critical Bonus Damage",
+      "ApplyDamage": "Apply Damage",
+      "DamageApplied": "{type} damage applied: {amount}",
+      "DamageAbsorbedIntoHealing": "{type} damage absorbed - {amount} healing instead",
+      "DamageAppliedTitle": "Damage Applied ({defender})",
+      "KillConfirmed": "{defender} has been defeated!"
     },
     "Gender": {
       "Male": "Male",
@@ -967,6 +979,7 @@
       "Name": "Name",
       "DiceFormula": "Roll Formula",
       "FlatBonus": "Flat Value",
+      "DamageType": "Damage Type",
       "Attributes": "Attribute Modifiers Used",
       "Properties": "Properties",
       "HardenedValue": "Hardened Value (X)",
@@ -984,7 +997,11 @@
       "PropertyOverrides": "Property Overrides",
       "AttributeOverride": "Attribute Override",
       "AttributeOverrideHint": "This weapon's Angriffswurf (attack roll) attribute bonus normally draws from its Model's own Attribute Modifiers Used. Enable this for a unique variant of that Model that should use different attributes instead.",
-      "AttributeOverrideEnabled": "Override this weapon's attributes"
+      "AttributeOverrideEnabled": "Override this weapon's attributes",
+      "DamageType": "Damage Type",
+      "DamageTypeOverride": "Damage Type Override",
+      "DamageTypeOverrideHint": "This weapon's damage type (for Resistance/Weakness/Immunity/Absorption purposes) normally draws from its Model's own Damage Type. Enable this for a unique variant of that Model that should deal a different damage type instead.",
+      "DamageTypeOverrideEnabled": "Override this weapon's damage type"
     },
     "ModelProperty": {
       "Heavy": {

@@ -7,6 +7,7 @@ import { SKSK } from './helpers/config.mjs';
 import { registerSettings } from './helpers/settings.mjs';
 import { rollSavingThrowFromChat } from './helpers/spell-rolls.mjs';
 import { resolveHitEvaluationFromChat } from './helpers/attackRolls.mjs';
+import { applyDamageFromChat } from './helpers/damageApplication.mjs';
 import { computeSpeciesAura } from './helpers/attributes.mjs';
 import {
   ensurePredefinedStatusEffects, registerConfigStatusEffects, handleCombatTurnStart, handleCombatTurnEnd,
@@ -114,6 +115,15 @@ Hooks.once('ready', async function () {
     if (!button) return;
     event.preventDefault();
     resolveHitEvaluationFromChat(button);
+  });
+
+  // Any damage roll's "Apply Damage" button - see
+  // helpers/damageApplication.mjs#applyDamageFromChat.
+  document.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-action="applyDamage"]');
+    if (!button) return;
+    event.preventDefault();
+    applyDamageFromChat(button);
   });
 
   // A weapon's attributeOverride enforces the same single-attribute rule

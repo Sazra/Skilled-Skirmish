@@ -4,7 +4,9 @@ import {
   onManageActiveEffect,
   prepareActiveEffectCategories,
 } from '../helpers/effects.mjs';
-import { evaluateSkillFormula, computeSkillBonusTotals, getActorSkillLevel } from '../helpers/skills.mjs';
+import {
+  evaluateSkillFormula, computeSkillBonusTotals, getActorSkillLevel, isActorSkillUnlocked, getSkillStacks,
+} from '../helpers/skills.mjs';
 import { getSkillCheckDefinition, rollSkillCheck, nonEmptyAttributeSubsets, chooseSkillRollVariant } from '../helpers/skillRolls.mjs';
 import {
   getVisibleAttributeBonusDropdowns, getResolvedAttributeBonuses, chooseAttributeBonus,
@@ -27,6 +29,7 @@ import { renderBreakdownHtml } from '../helpers/tooltips.mjs';
 import { rollMartialArtsAttack, rollRegeneration, rollMeditation, rollAdrenalin, useMove, useDodge, useItem } from '../helpers/actions.mjs';
 import { SKSKRestDialog } from '../apps/rest-dialog.mjs';
 import { SKSKTrainingDialog } from '../apps/training-dialog.mjs';
+import { SKSKKillDialog } from '../apps/kill-dialog.mjs';
 import {
   getStatusEffectDefinitions, getStatusStacks, increaseStatusStacks, decreaseStatusStacks, applyD20Malus,
   getStatusEffect, getStatusInstances, getStatusInstancesTotal, addStatusInstance, applyCauterization,
@@ -111,6 +114,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       useItem: SKSKActorSheet.#useItem,
       openRestDialog: SKSKActorSheet.#openRestDialog,
       openTrainingDialog: SKSKActorSheet.#openTrainingDialog,
+      openKillDialog: SKSKActorSheet.#openKillDialog,
       increaseStatusStack: SKSKActorSheet.#increaseStatusStack,
       decreaseStatusStack: SKSKActorSheet.#decreaseStatusStack,
       addStatusInstance: SKSKActorSheet.#addStatusInstance,
@@ -387,6 +391,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     context.movementTypeChoices = CONFIG.SKSK.movementTypes;
     context.attributeChoices = CONFIG.SKSK.attributes;
     context.attributeUsageChoices = CONFIG.SKSK.attributeUsageTypes;
+    context.damageTypeChoices = CONFIG.SKSK.damageTypes;
     // GM tab's attribute-bonus reset list - see helpers/attributeBonuses.mjs.
     context.resolvedAttributeBonuses = getResolvedAttributeBonuses(actor);
     // Actions tab's Weapons/Usable Items containers - "usable" Items are
@@ -778,21 +783,19 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
 
         if (row.isStackable) {
           // Weaknesses aren't leveled skills; the raw value IS the stack
-          // count (character: entered directly, NPC: formula result).
-          row.stacks = isNpc ? evaluateSkillFormula(row.formula, rollData) : row.points;
+          // count (character: entered directly, NPC: formula result) -
+          // see helpers/skills.mjs#getSkillStacks.
+          row.stacks = getSkillStacks(actor, key);
+        } else if (row.isBinary) {
+          // See helpers/skills.mjs#isActorSkillUnlocked (character: its own
+          // toggle; NPC: formula evaluates to 1).
+          row.unlocked = isActorSkillUnlocked(actor, key);
         } else if (isNpc) {
           // The formula computes total points directly; "L" in the
           // formula is replaced with the actor's level, so non-linear
           // scaling (e.g. "L * L") works, not just a flat rate per level.
-          const formulaResult = evaluateSkillFormula(row.formula, rollData);
-          if (row.isBinary) {
-            row.unlocked = formulaResult === 1;
-          } else {
-            row.points = formulaResult;
-            row.level = getActorSkillLevel(actor, key);
-          }
-        } else if (row.isBinary) {
-          row.unlocked = row.toggle;
+          row.points = evaluateSkillFormula(row.formula, rollData);
+          row.level = getActorSkillLevel(actor, key);
         } else {
           row.level = getActorSkillLevel(actor, key);
         }
@@ -1230,6 +1233,15 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
    */
   static #openTrainingDialog(event, target) {
     new SKSKTrainingDialog(this.actor).render(true);
+  }
+
+  /**
+   * Open the "Kill markieren" dialog (apps/kill-dialog.mjs) from the GM
+   * tab - a fully manual Kill FP grant, independent of the automatic one
+   * wired into helpers/damageApplication.mjs#applyDamageFromChat.
+   */
+  static #openKillDialog(event, target) {
+    new SKSKKillDialog(this.actor).render(true);
   }
 
   /**

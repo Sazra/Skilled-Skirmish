@@ -128,19 +128,20 @@ function clampResourceChange(value, max, delta) {
  * Directly apply a Life change (damage or healing) to system.life.value,
  * clamped via clampResourceChange - every turn-start effect that affects
  * current Life (Poison, Frostbite, Wound, custom Life ticks) goes through
- * this rather than only narrating the amount in chat. Damage that would
- * take Life below 0 doesn't just get floored away - whatever's left over
- * once Life hits 0 carries through onto system.negativeLife.value instead
- * (clamped at its own max), regardless of which of the above dealt it.
- * Healing never interacts with Negative Life here (Rest already handles
- * healing it directly, on its own tiers).
+ * this rather than only narrating the amount in chat, as does the
+ * Angriffswurf "Apply Damage" button (see helpers/damageApplication.mjs).
+ * Damage that would take Life below 0 doesn't just get floored away -
+ * whatever's left over once Life hits 0 carries through onto
+ * system.negativeLife.value instead (clamped at its own max), regardless
+ * of which of the above dealt it. Healing never interacts with Negative
+ * Life here (Rest already handles healing it directly, on its own tiers).
  * @param {Actor} actor
  * @param {number} delta   Positive to heal, negative to damage.
  * @return {Promise<{lifeDelta: number, negativeLifeDelta: number}>} The
  *   amounts actually applied to each (may differ from delta once clamped);
  *   negativeLifeDelta is positive when Negative Life worsens.
  */
-async function applyLifeChange(actor, delta) {
+export async function applyLifeChange(actor, delta) {
   if (!delta) return { lifeDelta: 0, negativeLifeDelta: 0 };
   const life = actor.system.life;
   const newLifeValue = clampResourceChange(life.value, life.max, delta);

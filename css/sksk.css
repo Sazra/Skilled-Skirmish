@@ -1156,6 +1156,15 @@
   margin: 2px 0 6px;
 }
 
+/* "Schaden anwenden" (Apply Damage - see helpers/damageApplication.mjs) -
+   kept visually distinct from Evaluate Hit above it. */
+.sksk-chat-card .sksk-apply-damage {
+  width: auto;
+  line-height: normal;
+  margin: 2px 0 6px;
+  border-color: var(--color-level-error, #ff6060);
+}
+
 /* Critical successes/failures (see helpers/criticalRolls.mjs): green/red on
    the die's own rendered total, and on any inline outcome label wrapped the
    same way. Not scoped to .sksk-chat-card - the plain attribute-check

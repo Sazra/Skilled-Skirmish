@@ -31,7 +31,7 @@
           </a>
         </div>
 
-        <div class="grid grid-2col">
+        <div class="grid grid-3col">
           <div class="grid-span-1">
             <label class="resource-label">{{localize 'SKSK.Models.DiceFormula'}}</label>
             <input type="text" name="weaponModels.{{entry.index}}.diceFormula" value="{{entry.model.diceFormula}}"
@@ -41,6 +41,12 @@
             <label class="resource-label">{{localize 'SKSK.Models.FlatBonus'}}</label>
             <input type="text" name="weaponModels.{{entry.index}}.flatBonus" value="{{entry.model.flatBonus}}"
               data-dtype="Number" />
+          </div>
+          <div class="grid-span-1">
+            <label class="resource-label">{{localize 'SKSK.Models.DamageType'}}</label>
+            <select name="weaponModels.{{entry.index}}.damageType">
+              {{selectOptions ../../damageTypeChoices selected=entry.model.damageType localize=true}}
+            </select>
           </div>
         </div>
 

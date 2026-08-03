@@ -267,6 +267,12 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       name: new fields.StringField({ required: true, blank: true, initial: "" }),
       formula: new fields.StringField({ required: true, blank: true, initial: "1d4" }),
       apCost: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+      // For Resistance/Weakness/Immunity/Absorption purposes (see
+      // helpers/defense.mjs#applyElementalDefense) - a weapon Item resolves
+      // this from its Model/attributeOverride instead (see
+      // helpers/attackRolls.mjs#getWeaponDamageType); a Martial Arts attack
+      // has no such Model to draw from, so it's a plain per-entry field.
+      damageType: new fields.StringField({ required: true, blank: false, initial: "blunt" }),
       attributes: new fields.SchemaField(attackAttributesSchema),
       attributeUsage: new fields.StringField({
         required: true, blank: false, initial: "highestMultiple",
@@ -283,11 +289,11 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
         return [
           {
             name: game.i18n.localize('SKSK.MartialArtsAttack.DefaultMainHand'),
-            formula: "1d4", apCost: 2, attributes: strDexOnly, attributeUsage: "highestMultiple",
+            formula: "1d4", apCost: 2, damageType: "blunt", attributes: strDexOnly, attributeUsage: "highestMultiple",
           },
           {
             name: game.i18n.localize('SKSK.MartialArtsAttack.DefaultOffHand'),
-            formula: "1d4", apCost: 1, attributes: { ...strDexOnly }, attributeUsage: "highestMultiple",
+            formula: "1d4", apCost: 1, damageType: "blunt", attributes: { ...strDexOnly }, attributeUsage: "highestMultiple",
           },
         ];
       },
