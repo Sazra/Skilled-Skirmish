@@ -14,6 +14,58 @@ import { resolveClickDefender, renderApplyDamageButton } from './damageApplicati
 const PRECISION_THRESHOLDS = { 1: 20, 2: 19, 3: 18, 4: 17, 5: 16 };
 
 /**
+ * The three ways an Angriffswurf's two independent d20s can resolve down to
+ * the single roll that actually counts - chosen fresh on every Evaluate
+ * click (see chooseAttackMode/resolveHitEvaluationFromChat), never at roll
+ * time, since which one "wins" depends on a choice made only once hit
+ * resolution is actually wanted.
+ */
+const ATTACK_MODES = [
+  { id: 'neutral', label: 'SKSK.AttackRoll.ModeNeutral' },
+  { id: 'advantage', label: 'SKSK.AttackRoll.ModeAdvantage' },
+  { id: 'disadvantage', label: 'SKSK.AttackRoll.ModeDisadvantage' },
+];
+
+/**
+ * Prompt for which of an Angriffswurf's two d20s counts - one button per
+ * mode (see ATTACK_MODES), clicking one both makes the choice and resolves
+ * the promise with it, matching helpers/skillRolls.mjs#chooseSkillRollVariant's
+ * own one-click dialog pattern.
+ * @return {Promise<string|null>} The chosen mode's id, or null/undefined if
+ *   the dialog was closed without picking one - the caller should abort.
+ */
+async function chooseAttackMode() {
+  const buttons = ATTACK_MODES.map(mode => ({
+    action: mode.id,
+    label: game.i18n.localize(mode.label),
+    callback: () => mode.id,
+  }));
+  return foundry.applications.api.DialogV2.wait({
+    window: { title: game.i18n.localize('SKSK.AttackRoll.Evaluate') },
+    content: `<p>${game.i18n.localize('SKSK.AttackRoll.ChooseModePrompt')}</p>`,
+    buttons,
+    rejectClose: false,
+  });
+}
+
+/**
+ * How "good" a resolved d20 result is, for ranking Roll A against Roll B
+ * under Vorteil/Nachteil (see chooseAttackMode/resolveHitEvaluationFromChat)
+ * - a critical success is always the best possible outcome and a critical
+ * failure always the worst, regardless of either roll's total (mirrors
+ * resolveCheckSuccess's own critical-overrides-total rule); otherwise the
+ * raw total itself is the score.
+ * @param {number} total
+ * @param {"success"|"failure"|null} criticalType
+ * @return {number}
+ */
+function rollQuality(total, criticalType) {
+  if (criticalType === 'success') return Infinity;
+  if (criticalType === 'failure') return -Infinity;
+  return total;
+}
+
+/**
  * The highest of a set of attribute modifiers, unless every one of them is
  * equal - in which case they're all summed instead. Shared by Masterful
  * weapons and every Martial Arts attack (see computeWeaponAttackBonus/
@@ -277,21 +329,21 @@ export async function maybeRollPrecision(actor, isOrdinaryHit) {
  * the totals, so each roll's critical type is stashed on the button too -
  * along with the attacker's own uuid (for Präzision/Brutality, resolved
  * only once a hit is confirmed - see resolveHitEvaluationFromChat) and the
- * attack's own per-damage-type dice/whether Brutality's bonus damage was
- * already granted for a natural critical (see getDamageDieSizes/
- * rollCriticalBonusDamage and helpers/actions.mjs#rollWeaponItem et al) -
- * plus killSkillKey (the attacker's own skill to credit a Kill to, if a
- * Präzision-promoted critical here later triggers its own deferred Apply
- * Damage button - see resolveHitEvaluationFromChat), carried through
- * unchanged from whichever call site knows it.
+ * attack's own per-damage-type dice (see getDamageDieSizes/
+ * rollCriticalBonusDamage - Brutality's bonus damage is only ever rolled at
+ * Evaluate-time now, never immediately at roll time) - plus killSkillKey
+ * (the attacker's own skill to credit a Kill to, if a Präzision-promoted
+ * critical here later triggers its own deferred Apply Damage button - see
+ * resolveHitEvaluationFromChat), carried through unchanged from whichever
+ * call site knows it.
  * @param {[Roll, Roll]} rolls
  * @param {"armorClass"|"magicResistance"} comparisonType
  * @param {Actor|null} actor   The attacker, whose own critical thresholds apply.
- * @param {{damageDice?: Array<{damageType: string, dieSizes: number[]}>, brutalApplied?: boolean, killSkillKey?: string|null}} [damageInfo]
+ * @param {{damageDice?: Array<{damageType: string, dieSizes: number[]}>, killSkillKey?: string|null}} [damageInfo]
  * @return {Promise<string>}
  */
 export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor, damageInfo = {}) {
-  const { damageDice = [], brutalApplied = false, killSkillKey = null } = damageInfo;
+  const { damageDice = [], killSkillKey = null } = damageInfo;
   const critA = getAttackCriticalType(rollA, actor);
   const critB = getAttackCriticalType(rollB, actor);
   const renderedA = wrapCriticalBlock(await rollA.render(), critA);
@@ -310,7 +362,7 @@ export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor
     <button type="button" class="sksk-roll-hit-eval" data-action="resolveHitEvaluation"
       data-roll-a="${rollA.total}" data-roll-b="${rollB.total}" data-comparison-type="${comparisonType}"
       data-crit-a="${critA ?? ''}" data-crit-b="${critB ?? ''}" data-attacker-uuid="${actor?.uuid ?? ''}"
-      data-damage-dice="${encodeURIComponent(JSON.stringify(damageDice))}" data-brutal-applied="${brutalApplied}"
+      data-damage-dice="${encodeURIComponent(JSON.stringify(damageDice))}"
       data-kill-skill="${killSkillKey ?? ''}">
       ${game.i18n.localize('SKSK.AttackRoll.Evaluate')}
     </button>
@@ -319,43 +371,37 @@ export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor
 
 /**
  * Handle a click on an Angriffswurf's "Evaluate" button: resolves the
- * defender (see helpers/damageApplication.mjs#resolveClickDefender). Then
- * compares both of the
- * attack's already-rolled d20 totals against that defender's Armor Class
- * or Magic Resistance (per the button's own data-comparison-type) and
- * posts the outcome as a new chat message, speaking as the defender.
+ * defender (see helpers/damageApplication.mjs#resolveClickDefender), then
+ * prompts for which of the attack's two already-rolled d20s actually counts
+ * (see chooseAttackMode) - Neutral always picks Roll A, Vorteil/Nachteil
+ * pick whichever of the two ranks better/worse (see rollQuality). Aborts
+ * silently (no chat message) if either no defender could be resolved or the
+ * mode dialog was closed without a choice.
  *
+ * The chosen roll alone is compared against the defender's Armor Class or
+ * Magic Resistance (per the button's own data-comparison-type) - a critical
+ * success/failure there always hits/always misses regardless of the total.
  * An ordinary (non-critical) hit additionally gives the attacker's own
- * Präzision a chance to retroactively promote it to a critical success
- * (see maybeRollPrecision); a critical success arrived at this way, or
- * already flagged as a natural critical at roll time, grants Brutality's
- * bonus damage (see rollCriticalBonusDamage) - but at most once per attack,
- * regardless of how many of the two d20s ended up critical (a natural
- * critical already granted it immediately at roll time - see
- * helpers/actions.mjs#rollWeaponItem/rollMartialArtsAttack and
- * helpers/spell-rolls.mjs#renderSpellEffectParts - in which case
- * data-brutal-applied is already "true" here).
+ * Präzision a chance to retroactively promote it to a critical success (see
+ * maybeRollPrecision); either way, a critical success here rolls Brutality's
+ * bonus damage (see rollCriticalBonusDamage) - always deferred to this one
+ * moment, never at roll time, since which roll even counts wasn't known
+ * until now.
  *
  * For a weapon/Martial Arts attack (comparisonType "armorClass", not a
- * spell's "magicResistance"), this whole evaluation also grants the
- * "hitTaken" FP trigger (see helpers/skillFp.mjs) to every armor-category
- * skill the defender currently has equipped (body armor + Shield - see
- * helpers/defense.mjs#getEquippedArmorSkillKeys) - once per Evaluate click,
- * not once per d20, and regardless of hit or miss (suffering an evaluated
- * attack against one's own AC at all is what counts here).
+ * spell's "magicResistance"), this also grants the "hitTaken" FP trigger
+ * (see helpers/skillFp.mjs) to every armor-category skill the defender
+ * currently has equipped (body armor + Shield - see helpers/defense.mjs#
+ * getEquippedArmorSkillKeys), regardless of hit or miss (suffering an
+ * evaluated attack against one's own AC at all is what counts here).
  *
- * Every individual d20 (both comparisonTypes - a spell attack is still an
- * "Angriff" for these) also grants further FP triggers per its own final
- * outcome: "attackHit" (Trefferkorrektur) to the attacker on a hit,
- * "attackDefended" (Verteidigungskorrektur) to the defender on a miss, and
- * "criticalHit" (Präzision) to the attacker on that roll's own (possibly
- * Präzision-promoted) critical success - plus, once per Evaluate click, a
- * bonus "doubleCriticalHit" grant if BOTH d20s ended up critical.
- * Brutality's own "criticalBonusDamagePoint" trigger (multiplied by the
- * bonus-damage roll's total) is granted alongside the bonus damage roll
- * itself, wherever that ends up happening - same de-duplication as
- * brutalApplied above, since only one of the two rolls can ever actually
- * trigger it.
+ * The chosen roll's own final outcome grants further FP: "attackHit"
+ * (Trefferkorrektur) to the attacker on a hit, "attackDefended"
+ * (Verteidigungskorrektur) to the defender on a miss, and "criticalHit"
+ * (Präzision) to the attacker on a critical success - plus, independent of
+ * which roll was chosen, a bonus "doubleCriticalHit" grant if BOTH raw d20s
+ * were natural criticals AND the mode was Vorteil or Nachteil (never
+ * Neutral, where Roll B was never really part of the attack to begin with).
  * @param {HTMLElement} button
  * @return {Promise<ChatMessage|void>}
  */
@@ -363,68 +409,78 @@ export async function resolveHitEvaluationFromChat(button) {
   const defender = resolveClickDefender();
   if (!defender) return ui.notifications.warn(game.i18n.localize('SKSK.AttackRoll.NoDefender'));
 
+  const mode = await chooseAttackMode();
+  if (!mode) return;
+
   const attacker = button.dataset.attackerUuid ? await fromUuid(button.dataset.attackerUuid) : null;
   const damageDice = JSON.parse(decodeURIComponent(button.dataset.damageDice || '[]'));
   const killSkillKey = button.dataset.killSkill || null;
-  let brutalApplied = button.dataset.brutalApplied === 'true';
-  const finalCriticalTypes = [];
+
+  const rollA = Number(button.dataset.rollA);
+  const rollB = Number(button.dataset.rollB);
+  const critA = button.dataset.critA || null;
+  const critB = button.dataset.critB || null;
+
+  let chosenTotal = rollA;
+  let criticalType = critA;
+  let labelKey = 'RollA';
+  if (mode !== 'neutral') {
+    const qualityA = rollQuality(rollA, critA);
+    const qualityB = rollQuality(rollB, critB);
+    const pickB = mode === 'advantage' ? qualityB > qualityA : qualityB < qualityA;
+    if (pickB) { chosenTotal = rollB; criticalType = critB; labelKey = 'RollB'; }
+  }
 
   const comparisonType = button.dataset.comparisonType;
   const statValue = comparisonType === 'magicResistance' ? defender.system.magicResistance : defender.system.armorClass;
   const statLabel = game.i18n.localize(comparisonType === 'magicResistance' ? 'SKSK.Resource.MR' : 'SKSK.Resource.AC');
 
-  const renderLine = async (rollTotal, rollLabel, initialCriticalType) => {
-    let criticalType = initialCriticalType;
-    const hit = resolveCheckSuccess(rollTotal, statValue, criticalType);
-    let extraHTML = '';
+  const hit = resolveCheckSuccess(chosenTotal, statValue, criticalType);
+  let extraHTML = '';
 
-    if (criticalType === null && hit) {
-      const precision = await maybeRollPrecision(attacker, true);
-      if (precision) {
-        const precisionRendered = wrapCriticalBlock(await precision.roll.render(), precision.success ? 'success' : null);
-        extraHTML += `<div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.PrecisionRoll')}</div>${precisionRendered}`;
-        if (precision.success) criticalType = 'success';
+  if (criticalType === null && hit) {
+    const precision = await maybeRollPrecision(attacker, true);
+    if (precision) {
+      const precisionRendered = wrapCriticalBlock(await precision.roll.render(), precision.success ? 'success' : null);
+      extraHTML += `<div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.PrecisionRoll')}</div>${precisionRendered}`;
+      if (precision.success) criticalType = 'success';
+    }
+  }
+
+  if (criticalType === 'success') {
+    const bonusResults = await rollCriticalBonusDamage(attacker, damageDice);
+    if (bonusResults.length) {
+      let bonusTotal = 0;
+      const bonusEntries = [];
+      for (const { damageType, roll } of bonusResults) {
+        const typeLabel = game.i18n.localize(CONFIG.SKSK.damageTypes[damageType] ?? damageType);
+        extraHTML += `<div class="sksk-roll-line"><strong>${typeLabel} ${game.i18n.localize('SKSK.AttackRoll.CriticalBonusDamage')}</strong></div>${await roll.render()}`;
+        bonusEntries.push({ damageType, amount: roll.total });
+        bonusTotal += roll.total;
       }
+      extraHTML += renderApplyDamageButton(attacker, bonusEntries, killSkillKey);
+      extraHTML += formatSkillFpGrantLine(await grantSkillUsageFp(attacker, 'brutality', 'criticalBonusDamagePoint', bonusTotal));
     }
+  }
 
-    if (criticalType === 'success' && !brutalApplied) {
-      brutalApplied = true;
-      const bonusResults = await rollCriticalBonusDamage(attacker, damageDice);
-      if (bonusResults.length) {
-        let bonusTotal = 0;
-        const bonusEntries = [];
-        for (const { damageType, roll } of bonusResults) {
-          const typeLabel = game.i18n.localize(CONFIG.SKSK.damageTypes[damageType] ?? damageType);
-          extraHTML += `<div class="sksk-roll-line"><strong>${typeLabel} ${game.i18n.localize('SKSK.AttackRoll.CriticalBonusDamage')}</strong></div>${await roll.render()}`;
-          bonusEntries.push({ damageType, amount: roll.total });
-          bonusTotal += roll.total;
-        }
-        extraHTML += renderApplyDamageButton(attacker, bonusEntries, killSkillKey);
-        extraHTML += formatSkillFpGrantLine(await grantSkillUsageFp(attacker, 'brutality', 'criticalBonusDamagePoint', bonusTotal));
-      }
-    }
+  if (hit) {
+    extraHTML += formatSkillFpGrantLine(await grantSkillUsageFp(attacker, 'hitCorrection', 'attackHit'));
+  } else {
+    extraHTML += formatSkillFpGrantLine(await grantSkillUsageFp(defender, 'defenseCorrection', 'attackDefended'));
+  }
+  if (criticalType === 'success') {
+    extraHTML += formatSkillFpGrantLine(await grantSkillUsageFp(attacker, 'precision', 'criticalHit'));
+  }
 
-    finalCriticalTypes.push(criticalType);
-    if (hit) {
-      extraHTML += formatSkillFpGrantLine(await grantSkillUsageFp(attacker, 'hitCorrection', 'attackHit'));
-    } else {
-      extraHTML += formatSkillFpGrantLine(await grantSkillUsageFp(defender, 'defenseCorrection', 'attackDefended'));
-    }
-    if (criticalType === 'success') {
-      extraHTML += formatSkillFpGrantLine(await grantSkillUsageFp(attacker, 'precision', 'criticalHit'));
-    }
-
-    const outcomeKey = criticalType === 'success' ? 'SKSK.AttackRoll.CriticalHit'
-      : criticalType === 'failure' ? 'SKSK.AttackRoll.CriticalMiss'
-      : hit ? 'SKSK.AttackRoll.Hit' : 'SKSK.AttackRoll.Miss';
-    const outcome = wrapCriticalInline(game.i18n.localize(outcomeKey), criticalType);
-    return `<div class="sksk-roll-line">${game.i18n.format('SKSK.AttackRoll.EvaluationLine', {
-      label: rollLabel, total: rollTotal, statLabel, statValue, outcome,
-    })}</div>${extraHTML}`;
-  };
-
-  const lineA = await renderLine(Number(button.dataset.rollA), game.i18n.localize('SKSK.AttackRoll.RollA'), button.dataset.critA || null);
-  const lineB = await renderLine(Number(button.dataset.rollB), game.i18n.localize('SKSK.AttackRoll.RollB'), button.dataset.critB || null);
+  const outcomeKey = criticalType === 'success' ? 'SKSK.AttackRoll.CriticalHit'
+    : criticalType === 'failure' ? 'SKSK.AttackRoll.CriticalMiss'
+    : hit ? 'SKSK.AttackRoll.Hit' : 'SKSK.AttackRoll.Miss';
+  const outcome = wrapCriticalInline(game.i18n.localize(outcomeKey), criticalType);
+  const modeLabel = game.i18n.localize(ATTACK_MODES.find(m => m.id === mode).label);
+  const rollLabel = `${game.i18n.localize(`SKSK.AttackRoll.${labelKey}`)} (${modeLabel})`;
+  const line = `<div class="sksk-roll-line">${game.i18n.format('SKSK.AttackRoll.EvaluationLine', {
+    label: rollLabel, total: chosenTotal, statLabel, statValue, outcome,
+  })}</div>${extraHTML}`;
 
   let fpHTML = '';
   if (comparisonType === 'armorClass') {
@@ -432,12 +488,12 @@ export async function resolveHitEvaluationFromChat(button) {
       fpHTML += formatSkillFpGrantLine(await grantSkillUsageFp(defender, skillKey, 'hitTaken'));
     }
   }
-  if (finalCriticalTypes.every(type => type === 'success')) {
+  if (mode !== 'neutral' && critA === 'success' && critB === 'success') {
     fpHTML += formatSkillFpGrantLine(await grantSkillUsageFp(attacker, 'precision', 'doubleCriticalHit'));
   }
 
   const content = `<div class="sksk-chat-card sksk-action-card">`
-    + lineA + lineB + fpHTML
+    + line + fpHTML
     + `</div>`;
 
   const messageData = {

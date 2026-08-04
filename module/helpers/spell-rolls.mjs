@@ -4,9 +4,9 @@ import {
   applyD20Malus, canCastMovementSpell, getStatusStacks, setStatusStacks, payManaCost, negativeLifeOverflowHTML,
 } from './statusEffects.mjs';
 import {
-  computeSpellAttackBonus, rollAttackPair, renderAttackPairHTML, getDamageDieSizes, rollCriticalBonusDamage,
+  computeSpellAttackBonus, rollAttackPair, renderAttackPairHTML, getDamageDieSizes,
 } from './attackRolls.mjs';
-import { getGenericCriticalType, getAttackCriticalType, resolveCheckSuccess, wrapCriticalBlock, wrapCriticalInline } from './criticalRolls.mjs';
+import { getGenericCriticalType, resolveCheckSuccess, wrapCriticalBlock, wrapCriticalInline } from './criticalRolls.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine, grantFlatSkillFp, checkReflexActionTrigger } from './skillFp.mjs';
 import { renderApplyDamageButton } from './damageApplication.mjs';
 
@@ -101,8 +101,7 @@ async function renderSpellEffectParts(item) {
     const attackBonus = actor ? computeSpellAttackBonus(system, actor) : 0;
     for (let i = 1; i <= system.attackRoll.count; i++) {
       const rolls = await rollAttackPair(attackBonus, actor);
-      const brutalApplied = rolls.some(roll => getAttackCriticalType(roll, actor) === 'success');
-      const rendered = await renderAttackPairHTML(rolls, 'magicResistance', actor, { damageDice, brutalApplied });
+      const rendered = await renderAttackPairHTML(rolls, 'magicResistance', actor, { damageDice });
       parts.push(`<div class="sksk-roll-attack"><strong>${game.i18n.format('SKSK.Spell.Roll.Attack', { number: i })}</strong></div>${rendered}`);
 
       const damageEntries = [];
@@ -110,20 +109,6 @@ async function renderSpellEffectParts(item) {
         const { html, entry } = await renderDamageRoll(damage, actor);
         parts.push(html);
         damageEntries.push(entry);
-      }
-
-      if (brutalApplied) {
-        const bonusResults = await rollCriticalBonusDamage(actor, damageDice);
-        let bonusTotal = 0;
-        for (const { damageType, roll } of bonusResults) {
-          const typeLabel = game.i18n.localize(CONFIG.SKSK.damageTypes[damageType] ?? damageType);
-          parts.push(`<div class="sksk-roll-line"><strong>${typeLabel} ${game.i18n.localize('SKSK.AttackRoll.CriticalBonusDamage')}</strong></div>${await roll.render()}`);
-          damageEntries.push({ damageType, amount: roll.total });
-          bonusTotal += roll.total;
-        }
-        if (bonusTotal) {
-          parts.push(formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'brutality', 'criticalBonusDamagePoint', bonusTotal)));
-        }
       }
       parts.push(renderApplyDamageButton(actor, damageEntries, null));
 
