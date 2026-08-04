@@ -27,6 +27,7 @@ import { getManaBreakdown } from '../helpers/mana.mjs';
 import { getArmorClassBreakdown, getMagicResistanceBreakdown } from '../helpers/defense.mjs';
 import { renderBreakdownHtml } from '../helpers/tooltips.mjs';
 import { rollMartialArtsAttack, rollRegeneration, rollMeditation, rollAdrenalin, useMove, useDodge, useItem } from '../helpers/actions.mjs';
+import { chooseOverchargeCount } from '../helpers/spell-rolls.mjs';
 import { SKSKRestDialog } from '../apps/rest-dialog.mjs';
 import { SKSKTrainingDialog } from '../apps/training-dialog.mjs';
 import { SKSKKillDialog } from '../apps/kill-dialog.mjs';
@@ -1319,12 +1320,17 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
   }
 
   /**
-   * Handle clickable rolls.
+   * Handle clickable rolls - Shift+clicking a spell prompts to Überladen
+   * (Overcharge) it first (see helpers/spell-rolls.mjs#
+   * chooseOverchargeCount), skipped entirely if this actor is already
+   * mid-cast (same condition rollSpellItem itself guards on) to avoid
+   * popping the dialog pointlessly. A plain click, or Shift+click on any
+   * non-spell item, behaves exactly as before.
    * @param {PointerEvent} event   The originating click event.
    * @param {HTMLElement} target   The capturing HTML element.
    * @private
    */
-  static #onRoll(event, target) {
+  static async #onRoll(event, target) {
     event.preventDefault();
     const dataset = target.dataset;
 
@@ -1333,7 +1339,19 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       if (dataset.rollType == 'item') {
         const itemId = target.closest('.item').dataset.itemId;
         const item = this.actor.items.get(itemId);
-        if (item) return item.roll();
+        if (!item) return;
+
+        if (event.shiftKey && item.type === 'spell') {
+          const pendingSpell = this.actor.system.pendingSpell;
+          if ((pendingSpell?.apCost ?? 0) > 0 || (pendingSpell?.roundsRemaining ?? 0) > 0) {
+            return ui.notifications.warn(game.i18n.localize('SKSK.Spell.Roll.AlreadyConcentrating'));
+          }
+          const count = await chooseOverchargeCount(this.actor, item);
+          if (!count) return;
+          return item.roll(count);
+        }
+
+        return item.roll();
       }
     }
 

@@ -189,6 +189,13 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       'stormancy', 'chaomancy', 'demomancy', 'drakomancy', 'necromancy', 'miracles',
       'feymancy', 'geomancy', 'biomancy', 'cryomancy', 'witchery',
     ].map(key => [key, new fields.NumberField({ ...requiredInteger, initial: 0 })])));
+    // A flat bonus to the maximum number of Überladungen (Overcharge
+    // stacks) a caster may apply to a single spell cast, beyond "1 + their
+    // Überladen skill level" - not meant to be hand-edited, purely an
+    // Active Effect target ("system.overchargeMaxBonus"), same convention
+    // as naturalMaterialBonus.bonus above. See helpers/spells.mjs#
+    // computeMaxOverchargeCount.
+    schema.overchargeMaxBonus = new fields.NumberField({ ...requiredInteger, initial: 0 });
 
     schema.biography = new fields.StringField({ required: true, blank: true });
 
@@ -339,6 +346,12 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       // fixed amount paid down incrementally. Only one of apCost/
       // roundsRemaining is ever active at once for a given pendingSpell.
       roundsRemaining: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+      // How many times this pending spell was overcharged at cast time
+      // (see helpers/spells.mjs#computeMaxOverchargeCount) - carried
+      // through to whichever later moment it actually resolves (see
+      // helpers/spell-rolls.mjs#resolvePendingSpell), so a deferred
+      // overcharged cast still scales its saving throws/ranges/damage.
+      overchargeCount: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
     });
 
     const attributeKeys = Object.keys(CONFIG.SKSK.attributes);

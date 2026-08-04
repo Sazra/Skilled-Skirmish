@@ -1,4 +1,7 @@
-import { computeDamageBonus, computeSavingThrowValue, computeSpellManaCost, computeSpellApCost, computeRitualHours } from './spells.mjs';
+import {
+  computeDamageBonus, computeSavingThrowValue, computeSpellManaCost, computeSpellApCost, computeRitualHours,
+  computeMaxOverchargeCount, computeOverchargedRanges,
+} from './spells.mjs';
 import { getActorSkillLevel, getSkillLabel } from './skills.mjs';
 import {
   applyD20Malus, canCastMovementSpell, getStatusStacks, setStatusStacks, payManaCost, negativeLifeOverflowHTML,
@@ -17,16 +20,52 @@ import { renderApplyDamageButton } from './damageApplication.mjs';
 const ROUNDS_PER_MINUTE = 10;
 
 /**
+ * Prompt for how many times to Überladen (Overcharge) a spell cast - one
+ * button per count from 1 to computeMaxOverchargeCount(actor), matching
+ * helpers/attackRolls.mjs#chooseAttackMode's own one-click DialogV2.wait
+ * pattern (a button's own callback resolves the promise directly;
+ * rejectClose:false so closing without choosing aborts the cast entirely,
+ * same as closing that mode dialog aborts an Evaluate click).
+ * @param {Actor} actor
+ * @param {Item} item   The spell item, for the dialog's own title.
+ * @return {Promise<number|null>} The chosen count, or null/undefined if
+ *   the dialog was closed without picking one - the caller should abort.
+ */
+export async function chooseOverchargeCount(actor, item) {
+  const max = computeMaxOverchargeCount(actor);
+  const buttons = [];
+  for (let count = 1; count <= max; count++) {
+    buttons.push({
+      action: `overcharge${count}`,
+      label: game.i18n.format('SKSK.Spell.Roll.OverchargeCount', { count }),
+      callback: () => count,
+    });
+  }
+  return foundry.applications.api.DialogV2.wait({
+    window: { title: game.i18n.format('SKSK.Spell.Roll.OverchargeTitle', { name: item.name }) },
+    content: `<p>${game.i18n.localize('SKSK.Spell.Roll.ChooseOverchargePrompt')}</p>`,
+    buttons,
+    rejectClose: false,
+  });
+}
+
+/**
  * Roll one damage entry (its formula plus any attribute/skill scaling) and
  * render it as a chat-card line - also returns its own {damageType,
  * amount}, for the caller to feed into renderApplyDamageButton (Magic
  * Schools have no configured "kill" rate, so a spell's own Apply Damage
- * buttons are always rendered with a null killSkillKey).
+ * buttons are always rendered with a null killSkillKey). Überladen
+ * (Overcharge)'s +50%/Überladung damage rule (cumulative-additive) is
+ * applied to the roll's own total after the fact - there's no formula-level
+ * value to scale beforehand, only a post-roll amount - with its own line
+ * showing the boosted total; the entry itself carries that boosted amount
+ * (not the raw roll) so Apply Damage reflects it too.
  * @param {object} damage   An entry from SKSKSpell#damages.
  * @param {Actor} actor     The caster, for scaling bonuses.
+ * @param {number} [overchargeCount=0]
  * @return {Promise<{html: string, entry: {damageType: string, amount: number}}>}
  */
-async function renderDamageRoll(damage, actor) {
+async function renderDamageRoll(damage, actor, overchargeCount = 0) {
   const bonus = computeDamageBonus(damage, actor);
   const formula = bonus ? `${damage.formula} + ${bonus}` : damage.formula;
   // rollData exposes the actor's custom resources (see actor-base.mjs#
@@ -34,8 +73,14 @@ async function renderDamageRoll(damage, actor) {
   const roll = await new Roll(formula, actor?.getRollData()).evaluate();
   const typeLabel = game.i18n.localize(CONFIG.SKSK.damageTypes[damage.damageType] ?? damage.damageType);
   const rendered = await roll.render();
-  const html = `<div class="sksk-roll-line"><strong>${typeLabel} ${game.i18n.localize('SKSK.Spell.Roll.Damage')}</strong></div>${rendered}`;
-  return { html, entry: { damageType: damage.damageType, amount: roll.total } };
+  let amount = roll.total;
+  let overchargeHTML = '';
+  if (overchargeCount > 0) {
+    amount = Math.floor(amount * (1 + 0.5 * overchargeCount));
+    overchargeHTML = `<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.OverchargeDamage', { amount })}</div>`;
+  }
+  const html = `<div class="sksk-roll-line"><strong>${typeLabel} ${game.i18n.localize('SKSK.Spell.Roll.Damage')}</strong></div>${rendered}${overchargeHTML}`;
+  return { html, entry: { damageType: damage.damageType, amount } };
 }
 
 /**
@@ -52,17 +97,21 @@ function renderStatusEffect(effect) {
 /**
  * Render one saving throw as a clickable button carrying enough data
  * (item UUID + index) for rollSavingThrowFromChat to resolve it later,
- * whenever anyone clicks it.
+ * whenever anyone clicks it - including the Überladen (Overcharge) count
+ * this cast used (already DC-baked-in below, but also stashed on the
+ * button so a later click reproduces the exact same DC rather than
+ * recomputing off the item's current state).
  * @param {object} save    An entry from SKSKSpell#savingThrows.
  * @param {number} index   Its index into savingThrows.
  * @param {Item} item      The spell item (owned by the caster).
+ * @param {number} [overchargeCount=0]
  * @return {string}
  */
-function renderSavingThrowButton(save, index, item) {
-  const dc = computeSavingThrowValue(save, item.actor);
+function renderSavingThrowButton(save, index, item, overchargeCount = 0) {
+  const dc = computeSavingThrowValue(save, item.actor, overchargeCount);
   const label = save.label || game.i18n.format('SKSK.Spell.SavingThrow.Numbered', { number: index + 1 });
   return `<button type="button" class="sksk-roll-save" data-action="rollSavingThrow"
-    data-item-uuid="${item.uuid}" data-save-index="${index}">
+    data-item-uuid="${item.uuid}" data-save-index="${index}" data-overcharge="${overchargeCount}">
     ${label} (DC ${dc})
   </button>`;
 }
@@ -98,13 +147,32 @@ async function postSpellChatCard(item, parts) {
  * "hours spent" FP (see helpers/spells.mjs#computeRitualHours) is granted
  * right here - only once the spell actually resolves, never at commit
  * time, and never for one cancelled by a Concentration break first.
+ *
+ * Überladen (Overcharge)'s effect scaling (saving throw DC, ranges,
+ * damage) is applied here too, gated by the spell's own
+ * overchargeAutoEffects switch - "effectiveOvercharge" is overchargeCount
+ * with that switch respected (zeroed out when it's off), while the raw
+ * overchargeCount (unconditional) still drives the always-shown "Überladen
+ * (×N)" marker, since the AP/Mana cost was paid either way.
  * @param {Item} item   The spell item.
+ * @param {number} [overchargeCount=0]
  * @return {Promise<string[]>}
  */
-async function renderSpellEffectParts(item) {
+async function renderSpellEffectParts(item, overchargeCount = 0) {
   const actor = item.actor;
   const system = item.system;
   const parts = [];
+  const effectiveOvercharge = system.overchargeAutoEffects !== false ? overchargeCount : 0;
+
+  if (overchargeCount > 0) {
+    parts.push(`<div class="sksk-roll-line"><strong>${game.i18n.format('SKSK.Spell.Roll.OverchargeActive', { count: overchargeCount })}</strong></div>`);
+  }
+  if (effectiveOvercharge > 0 && system.ranges?.length) {
+    const rangeLabel = computeOverchargedRanges(system.ranges, effectiveOvercharge)
+      .map(r => `${r.distance}m ${game.i18n.localize(CONFIG.SKSK.rangeIndicators[r.indicator] ?? r.indicator)}`)
+      .join(', ');
+    parts.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.OverchargeRanges', { ranges: rangeLabel })}</div>`);
+  }
 
   if (actor && system.castingMethods?.ritual) {
     const hours = computeRitualHours(system);
@@ -122,24 +190,24 @@ async function renderSpellEffectParts(item) {
 
       const damageEntries = [];
       for (const damage of attackDamages) {
-        const { html, entry } = await renderDamageRoll(damage, actor);
+        const { html, entry } = await renderDamageRoll(damage, actor, effectiveOvercharge);
         parts.push(html);
         damageEntries.push(entry);
       }
       parts.push(renderApplyDamageButton(actor, damageEntries, null));
 
       if (system.savingThrows.length) {
-        const buttons = system.savingThrows.map((save, index) => renderSavingThrowButton(save, index, item)).join('');
+        const buttons = system.savingThrows.map((save, index) => renderSavingThrowButton(save, index, item, effectiveOvercharge)).join('');
         parts.push(`<div class="sksk-roll-saves">${buttons}</div>`);
       }
     }
   } else if (system.savingThrows.length) {
-    const buttons = system.savingThrows.map((save, index) => renderSavingThrowButton(save, index, item)).join('');
+    const buttons = system.savingThrows.map((save, index) => renderSavingThrowButton(save, index, item, effectiveOvercharge)).join('');
     parts.push(`<div class="sksk-roll-saves">${buttons}</div>`);
 
     const saveDamageEntries = [];
     for (const damage of system.damages.filter(d => d.trigger === 'save')) {
-      const { html, entry } = await renderDamageRoll(damage, actor);
+      const { html, entry } = await renderDamageRoll(damage, actor, effectiveOvercharge);
       parts.push(html);
       saveDamageEntries.push(entry);
     }
@@ -151,7 +219,7 @@ async function renderSpellEffectParts(item) {
 
   const unconditionalDamageEntries = [];
   for (const damage of system.damages.filter(d => d.trigger === 'unconditional')) {
-    const { html, entry } = await renderDamageRoll(damage, actor);
+    const { html, entry } = await renderDamageRoll(damage, actor, effectiveOvercharge);
     parts.push(html);
     unconditionalDamageEntries.push(entry);
   }
@@ -184,9 +252,12 @@ async function renderSpellEffectParts(item) {
  * Casting is blocked entirely while a previous spell of this actor's is
  * still awaiting its AP payoff.
  * @param {Item} item   The spell item being cast.
+ * @param {number} [overchargeCount=0]   How many times to Überladen
+ *   (Overcharge) this cast - see helpers/spells.mjs#
+ *   computeMaxOverchargeCount/chooseOverchargeCount below.
  * @return {Promise<ChatMessage|void>}
  */
-export async function rollSpellItem(item) {
+export async function rollSpellItem(item, overchargeCount = 0) {
   const actor = item.actor;
   const system = item.system;
 
@@ -202,6 +273,8 @@ export async function rollSpellItem(item) {
     return;
   }
 
+  if (actor) overchargeCount = Math.min(overchargeCount, computeMaxOverchargeCount(actor));
+
   const parts = [];
 
   const descriptionHTML = await foundry.applications.ux.TextEditor.implementation.enrichHTML(
@@ -212,7 +285,7 @@ export async function rollSpellItem(item) {
   let deferred = false;
 
   if (actor) {
-    const { cost: manaCost, increased } = computeSpellManaCost(system, actor);
+    const { cost: manaCost, increased } = computeSpellManaCost(system, actor, overchargeCount);
     const costClass = increased ? 'sksk-roll-mana-cost-increased' : '';
     parts.push(`<div class="sksk-roll-mana-cost"><strong>${game.i18n.localize('SKSK.Spell.ManaCost')}:</strong> <span class="${costClass}">${manaCost}</span></div>`);
 
@@ -233,7 +306,7 @@ export async function rollSpellItem(item) {
 
     if (system.apCostUnit === 'minutes') {
       const totalRounds = Math.max(1, system.apCost) * ROUNDS_PER_MINUTE;
-      await actor.update({ 'system.pendingSpell': { itemId: item.id, apCost: 0, roundsRemaining: totalRounds } });
+      await actor.update({ 'system.pendingSpell': { itemId: item.id, apCost: 0, roundsRemaining: totalRounds, overchargeCount } });
       await setStatusStacks(actor, 'concentration', 1);
       parts.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.RitualMinutesStarted', { minutes: system.apCost, rounds: totalRounds })}</div>`);
       deferred = true;
@@ -241,7 +314,7 @@ export async function rollSpellItem(item) {
       const unitLabel = game.i18n.localize(CONFIG.SKSK.apCostUnits[system.apCostUnit]);
       parts.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.RitualDowntime', { value: system.apCost, unit: unitLabel })}</div>`);
     } else {
-      const apCost = computeSpellApCost(system, actor);
+      const apCost = computeSpellApCost(system, actor, overchargeCount);
       parts.push(`<div class="sksk-roll-ap-cost"><strong>${game.i18n.localize('SKSK.Spell.APCost')}:</strong> ${apCost}</div>`);
 
       const ap = actor.system.actionPoints.value;
@@ -253,7 +326,7 @@ export async function rollSpellItem(item) {
       }
 
       if (remaining > 0) {
-        await actor.update({ 'system.pendingSpell': { itemId: item.id, apCost: remaining, roundsRemaining: 0 } });
+        await actor.update({ 'system.pendingSpell': { itemId: item.id, apCost: remaining, roundsRemaining: 0, overchargeCount } });
         await setStatusStacks(actor, 'concentration', 1);
         parts.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.ApOwed', { paid: paidNow, remaining })}</div>`);
         deferred = true;
@@ -291,10 +364,17 @@ export async function rollSpellItem(item) {
     // manaCoreFpGrant) rather than a GM-configured rate - see
     // helpers/skillFp.mjs#grantFlatSkillFp.
     parts.push(formatSkillFpGrantLine(await grantFlatSkillFp(actor, 'manaCore', system.manaCoreFpGrant)));
+
+    // Überladen's own "used" FP, scaled by how many times this cast was
+    // overcharged - granted now, at commit time (the cost was already
+    // paid above), regardless of whether the effect itself is deferred.
+    if (overchargeCount > 0) {
+      parts.push(formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'overcharge', 'overchargeUsed', overchargeCount)));
+    }
   }
 
   if (!deferred) {
-    parts.push(...(await renderSpellEffectParts(item)));
+    parts.push(...(await renderSpellEffectParts(item, overchargeCount)));
   }
 
   return postSpellChatCard(item, parts);
@@ -324,19 +404,22 @@ async function postPendingSpellProgress(actor, label, lineHTML, reflexGrant) {
 /**
  * A pending spell's debt fully paid off (either kind - see
  * handlePendingSpellTurnStart): clears pendingSpell, turns Concentration
- * off, and finally lets the spell take effect (see renderSpellEffectParts),
- * posted in its own chat message.
+ * off, and finally lets the spell take effect (see renderSpellEffectParts,
+ * with whatever Überladen count the original cast used - see
+ * data/actor-base.mjs#pendingSpell.overchargeCount), posted in its own
+ * chat message.
  * @param {Actor} actor
  * @param {Item|undefined} item
  * @param {{label: string, amount: number}|null} reflexGrant
+ * @param {number} [overchargeCount=0]
  * @return {Promise<void>}
  */
-async function resolvePendingSpell(actor, item, reflexGrant) {
+async function resolvePendingSpell(actor, item, reflexGrant, overchargeCount = 0) {
   await actor.update({ 'system.pendingSpell.itemId': '' });
   await setStatusStacks(actor, 'concentration', 0);
   if (!item) return;
 
-  const parts = await renderSpellEffectParts(item);
+  const parts = await renderSpellEffectParts(item, overchargeCount);
   parts.push(formatSkillFpGrantLine(reflexGrant));
   await postSpellChatCard(item, parts);
 }
@@ -363,6 +446,7 @@ export async function handlePendingSpellTurnStart(actor) {
 
   const item = actor.items.get(pending.itemId);
   const label = item?.name ?? game.i18n.localize('SKSK.StatusEffect.Concentration.Name');
+  const overchargeCount = pending.overchargeCount ?? 0;
 
   if (hasRoundsDebt) {
     const drained = actor.system.actionPoints.value;
@@ -382,7 +466,7 @@ export async function handlePendingSpellTurnStart(actor) {
       return;
     }
 
-    await resolvePendingSpell(actor, item, reflexGrant);
+    await resolvePendingSpell(actor, item, reflexGrant, overchargeCount);
     return;
   }
 
@@ -404,19 +488,21 @@ export async function handlePendingSpellTurnStart(actor) {
     return;
   }
 
-  await resolvePendingSpell(actor, item, reflexGrant);
+  await resolvePendingSpell(actor, item, reflexGrant, overchargeCount);
 }
 
 /**
  * Handle a click on a saving-throw button in chat: roll 1d20 plus the
  * clicking user's best applicable attribute modifier or skill level (the
  * target "may use whichever they have"), and post the result against the
- * saving throw's DC.
+ * saving throw's DC - including whatever Überladen (Overcharge) count the
+ * original cast baked into the button (see renderSavingThrowButton).
  * @param {string} itemUuid
  * @param {number} saveIndex
+ * @param {number} [overchargeCount=0]
  * @return {Promise<ChatMessage|void>}
  */
-export async function rollSavingThrowFromChat(itemUuid, saveIndex) {
+export async function rollSavingThrowFromChat(itemUuid, saveIndex, overchargeCount = 0) {
   const item = await fromUuid(itemUuid);
   if (!item) return ui.notifications.warn(game.i18n.localize('SKSK.Spell.Roll.ItemNotFound'));
 
@@ -442,7 +528,7 @@ export async function rollSavingThrowFromChat(itemUuid, saveIndex) {
   }
   best ??= { label: '', value: 0, attributeKey: null };
 
-  const dc = computeSavingThrowValue(save, item.actor);
+  const dc = computeSavingThrowValue(save, item.actor, overchargeCount);
   const formula = applyD20Malus(`1d20 + ${best.value}`, actor, best.attributeKey);
   const roll = await new Roll(formula, actor.getRollData()).evaluate();
   const criticalType = getGenericCriticalType(roll);

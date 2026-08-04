@@ -31,13 +31,17 @@ function sumBonuses(attributeBonuses, skillBonuses, actor) {
 
 /**
  * Compute a spell saving throw's total value for a given caster: its flat
- * base plus every attribute- and skill-based bonus.
+ * base, plus 1 per Überladung (Überladen/Overcharge - see
+ * computeMaxOverchargeCount) if the cast was overcharged, plus every
+ * attribute- and skill-based bonus.
  * @param {object} savingThrow   An entry from SKSKSpell#savingThrows.
  * @param {Actor} actor          The actor casting the spell.
+ * @param {number} [overchargeCount=0]
  * @return {number}
  */
-export function computeSavingThrowValue(savingThrow, actor) {
-  return (savingThrow.baseValue ?? 0) + sumBonuses(savingThrow.attributeBonuses, savingThrow.skillBonuses, actor);
+export function computeSavingThrowValue(savingThrow, actor, overchargeCount = 0) {
+  return (savingThrow.baseValue ?? 0) + overchargeCount
+    + sumBonuses(savingThrow.attributeBonuses, savingThrow.skillBonuses, actor);
 }
 
 /**
@@ -291,6 +295,34 @@ export function computeRitualHours(spellSystem) {
 }
 
 /**
+ * The most times a caster may Überladen (Overcharge) a single spell cast -
+ * 1, plus their Überladen skill level, plus overchargeMaxBonus (an
+ * Active-Effect-only actor field - see data/actor-base.mjs). See helpers/
+ * spell-rolls.mjs#chooseOverchargeCount, which offers exactly this many
+ * buttons.
+ * @param {Actor} actor
+ * @return {number}
+ */
+export function computeMaxOverchargeCount(actor) {
+  return 1 + getActorSkillLevel(actor, 'overcharge') + (actor.system.overchargeMaxBonus ?? 0);
+}
+
+/**
+ * A spell's own ranges, scaled by Überladen (Overcharge)'s +20%/Überladung
+ * rule (cumulative-additive, e.g. 3 Überladungen = +60%, not ×1.2³),
+ * rounded down - a no-op (returns the same array) when overchargeCount is
+ * 0. Gated by the spell's own overchargeAutoEffects switch by the caller
+ * (see helpers/spell-rolls.mjs#renderSpellEffectParts), not here.
+ * @param {Array<{distance: number, indicator: string}>} ranges
+ * @param {number} overchargeCount
+ * @return {Array<{distance: number, indicator: string}>}
+ */
+export function computeOverchargedRanges(ranges, overchargeCount) {
+  if (overchargeCount <= 0) return ranges;
+  return ranges.map(r => ({ ...r, distance: Math.floor(r.distance * (1 + 0.2 * overchargeCount)) }));
+}
+
+/**
  * Compute the actual mana cost an actor pays to cast a spell, factoring in:
  * - Simple/Advanced spells cast short of their magic school's required
  *   level (see checkSimpleOrAdvancedSpellPrerequisite) cost +100% per
@@ -307,14 +339,21 @@ export function computeRitualHours(spellSystem) {
  * which case it can go as low as 0 (never negative).
  * Only meaningful once the spell is owned by an actor - a template item
  * has no caster to derive skill levels from.
+ *
+ * Überladen (Overcharge) then surcharges the result by +20%/Überladung,
+ * cumulative-additive (3 Überladungen = +60%, not ×1.2³) and applied last,
+ * on top of everything above - unconditional on overchargeAutoEffects
+ * (that switch only gates the saving throw/range/damage scaling, not the
+ * cost itself - see helpers/spell-rolls.mjs#renderSpellEffectParts).
  * @param {object} spellSystem   A spell's system data.
  * @param {Actor} actor          The would-be caster.
+ * @param {number} [overchargeCount=0]
  * @return {{cost: number, increased: boolean}}   increased is true only
  *   when the level-shortfall surcharge applied (regardless of whether
  *   other discounts brought the final number back below the base cost) -
  *   the UI uses it to flag the cost in red.
  */
-export function computeSpellManaCost(spellSystem, actor) {
+export function computeSpellManaCost(spellSystem, actor, overchargeCount = 0) {
   let cost = spellSystem.manaCost ?? 0;
   let discountPercent = 0;
   let increased = false;
@@ -340,6 +379,10 @@ export function computeSpellManaCost(spellSystem, actor) {
   cost = Math.floor(cost);
   cost = allowBelowOne ? Math.max(0, cost) : Math.max(1, cost);
 
+  if (overchargeCount > 0) {
+    cost = Math.floor(cost * (1 + 0.2 * overchargeCount));
+  }
+
   return { cost, increased };
 }
 
@@ -356,22 +399,27 @@ export function computeSpellManaCost(spellSystem, actor) {
  *   push it below 2 (so it can only ever reach 1 if the earlier flat
  *   reductions already got it there first).
  * AP cost is never allowed below 1, from any combination of sources.
+ *
+ * Überladen (Overcharge) forgoes Chant Shortening's own reduction step
+ * entirely (the increased cost is the point) and adds +1 AP per
+ * Überladung flat on top of the otherwise-final cost.
  * @param {object} spellSystem
  * @param {Actor} actor
+ * @param {number} [overchargeCount=0]
  * @return {number}
  */
-export function computeSpellApCost(spellSystem, actor) {
+export function computeSpellApCost(spellSystem, actor, overchargeCount = 0) {
   let apCost = spellSystem.apCost ?? 1;
 
   if (isSpellDiscountEligible(spellSystem, actor)) {
     const school = getSpellSchool(spellSystem);
     apCost -= getApCostReduction(actor, spellSystem.spellType, school);
 
-    if (apCost > 2) {
+    if (apCost > 2 && overchargeCount <= 0) {
       const chantShorteningLevel = getActorSkillLevel(actor, 'chantShortening');
       apCost = Math.max(2, apCost - chantShorteningLevel);
     }
   }
 
-  return Math.max(1, Math.floor(apCost));
+  return Math.max(1, Math.floor(apCost)) + overchargeCount;
 }

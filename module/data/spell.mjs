@@ -94,6 +94,16 @@ export default class SKSKSpell extends SKSKItemBase {
     // helpers/spells.mjs#checkCombinedSpellPrerequisite).
     schema.mastered = new fields.BooleanField({ initial: false });
 
+    // Whether Überladen (Overcharge)'s automatic effect scaling (saving
+    // throw DC +1, ranges +20%, damage +50%, all per Überladung - see
+    // helpers/spell-rolls.mjs#renderSpellEffectParts) applies to this
+    // spell. On by default; turn off for a spell whose Overcharge effect
+    // is custom/hand-written (e.g. a status effect with no clean formula)
+    // - the caster still pays Overcharge's increased AP/Mana cost either
+    // way (see helpers/spells.mjs#computeSpellApCost/computeSpellManaCost),
+    // just without any automatic scaling - the GM adjusts it manually.
+    schema.overchargeAutoEffects = new fields.BooleanField({ initial: true });
+
     // Whether the spell needs an attack roll at all (vs. the target's
     // Magic Resistance) is left as a placeholder switch for now - the
     // actual roll formula/resolution is built out in a later step. Some

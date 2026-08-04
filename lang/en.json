@@ -157,7 +157,7 @@
       "ResistancesHint": "FP generated whenever damage of the corresponding element is taken via the \"Apply Damage\" button - the only skill category that's capped, though: automatic gain can never raise a Resistance past level 3 (plus any item-granted skill bonus levels); manual level changes are unaffected.",
       "ProductionHint": "Every field below is not yet automated - no crafting/brewing system exists yet to detect any of these.",
       "RogueHint": "Fallen's roll lets the player choose \"Falle stellen\" or \"Falle entschärfen\" when they use it (both automated); Fingerfertigkeit's roll likewise offers a choice between its base check, Schlossknacken and Taschendiebstahl (also automated). Assassination is not yet automated.",
-      "MagicHint": "Concentration checks, used Meditation dice, any spell cast (Magic Control, Chant Shortening once Magic Control reaches level 1), Mana Capacity/Mana Regeneration's own daily settlement (on the next Anpassungspause+), Mana Core's flat per-item grant, and Ritualism's hours per Ritual spell cast (at least 1 hour, even under the AP unit or a sub-60-minute casting time) are all automated; everything else below (enchanting hours, summoning) is not yet automated - no matching system exists yet.",
+      "MagicHint": "Concentration checks, used Meditation dice, any spell cast (Magic Control, Chant Shortening once Magic Control reaches level 1), Mana Capacity/Mana Regeneration's own daily settlement (on the next Anpassungspause+), Mana Core's flat per-item grant, Ritualism's hours per Ritual spell cast (at least 1 hour, even under the AP unit or a sub-60-minute casting time), and Overcharge used (Shift+click a spell) are all automated; everything else below (enchanting hours, summoning) is not yet automated - no matching system exists yet.",
       "FighterHint": "Regeneration dice used, combat movement, Dodge used, Reflexaktion (4+ AP spent in one turn), Adrenalin used, critical hits (incl. double crit) and Brutality's bonus damage points are automated; everything else below is not yet automated.",
       "MiscHint": "Bardic magic cast (Singing) and being Concealed at the start of your own turn (Stealth) are automated; everything else below is not yet automated - no matching system exists yet.",
       "SpecialHint": "A landed hit (Hit Correction), a defended-against attack (Defense Correction) and being at 0 Life with Negative Life left at the start of your own turn (Tenacity) are automated; everything else below is not yet automated.",
@@ -183,7 +183,7 @@
       "RitualHour": "FP / Hour Spent on a Ritual",
       "EnchantingHour": "FP / Hour Spent Enchanting (not yet automated)",
       "ChantShorteningSpellCast": "FP / Any Spell Cast (once Magic Control reaches level 1)",
-      "OverchargeUsed": "FP / Overcharge Used (not yet automated)",
+      "OverchargeUsed": "FP / Overcharge Used",
       "SourceAbilityUsed": "FP / Source Ability Used (not yet automated)",
       "SourceOpened": "FP / Source Opened (not yet automated)",
       "RegenerationUsed": "FP / Regeneration Die Used",
@@ -763,6 +763,8 @@
         "Days": "Days"
       },
       "Ranges": "Range",
+      "OverchargeAutoEffects": "Automatic Overcharge Effects",
+      "OverchargeAutoEffectsHint": "When on, saving throw DC (+1), range (+20%) and damage (+50%) all scale automatically per Überladung. Turn off for a spell with a hand-written Custom Effect - the increased AP/Mana cost still applies either way, but the actual effect is then calculated manually.",
       "PrerequisiteNotMet": "Prerequisite not met: {details}",
       "Section": {
         "General": "General",
@@ -840,7 +842,13 @@
         "SpellCancelled": "The spell being channeled is cancelled - its Mana cost is lost.",
         "RitualMinutesStarted": "Ritual begun - {minutes} minutes casting time ({rounds} rounds). All AP is spent every round.",
         "RitualRoundPassed": "Ritual round completed - {remaining} rounds remaining.",
-        "RitualDowntime": "Casting time: {value} {unit} - cast as a downtime ritual, no AP cost."
+        "RitualDowntime": "Casting time: {value} {unit} - cast as a downtime ritual, no AP cost.",
+        "OverchargeTitle": "Overcharge: {name}",
+        "ChooseOverchargePrompt": "How many times to overcharge?",
+        "OverchargeCount": "Overcharge ×{count}",
+        "OverchargeActive": "Overcharged (×{count}) - no reduction from Chant Shortening.",
+        "OverchargeRanges": "Range (overcharged): {ranges}",
+        "OverchargeDamage": "Overcharged: {amount} damage"
       }
     },
     "DamageType": {

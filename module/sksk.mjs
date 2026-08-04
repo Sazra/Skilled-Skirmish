@@ -105,7 +105,7 @@ Hooks.once('ready', async function () {
     const button = event.target.closest('[data-action="rollSavingThrow"]');
     if (!button) return;
     event.preventDefault();
-    rollSavingThrowFromChat(button.dataset.itemUuid, Number(button.dataset.saveIndex));
+    rollSavingThrowFromChat(button.dataset.itemUuid, Number(button.dataset.saveIndex), Number(button.dataset.overcharge) || 0);
   });
 
   // Angriffswurf (attack roll) chat cards' "Evaluate" button - see

@@ -143,6 +143,10 @@ const SKILL_SPECIFIC_TRIGGERS = {
   chantShortening: [
     { key: 'spellCast', label: 'SKSK.SkillFpConfig.ChantShorteningSpellCast' },
   ],
+  // Wired (helpers/spell-rolls.mjs#rollSpellItem, via a spell's Shift+Click
+  // - see sheets/actor-sheet.mjs's #onRoll and helpers/spell-rolls.mjs#
+  // chooseOverchargeCount) - scaled by however many times the cast was
+  // overcharged.
   overcharge: [{ key: 'overchargeUsed', label: 'SKSK.SkillFpConfig.OverchargeUsed' }],
   sourceBound: [{ key: 'sourceAbilityUsed', label: 'SKSK.SkillFpConfig.SourceAbilityUsed' }],
   etherBound: [{ key: 'sourceOpened', label: 'SKSK.SkillFpConfig.SourceOpened' }],

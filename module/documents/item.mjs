@@ -21,8 +21,8 @@ export class SKSKItem extends Item {
   }
 
   /** @override */
-  async roll() {
-    if (this.type === 'spell') return rollSpellItem(this);
+  async roll(overchargeCount = 0) {
+    if (this.type === 'spell') return rollSpellItem(this, overchargeCount);
     if (this.type === 'weapon') return rollWeaponItem(this);
 
     const item = this;
