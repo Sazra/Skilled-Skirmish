@@ -8,9 +8,10 @@ const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
  * columns) - weapons/armors/magicSchools/attribute/resistances only, where
  * that's true. See MIXED_CATEGORIES below for categories where different
  * skills need different fields. See helpers/skillFp.mjs#grantSkillUsageFp
- * for where each trigger is actually wired up (or, for "kill"/
- * "damageTaken", left unwired for now - no kill/damage detection exists
- * yet).
+ * for where each trigger is actually wired up - "kill" (helpers/
+ * damageApplication.mjs#applyDamageFromChat + apps/kill-dialog.mjs) and
+ * "damageTaken" (helpers/damageApplication.mjs, capped at Resistance level
+ * 3 - see helpers/skillFp.mjs#capResistanceGain) are both wired now.
  */
 const CATEGORY_FIELDS = {
   weapons: {
@@ -70,9 +71,9 @@ const MIXED_CATEGORY_HINTS = {
  * excluding anything naming Training itself (see helpers/training.mjs -
  * that's a wholly separate mechanic). Most of these have no corresponding
  * game mechanic implemented yet (e.g. no crafting/lock-picking/summoning
- * system exists) and so are left unwired for now, exactly like weapons'
- * own "kill" field - see helpers/skillFp.mjs#grantSkillUsageFp for which
- * ones actually are wired, called out in each field's own label below.
+ * system exists) and so are left unwired for now - see helpers/
+ * skillFp.mjs#grantSkillUsageFp for which ones actually are wired, called
+ * out in each field's own label below.
  */
 const SKILL_SPECIFIC_TRIGGERS = {
   // Production (Herstellungsfertigkeiten) - no crafting system exists yet,
@@ -130,6 +131,11 @@ const SKILL_SPECIFIC_TRIGGERS = {
   // on Spell/Item, see helpers/skillFp.mjs#grantFlatSkillFp) instead of any
   // GM-configured rate - only its own base "skillCheck" field (the
   // universal one below) remains here.
+  // "ritualHour" is wired (helpers/spell-rolls.mjs#renderSpellEffectParts,
+  // via helpers/spells.mjs#computeRitualHours) - granted once a "Ritual"
+  // casting-method spell actually resolves, scaled by its own apCost/
+  // apCostUnit (data/spell.mjs), at least 1 hour. "enchantingHour" stays
+  // unwired - no enchanting system exists yet.
   ritualism: [
     { key: 'ritualHour', label: 'SKSK.SkillFpConfig.RitualHour' },
     { key: 'enchantingHour', label: 'SKSK.SkillFpConfig.EnchantingHour' },
