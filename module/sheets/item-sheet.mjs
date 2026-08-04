@@ -374,6 +374,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       context.combinedSkillChoices = getSkillBonusChoices();
       context.rangeIndicatorChoices = CONFIG.SKSK.rangeIndicators;
       context.castingMethodChoices = CONFIG.SKSK.castingMethods;
+      context.apCostUnitChoices = CONFIG.SKSK.apCostUnits;
       context.canRemoveRange = (item.system.ranges?.length ?? 0) > 1;
 
       context.attributeChoices = CONFIG.SKSK.attributes;

@@ -86,7 +86,7 @@
     </div>
     {{/if}}
 
-    <div class="grid grid-2col">
+    <div class="grid grid-3col">
       <div class="resource">
         <label class="resource-label">Mana Cost</label>
         <input type="text" name="system.manaCost" value="{{system.manaCost}}" data-dtype="Number" />
@@ -94,6 +94,12 @@
       <div class="resource">
         <label class="resource-label">AP Cost</label>
         <input type="text" name="system.apCost" value="{{system.apCost}}" data-dtype="Number" />
+      </div>
+      <div class="resource">
+        <label class="resource-label">{{localize 'SKSK.Spell.ApCostUnitLabel'}}</label>
+        <select name="system.apCostUnit">
+          {{selectOptions apCostUnitChoices selected=system.apCostUnit localize=true}}
+        </select>
       </div>
     </div>
 

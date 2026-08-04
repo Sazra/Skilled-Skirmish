@@ -755,6 +755,13 @@
         "Spell": {
             "ManaCost": "Mana",
             "APCost": "AP",
+            "ApCostUnitLabel": "Einheit",
+            "ApCostUnit": {
+                "Ap": "AP",
+                "Minutes": "Minuten",
+                "Hours": "Stunden",
+                "Days": "Tage"
+            },
             "Ranges": "Reichweite",
             "PrerequisiteNotMet": "Voraussetzung nicht erfüllt: {details}",
             "Section": {
@@ -830,7 +837,10 @@
                 "ApOwed": "Nicht genug AP - {paid} jetzt bezahlt, {remaining} noch offen. Konzentration ist nötig, um den Zauber fertigzustellen.",
                 "ApPaidTowardSpell": "{paid} AP für den ausstehenden Zauber bezahlt ({remaining} noch offen)",
                 "AlreadyConcentrating": "Beende erst den aktuellen Zauber (oder lass die Konzentration brechen), bevor du einen weiteren wirkst.",
-                "SpellCancelled": "Der kanalisierte Zauber wird abgebrochen - seine Manakosten sind verloren."
+                "SpellCancelled": "Der kanalisierte Zauber wird abgebrochen - seine Manakosten sind verloren.",
+                "RitualMinutesStarted": "Ritual begonnen - {minutes} Minuten Wirkzeit ({rounds} Runden). Jede Runde werden alle AP verbraucht.",
+                "RitualRoundPassed": "Ritual-Runde vollzogen - {remaining} Runden verbleibend.",
+                "RitualDowntime": "Wirkzeit: {value} {unit} - als Downtime-Ritual gewirkt, keine AP-Kosten."
             }
         },
         "DamageType": {

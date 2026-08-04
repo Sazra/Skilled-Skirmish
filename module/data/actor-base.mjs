@@ -333,6 +333,12 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     schema.pendingSpell = new fields.SchemaField({
       itemId: new fields.StringField({ required: true, blank: true, initial: "" }),
       apCost: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+      // A "minutes"-unit spell's own debt kind (see helpers/spell-rolls.mjs#
+      // rollSpellItem/handlePendingSpellTurnStart) - counts down by 1 every
+      // Combat turn start, draining all AP each time, instead of apCost's
+      // fixed amount paid down incrementally. Only one of apCost/
+      // roundsRemaining is ever active at once for a given pendingSpell.
+      roundsRemaining: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
     });
 
     const attributeKeys = Object.keys(CONFIG.SKSK.attributes);

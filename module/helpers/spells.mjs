@@ -268,6 +268,29 @@ function computeMagicControlOrRitualismDiscountPercent(spellSystem, actor) {
 }
 
 /**
+ * How many hours a "Ritual" casting-method spell counts as having taken,
+ * for Ritualism's own "hours spent" FP (see helpers/skillFp.mjs -
+ * grantSkillUsageFp(actor, 'ritualism', 'ritualHour', ...), called once the
+ * spell actually resolves - see helpers/spell-rolls.mjs#
+ * renderSpellEffectParts). Always at least 1 hour, even for the plain "ap"
+ * unit (no explicit time at all) or a "minutes" value under 60 - per the
+ * design, a Ritual is never worth less than an hour's FP. Chant Shortening/
+ * apCostReductions never apply here - those are flat AP discounts, not
+ * meaningful against a time unit.
+ * @param {object} spellSystem
+ * @return {number}
+ */
+export function computeRitualHours(spellSystem) {
+  const value = spellSystem.apCost ?? 1;
+  switch (spellSystem.apCostUnit) {
+    case 'minutes': return Math.max(1, Math.ceil(value / 60));
+    case 'hours': return Math.max(1, value);
+    case 'days': return Math.max(1, value * 24);
+    default: return 1; // 'ap' - no explicit time, always the 1-hour floor.
+  }
+}
+
+/**
  * Compute the actual mana cost an actor pays to cast a spell, factoring in:
  * - Simple/Advanced spells cast short of their magic school's required
  *   level (see checkSimpleOrAdvancedSpellPrerequisite) cost +100% per

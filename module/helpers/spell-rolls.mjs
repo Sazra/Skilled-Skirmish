@@ -1,4 +1,4 @@
-import { computeDamageBonus, computeSavingThrowValue, computeSpellManaCost, computeSpellApCost } from './spells.mjs';
+import { computeDamageBonus, computeSavingThrowValue, computeSpellManaCost, computeSpellApCost, computeRitualHours } from './spells.mjs';
 import { getActorSkillLevel, getSkillLabel } from './skills.mjs';
 import {
   applyD20Malus, canCastMovementSpell, getStatusStacks, setStatusStacks, payManaCost, negativeLifeOverflowHTML,
@@ -9,6 +9,12 @@ import {
 import { getGenericCriticalType, resolveCheckSuccess, wrapCriticalBlock, wrapCriticalInline } from './criticalRolls.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine, grantFlatSkillFp, checkReflexActionTrigger } from './skillFp.mjs';
 import { renderApplyDamageButton } from './damageApplication.mjs';
+
+// A Combat round is 6 seconds (see helpers/criticalRolls.mjs and the
+// Combat turn-start hooks in statusEffects.mjs), so a "minutes"-unit
+// spell's own value converts to this many Combat rounds per minute - see
+// rollSpellItem/handlePendingSpellTurnStart.
+const ROUNDS_PER_MINUTE = 10;
 
 /**
  * Roll one damage entry (its formula plus any attribute/skill scaling) and
@@ -86,7 +92,12 @@ async function postSpellChatCard(item, parts) {
  * Split out from rollSpellItem so a spell whose AP cost couldn't be fully
  * paid at cast time (see rollSpellItem/handlePendingSpellTurnStart) can
  * defer this until the debt is paid off, instead of the spell taking
- * effect the instant it's cast.
+ * effect the instant it's cast. This is also the single place shared by
+ * every resolution path (immediate cast, AP-debt payoff, "minutes"-unit
+ * rounds payoff), so a "Ritual" casting-method spell's own Ritualism
+ * "hours spent" FP (see helpers/spells.mjs#computeRitualHours) is granted
+ * right here - only once the spell actually resolves, never at commit
+ * time, and never for one cancelled by a Concentration break first.
  * @param {Item} item   The spell item.
  * @return {Promise<string[]>}
  */
@@ -94,6 +105,11 @@ async function renderSpellEffectParts(item) {
   const actor = item.actor;
   const system = item.system;
   const parts = [];
+
+  if (actor && system.castingMethods?.ritual) {
+    const hours = computeRitualHours(system);
+    parts.push(formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'ritualism', 'ritualHour', hours)));
+  }
 
   if (system.attackRoll.enabled) {
     const attackDamages = system.damages.filter(d => d.trigger === 'attack');
@@ -181,7 +197,7 @@ export async function rollSpellItem(item) {
     return;
   }
 
-  if (actor && (actor.system.pendingSpell?.apCost ?? 0) > 0) {
+  if (actor && ((actor.system.pendingSpell?.apCost ?? 0) > 0 || (actor.system.pendingSpell?.roundsRemaining ?? 0) > 0)) {
     ui.notifications.warn(game.i18n.localize('SKSK.Spell.Roll.AlreadyConcentrating'));
     return;
   }
@@ -208,9 +224,6 @@ export async function rollSpellItem(item) {
       await actor.update({ 'system.manaCapacityAccumulator': (actor.system.manaCapacityAccumulator ?? 0) + manaCost });
     }
 
-    const apCost = computeSpellApCost(system, actor);
-    parts.push(`<div class="sksk-roll-ap-cost"><strong>${game.i18n.localize('SKSK.Spell.APCost')}:</strong> ${apCost}</div>`);
-
     const { lifeDelta, negativeLifeDelta } = await payManaCost(actor, manaCost);
     if (lifeDelta || negativeLifeDelta) {
       const fromLife = -lifeDelta + negativeLifeDelta;
@@ -218,19 +231,33 @@ export async function rollSpellItem(item) {
       parts.push(negativeLifeOverflowHTML(negativeLifeDelta));
     }
 
-    const ap = actor.system.actionPoints.value;
-    const paidNow = Math.min(ap, apCost);
-    const remaining = apCost - paidNow;
-    if (paidNow) {
-      await actor.update({ 'system.actionPoints.value': ap - paidNow });
-      parts.push(formatSkillFpGrantLine(await checkReflexActionTrigger(actor)));
-    }
-
-    if (remaining > 0) {
-      await actor.update({ 'system.pendingSpell': { itemId: item.id, apCost: remaining } });
+    if (system.apCostUnit === 'minutes') {
+      const totalRounds = Math.max(1, system.apCost) * ROUNDS_PER_MINUTE;
+      await actor.update({ 'system.pendingSpell': { itemId: item.id, apCost: 0, roundsRemaining: totalRounds } });
       await setStatusStacks(actor, 'concentration', 1);
-      parts.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.ApOwed', { paid: paidNow, remaining })}</div>`);
+      parts.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.RitualMinutesStarted', { minutes: system.apCost, rounds: totalRounds })}</div>`);
       deferred = true;
+    } else if (system.apCostUnit === 'hours' || system.apCostUnit === 'days') {
+      const unitLabel = game.i18n.localize(CONFIG.SKSK.apCostUnits[system.apCostUnit]);
+      parts.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.RitualDowntime', { value: system.apCost, unit: unitLabel })}</div>`);
+    } else {
+      const apCost = computeSpellApCost(system, actor);
+      parts.push(`<div class="sksk-roll-ap-cost"><strong>${game.i18n.localize('SKSK.Spell.APCost')}:</strong> ${apCost}</div>`);
+
+      const ap = actor.system.actionPoints.value;
+      const paidNow = Math.min(ap, apCost);
+      const remaining = apCost - paidNow;
+      if (paidNow) {
+        await actor.update({ 'system.actionPoints.value': ap - paidNow });
+        parts.push(formatSkillFpGrantLine(await checkReflexActionTrigger(actor)));
+      }
+
+      if (remaining > 0) {
+        await actor.update({ 'system.pendingSpell': { itemId: item.id, apCost: remaining, roundsRemaining: 0 } });
+        await setStatusStacks(actor, 'concentration', 1);
+        parts.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.ApOwed', { paid: paidNow, remaining })}</div>`);
+        deferred = true;
+      }
     }
 
     // FP for casting a spell (per its own spellLevel) belongs to its magic
@@ -274,24 +301,90 @@ export async function rollSpellItem(item) {
 }
 
 /**
- * Pay down a pending spell's still-owed AP cost (see rollSpellItem) at the
- * start of this actor's Combat turn - pays as much as current AP allows,
- * repeating on however many further turns it takes to reach 0. Once fully
- * paid, the spell finally takes effect (its deferred parts - see
- * renderSpellEffectParts - are posted now, in their own chat message) and
- * Concentration is turned off. A no-op outside of Concentration (a failed
- * Concentration check already reset apCost to 0 itself - see
- * helpers/statusEffects.mjs#checkConcentration - which is what actually
- * cancels the spell).
+ * Post a mid-payoff progress line for a still-pending spell (own chat
+ * message, speaking as the actor - not yet the spell's own card) - shared
+ * by both debt kinds' "still not done" branch in handlePendingSpellTurnStart.
+ * @param {Actor} actor
+ * @param {string} label
+ * @param {string} lineHTML
+ * @param {{label: string, amount: number}|null} reflexGrant
+ * @return {Promise<ChatMessage>}
+ */
+async function postPendingSpellProgress(actor, label, lineHTML, reflexGrant) {
+  const parts = [lineHTML, formatSkillFpGrantLine(reflexGrant)];
+  const messageData = {
+    speaker: ChatMessage.getSpeaker({ actor }),
+    flavor: label,
+    content: `<div class="sksk-chat-card sksk-action-card">${parts.join('')}</div>`,
+  };
+  ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));
+  return ChatMessage.create(messageData);
+}
+
+/**
+ * A pending spell's debt fully paid off (either kind - see
+ * handlePendingSpellTurnStart): clears pendingSpell, turns Concentration
+ * off, and finally lets the spell take effect (see renderSpellEffectParts),
+ * posted in its own chat message.
+ * @param {Actor} actor
+ * @param {Item|undefined} item
+ * @param {{label: string, amount: number}|null} reflexGrant
+ * @return {Promise<void>}
+ */
+async function resolvePendingSpell(actor, item, reflexGrant) {
+  await actor.update({ 'system.pendingSpell.itemId': '' });
+  await setStatusStacks(actor, 'concentration', 0);
+  if (!item) return;
+
+  const parts = await renderSpellEffectParts(item);
+  parts.push(formatSkillFpGrantLine(reflexGrant));
+  await postSpellChatCard(item, parts);
+}
+
+/**
+ * Pay down a pending spell's still-owed debt at the start of this actor's
+ * Combat turn - either kind (see rollSpellItem): a fixed AP amount, paying
+ * as much as current AP allows each turn, or a "minutes"-unit ritual's own
+ * round counter, which instead drains ALL current AP every turn regardless
+ * of amount and just counts down by 1. Once either debt reaches 0, the
+ * spell finally takes effect (see resolvePendingSpell) and Concentration is
+ * turned off. A no-op outside of Concentration (a failed Concentration
+ * check already reset both debt fields itself - see helpers/
+ * statusEffects.mjs#checkConcentration - which is what actually cancels
+ * the spell).
  * @param {Actor} actor
  * @return {Promise<void>}
  */
 export async function handlePendingSpellTurnStart(actor) {
   const pending = actor.system.pendingSpell;
-  if (!pending?.apCost || getStatusStacks(actor, 'concentration') <= 0) return;
+  const hasApDebt = (pending?.apCost ?? 0) > 0;
+  const hasRoundsDebt = (pending?.roundsRemaining ?? 0) > 0;
+  if ((!hasApDebt && !hasRoundsDebt) || getStatusStacks(actor, 'concentration') <= 0) return;
 
   const item = actor.items.get(pending.itemId);
   const label = item?.name ?? game.i18n.localize('SKSK.StatusEffect.Concentration.Name');
+
+  if (hasRoundsDebt) {
+    const drained = actor.system.actionPoints.value;
+    const remaining = pending.roundsRemaining - 1;
+    await actor.update({
+      'system.actionPoints.value': 0,
+      'system.pendingSpell.roundsRemaining': remaining,
+    });
+    const reflexGrant = drained > 0 ? await checkReflexActionTrigger(actor) : null;
+
+    if (remaining > 0) {
+      await postPendingSpellProgress(
+        actor, label,
+        `<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.RitualRoundPassed', { remaining })}</div>`,
+        reflexGrant
+      );
+      return;
+    }
+
+    await resolvePendingSpell(actor, item, reflexGrant);
+    return;
+  }
 
   const ap = actor.system.actionPoints.value;
   const paid = Math.min(ap, pending.apCost);
@@ -303,27 +396,15 @@ export async function handlePendingSpellTurnStart(actor) {
   const reflexGrant = paid > 0 ? await checkReflexActionTrigger(actor) : null;
 
   if (remaining > 0) {
-    const parts = [
+    await postPendingSpellProgress(
+      actor, label,
       `<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.ApPaidTowardSpell', { paid, remaining })}</div>`,
-      formatSkillFpGrantLine(reflexGrant),
-    ];
-    const messageData = {
-      speaker: ChatMessage.getSpeaker({ actor }),
-      flavor: label,
-      content: `<div class="sksk-chat-card sksk-action-card">${parts.join('')}</div>`,
-    };
-    ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));
-    await ChatMessage.create(messageData);
+      reflexGrant
+    );
     return;
   }
 
-  await actor.update({ 'system.pendingSpell.itemId': '' });
-  await setStatusStacks(actor, 'concentration', 0);
-  if (!item) return;
-
-  const parts = await renderSpellEffectParts(item);
-  parts.push(formatSkillFpGrantLine(reflexGrant));
-  await postSpellChatCard(item, parts);
+  await resolvePendingSpell(actor, item, reflexGrant);
 }
 
 /**

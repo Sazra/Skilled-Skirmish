@@ -310,6 +310,14 @@ SKSK.castingMethods = {
   concentration: 'SKSK.Spell.CastingMethod.Concentration',
 };
 
+// What a spell's own apCost number counts - see data/spell.mjs#apCostUnit.
+SKSK.apCostUnits = {
+  ap: 'SKSK.Spell.ApCostUnit.Ap',
+  minutes: 'SKSK.Spell.ApCostUnit.Minutes',
+  hours: 'SKSK.Spell.ApCostUnit.Hours',
+  days: 'SKSK.Spell.ApCostUnit.Days',
+};
+
 // The elements a spell's Damage entries can deal - the same 20 elements
 // used by the Resistance/Weakness/Immunity/Absorb skill categories, so a
 // spell's damage type always lines up with an actor's defenses.

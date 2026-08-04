@@ -42,6 +42,18 @@ export default class SKSKSpell extends SKSKItemBase {
 
     schema.manaCost = new fields.NumberField({ ...requiredInteger, initial: 1, min: 0 });
     schema.apCost = new fields.NumberField({ ...requiredInteger, initial: 1, min: 1 });
+    // What apCost's own number actually counts - a flat AP amount (the
+    // default), or a casting time in minutes/hours/days instead. Minutes
+    // drains all of the caster's AP every Combat round for apCost*10
+    // rounds (see helpers/spell-rolls.mjs#rollSpellItem/
+    // handlePendingSpellTurnStart); hours/days are pure downtime - no AP
+    // cost, no Combat-round tie-in at all. Only ever affects Ritualism's
+    // own "hours spent" FP once a "Ritual" casting-method spell resolves
+    // (see helpers/spells.mjs#computeRitualHours) for non-"ap" units.
+    schema.apCostUnit = new fields.StringField({
+      required: true, blank: false, initial: "ap",
+      choices: ["ap", "minutes", "hours", "days"]
+    });
 
     // Manakern's own flat FP grant (to the "manaCore" skill) whenever this
     // spell is cast - a designer-set value on the item itself, not a GM-

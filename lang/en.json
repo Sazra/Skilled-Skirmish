@@ -755,6 +755,13 @@
     "Spell": {
       "ManaCost": "Mana",
       "APCost": "AP",
+      "ApCostUnitLabel": "Unit",
+      "ApCostUnit": {
+        "Ap": "AP",
+        "Minutes": "Minutes",
+        "Hours": "Hours",
+        "Days": "Days"
+      },
       "Ranges": "Range",
       "PrerequisiteNotMet": "Prerequisite not met: {details}",
       "Section": {
@@ -830,7 +837,10 @@
         "ApOwed": "Not enough AP - {paid} paid now, {remaining} still owed. Concentration is required to finish casting.",
         "ApPaidTowardSpell": "{paid} AP paid toward the pending spell ({remaining} still owed)",
         "AlreadyConcentrating": "Finish casting (or let Concentration break on) your current spell before casting another.",
-        "SpellCancelled": "The spell being channeled is cancelled - its Mana cost is lost."
+        "SpellCancelled": "The spell being channeled is cancelled - its Mana cost is lost.",
+        "RitualMinutesStarted": "Ritual begun - {minutes} minutes casting time ({rounds} rounds). All AP is spent every round.",
+        "RitualRoundPassed": "Ritual round completed - {remaining} rounds remaining.",
+        "RitualDowntime": "Casting time: {value} {unit} - cast as a downtime ritual, no AP cost."
       }
     },
     "DamageType": {

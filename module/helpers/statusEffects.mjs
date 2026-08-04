@@ -974,14 +974,15 @@ export async function checkConcentration(actor, damage) {
   const success = resolveCheckSuccess(roll.total, dc, criticalType);
 
   // A failed check breaks Concentration outright - if a spell (see
-  // helpers/spell-rolls.mjs#rollSpellItem) was still being paid off in AP
-  // instalments, that cancels it too: its remaining AP debt is forgiven,
-  // but the Mana it already cost at cast time is not refunded.
+  // helpers/spell-rolls.mjs#rollSpellItem) was still being paid off, in AP
+  // instalments or a "minutes"-unit ritual's own round countdown, that
+  // cancels it too: its remaining debt is forgiven, but the Mana it
+  // already cost at cast time is not refunded.
   let cancelledSpell = false;
   if (!success) {
     await setStatusStacks(actor, 'concentration', 0);
-    if (actor.system.pendingSpell?.apCost) {
-      await actor.update({ 'system.pendingSpell': { itemId: '', apCost: 0 } });
+    if (actor.system.pendingSpell?.apCost || actor.system.pendingSpell?.roundsRemaining) {
+      await actor.update({ 'system.pendingSpell': { itemId: '', apCost: 0, roundsRemaining: 0 } });
       cancelledSpell = true;
     }
   }
