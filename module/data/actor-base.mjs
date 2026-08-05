@@ -159,6 +159,14 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // helpers/criticalRolls.mjs#getGenericCriticalType.
     schema.criticalHitThreshold = new fields.NumberField({ ...requiredInteger, initial: 20, min: 10, max: 20 });
     schema.criticalFailureThreshold = new fields.NumberField({ ...requiredInteger, initial: 1, min: 1, max: 10 });
+    // Extra dice added to Assassination's own bonus damage (see helpers/
+    // attackRolls.mjs#rollAssassinationBonusDamage), on top of whatever
+    // dice its own skill-level table already grants - same convention as
+    // criticalHitThreshold above (plain, directly user-editable on the GM
+    // tab and equally targetable by Active Effects). Has no effect at
+    // Assassination level 0, which grants a flat bonus with no die size to
+    // extend.
+    schema.assassinationBonusDice = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
     // A creature's innate "natural armor" bonus, scaling with level - see
     // helpers/defense.mjs#computeNaturalMaterialBonus. adjustment is a
     // plain, user-editable (GM tab) flat modifier; bonus is not meant to be

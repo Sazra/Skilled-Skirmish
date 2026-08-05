@@ -81,6 +81,7 @@
             "Overview": "Übersicht",
             "MovementSpeeds": "Bewegungsgeschwindigkeiten",
             "SizeCategory": "Größenkategorie",
+            "PassivePerception": "Passive Wahrnehmung",
             "FavoriteSkills": "Favorisierte Fertigkeiten",
             "NoFavoriteSkills": "Noch keine favorisierten Fertigkeiten - im Fertigkeiten-Tab markieren.",
             "AdditionalResources": "Zusätzliche Ressourcen",
@@ -159,7 +160,7 @@
             "RogueHint": "Der Fertigkeitswurf für Fallen lässt den Spieler zwischen \"Falle stellen\" und \"Falle entschärfen\" wählen (beides automatisiert); Fingerfertigkeit bietet ebenso eine Wahl zwischen Basis-Fertigkeitswurf, Schlossknacken und Taschendiebstahl (ebenfalls automatisiert). Attentat ist noch nicht automatisiert.",
             "MagicHint": "Konzentrationswürfe, genutzte Meditationswürfel, jeder gewirkte Zauber (Magiekontrolle, Spruchkürzung sobald Magiekontrolle Stufe 1 erreicht), die Tagesabrechnung von Manakapazität/Manaregeneration (bei der nächsten Anpassungspause+), Manakerns fester Wert pro Item, Ritualismus' Stunden pro gewirktem Ritual-Zauber (mindestens 1 Stunde, auch bei AP-Kosten oder unter 60 Minuten Wirkzeit) sowie genutzte Überladungen (Shift+Klick auf einen Zauber) sind automatisiert; alles andere unten (u.a. Verzauberungsstunden, Beschwörung) ist noch nicht automatisiert - es gibt noch kein passendes System.",
             "FighterHint": "Genutzte Trefferwürfel, Kampf-Bewegung, genutztes Ausweichen, Reflexaktion (4+ AP im eigenen Zug verbraucht), genutztes Adrenalin, kritische Treffer (inkl. Doppel-Krit) und Brutals Bonus-Schadenspunkte sind automatisiert; alles andere unten ist noch nicht automatisiert.",
-            "MiscHint": "Gewirkte Bardenmagie (Singen) und Getarnt-Sein zu Beginn des eigenen Zuges (Schleichen) sind automatisiert; alles andere unten ist noch nicht automatisiert - es gibt noch kein passendes System.",
+            "MiscHint": "Gewirkte Bardenmagie (Singen), Getarnt-Sein zu Beginn des eigenen Zuges (Schleichen), Gebete über den Gebets-Button im Kopfbereich (Glaube) sowie Klicks auf das Passive-Wahrnehmung-Feld im Kopfbereich (Beobachtung) sind automatisiert; alles andere unten ist noch nicht automatisiert - es gibt noch kein passendes System.",
             "SpecialHint": "Ein gelandeter Treffer (Trefferkorrektur), ein abgewehrter Angriff (Verteidigungskorrektur) und 0 Leben mit verbleibendem negativen Leben zu Beginn des eigenen Zuges (Zähigkeit) sind automatisiert; alles andere unten ist noch nicht automatisiert.",
             "PotionBrewed": "FP / Gebrauter Trank (noch nicht automatisiert)",
             "ItemCrafted": "FP / Hergestellter Gegenstand (noch nicht automatisiert)",
@@ -196,8 +197,8 @@
             "CriticalBonusDamagePoint": "FP / Punkt Bonus-Schaden bei Krit",
             "AdrenalinUsed": "FP / Genutztes Adrenalin",
             "OffHandAttack": "FP / Nebenhand-Angriff",
-            "PassiveDetection": "FP / Passive Erkennung (noch nicht automatisiert)",
-            "Prayer": "FP / Gebet (noch nicht automatisiert)",
+            "PassiveDetection": "FP / Passive Erkennung",
+            "Prayer": "FP / Gebet",
             "HealedCreature": "FP / Geheilte Kreatur (noch nicht automatisiert)",
             "BardicSpellCast": "FP / Gewirkte Bardenmagie",
             "FlankAttack": "FP / Flankenangriff (noch nicht automatisiert)",
@@ -283,6 +284,8 @@
             "CriticalHitThresholdHint": "Der niedrigste natürliche W20-Wurf (nur bei einem Angriffswurf), der als kritischer Erfolg zählt. Standardmäßig 20; wird er z.B. auf 15 gesenkt, lösen 15 bis 20 alle einen kritischen Erfolg aus.",
             "CriticalFailureThreshold": "Schwelle für kritischen Fehlschlag",
             "CriticalFailureThresholdHint": "Der höchste natürliche W20-Wurf (nur bei einem Angriffswurf), der als kritischer Fehlschlag zählt. Standardmäßig 1; wird er z.B. auf 5 erhöht, lösen 1 bis 5 alle einen kritischen Fehlschlag aus.",
+            "AssassinationBonusDice": "Attentat-Zusatzwürfel",
+            "AssassinationBonusDiceHint": "Zusätzliche Würfel derselben Größe wie Attentats aktuelle Fertigkeitsstufe (siehe Angriffswurf-Auswertung) - hat keine Wirkung auf Stufe 0, die nur einen festen Bonus ohne Würfel gewährt.",
             "ManaCapacityAccumulator": "Manakapazität-FP-Sammler",
             "ManaCapacityAccumulatorHint": "Reale Manakosten, die seit der letzten Anpassungs-/Genesungspause für gewirkte Zauber gezahlt wurden - wird bei der nächsten mit der Manakapazität-Rate aus den Fertigkeitsnutzungs-FP-Einstellungen multipliziert, abgerundet und dann auf 0 zurückgesetzt. Nicht zum manuellen Bearbeiten gedacht, aber hier bei Bedarf einsehbar/anpassbar.",
             "ManaRegenerationAccumulator": "Manaregeneration-FP-Sammler",
@@ -407,6 +410,15 @@
             "Confirm": "Kill-FP vergeben",
             "NoGain": "Keine FP generiert - für diese Fertigkeit ist keine Kill-Rate konfiguriert."
         },
+        "PrayerDialog": {
+            "Title": "Gebet",
+            "Hours": "Stunden",
+            "Confirm": "Gebets-FP vergeben",
+            "NoGain": "Keine FP generiert - für Glaube ist keine Gebets-Rate konfiguriert."
+        },
+        "Prayer": {
+            "Title": "Beten"
+        },
         "AttackRoll": {
             "Attack": "Angriff",
             "RollA": "Wurf A",
@@ -425,6 +437,7 @@
             "CriticalMiss": "Kritisch Verfehlt",
             "PrecisionRoll": "Präzisionswurf",
             "CriticalBonusDamage": "Kritischer Zusatzschaden",
+            "AssassinationDamage": "Attentat-Zusatzschaden",
             "ApplyDamage": "Schaden anwenden",
             "DamageApplied": "{type}-Schaden angewendet: {amount}",
             "DamageAbsorbedIntoHealing": "{type}-Schaden absorbiert - stattdessen {amount} Heilung",

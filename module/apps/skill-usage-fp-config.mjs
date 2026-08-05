@@ -170,7 +170,9 @@ const SKILL_SPECIFIC_TRIGGERS = {
   adrenalin: [{ key: 'adrenalinUsed', label: 'SKSK.SkillFpConfig.AdrenalinUsed' }],
   ambidextrous: [{ key: 'offHandAttack', label: 'SKSK.SkillFpConfig.OffHandAttack' }],
 
-  // Misc (Nutzungsfertigkeiten).
+  // Misc (Nutzungsfertigkeiten). "passiveDetection" and "prayer" are both
+  // wired - see sheets/actor-sheet.mjs's header (#grantPassivePerceptionFp/
+  // #openPrayerDialog, via apps/prayer-dialog.mjs).
   observation: [{ key: 'passiveDetection', label: 'SKSK.SkillFpConfig.PassiveDetection' }],
   faith: [{ key: 'prayer', label: 'SKSK.SkillFpConfig.Prayer' }],
   healer: [{ key: 'healedCreature', label: 'SKSK.SkillFpConfig.HealedCreature' }],

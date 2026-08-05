@@ -81,6 +81,7 @@
       "Overview": "Overview",
       "MovementSpeeds": "Movement Speeds",
       "SizeCategory": "Size Category",
+      "PassivePerception": "Passive Perception",
       "FavoriteSkills": "Favorite Skills",
       "NoFavoriteSkills": "No favorite skills yet - star one in the Skills tab.",
       "AdditionalResources": "Additional Resources",
@@ -159,7 +160,7 @@
       "RogueHint": "Fallen's roll lets the player choose \"Falle stellen\" or \"Falle entschärfen\" when they use it (both automated); Fingerfertigkeit's roll likewise offers a choice between its base check, Schlossknacken and Taschendiebstahl (also automated). Assassination is not yet automated.",
       "MagicHint": "Concentration checks, used Meditation dice, any spell cast (Magic Control, Chant Shortening once Magic Control reaches level 1), Mana Capacity/Mana Regeneration's own daily settlement (on the next Anpassungspause+), Mana Core's flat per-item grant, Ritualism's hours per Ritual spell cast (at least 1 hour, even under the AP unit or a sub-60-minute casting time), and Overcharge used (Shift+click a spell) are all automated; everything else below (enchanting hours, summoning) is not yet automated - no matching system exists yet.",
       "FighterHint": "Regeneration dice used, combat movement, Dodge used, Reflexaktion (4+ AP spent in one turn), Adrenalin used, critical hits (incl. double crit) and Brutality's bonus damage points are automated; everything else below is not yet automated.",
-      "MiscHint": "Bardic magic cast (Singing) and being Concealed at the start of your own turn (Stealth) are automated; everything else below is not yet automated - no matching system exists yet.",
+      "MiscHint": "Bardic magic cast (Singing), being Concealed at the start of your own turn (Stealth), prayer via the header's Prayer button (Faith), and clicks on the header's Passive Perception field (Observation) are automated; everything else below is not yet automated - no matching system exists yet.",
       "SpecialHint": "A landed hit (Hit Correction), a defended-against attack (Defense Correction) and being at 0 Life with Negative Life left at the start of your own turn (Tenacity) are automated; everything else below is not yet automated.",
       "PotionBrewed": "FP / Potion Brewed (not yet automated)",
       "ItemCrafted": "FP / Item Crafted (not yet automated)",
@@ -196,8 +197,8 @@
       "CriticalBonusDamagePoint": "FP / Point of Critical Bonus Damage",
       "AdrenalinUsed": "FP / Adrenalin Used",
       "OffHandAttack": "FP / Off-Hand Attack",
-      "PassiveDetection": "FP / Passive Detection (not yet automated)",
-      "Prayer": "FP / Prayer (not yet automated)",
+      "PassiveDetection": "FP / Passive Detection",
+      "Prayer": "FP / Prayer",
       "HealedCreature": "FP / Creature Healed (not yet automated)",
       "BardicSpellCast": "FP / Bardic Spell Cast",
       "FlankAttack": "FP / Flanking Attack (not yet automated)",
@@ -283,6 +284,8 @@
       "CriticalHitThresholdHint": "The lowest natural d20 result (on an Angriffswurf/attack roll only) that counts as a critical success. 20 by default; lowering it to e.g. 15 means 15-20 all critically hit.",
       "CriticalFailureThreshold": "Critical Failure Threshold",
       "CriticalFailureThresholdHint": "The highest natural d20 result (on an Angriffswurf/attack roll only) that counts as a critical failure. 1 by default; raising it to e.g. 5 means 1-5 all critically fail.",
+      "AssassinationBonusDice": "Assassination Bonus Dice",
+      "AssassinationBonusDiceHint": "Extra dice of the same size as Assassination's current skill level (see Evaluate Hit) - has no effect at level 0, which only grants a flat bonus with no dice.",
       "ManaCapacityAccumulator": "Mana Capacity FP Accumulator",
       "ManaCapacityAccumulatorHint": "Real mana cost paid for spells cast since the last Anpassungs-/Genesungspause - multiplied by the Mana Capacity skillUsageFp rate and floored on the next one, then reset to 0. Not meant to be hand-edited, but visible/adjustable here if needed.",
       "ManaRegenerationAccumulator": "Mana Regeneration FP Accumulator",
@@ -407,6 +410,15 @@
       "Confirm": "Grant Kill FP",
       "NoGain": "No FP generated - no Kill rate configured for that skill."
     },
+    "PrayerDialog": {
+      "Title": "Prayer",
+      "Hours": "Hours",
+      "Confirm": "Grant Prayer FP",
+      "NoGain": "No FP generated - no Prayer rate configured for Faith."
+    },
+    "Prayer": {
+      "Title": "Pray"
+    },
     "AttackRoll": {
       "Attack": "Attack",
       "RollA": "Roll A",
@@ -425,6 +437,7 @@
       "CriticalMiss": "Critical Miss",
       "PrecisionRoll": "Precision Roll",
       "CriticalBonusDamage": "Critical Bonus Damage",
+      "AssassinationDamage": "Assassination Bonus Damage",
       "ApplyDamage": "Apply Damage",
       "DamageApplied": "{type} damage applied: {amount}",
       "DamageAbsorbedIntoHealing": "{type} damage absorbed - {amount} healing instead",

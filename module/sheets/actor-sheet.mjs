@@ -12,7 +12,7 @@ import {
   getVisibleAttributeBonusDropdowns, getResolvedAttributeBonuses, chooseAttributeBonus,
   resetAttributeBonusChoice, resetAllAttributeBonusChoices, applyPendingAutoGrants,
 } from '../helpers/attributeBonuses.mjs';
-import { getAttributeMaxBreakdown, getAttributeUnlimitedBonusBreakdown } from '../helpers/attributes.mjs';
+import { getAttributeMaxBreakdown, getAttributeUnlimitedBonusBreakdown, computePassivePerception } from '../helpers/attributes.mjs';
 import {
   checkCombinedSpellPrerequisite,
   checkSimpleOrAdvancedSpellPrerequisite,
@@ -26,11 +26,12 @@ import { getLifeBreakdown, getNegativeLifeBreakdown } from '../helpers/life.mjs'
 import { getManaBreakdown } from '../helpers/mana.mjs';
 import { getArmorClassBreakdown, getMagicResistanceBreakdown } from '../helpers/defense.mjs';
 import { renderBreakdownHtml } from '../helpers/tooltips.mjs';
-import { rollMartialArtsAttack, rollRegeneration, rollMeditation, rollAdrenalin, useMove, useDodge, useItem } from '../helpers/actions.mjs';
+import { rollMartialArtsAttack, rollRegeneration, rollMeditation, rollAdrenalin, useMove, useDodge, useItem, postActionChatCard } from '../helpers/actions.mjs';
 import { chooseOverchargeCount } from '../helpers/spell-rolls.mjs';
 import { SKSKRestDialog } from '../apps/rest-dialog.mjs';
 import { SKSKTrainingDialog } from '../apps/training-dialog.mjs';
 import { SKSKKillDialog } from '../apps/kill-dialog.mjs';
+import { SKSKPrayerDialog } from '../apps/prayer-dialog.mjs';
 import {
   getStatusEffectDefinitions, getStatusStacks, increaseStatusStacks, decreaseStatusStacks, applyD20Malus,
   getStatusEffect, getStatusInstances, getStatusInstancesTotal, addStatusInstance, applyCauterization,
@@ -116,6 +117,8 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       openRestDialog: SKSKActorSheet.#openRestDialog,
       openTrainingDialog: SKSKActorSheet.#openTrainingDialog,
       openKillDialog: SKSKActorSheet.#openKillDialog,
+      openPrayerDialog: SKSKActorSheet.#openPrayerDialog,
+      grantPassivePerceptionFp: SKSKActorSheet.#grantPassivePerceptionFp,
       increaseStatusStack: SKSKActorSheet.#increaseStatusStack,
       decreaseStatusStack: SKSKActorSheet.#decreaseStatusStack,
       addStatusInstance: SKSKActorSheet.#addStatusInstance,
@@ -855,6 +858,8 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     context.sizeCategory = getActorSizeCategory(actor);
     context.sizeCategoryChoices = CONFIG.SKSK.sizeCategories;
 
+    context.passivePerception = computePassivePerception(actor);
+
     context.favoriteSkills = Object.values(context.skillCategories ?? {})
       .flat()
       .filter(row => row.favorite);
@@ -1243,6 +1248,26 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
    */
   static #openKillDialog(event, target) {
     new SKSKKillDialog(this.actor).render(true);
+  }
+
+  /**
+   * Open the "Gebet" (Prayer) dialog (apps/prayer-dialog.mjs) from the
+   * sheet header - Character-only, same convention as #openTrainingDialog.
+   */
+  static #openPrayerDialog(event, target) {
+    new SKSKPrayerDialog(this.actor).render(true);
+  }
+
+  /**
+   * Grant Observation's "passiveDetection" FP from the sheet header's
+   * Passive Perception field - a flat, freely repeatable grant (same
+   * pattern as the Kill dialog's own confirm), no dialog needed since
+   * there's nothing to choose.
+   */
+  static async #grantPassivePerceptionFp(event, target) {
+    const grant = await grantSkillUsageFp(this.actor, 'observation', 'passiveDetection');
+    if (!grant) return;
+    await postActionChatCard(this.actor, game.i18n.localize('SKSK.General.PassivePerception'), null, 0, formatSkillFpGrantLine(grant));
   }
 
   /**

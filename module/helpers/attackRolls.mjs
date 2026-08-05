@@ -1,7 +1,7 @@
 import { getActorSkillLevel } from './skills.mjs';
 import { getSpellSchool } from './spells.mjs';
 import { computeNaturalMaterialBonus } from './defense.mjs';
-import { applyD20Malus } from './statusEffects.mjs';
+import { applyD20Malus, getStatusStacks } from './statusEffects.mjs';
 import { getAttackCriticalType, resolveCheckSuccess, wrapCriticalBlock, wrapCriticalInline } from './criticalRolls.mjs';
 import { getEquippedArmorSkillKeys } from './defense.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
@@ -298,6 +298,43 @@ export async function rollCriticalBonusDamage(actor, damageDice) {
 }
 
 /**
+ * Attentat's (Assassination's) own bonus-damage table, per skill level -
+ * irregular (die count/size don't scale by any clean formula, notably the
+ * jump from 4d20 at level 4 to 8d20 at level 5), so a hardcoded lookup
+ * rather than a computed one. Level 0 has no die at all, just a flat
+ * bonus. See rollAssassinationBonusDamage.
+ */
+const ASSASSINATION_DAMAGE = {
+  0: { flat: 2 },
+  1: { count: 1, size: 8 },
+  2: { count: 2, size: 10 },
+  3: { count: 3, size: 12 },
+  4: { count: 4, size: 20 },
+  5: { count: 8, size: 20 },
+};
+
+/**
+ * Roll Attentat's (Assassination's) own bonus damage for the actor's
+ * current skill level (see ASSASSINATION_DAMAGE) - at level 0, a flat "2"
+ * formula (still a real Roll, so the caller's .render()/.total handling
+ * stays uniform with the dice case); otherwise that level's own dice, plus
+ * assassinationBonusDice extra dice of the same size (a GM-tab, Active-
+ * Effect-targetable actor field - see data/actor-base.mjs - with no effect
+ * at level 0, which has no die size to extend).
+ * @param {Actor} actor
+ * @return {Promise<Roll>}
+ */
+export async function rollAssassinationBonusDamage(actor) {
+  const level = getActorSkillLevel(actor, 'assassination');
+  const entry = ASSASSINATION_DAMAGE[level] ?? ASSASSINATION_DAMAGE[0];
+  if (!entry.size) return new Roll(String(entry.flat)).evaluate();
+
+  const bonusDice = actor?.system.assassinationBonusDice ?? 0;
+  const formula = `${entry.count + bonusDice}d${entry.size}`;
+  return new Roll(formula, actor?.getRollData()).evaluate();
+}
+
+/**
  * Präzision (Fighter skill, from level 1): once an ordinary (non-critical)
  * Angriffswurf is confirmed a hit, roll one further, bonus-free
  * Präzisionswurf (1d20) - if it reaches the attacker's own Präzision
@@ -386,7 +423,10 @@ export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor
  * maybeRollPrecision); either way, a critical success here rolls Brutality's
  * bonus damage (see rollCriticalBonusDamage) - always deferred to this one
  * moment, never at roll time, since which roll even counts wasn't known
- * until now.
+ * until now. Independently, ANY confirmed hit (crit or not) while the
+ * attacker has the Concealed status rolls Attentat's (Assassination's) own
+ * bonus damage too (see rollAssassinationBonusDamage), of the attack's own
+ * first damage type - stacks with Brutality's bonus rather than replacing it.
  *
  * For a weapon/Martial Arts attack (comparisonType "armorClass", not a
  * spell's "magicResistance"), this also grants the "hitTaken" FP trigger
@@ -461,6 +501,18 @@ export async function resolveHitEvaluationFromChat(button) {
       extraHTML += renderApplyDamageButton(attacker, bonusEntries, killSkillKey);
       extraHTML += formatSkillFpGrantLine(await grantSkillUsageFp(attacker, 'brutality', 'criticalBonusDamagePoint', bonusTotal));
     }
+  }
+
+  // Attentat (Assassination): any confirmed hit (not just a critical one)
+  // while the attacker is Concealed adds bonus damage of the attack's own
+  // first damage type - independent of, and stacking with, Brutality's
+  // crit-only bonus above.
+  if (hit && damageDice.length && attacker && getStatusStacks(attacker, 'concealed') > 0) {
+    const assassinationType = damageDice[0].damageType;
+    const assassinationRoll = await rollAssassinationBonusDamage(attacker);
+    const typeLabel = game.i18n.localize(CONFIG.SKSK.damageTypes[assassinationType] ?? assassinationType);
+    extraHTML += `<div class="sksk-roll-line"><strong>${typeLabel} ${game.i18n.localize('SKSK.AttackRoll.AssassinationDamage')}</strong></div>${await assassinationRoll.render()}`;
+    extraHTML += renderApplyDamageButton(attacker, [{ damageType: assassinationType, amount: assassinationRoll.total }], killSkillKey);
   }
 
   if (hit) {
