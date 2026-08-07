@@ -89,8 +89,15 @@ const SKILL_SPECIFIC_TRIGGERS = {
   ],
   enchanting: [{ key: 'enchantmentLevel', label: 'SKSK.SkillFpConfig.EnchantmentLevel' }],
 
-  // Rogue (Fingerfertigkeiten) - no assassination/trap/lock-picking/stealth
-  // system exists yet, every field here is unwired.
+  // Rogue (Fingerfertigkeiten) - no trap/lock-picking system exists yet, but
+  // Attentat's own two triggers are wired: "assassinationAttack" fires
+  // alongside a weapon/Martial Arts attack's own bonus damage (helpers/
+  // attackRolls.mjs#resolveHitEvaluationFromChat - a confirmed hit while the
+  // attacker is Concealed), "assassinationKill" fires additionally if that
+  // same weapon attack's damage (from any of its Apply-Damage buttons - see
+  // helpers/damageApplication.mjs#applyDamageFromChat) ends up killing the
+  // defender. Both are weapon-attack-only (not spells, which carry no
+  // killSkillKey).
   assassination: [
     { key: 'assassinationAttack', label: 'SKSK.SkillFpConfig.AssassinationAttack' },
     { key: 'assassinationKill', label: 'SKSK.SkillFpConfig.AssassinationKill' },

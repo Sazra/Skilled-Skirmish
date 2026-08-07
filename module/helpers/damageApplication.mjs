@@ -1,5 +1,5 @@
 import { applyElementalDefense } from './defense.mjs';
-import { applyLifeChange, negativeLifeOverflowHTML } from './statusEffects.mjs';
+import { applyLifeChange, negativeLifeOverflowHTML, getStatusStacks } from './statusEffects.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
 
 /**
@@ -79,7 +79,12 @@ export function renderApplyDamageButton(attacker, damageEntries, killSkillKey = 
  * data/actor-base.mjs#negativeLife) and it wasn't ALREADY true beforehand
  * (so re-applying damage to an already-dead target, e.g. overkill, never
  * grants Kill FP a second time) - grants the attacker a Kill FP for
- * killSkillKey. Also grants the defender's own "<type>Resistance" skill
+ * killSkillKey, plus (if the attacker is currently Concealed - Attentat/
+ * Assassination, see helpers/attackRolls.mjs#resolveHitEvaluationFromChat)
+ * an additional "assassinationKill" FP to their Attentat skill, regardless
+ * of which Apply-Damage button of the attack (base weapon damage, Brutal
+ * bonus, or Attentat bonus) actually delivered the killing blow. Also
+ * grants the defender's own "<type>Resistance" skill
  * its "damageTaken" FP for every entry that actually dealt damage (not
  * fully prevented by Immunity, nor converted into healing by Absorption -
  * a Resistance row is hidden from the Skills tab entirely while either is
@@ -119,6 +124,9 @@ export async function applyDamageFromChat(button) {
   if (isDead && !wasAlreadyDead && attacker && killSkillKey) {
     lines.push(formatSkillFpGrantLine(await grantSkillUsageFp(attacker, killSkillKey, 'kill')));
     lines.push(`<div class="sksk-roll-line"><strong>${game.i18n.format('SKSK.AttackRoll.KillConfirmed', { defender: defender.name })}</strong></div>`);
+    if (getStatusStacks(attacker, 'concealed') > 0) {
+      lines.push(formatSkillFpGrantLine(await grantSkillUsageFp(attacker, 'assassination', 'assassinationKill')));
+    }
   }
 
   const messageData = {

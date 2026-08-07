@@ -427,6 +427,8 @@ export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor
  * attacker has the Concealed status rolls Attentat's (Assassination's) own
  * bonus damage too (see rollAssassinationBonusDamage), of the attack's own
  * first damage type - stacks with Brutality's bonus rather than replacing it.
+ * For a weapon/Martial Arts attack specifically (killSkillKey set), this also
+ * grants the attacker's Attentat skill its own "assassinationAttack" FP.
  *
  * For a weapon/Martial Arts attack (comparisonType "armorClass", not a
  * spell's "magicResistance"), this also grants the "hitTaken" FP trigger
@@ -506,13 +508,20 @@ export async function resolveHitEvaluationFromChat(button) {
   // Attentat (Assassination): any confirmed hit (not just a critical one)
   // while the attacker is Concealed adds bonus damage of the attack's own
   // first damage type - independent of, and stacking with, Brutality's
-  // crit-only bonus above.
+  // crit-only bonus above. For a weapon/Martial Arts attack specifically
+  // (killSkillKey set - spells never carry one), this also grants the
+  // Fingerfertigkeit skill's own "assassinationAttack" FP, alongside the
+  // weapon skill's "weaponAttack" already granted unconditionally at roll
+  // time - see helpers/actions.mjs.
   if (hit && damageDice.length && attacker && getStatusStacks(attacker, 'concealed') > 0) {
     const assassinationType = damageDice[0].damageType;
     const assassinationRoll = await rollAssassinationBonusDamage(attacker);
     const typeLabel = game.i18n.localize(CONFIG.SKSK.damageTypes[assassinationType] ?? assassinationType);
     extraHTML += `<div class="sksk-roll-line"><strong>${typeLabel} ${game.i18n.localize('SKSK.AttackRoll.AssassinationDamage')}</strong></div>${await assassinationRoll.render()}`;
     extraHTML += renderApplyDamageButton(attacker, [{ damageType: assassinationType, amount: assassinationRoll.total }], killSkillKey);
+    if (killSkillKey) {
+      extraHTML += formatSkillFpGrantLine(await grantSkillUsageFp(attacker, 'assassination', 'assassinationAttack'));
+    }
   }
 
   if (hit) {
