@@ -160,7 +160,7 @@
             "RogueHint": "Der Fertigkeitswurf für Fallen lässt den Spieler zwischen \"Falle stellen\" und \"Falle entschärfen\" wählen (beides automatisiert); Fingerfertigkeit bietet ebenso eine Wahl zwischen Basis-Fertigkeitswurf, Schlossknacken und Taschendiebstahl (ebenfalls automatisiert). Attentat ist ebenfalls automatisiert: Attentatsangriff generiert FP, sobald ein Waffen-/Kampfkunstangriff bei aktiver Tarnung trifft (zusammen mit dem Attentat-Zusatzschaden), Attentatstötung zusätzlich, wenn derselbe Angriff den Verteidiger tötet.",
             "MagicHint": "Konzentrationswürfe, genutzte Meditationswürfel, jeder gewirkte Zauber (Magiekontrolle, Spruchkürzung sobald Magiekontrolle Stufe 1 erreicht), die Tagesabrechnung von Manakapazität/Manaregeneration (bei der nächsten Anpassungspause+), Manakerns fester Wert pro Item, Ritualismus' Stunden pro gewirktem Ritual-Zauber (mindestens 1 Stunde, auch bei AP-Kosten oder unter 60 Minuten Wirkzeit), genutzte Überladungen (Shift+Klick auf einen Zauber) sowie Beschwörung (über den Beschwörungs-Button im Kopfbereich - Stufe der beschworenen Kreatur bei \"Beschwören\", Tag der Beschwörungs-Existenz für jeden noch aktiven Platz bei der nächsten Anpassungspause+) sind automatisiert; alles andere unten (u.a. Verzauberungsstunden) ist noch nicht automatisiert - es gibt noch kein passendes System.",
             "FighterHint": "Genutzte Trefferwürfel, Kampf-Bewegung, genutztes Ausweichen, Reflexaktion (4+ AP im eigenen Zug verbraucht), genutztes Adrenalin, kritische Treffer (inkl. Doppel-Krit) und Brutals Bonus-Schadenspunkte sind automatisiert; alles andere unten ist noch nicht automatisiert.",
-            "MiscHint": "Gewirkte Bardenmagie (Singen), Getarnt-Sein zu Beginn des eigenen Zuges (Schleichen), Gebete über den Gebets-Button im Kopfbereich (Glaube), Klicks auf das Passive-Wahrnehmung-Feld im Kopfbereich (Beobachtung) sowie das Umwandeln eines Schadensanwenden-Eintrags in Heilung durch die Absorption des Verteidigers (Heiler - wird dem Verursacher gutgeschrieben, skaliert mit dem geheilten Betrag) sind automatisiert; alles andere unten ist noch nicht automatisiert - es gibt noch kein passendes System.",
+            "MiscHint": "Gewirkte Bardenmagie (Singen), Getarnt-Sein zu Beginn des eigenen Zuges (Schleichen), Gebete über den Gebets-Button im Kopfbereich (Glaube), Klicks auf das Passive-Wahrnehmung-Feld im Kopfbereich (Beobachtung), das Umwandeln eines Schadensanwenden-Eintrags in Heilung durch die Absorption des Verteidigers (Heiler - wird dem Verursacher gutgeschrieben, skaliert mit dem geheilten Betrag) sowie Totem (über den Totem-Button im Kopfbereich - Totem-Bindung eingegangen bei \"Totem binden\", Genutztes Totem bei \"Totem aktivieren\") sind automatisiert; alles andere unten ist noch nicht automatisiert - es gibt noch kein passendes System.",
             "SpecialHint": "Ein gelandeter Treffer (Trefferkorrektur), ein abgewehrter Angriff (Verteidigungskorrektur), 0 Leben mit verbleibendem negativen Leben zu Beginn des eigenen Zuges (Zähigkeit) sowie jeder kritische Erfolg/doppelt kritische Erfolg bei einem generischen (Nicht-Angriffswurf-)W20-Wurf - Fertigkeitswürfe, Rettungswürfe, Attributswürfe und der manuelle Fesselung-Fluchtversuch fragen jedes Mal Neutral/Vorteil/Nachteil ab; Fesselungs eigener Zugbeginn-/Zugende-Wurf, der Gift-Erneuerungswurf und Konzentration nutzen stattdessen die Hintergrundwurf-Modus-Voreinstellung im GM-Tab ohne Dialog (Glücks eigener \"Kritischer Wurf\"/\"Doppelt kritischer Wurf\", dem Würfelnden gutgeschrieben - doppelt nur bei Vorteil/Nachteil mit beiden kritischen Würfeln) - sind automatisiert; alles andere unten ist noch nicht automatisiert.",
             "PotionBrewed": "FP / Gebrauter Trank (noch nicht automatisiert)",
             "ItemCrafted": "FP / Hergestellter Gegenstand (noch nicht automatisiert)",
@@ -203,8 +203,8 @@
             "BardicSpellCast": "FP / Gewirkte Bardenmagie",
             "FlankAttack": "FP / Flankenangriff (noch nicht automatisiert)",
             "InspirationUsed": "FP / Genutzter Inspirationswürfel (noch nicht automatisiert)",
-            "TotemBond": "FP / Totem-Bindung eingegangen (noch nicht automatisiert)",
-            "TotemUsed": "FP / Genutztes Totem (noch nicht automatisiert)",
+            "TotemBond": "FP / Totem-Bindung eingegangen",
+            "TotemUsed": "FP / Genutztes Totem",
             "ZeroLifeRound": "FP / Runde bei 0 Leben (mit verbleibendem negativen Leben) zu Zugbeginn",
             "CriticalRoll": "FP / Kritischer Wurf",
             "DoubleCriticalRoll": "FP / Doppelt kritischer Wurf",
@@ -295,7 +295,11 @@
             "SummonSlotsBonus": "Beschwörungsplätze-Bonus",
             "SummonSlotsBonusHint": "Eine feste Anpassung (positiv oder negativ) an Beschwörungs eigener Listenplatz-Anzahl (siehe der Beschwörungs-Button im Kopfbereich), zusätzlich zum Willenskraft-Modifikator - wird vor dem Multiplikator unten angewendet.",
             "SummonSlotsMultiplier": "Beschwörungsplätze-Multiplikator",
-            "SummonSlotsMultiplierHint": "Multipliziert (Willenskraft-Modifikator + der Bonus oben) - abgerundet, nie unter 0. Standardmäßig 1 (keine Änderung)."
+            "SummonSlotsMultiplierHint": "Multipliziert (Willenskraft-Modifikator + der Bonus oben) - abgerundet, nie unter 0. Standardmäßig 1 (keine Änderung).",
+            "TotemSlotsBonus": "Totemplätze-Bonus",
+            "TotemSlotsBonusHint": "Eine feste Anpassung (positiv oder negativ) an Totems eigener Listenplatz-Anzahl (siehe der Totem-Button im Kopfbereich), zusätzlich zur Stufe der Fertigkeit Totem - wird vor dem Multiplikator unten angewendet.",
+            "TotemSlotsMultiplier": "Totemplätze-Multiplikator",
+            "TotemSlotsMultiplierHint": "Multipliziert (Totem-Fertigkeitsstufe + der Bonus oben) - abgerundet, nie unter 0. Standardmäßig 1 (keine Änderung)."
         },
         "AttributeUsage": {
             "HighestSingle": "Nutze Höchsten (Nur Ein Attribut)",
@@ -438,6 +442,25 @@
         },
         "Summoning": {
             "Title": "Beschwören"
+        },
+        "TotemDialog": {
+            "Title": "Totem",
+            "Name": "Name",
+            "ManaCostPerRound": "Manakosten / Runde",
+            "NamePlaceholder": "Name des Totems (nur zur Orientierung)",
+            "Bind": "Totem binden",
+            "Unbind": "Totem freigeben",
+            "Activate": "Totem aktivieren",
+            "Deactivate": "Totem deaktivieren",
+            "EditEffects": "Effekte bearbeiten",
+            "ActivationCost": "-2 AP, -{mana} Mana",
+            "NoGain": "Keine FP generiert - für diesen Auslöser ist keine Totem-Rate konfiguriert.",
+            "NoSlots": "Keine Totemplätze verfügbar - prüfe die Stufe der Fertigkeit Totem und die Totemplätze-Einstellungen im GM-Tab.",
+            "NotEnoughMana": "Nicht genug Mana.",
+            "AutoDeactivated": "{name}: automatisch deaktiviert - nicht genug Mana, um den Unterhalt zu bezahlen."
+        },
+        "Totem": {
+            "Title": "Totem"
         },
         "GenericRoll": {
             "ChooseModeTitle": "Wurfmodus wählen",

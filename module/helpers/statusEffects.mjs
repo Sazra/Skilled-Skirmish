@@ -1081,6 +1081,51 @@ async function handleTenacityTurnStart(actor) {
 }
 
 /**
+ * Totem's own per-round Mana upkeep: at this actor's own Combat turn start,
+ * drains every still-active totem's own manaCostPerRound from system.mana
+ * (processed in list order, sharing the one Mana pool) - a totem that can't
+ * be paid for is auto-deactivated (its linked ActiveEffect's disabled flag
+ * flips back to true) instead of ever pushing Mana negative. Silent unless
+ * at least one totem is active; auto-deactivations get their own chat line.
+ * See apps/totem-dialog.mjs#toggleTotemActive for the player-triggered
+ * activate/deactivate flow this mirrors.
+ * @param {Actor} actor
+ * @return {Promise<void>}
+ */
+async function handleTotemTurnStart(actor) {
+  const totems = actor.system.totems ?? [];
+  if (!totems.some(entry => entry.active)) return;
+
+  let mana = actor.system.mana.value;
+  const updated = [];
+  const deactivatedNames = [];
+  for (const entry of totems) {
+    if (!entry.active) { updated.push(entry); continue; }
+    const cost = entry.manaCostPerRound ?? 0;
+    if (mana >= cost) {
+      mana -= cost;
+      updated.push(entry);
+    } else {
+      updated.push({ ...entry, active: false });
+      deactivatedNames.push(entry.name || '?');
+      const effect = entry.effectId ? actor.effects.get(entry.effectId) : null;
+      if (effect) await effect.update({ disabled: true });
+    }
+  }
+
+  const updates = { 'system.totems': updated };
+  if (mana !== actor.system.mana.value) updates['system.mana.value'] = mana;
+  await actor.update(updates);
+
+  if (deactivatedNames.length) {
+    const lines = deactivatedNames
+      .map(name => `<div class="sksk-roll-line">${game.i18n.format('SKSK.TotemDialog.AutoDeactivated', { name })}</div>`)
+      .join('');
+    await postActionChatCard(actor, game.i18n.localize('SKSK.TotemDialog.Title'), null, 0, lines);
+  }
+}
+
+/**
  * Called once for whichever actor's Combat turn is beginning (see the
  * "combatTurnChange" hook in sksk.mjs) - refills AP/RP, runs Dazed's AP
  * drain, and pays down any pending spell's AP debt (see
@@ -1090,8 +1135,9 @@ async function handleTenacityTurnStart(actor) {
  * Concentration's check against however much of that combined damage
  * actually landed (checked once for the round's total, not once per
  * source), Restrained's automatic escape check (if timed to "start"),
- * Schleichen's Concealed-status FP trigger, and Zähigkeit's 0-Life FP
- * trigger.
+ * Schleichen's Concealed-status FP trigger, Zähigkeit's 0-Life FP trigger,
+ * and Totem's per-round Mana upkeep (auto-deactivating any totem it can't
+ * afford).
  * @param {Actor} actor
  * @param {number} round
  * @return {Promise<void>}
@@ -1107,6 +1153,7 @@ export async function handleCombatTurnStart(actor, round) {
   await handleRestrainedTurnStart(actor);
   await handleStealthTurnStart(actor);
   await handleTenacityTurnStart(actor);
+  await handleTotemTurnStart(actor);
 }
 
 /**

@@ -160,7 +160,7 @@
       "RogueHint": "Fallen's roll lets the player choose \"Falle stellen\" or \"Falle entschärfen\" when they use it (both automated); Fingerfertigkeit's roll likewise offers a choice between its base check, Schlossknacken and Taschendiebstahl (also automated). Assassination is automated too: Assassination Attack grants FP whenever a weapon/Martial Arts attack hits while Concealed (alongside Assassination's own bonus damage), Assassination Kill additionally if that same attack kills the defender.",
       "MagicHint": "Concentration checks, used Meditation dice, any spell cast (Magic Control, Chant Shortening once Magic Control reaches level 1), Mana Capacity/Mana Regeneration's own daily settlement (on the next Anpassungspause+), Mana Core's flat per-item grant, Ritualism's hours per Ritual spell cast (at least 1 hour, even under the AP unit or a sub-60-minute casting time), Overcharge used (Shift+click a spell), and Summoning (via the header's Summoning button - Summoned Creature Level on \"Beschwören\", Day of Summon's Existence for every still-active slot on the next Anpassungspause+) are all automated; everything else below (enchanting hours) is not yet automated - no matching system exists yet.",
       "FighterHint": "Regeneration dice used, combat movement, Dodge used, Reflexaktion (4+ AP spent in one turn), Adrenalin used, critical hits (incl. double crit) and Brutality's bonus damage points are automated; everything else below is not yet automated.",
-      "MiscHint": "Bardic magic cast (Singing), being Concealed at the start of your own turn (Stealth), prayer via the header's Prayer button (Faith), clicks on the header's Passive Perception field (Observation), and Apply Damage converting an entry into healing via the defender's own Absorption (Healer - credited to whoever caused it, scaled by the healed amount) are automated; everything else below is not yet automated - no matching system exists yet.",
+      "MiscHint": "Bardic magic cast (Singing), being Concealed at the start of your own turn (Stealth), prayer via the header's Prayer button (Faith), clicks on the header's Passive Perception field (Observation), Apply Damage converting an entry into healing via the defender's own Absorption (Healer - credited to whoever caused it, scaled by the healed amount), and Totem (via the header's Totem button - Totem Bond Formed on \"Totem binden\", Totem Used on \"Totem aktivieren\") are automated; everything else below is not yet automated - no matching system exists yet.",
       "SpecialHint": "A landed hit (Hit Correction), a defended-against attack (Defense Correction), being at 0 Life with Negative Life left at the start of your own turn (Tenacity), and any generic (non-Angriffswurf) D20 roll's critical success/double critical - skill checks, saving throws, attribute checks, and a manual Restrained escape attempt prompt for Neutral/Vorteil/Nachteil every time; Restrained's own turn-start/end check, Poison's recheck, and Concentration instead use the GM tab's Background Roll Mode preset with no dialog (Luck's own \"Critical Roll\"/\"Double Critical Roll\", credited to whoever rolled it - double only from Vorteil/Nachteil, both dice critical) - are automated; everything else below is not yet automated.",
       "PotionBrewed": "FP / Potion Brewed (not yet automated)",
       "ItemCrafted": "FP / Item Crafted (not yet automated)",
@@ -203,8 +203,8 @@
       "BardicSpellCast": "FP / Bardic Spell Cast",
       "FlankAttack": "FP / Flanking Attack (not yet automated)",
       "InspirationUsed": "FP / Inspiration Die Used (not yet automated)",
-      "TotemBond": "FP / Totem Bond Formed (not yet automated)",
-      "TotemUsed": "FP / Totem Used (not yet automated)",
+      "TotemBond": "FP / Totem Bond Formed",
+      "TotemUsed": "FP / Totem Used",
       "ZeroLifeRound": "FP / Round at 0 Life (with Negative Life left) at Own Turn Start",
       "CriticalRoll": "FP / Critical Roll",
       "DoubleCriticalRoll": "FP / Double Critical Roll",
@@ -295,7 +295,11 @@
       "SummonSlotsBonus": "Summon Slots Bonus",
       "SummonSlotsBonusHint": "A flat adjustment (positive or negative) to Summoning's own slot count (see the Summoning header button), on top of the Willpower modifier - applied before the multiplier below.",
       "SummonSlotsMultiplier": "Summon Slots Multiplier",
-      "SummonSlotsMultiplierHint": "Multiplies (Willpower modifier + the bonus above) - floored, never below 0. 1 by default (no change)."
+      "SummonSlotsMultiplierHint": "Multiplies (Willpower modifier + the bonus above) - floored, never below 0. 1 by default (no change).",
+      "TotemSlotsBonus": "Totem Slots Bonus",
+      "TotemSlotsBonusHint": "A flat adjustment (positive or negative) to Totem's own slot count (see the Totem header button), on top of the Totem skill's own level - applied before the multiplier below.",
+      "TotemSlotsMultiplier": "Totem Slots Multiplier",
+      "TotemSlotsMultiplierHint": "Multiplies (Totem skill level + the bonus above) - floored, never below 0. 1 by default (no change)."
     },
     "AttributeUsage": {
       "HighestSingle": "Use Highest (Only One Attribute)",
@@ -438,6 +442,25 @@
     },
     "Summoning": {
       "Title": "Summon"
+    },
+    "TotemDialog": {
+      "Title": "Totem",
+      "Name": "Name",
+      "ManaCostPerRound": "Mana Cost / Round",
+      "NamePlaceholder": "Totem name (orientation only)",
+      "Bind": "Bind Totem",
+      "Unbind": "Unbind Totem",
+      "Activate": "Activate Totem",
+      "Deactivate": "Deactivate Totem",
+      "EditEffects": "Edit Effects",
+      "ActivationCost": "-2 AP, -{mana} Mana",
+      "NoGain": "No FP generated - no Totem rate configured for that trigger.",
+      "NoSlots": "No totem slots available - check the Totem skill's level and the GM tab's Totem Slots settings.",
+      "NotEnoughMana": "Not enough Mana.",
+      "AutoDeactivated": "{name}: automatically deactivated - not enough Mana to pay its upkeep."
+    },
+    "Totem": {
+      "Title": "Totem"
     },
     "GenericRoll": {
       "ChooseModeTitle": "Choose Roll Mode",

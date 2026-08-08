@@ -372,6 +372,32 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // 0. See helpers/summoning.mjs#computeSummonSlots.
     schema.summonSlotsBonus = new fields.NumberField({ ...requiredInteger, initial: 0 });
     schema.summonSlotsMultiplier = new fields.NumberField({ required: true, nullable: false, initial: 1, min: 0 });
+    // Totem's own list of totem slots - resized (padded/truncated) to the
+    // current slot count whenever apps/totem-dialog.mjs renders, see
+    // helpers/totem.mjs#getResizedTotems. An empty slot has blank name/
+    // bound false; "Totem binden" fills name, sets bound true (granting
+    // Totem's "totemBond" FP) and creates a linked, initially-disabled
+    // ActiveEffect (effectId) the player configures via the dialog's own
+    // Effects button (Foundry's native effect editor - free-form Changes).
+    // "Totem aktivieren" pays 2 AP + manaCostPerRound Mana up front,
+    // flips active true and that effect's own disabled false (granting
+    // "totemUsed" FP); "Totem deaktivieren" reverses both, no FP. Every
+    // still-active totem drains manaCostPerRound Mana at this actor's own
+    // Combat turn start, auto-deactivating on insufficient Mana - see
+    // helpers/statusEffects.mjs#handleTotemTurnStart. "Zeile löschen/
+    // freigeben" clears the slot AND deletes its linked effect.
+    schema.totems = new fields.ArrayField(new fields.SchemaField({
+      name: new fields.StringField({ required: true, blank: true, initial: "" }),
+      bound: new fields.BooleanField({ initial: false }),
+      active: new fields.BooleanField({ initial: false }),
+      effectId: new fields.StringField({ required: true, blank: true, initial: "" }),
+      manaCostPerRound: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+    }));
+    // GM-tab adjustments to Totem's own slot count, on top of the Totem
+    // skill's own level - same convention as summonSlotsBonus/
+    // summonSlotsMultiplier above. See helpers/totem.mjs#computeTotemSlots.
+    schema.totemSlotsBonus = new fields.NumberField({ ...requiredInteger, initial: 0 });
+    schema.totemSlotsMultiplier = new fields.NumberField({ required: true, nullable: false, initial: 1, min: 0 });
     // A spell whose AP cost couldn't be fully paid at cast time - itemId
     // (blank = none pending) references the spell Item still owed apCost
     // AP, paid off gradually at the start of this actor's later Combat

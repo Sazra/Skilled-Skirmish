@@ -33,6 +33,7 @@ import { SKSKTrainingDialog } from '../apps/training-dialog.mjs';
 import { SKSKKillDialog } from '../apps/kill-dialog.mjs';
 import { SKSKPrayerDialog } from '../apps/prayer-dialog.mjs';
 import { SKSKSummoningDialog } from '../apps/summoning-dialog.mjs';
+import { SKSKTotemDialog } from '../apps/totem-dialog.mjs';
 import {
   getStatusEffectDefinitions, getStatusStacks, increaseStatusStacks, decreaseStatusStacks, applyD20Malus,
   getStatusEffect, getStatusInstances, getStatusInstancesTotal, addStatusInstance, applyCauterization,
@@ -120,6 +121,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       openKillDialog: SKSKActorSheet.#openKillDialog,
       openPrayerDialog: SKSKActorSheet.#openPrayerDialog,
       openSummoningDialog: SKSKActorSheet.#openSummoningDialog,
+      openTotemDialog: SKSKActorSheet.#openTotemDialog,
       grantPassivePerceptionFp: SKSKActorSheet.#grantPassivePerceptionFp,
       increaseStatusStack: SKSKActorSheet.#increaseStatusStack,
       decreaseStatusStack: SKSKActorSheet.#decreaseStatusStack,
@@ -1268,6 +1270,14 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
    */
   static #openSummoningDialog(event, target) {
     new SKSKSummoningDialog(this.actor).render(true);
+  }
+
+  /**
+   * Open the "Totem" dialog (apps/totem-dialog.mjs) from the sheet header -
+   * Character-only, same convention as #openSummoningDialog.
+   */
+  static #openTotemDialog(event, target) {
+    new SKSKTotemDialog(this.actor).render(true);
   }
 
   /**

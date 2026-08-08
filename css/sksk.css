@@ -782,6 +782,13 @@
   margin: 0;
 }
 
+/* Totem dialog rows carry up to three icons (Effects/Toggle/Delete) once
+   bound - items-list-compact's single-icon 32px column is too narrow. */
+.sksk .totem-dialog .items-list-compact .item-controls {
+  flex: 0 0 96px;
+  justify-content: flex-end;
+}
+
 .sksk .items-list .item {
   align-items: center;
   padding: 0 2px;
