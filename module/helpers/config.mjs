@@ -363,6 +363,15 @@ SKSK.attributeUsageTypes = {
   highestMultiple: 'SKSK.AttributeUsage.HighestMultiple',
 };
 
+// The GM-tab preset for generic (non-Angriffswurf) D20 rolls that trigger
+// fully automatically - see data/actor-base.mjs#genericCriticalRollMode/
+// helpers/criticalRolls.mjs#evaluateD20WithMode.
+SKSK.genericRollModes = {
+  neutral: 'SKSK.GenericRoll.ModeNeutral',
+  advantage: 'SKSK.GenericRoll.ModeAdvantage',
+  disadvantage: 'SKSK.GenericRoll.ModeDisadvantage',
+};
+
 SKSK.talentTypes = {
   level6: 'SKSK.Talent.Type.Level6',
   level12: 'SKSK.Talent.Type.Level12',

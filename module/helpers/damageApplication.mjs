@@ -91,7 +91,12 @@ export function renderApplyDamageButton(attacker, damageEntries, killSkillKey = 
  * active anyway, see sheets/actor-sheet.mjs#_prepareSkills, so there's
  * nothing to reward it for reducing in those cases) - subject to
  * Resistance's own special gain cap (see helpers/skillFp.mjs#
- * capResistanceGain). Posts a chat summary either way.
+ * capResistanceGain). Conversely, an entry Absorption converts into
+ * healing instead grants the ATTACKER (not the defender) Healer's own
+ * "healedCreature" FP, scaled by the healed amount - detecting an
+ * Absorption-driven heal this way needs no dedicated "heal" action of its
+ * own, since every heal-via-Absorption necessarily passes through here.
+ * Posts a chat summary either way.
  * @param {HTMLElement} button
  * @return {Promise<ChatMessage|void>}
  */
@@ -113,6 +118,12 @@ export async function applyDamageFromChat(button) {
     lines.push(`<div class="sksk-roll-line">${game.i18n.format(outcomeKey, { type: typeLabel, amount: adjusted })}</div>`);
     if (!healing && adjusted > 0) {
       lines.push(formatSkillFpGrantLine(await grantSkillUsageFp(defender, `${damageType}Resistance`, 'damageTaken', adjusted)));
+    } else if (healing && adjusted > 0 && attacker) {
+      // Healer's own "healedCreature" FP trigger: the defender's Absorption
+      // turned this entry into healing instead of damage - credited to
+      // whoever caused it (the attacker), not the defender, scaled by the
+      // healed amount.
+      lines.push(formatSkillFpGrantLine(await grantSkillUsageFp(attacker, 'healer', 'healedCreature', adjusted)));
     }
   }
 

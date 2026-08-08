@@ -2,7 +2,9 @@ import { postActionChatCard } from './actions.mjs';
 import { getClassAbilityLevels, actorHasAdvancedClass } from './abilities.mjs';
 import { getActorSkillLevel, getSkillLabel } from './skills.mjs';
 import { handlePendingSpellTurnStart } from './spell-rolls.mjs';
-import { getGenericCriticalType, resolveCheckSuccess, wrapCriticalBlock } from './criticalRolls.mjs';
+import {
+  resolveCheckSuccess, wrapCriticalBlock, chooseGenericRollMode, evaluateD20WithMode, formatD20ModeSummaryLine,
+} from './criticalRolls.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
 
 /**
@@ -608,20 +610,24 @@ export async function setRestrainedConfig(actor, config) {
  * Roll Restrained's escape check (Strength) against its own configured
  * DC - success removes the status entirely (matching Poison's "a passed
  * check cures it" convention); failure leaves it in place. Used both by
- * the automatic start/end-of-turn timings and (with an AP cost gate
- * first) the player-triggered one - see attemptRestrainedEscapeManual.
+ * the automatic start/end-of-turn timings (mode omitted - falls back to
+ * the actor's own GM-tab preset, system.genericCriticalRollMode, with no
+ * dialog) and (with an AP cost gate first) the player-triggered one, which
+ * instead prompts fresh every time - see attemptRestrainedEscapeManual.
  * @param {Actor} actor
+ * @param {"neutral"|"advantage"|"disadvantage"} [mode]
  * @return {Promise<void>}
  */
-export async function attemptRestrainedEscape(actor) {
+export async function attemptRestrainedEscape(actor, mode = null) {
   const effect = getStatusEffect(actor, 'restrained');
   if (!effect) return;
 
+  const resolvedMode = mode ?? actor.system.genericCriticalRollMode;
   const dc = effect.getFlag('sksk', 'dc') ?? 0;
   const strMod = actor.system.attributes?.str?.mod ?? 0;
   const formula = applyD20Malus(`1d20 + ${strMod}`, actor, 'str');
-  const roll = await new Roll(formula, actor.getRollData()).evaluate();
-  const criticalType = getGenericCriticalType(roll);
+  const result = await evaluateD20WithMode(formula, actor.getRollData(), resolvedMode);
+  const { roll, criticalType, doubleCritical } = result;
   const success = resolveCheckSuccess(roll.total, dc, criticalType);
 
   if (success) await setStatusStacks(actor, 'restrained', 0);
@@ -630,14 +636,26 @@ export async function attemptRestrainedEscape(actor) {
     : criticalType === 'failure' ? 'SKSK.Spell.Roll.CriticalFailure'
     : success ? 'SKSK.Spell.Roll.Success' : 'SKSK.Spell.Roll.Failure';
   const outcome = game.i18n.localize(outcomeKey);
-  const extraHTML = `<div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.RestrainedCheck', { dc })}: ${outcome}</div>`;
+  // Luck's own "criticalRoll"/"doubleCriticalRoll" FP - any generic (non-
+  // Angriffswurf) D20 roll's critical success/double critical, see
+  // helpers/criticalRolls.mjs#evaluateD20WithMode.
+  let luckHTML = criticalType === 'success'
+    ? formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'luck', 'criticalRoll'))
+    : '';
+  if (doubleCritical) {
+    luckHTML += formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'luck', 'doubleCriticalRoll'));
+  }
+  luckHTML += formatD20ModeSummaryLine(result, resolvedMode);
+  const extraHTML = `<div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.RestrainedCheck', { dc })}: ${outcome}</div>${luckHTML}`;
   await postActionChatCard(actor, getStatusEffectName('restrained'), roll, 0, extraHTML, criticalType);
 }
 
 /**
  * Player-triggered escape attempt (Restrained's "apCost" timing) - spends
  * its configured AP cost first (if any), aborting if the actor can't
- * afford it.
+ * afford it, then prompts for Neutral/Vorteil/Nachteil (unlike the
+ * automatic start/end-of-turn timings, which use the actor's own GM-tab
+ * preset instead - see attemptRestrainedEscape).
  * @param {Actor} actor
  * @return {Promise<void>}
  */
@@ -646,12 +664,14 @@ export async function attemptRestrainedEscapeManual(actor) {
   if (!effect) return;
 
   const apCost = effect.getFlag('sksk', 'apCost') ?? 0;
-  if (apCost > 0) {
-    const ap = actor.system.actionPoints.value;
-    if (ap < apCost) return ui.notifications.warn(game.i18n.localize('SKSK.Action.NotEnoughAP'));
-    await actor.update({ 'system.actionPoints.value': ap - apCost });
-  }
-  await attemptRestrainedEscape(actor);
+  const ap = actor.system.actionPoints.value;
+  if (apCost > 0 && ap < apCost) return ui.notifications.warn(game.i18n.localize('SKSK.Action.NotEnoughAP'));
+
+  const mode = await chooseGenericRollMode();
+  if (!mode) return;
+
+  if (apCost > 0) await actor.update({ 'system.actionPoints.value': ap - apCost });
+  await attemptRestrainedEscape(actor, mode);
 }
 
 /**
@@ -811,8 +831,11 @@ async function handlePoisonTurnStart(actor, round) {
     totalDamage += damageDealtFrom(lifeChange);
     const conMod = actor.system.attributes?.con?.mod ?? 0;
     const checkFormula = applyD20Malus(`1d20 + ${conMod}`, actor, 'con');
-    const checkRoll = await new Roll(checkFormula, actor.getRollData()).evaluate();
-    const criticalType = getGenericCriticalType(checkRoll);
+    // Fully automatic (turn-start) check - uses the actor's own GM-tab
+    // preset (system.genericCriticalRollMode) rather than a per-check
+    // dialog, see helpers/criticalRolls.mjs#evaluateD20WithMode.
+    const checkResult = await evaluateD20WithMode(checkFormula, actor.getRollData(), actor.system.genericCriticalRollMode);
+    const { roll: checkRoll, criticalType, doubleCritical } = checkResult;
     const success = resolveCheckSuccess(checkRoll.total, def.dc, criticalType);
 
     if (success) {
@@ -826,10 +849,21 @@ async function handlePoisonTurnStart(actor, round) {
       : criticalType === 'failure' ? 'SKSK.Spell.Roll.CriticalFailure'
       : success ? 'SKSK.Spell.Roll.Success' : 'SKSK.Spell.Roll.Failure';
     const outcome = game.i18n.localize(outcomeKey);
+    // Luck's own "criticalRoll"/"doubleCriticalRoll" FP - any generic (non-
+    // Angriffswurf) D20 roll's critical success/double critical, see
+    // helpers/criticalRolls.mjs#evaluateD20WithMode.
+    let luckHTML = criticalType === 'success'
+      ? formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'luck', 'criticalRoll'))
+      : '';
+    if (doubleCritical) {
+      luckHTML += formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'luck', 'doubleCriticalRoll'));
+    }
+    luckHTML += formatD20ModeSummaryLine(checkResult, actor.system.genericCriticalRollMode);
     const extraHTML = `
       ${negativeLifeOverflowHTML(negativeLifeDelta)}
       <div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.PoisonCheck', { dc: def.dc })}: ${outcome}</div>
       ${checkRendered}
+      ${luckHTML}
     `;
     await postActionChatCard(actor, getStatusEffectName(severityId), damageRoll, 0, extraHTML);
   }
@@ -969,8 +1003,11 @@ export async function checkConcentration(actor, damage) {
   const conMod = actor.system.attributes?.con?.mod ?? 0;
   const concentrationLevel = getActorSkillLevel(actor, 'concentration');
   const formula = applyD20Malus(`1d20 + ${conMod} + ${concentrationLevel}`, actor, 'con');
-  const roll = await new Roll(formula, actor.getRollData()).evaluate();
-  const criticalType = getGenericCriticalType(roll);
+  // Fully automatic (damage-triggered) check - uses the actor's own GM-tab
+  // preset (system.genericCriticalRollMode) rather than a per-check dialog,
+  // see helpers/criticalRolls.mjs#evaluateD20WithMode.
+  const result = await evaluateD20WithMode(formula, actor.getRollData(), actor.system.genericCriticalRollMode);
+  const { roll, criticalType, doubleCritical } = result;
   const success = resolveCheckSuccess(roll.total, dc, criticalType);
 
   // A failed check breaks Concentration outright - if a spell (see
@@ -992,10 +1029,21 @@ export async function checkConcentration(actor, damage) {
     : success ? 'SKSK.Spell.Roll.Success' : 'SKSK.Spell.Roll.Failure';
   const outcome = game.i18n.localize(outcomeKey);
   const fpGrant = await grantSkillUsageFp(actor, 'concentration', 'concentrationCheck');
+  // Luck's own "criticalRoll"/"doubleCriticalRoll" FP - any generic (non-
+  // Angriffswurf) D20 roll's critical success/double critical, see
+  // helpers/criticalRolls.mjs#evaluateD20WithMode.
+  let luckHTML = criticalType === 'success'
+    ? formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'luck', 'criticalRoll'))
+    : '';
+  if (doubleCritical) {
+    luckHTML += formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'luck', 'doubleCriticalRoll'));
+  }
+  luckHTML += formatD20ModeSummaryLine(result, actor.system.genericCriticalRollMode);
   const extraHTML = `
     <div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.ConcentrationCheck', { dc })}: ${outcome}</div>
     ${cancelledSpell ? `<div class="sksk-roll-line">${game.i18n.localize('SKSK.Spell.Roll.SpellCancelled')}</div>` : ''}
     ${formatSkillFpGrantLine(fpGrant)}
+    ${luckHTML}
   `;
   await postActionChatCard(actor, getStatusEffectName('concentration'), roll, 0, extraHTML, criticalType);
 }

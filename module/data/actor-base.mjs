@@ -159,6 +159,20 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // helpers/criticalRolls.mjs#getGenericCriticalType.
     schema.criticalHitThreshold = new fields.NumberField({ ...requiredInteger, initial: 20, min: 10, max: 20 });
     schema.criticalFailureThreshold = new fields.NumberField({ ...requiredInteger, initial: 1, min: 1, max: 10 });
+    // The Neutral/Vorteil/Nachteil mode preset used by generic (non-
+    // Angriffswurf) D20 rolls that trigger fully automatically, with no
+    // player-facing choice dialog (Restrained's own turn-start/end escape
+    // check, Poison's recheck, Concentration) - see helpers/criticalRolls.mjs
+    // #evaluateD20WithMode. Player-triggered generic rolls (skill checks,
+    // attribute checks, saving throws, a manual Restrained escape attempt)
+    // instead prompt fresh every time via chooseGenericRollMode, ignoring
+    // this field entirely. Plain, directly user-editable on the GM tab and
+    // equally targetable by Active Effects, same convention as
+    // criticalHitThreshold above.
+    schema.genericCriticalRollMode = new fields.StringField({
+      required: true, blank: false, initial: "neutral",
+      choices: ["neutral", "advantage", "disadvantage"],
+    });
     // Extra dice added to Assassination's own bonus damage (see helpers/
     // attackRolls.mjs#rollAssassinationBonusDamage), on top of whatever
     // dice its own skill-level table already grants - same convention as

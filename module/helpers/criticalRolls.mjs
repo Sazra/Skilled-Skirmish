@@ -111,3 +111,115 @@ export function wrapCriticalInline(text, criticalType) {
   if (!criticalType) return text;
   return `<span class="sksk-critical-${criticalType}">${text}</span>`;
 }
+
+/**
+ * How "good" a resolved d20 result is, for ranking one roll against another
+ * under Vorteil/Nachteil (Angriffswürfe - see helpers/attackRolls.mjs#
+ * chooseAttackMode/resolveHitEvaluationFromChat; generic D20 rolls - see
+ * chooseGenericRollMode/evaluateD20WithMode below) - a critical success is
+ * always the best possible outcome and a critical failure always the worst,
+ * regardless of either roll's total (mirrors resolveCheckSuccess's own
+ * critical-overrides-total rule); otherwise the raw total itself is the
+ * score.
+ * @param {number} total
+ * @param {"success"|"failure"|null} criticalType
+ * @return {number}
+ */
+export function rollQuality(total, criticalType) {
+  if (criticalType === 'success') return Infinity;
+  if (criticalType === 'failure') return -Infinity;
+  return total;
+}
+
+/**
+ * The three ways a generic (non-Angriffswurf) D20 roll can resolve - see
+ * chooseGenericRollMode/evaluateD20WithMode. Mirrors helpers/attackRolls.mjs#
+ * ATTACK_MODES, kept separate since generic rolls resolve in one step
+ * (mode chosen BEFORE rolling, then rolled and evaluated immediately) rather
+ * than an Angriffswurf's own roll-first-evaluate-later flow.
+ */
+const GENERIC_ROLL_MODES = [
+  { id: 'neutral', label: 'SKSK.GenericRoll.ModeNeutral' },
+  { id: 'advantage', label: 'SKSK.GenericRoll.ModeAdvantage' },
+  { id: 'disadvantage', label: 'SKSK.GenericRoll.ModeDisadvantage' },
+];
+
+/**
+ * Prompt for which mode a generic (non-Angriffswurf) D20 roll should use -
+ * one button per GENERIC_ROLL_MODES entry, matching helpers/skillRolls.mjs#
+ * chooseSkillRollVariant's own one-click dialog pattern. Used only by
+ * player-triggered rolls (skill checks, attribute checks, saving throws, a
+ * manual Restrained escape attempt); fully automatic background checks
+ * (Restrained's own turn-start/end timing, Poison's recheck, Concentration)
+ * skip this dialog entirely and use the actor's own GM-tab preset instead -
+ * see data/actor-base.mjs#genericCriticalRollMode.
+ * @return {Promise<string|null>} The chosen mode's id, or null/undefined if
+ *   the dialog was closed without picking one - the caller should abort.
+ */
+export async function chooseGenericRollMode() {
+  const buttons = GENERIC_ROLL_MODES.map(mode => ({
+    action: mode.id,
+    label: game.i18n.localize(mode.label),
+    callback: () => mode.id,
+  }));
+  return foundry.applications.api.DialogV2.wait({
+    window: { title: game.i18n.localize('SKSK.GenericRoll.ChooseModeTitle') },
+    content: `<p>${game.i18n.localize('SKSK.GenericRoll.ChooseModePrompt')}</p>`,
+    buttons,
+    rejectClose: false,
+  });
+}
+
+/**
+ * Roll a generic (non-Angriffswurf) D20 check under a given mode: Neutral
+ * rolls (and uses) a single d20; Vorteil/Nachteil roll two independent d20s
+ * and pick the better/worse one (see rollQuality) - both evaluated and
+ * resolved immediately, unlike an Angriffswurf's own deferred-evaluation
+ * flow, since a generic check's target (DC) is already known at roll time.
+ * @param {string} formula   A "1d20 + ..." formula (d20 term first).
+ * @param {object} rollData
+ * @param {"neutral"|"advantage"|"disadvantage"} mode
+ * @return {Promise<{roll: Roll, criticalType: "success"|"failure"|null,
+ *   doubleCritical: boolean, rollA: Roll, critA: "success"|"failure"|null,
+ *   rollB: Roll|null, critB: "success"|"failure"|null, pickedB: boolean}>}
+ *   roll/criticalType are the one that counts; doubleCritical is true only
+ *   when BOTH d20s (Vorteil/Nachteil only, never Neutral) were natural
+ *   criticals - see Luck's own "doubleCriticalRoll" FP trigger (helpers/
+ *   skillFp.mjs), mirroring Präzision's own doubleCriticalHit rule.
+ */
+export async function evaluateD20WithMode(formula, rollData, mode) {
+  const rollA = await new Roll(formula, rollData).evaluate();
+  const critA = getGenericCriticalType(rollA);
+  if (mode !== 'advantage' && mode !== 'disadvantage') {
+    return { roll: rollA, criticalType: critA, doubleCritical: false, rollA, critA, rollB: null, critB: null, pickedB: false };
+  }
+
+  const rollB = await new Roll(formula, rollData).evaluate();
+  const critB = getGenericCriticalType(rollB);
+  const qualityA = rollQuality(rollA.total, critA);
+  const qualityB = rollQuality(rollB.total, critB);
+  const pickedB = mode === 'advantage' ? qualityB > qualityA : qualityB < qualityA;
+  return {
+    roll: pickedB ? rollB : rollA,
+    criticalType: pickedB ? critB : critA,
+    doubleCritical: critA === 'success' && critB === 'success',
+    rollA, critA, rollB, critB, pickedB,
+  };
+}
+
+/**
+ * A short transparency line showing both of a Vorteil/Nachteil generic
+ * roll's totals and which one counted - empty for Neutral (nothing to add,
+ * the single roll speaks for itself).
+ * @param {Awaited<ReturnType<typeof evaluateD20WithMode>>} result
+ * @param {"neutral"|"advantage"|"disadvantage"} mode
+ * @return {string}
+ */
+export function formatD20ModeSummaryLine(result, mode) {
+  if (mode !== 'advantage' && mode !== 'disadvantage') return '';
+  const modeLabel = game.i18n.localize(GENERIC_ROLL_MODES.find(m => m.id === mode)?.label ?? '');
+  return `<div class="sksk-roll-line">${game.i18n.format('SKSK.GenericRoll.ModeSummary', {
+    mode: modeLabel, totalA: result.rollA.total, totalB: result.rollB.total,
+    chosen: result.pickedB ? 'B' : 'A',
+  })}</div>`;
+}

@@ -2,7 +2,7 @@ import { getActorSkillLevel } from './skills.mjs';
 import { getSpellSchool } from './spells.mjs';
 import { computeNaturalMaterialBonus } from './defense.mjs';
 import { applyD20Malus, getStatusStacks } from './statusEffects.mjs';
-import { getAttackCriticalType, resolveCheckSuccess, wrapCriticalBlock, wrapCriticalInline } from './criticalRolls.mjs';
+import { getAttackCriticalType, resolveCheckSuccess, wrapCriticalBlock, wrapCriticalInline, rollQuality } from './criticalRolls.mjs';
 import { getEquippedArmorSkillKeys } from './defense.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
 import { resolveClickDefender, renderApplyDamageButton } from './damageApplication.mjs';
@@ -46,23 +46,6 @@ async function chooseAttackMode() {
     buttons,
     rejectClose: false,
   });
-}
-
-/**
- * How "good" a resolved d20 result is, for ranking Roll A against Roll B
- * under Vorteil/Nachteil (see chooseAttackMode/resolveHitEvaluationFromChat)
- * - a critical success is always the best possible outcome and a critical
- * failure always the worst, regardless of either roll's total (mirrors
- * resolveCheckSuccess's own critical-overrides-total rule); otherwise the
- * raw total itself is the score.
- * @param {number} total
- * @param {"success"|"failure"|null} criticalType
- * @return {number}
- */
-function rollQuality(total, criticalType) {
-  if (criticalType === 'success') return Infinity;
-  if (criticalType === 'failure') return -Infinity;
-  return total;
 }
 
 /**

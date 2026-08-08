@@ -1,6 +1,6 @@
 import { getActorSkillLevel } from './skills.mjs';
 import { applyD20Malus, computeDazedAttributeMalus } from './statusEffects.mjs';
-import { getGenericCriticalType } from './criticalRolls.mjs';
+import { chooseGenericRollMode, evaluateD20WithMode, formatD20ModeSummaryLine } from './criticalRolls.mjs';
 import { postActionChatCard } from './actions.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
 
@@ -130,15 +130,28 @@ export async function rollSkillCheck(actor, skillKey, chosenAttributes, variant 
   const def = getSkillCheckDefinition(skillKey);
   if (!def || !chosenAttributes?.length) return;
 
+  const mode = await chooseGenericRollMode();
+  if (!mode) return;
+
   const level = getActorSkillLevel(actor, skillKey);
   const modTerms = chosenAttributes.map(a => `@attributes.${a}.mod`).join(' + ');
   const baseFormula = `d20 + ${level} + ${modTerms}`;
   const formula = applyD20Malus(baseFormula, actor, pickMalusAttribute(actor, chosenAttributes));
 
-  const roll = await new Roll(formula, actor.getRollData()).evaluate();
-  const criticalType = getGenericCriticalType(roll);
+  const result = await evaluateD20WithMode(formula, actor.getRollData(), mode);
+  const { roll, criticalType, doubleCritical } = result;
   const label = variant ? `${game.i18n.localize(def.label)} (${game.i18n.localize(variant.label)})` : game.i18n.localize(def.label);
 
   const fpGrant = await grantSkillUsageFp(actor, skillKey, variant?.trigger ?? 'skillCheck');
-  return postActionChatCard(actor, `[skill] ${label}`, roll, 0, formatSkillFpGrantLine(fpGrant), criticalType);
+  let extraHTML = formatSkillFpGrantLine(fpGrant) + formatD20ModeSummaryLine(result, mode);
+  // Luck's own "criticalRoll"/"doubleCriticalRoll" FP - any generic (non-
+  // Angriffswurf) D20 roll's critical success/double critical, see
+  // helpers/criticalRolls.mjs#evaluateD20WithMode.
+  if (criticalType === 'success') {
+    extraHTML += formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'luck', 'criticalRoll'));
+  }
+  if (doubleCritical) {
+    extraHTML += formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'luck', 'doubleCriticalRoll'));
+  }
+  return postActionChatCard(actor, `[skill] ${label}`, roll, 0, extraHTML, criticalType);
 }

@@ -9,7 +9,10 @@ import {
 import {
   computeSpellAttackBonus, rollAttackPair, renderAttackPairHTML, getDamageDieSizes,
 } from './attackRolls.mjs';
-import { getGenericCriticalType, resolveCheckSuccess, wrapCriticalBlock, wrapCriticalInline } from './criticalRolls.mjs';
+import {
+  resolveCheckSuccess, wrapCriticalBlock, wrapCriticalInline, chooseGenericRollMode, evaluateD20WithMode,
+  formatD20ModeSummaryLine,
+} from './criticalRolls.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine, grantFlatSkillFp, checkReflexActionTrigger } from './skillFp.mjs';
 import { renderApplyDamageButton } from './damageApplication.mjs';
 
@@ -512,6 +515,9 @@ export async function rollSavingThrowFromChat(itemUuid, saveIndex, overchargeCou
   const actor = game.user.character;
   if (!actor) return ui.notifications.warn(game.i18n.localize('SKSK.Spell.Roll.NoCharacter'));
 
+  const mode = await chooseGenericRollMode();
+  if (!mode) return;
+
   let best = null;
   for (const [attributeKey, enabled] of Object.entries(save.testAttributes ?? {})) {
     if (!enabled) continue;
@@ -530,8 +536,8 @@ export async function rollSavingThrowFromChat(itemUuid, saveIndex, overchargeCou
 
   const dc = computeSavingThrowValue(save, item.actor, overchargeCount);
   const formula = applyD20Malus(`1d20 + ${best.value}`, actor, best.attributeKey);
-  const roll = await new Roll(formula, actor.getRollData()).evaluate();
-  const criticalType = getGenericCriticalType(roll);
+  const result = await evaluateD20WithMode(formula, actor.getRollData(), mode);
+  const { roll, criticalType, doubleCritical } = result;
   const success = resolveCheckSuccess(roll.total, dc, criticalType);
   const saveLabel = save.label || game.i18n.format('SKSK.Spell.SavingThrow.Numbered', { number: saveIndex + 1 });
   const outcomeKey = criticalType === 'success' ? 'SKSK.Spell.Roll.CriticalSuccess'
@@ -539,10 +545,21 @@ export async function rollSavingThrowFromChat(itemUuid, saveIndex, overchargeCou
     : success ? 'SKSK.Spell.Roll.Success' : 'SKSK.Spell.Roll.Failure';
   const outcome = wrapCriticalInline(game.i18n.localize(outcomeKey), criticalType);
 
+  // Luck's own "criticalRoll"/"doubleCriticalRoll" FP - any generic (non-
+  // Angriffswurf) D20 roll's critical success/double critical, see
+  // helpers/criticalRolls.mjs#evaluateD20WithMode.
+  let luckHTML = criticalType === 'success'
+    ? formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'luck', 'criticalRoll'))
+    : '';
+  if (doubleCritical) {
+    luckHTML += formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'luck', 'doubleCriticalRoll'));
+  }
+  luckHTML += formatD20ModeSummaryLine(result, mode);
+
   const messageData = {
     speaker: ChatMessage.getSpeaker({ actor }),
     flavor: `${saveLabel} (${best.label}) ${game.i18n.localize('SKSK.Spell.Roll.Vs')} DC ${dc}: ${outcome}`,
-    content: `<div class="sksk-chat-card sksk-action-card">${wrapCriticalBlock(await roll.render(), criticalType)}</div>`,
+    content: `<div class="sksk-chat-card sksk-action-card">${wrapCriticalBlock(await roll.render(), criticalType)}${luckHTML}</div>`,
     rolls: [roll],
   };
   ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));

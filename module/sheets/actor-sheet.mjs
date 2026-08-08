@@ -38,7 +38,7 @@ import {
   getStatusEffect, getStatusInstances, getStatusInstancesTotal, addStatusInstance, applyCauterization,
   getAdrenalinDamage, setRestrainedConfig, attemptRestrainedEscapeManual,
 } from '../helpers/statusEffects.mjs';
-import { getGenericCriticalType, wrapCriticalBlock } from '../helpers/criticalRolls.mjs';
+import { wrapCriticalBlock, chooseGenericRollMode, evaluateD20WithMode, formatD20ModeSummaryLine } from '../helpers/criticalRolls.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine } from '../helpers/skillFp.mjs';
 
 /**
@@ -398,6 +398,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     context.attributeChoices = CONFIG.SKSK.attributes;
     context.attributeUsageChoices = CONFIG.SKSK.attributeUsageTypes;
     context.damageTypeChoices = CONFIG.SKSK.damageTypes;
+    context.genericRollModeChoices = CONFIG.SKSK.genericRollModes;
     // GM tab's attribute-bonus reset list - see helpers/attributeBonuses.mjs.
     context.resolvedAttributeBonuses = getResolvedAttributeBonuses(actor);
     // Actions tab's Weapons/Usable Items containers - "usable" Items are
@@ -1396,31 +1397,41 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     // universal D20 malus and Dazed's Str/Dex/Con/App-specific one (see
     // helpers/statusEffects.mjs) can be folded in.
     if (dataset.roll) {
+      const mode = await chooseGenericRollMode();
+      if (!mode) return;
+
       let label = dataset.label ? `[attribute] ${dataset.label}` : '';
       const formula = applyD20Malus(dataset.roll, this.actor, dataset.attributeKey ?? null);
-      let roll = new Roll(formula, this.actor.getRollData());
-      roll.evaluate().then(async evaluated => {
-        const criticalType = getGenericCriticalType(evaluated);
+      const result = await evaluateD20WithMode(formula, this.actor.getRollData(), mode);
+      const { roll, criticalType, doubleCritical } = result;
 
-        // A pure attribute roll (not a skill check) generates FP for that
-        // attribute's own "Unbegrenzte X" skill, if configured - see
-        // helpers/skillFp.mjs and CONFIG.SKSK.unlimitedAttributeSkills.
-        let fpHTML = '';
-        const unlimitedSkill = dataset.attributeKey ? CONFIG.SKSK.unlimitedAttributeSkills[dataset.attributeKey] : null;
-        if (unlimitedSkill) {
-          fpHTML = formatSkillFpGrantLine(await grantSkillUsageFp(this.actor, unlimitedSkill, 'attributeRoll'));
-        }
+      // A pure attribute roll (not a skill check) generates FP for that
+      // attribute's own "Unbegrenzte X" skill, if configured - see
+      // helpers/skillFp.mjs and CONFIG.SKSK.unlimitedAttributeSkills.
+      let fpHTML = '';
+      const unlimitedSkill = dataset.attributeKey ? CONFIG.SKSK.unlimitedAttributeSkills[dataset.attributeKey] : null;
+      if (unlimitedSkill) {
+        fpHTML = formatSkillFpGrantLine(await grantSkillUsageFp(this.actor, unlimitedSkill, 'attributeRoll'));
+      }
+      fpHTML += formatD20ModeSummaryLine(result, mode);
+      // Luck's own "criticalRoll"/"doubleCriticalRoll" FP - any generic (non-
+      // Angriffswurf) D20 roll's critical success/double critical, see
+      // helpers/criticalRolls.mjs#evaluateD20WithMode.
+      if (criticalType === 'success') {
+        fpHTML += formatSkillFpGrantLine(await grantSkillUsageFp(this.actor, 'luck', 'criticalRoll'));
+      }
+      if (doubleCritical) {
+        fpHTML += formatSkillFpGrantLine(await grantSkillUsageFp(this.actor, 'luck', 'doubleCriticalRoll'));
+      }
 
-        const messageData = {
-          speaker: ChatMessage.getSpeaker({ actor: this.actor }),
-          flavor: label,
-          content: wrapCriticalBlock(await evaluated.render(), criticalType) + fpHTML,
-          rolls: [evaluated],
-        };
-        ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));
-        return ChatMessage.create(messageData);
-      });
-      return roll;
+      const messageData = {
+        speaker: ChatMessage.getSpeaker({ actor: this.actor }),
+        flavor: label,
+        content: wrapCriticalBlock(await roll.render(), criticalType) + fpHTML,
+        rolls: [roll],
+      };
+      ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));
+      return ChatMessage.create(messageData);
     }
   }
 
