@@ -2,6 +2,7 @@ import { getActorSkillLevel } from './skills.mjs';
 import { postActionChatCard, getRegenerationDieSizes } from './actions.mjs';
 import { getStatusStacks, decreaseStatusStacks, getAdrenalinDamage, reduceAdrenalinDamage } from './statusEffects.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantText } from './skillFp.mjs';
+import { countActiveSummons } from './summoning.mjs';
 
 /**
  * A time segment - the atomic unit "spending time" is measured in.
@@ -272,6 +273,17 @@ export async function applyRest(actor, options) {
       );
       if (manaRegenFpText) lines.push(manaRegenFpText);
       manaRegenerationAccumulator = 0;
+
+      // Beschwörung's own "Tagesabrechnung" - one "summonExistenceDay" FP
+      // grant per currently-active (summoned) list entry, combined into a
+      // single scaled grant (rate x count) - see apps/summoning-dialog.mjs.
+      const activeSummons = countActiveSummons(actor);
+      if (activeSummons > 0) {
+        const summoningFpText = formatSkillFpGrantText(
+          await grantSkillUsageFp(actor, 'summoning', 'summonExistenceDay', activeSummons)
+        );
+        if (summoningFpText) lines.push(summoningFpText);
+      }
 
       const exhaustionMax = computeExhaustionChargeMax(actor, tier);
       const currentExhaustion = getStatusStacks(actor, 'exhaustion');

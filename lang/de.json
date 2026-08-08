@@ -158,7 +158,7 @@
             "ResistancesHint": "FP wird generiert, sobald Schaden des entsprechenden Elements über den \"Schaden anwenden\"-Button genommen wurde - als einzige Fertigkeiten-Kategorie jedoch gedeckelt: automatischer Gewinn kann eine Resistenz nie über Stufe 3 (zzgl. etwaiger Fertigkeitsbonusstufen durch Items) hinaus anheben; manuelle Stufenänderungen sind davon unberührt.",
             "ProductionHint": "Jedes Feld unten ist noch nicht automatisiert - es gibt noch kein Herstellungs-/Braukunst-System, das diese erkennen könnte.",
             "RogueHint": "Der Fertigkeitswurf für Fallen lässt den Spieler zwischen \"Falle stellen\" und \"Falle entschärfen\" wählen (beides automatisiert); Fingerfertigkeit bietet ebenso eine Wahl zwischen Basis-Fertigkeitswurf, Schlossknacken und Taschendiebstahl (ebenfalls automatisiert). Attentat ist ebenfalls automatisiert: Attentatsangriff generiert FP, sobald ein Waffen-/Kampfkunstangriff bei aktiver Tarnung trifft (zusammen mit dem Attentat-Zusatzschaden), Attentatstötung zusätzlich, wenn derselbe Angriff den Verteidiger tötet.",
-            "MagicHint": "Konzentrationswürfe, genutzte Meditationswürfel, jeder gewirkte Zauber (Magiekontrolle, Spruchkürzung sobald Magiekontrolle Stufe 1 erreicht), die Tagesabrechnung von Manakapazität/Manaregeneration (bei der nächsten Anpassungspause+), Manakerns fester Wert pro Item, Ritualismus' Stunden pro gewirktem Ritual-Zauber (mindestens 1 Stunde, auch bei AP-Kosten oder unter 60 Minuten Wirkzeit) sowie genutzte Überladungen (Shift+Klick auf einen Zauber) sind automatisiert; alles andere unten (u.a. Verzauberungsstunden, Beschwörung) ist noch nicht automatisiert - es gibt noch kein passendes System.",
+            "MagicHint": "Konzentrationswürfe, genutzte Meditationswürfel, jeder gewirkte Zauber (Magiekontrolle, Spruchkürzung sobald Magiekontrolle Stufe 1 erreicht), die Tagesabrechnung von Manakapazität/Manaregeneration (bei der nächsten Anpassungspause+), Manakerns fester Wert pro Item, Ritualismus' Stunden pro gewirktem Ritual-Zauber (mindestens 1 Stunde, auch bei AP-Kosten oder unter 60 Minuten Wirkzeit), genutzte Überladungen (Shift+Klick auf einen Zauber) sowie Beschwörung (über den Beschwörungs-Button im Kopfbereich - Stufe der beschworenen Kreatur bei \"Beschwören\", Tag der Beschwörungs-Existenz für jeden noch aktiven Platz bei der nächsten Anpassungspause+) sind automatisiert; alles andere unten (u.a. Verzauberungsstunden) ist noch nicht automatisiert - es gibt noch kein passendes System.",
             "FighterHint": "Genutzte Trefferwürfel, Kampf-Bewegung, genutztes Ausweichen, Reflexaktion (4+ AP im eigenen Zug verbraucht), genutztes Adrenalin, kritische Treffer (inkl. Doppel-Krit) und Brutals Bonus-Schadenspunkte sind automatisiert; alles andere unten ist noch nicht automatisiert.",
             "MiscHint": "Gewirkte Bardenmagie (Singen), Getarnt-Sein zu Beginn des eigenen Zuges (Schleichen), Gebete über den Gebets-Button im Kopfbereich (Glaube) sowie Klicks auf das Passive-Wahrnehmung-Feld im Kopfbereich (Beobachtung) sind automatisiert; alles andere unten ist noch nicht automatisiert - es gibt noch kein passendes System.",
             "SpecialHint": "Ein gelandeter Treffer (Trefferkorrektur), ein abgewehrter Angriff (Verteidigungskorrektur) und 0 Leben mit verbleibendem negativen Leben zu Beginn des eigenen Zuges (Zähigkeit) sind automatisiert; alles andere unten ist noch nicht automatisiert.",
@@ -177,8 +177,8 @@
             "Pickpocket": "FP / Taschendiebstahl durchgeführt",
             "ConcentrationCheck": "FP / Konzentrationswurf",
             "MeditationUsed": "FP / Genutzter Meditationswürfel",
-            "SummonLevel": "FP / Stufe der beschworenen Kreatur (noch nicht automatisiert)",
-            "SummonExistenceDay": "FP / Tag der Beschwörungs-Existenz (noch nicht automatisiert)",
+            "SummonLevel": "FP / Stufe der beschworenen Kreatur",
+            "SummonExistenceDay": "FP / Tag der Beschwörungs-Existenz",
             "MagicControlSpellCast": "FP / Jeder gewirkte Zauber",
             "DailyManaSpent": "FP / Angesammelter Betrag, bei der nächsten Anpassungspause+",
             "RitualHour": "FP / Stunde mit Ritual verbracht",
@@ -289,7 +289,11 @@
             "ManaCapacityAccumulator": "Manakapazität-FP-Sammler",
             "ManaCapacityAccumulatorHint": "Reale Manakosten, die seit der letzten Anpassungs-/Genesungspause für gewirkte Zauber gezahlt wurden - wird bei der nächsten mit der Manakapazität-Rate aus den Fertigkeitsnutzungs-FP-Einstellungen multipliziert, abgerundet und dann auf 0 zurückgesetzt. Nicht zum manuellen Bearbeiten gedacht, aber hier bei Bedarf einsehbar/anpassbar.",
             "ManaRegenerationAccumulator": "Manaregeneration-FP-Sammler",
-            "ManaRegenerationAccumulatorHint": "Tatsächlich wiederhergestelltes Mana (Meditation, passive Regeneration durch Zeit/Pausen) seit der letzten Anpassungs-/Genesungspause - wird bei der nächsten mit der Manaregeneration-Rate aus den Fertigkeitsnutzungs-FP-Einstellungen multipliziert, abgerundet und dann auf 0 zurückgesetzt. Nicht zum manuellen Bearbeiten gedacht, aber hier bei Bedarf einsehbar/anpassbar."
+            "ManaRegenerationAccumulatorHint": "Tatsächlich wiederhergestelltes Mana (Meditation, passive Regeneration durch Zeit/Pausen) seit der letzten Anpassungs-/Genesungspause - wird bei der nächsten mit der Manaregeneration-Rate aus den Fertigkeitsnutzungs-FP-Einstellungen multipliziert, abgerundet und dann auf 0 zurückgesetzt. Nicht zum manuellen Bearbeiten gedacht, aber hier bei Bedarf einsehbar/anpassbar.",
+            "SummonSlotsBonus": "Beschwörungsplätze-Bonus",
+            "SummonSlotsBonusHint": "Eine feste Anpassung (positiv oder negativ) an Beschwörungs eigener Listenplatz-Anzahl (siehe der Beschwörungs-Button im Kopfbereich), zusätzlich zum Willenskraft-Modifikator - wird vor dem Multiplikator unten angewendet.",
+            "SummonSlotsMultiplier": "Beschwörungsplätze-Multiplikator",
+            "SummonSlotsMultiplierHint": "Multipliziert (Willenskraft-Modifikator + der Bonus oben) - abgerundet, nie unter 0. Standardmäßig 1 (keine Änderung)."
         },
         "AttributeUsage": {
             "HighestSingle": "Nutze Höchsten (Nur Ein Attribut)",
@@ -418,6 +422,20 @@
         },
         "Prayer": {
             "Title": "Beten"
+        },
+        "SummoningDialog": {
+            "Title": "Beschwörung",
+            "Name": "Name",
+            "Level": "Level",
+            "LevelValue": "Level {level}",
+            "NamePlaceholder": "Name der Beschwörung (nur zur Orientierung)",
+            "Summon": "Beschwören",
+            "Clear": "Löschen",
+            "NoGain": "Keine FP generiert - für diesen Auslöser ist keine Beschwörungs-Rate konfiguriert.",
+            "NoSlots": "Keine Beschwörungsplätze verfügbar - prüfe den Willenskraft-Modifikator und die Beschwörungsplätze-Einstellungen im GM-Tab."
+        },
+        "Summoning": {
+            "Title": "Beschwören"
         },
         "AttackRoll": {
             "Attack": "Angriff",

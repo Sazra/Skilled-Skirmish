@@ -339,6 +339,25 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // turn - reset to false every turn start. Not meant to be hand-edited.
     // See helpers/skillFp.mjs#checkReflexActionTrigger.
     schema.reflexActionGranted = new fields.BooleanField({ initial: false });
+    // Beschwörung's (Summoning) own list of active summon slots - resized
+    // (padded/truncated) to the current slot count whenever apps/summoning-
+    // dialog.mjs renders, see helpers/summoning.mjs#getResizedSummons. An
+    // empty slot has blank name/summoned false; "Beschwören" fills name/
+    // level and sets summoned true (granting Summoning's "summonLevel" FP,
+    // scaled by level), "Löschen" clears it back to empty. Every still-
+    // summoned slot grants "summonExistenceDay" FP on the next Anpassungs-/
+    // Genesungspause - see helpers/rest.mjs#applyRest.
+    schema.summons = new fields.ArrayField(new fields.SchemaField({
+      name: new fields.StringField({ required: true, blank: true, initial: "" }),
+      level: new fields.NumberField({ ...requiredInteger, initial: 1, min: 0 }),
+      summoned: new fields.BooleanField({ initial: false }),
+    }));
+    // GM-tab adjustments to Summoning's own slot count, on top of the
+    // Willpower modifier - summonSlotsBonus is added first (positive or
+    // negative), summonSlotsMultiplier applied after; floored, never below
+    // 0. See helpers/summoning.mjs#computeSummonSlots.
+    schema.summonSlotsBonus = new fields.NumberField({ ...requiredInteger, initial: 0 });
+    schema.summonSlotsMultiplier = new fields.NumberField({ required: true, nullable: false, initial: 1, min: 0 });
     // A spell whose AP cost couldn't be fully paid at cast time - itemId
     // (blank = none pending) references the spell Item still owed apCost
     // AP, paid off gradually at the start of this actor's later Combat

@@ -32,6 +32,7 @@ import { SKSKRestDialog } from '../apps/rest-dialog.mjs';
 import { SKSKTrainingDialog } from '../apps/training-dialog.mjs';
 import { SKSKKillDialog } from '../apps/kill-dialog.mjs';
 import { SKSKPrayerDialog } from '../apps/prayer-dialog.mjs';
+import { SKSKSummoningDialog } from '../apps/summoning-dialog.mjs';
 import {
   getStatusEffectDefinitions, getStatusStacks, increaseStatusStacks, decreaseStatusStacks, applyD20Malus,
   getStatusEffect, getStatusInstances, getStatusInstancesTotal, addStatusInstance, applyCauterization,
@@ -118,6 +119,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       openTrainingDialog: SKSKActorSheet.#openTrainingDialog,
       openKillDialog: SKSKActorSheet.#openKillDialog,
       openPrayerDialog: SKSKActorSheet.#openPrayerDialog,
+      openSummoningDialog: SKSKActorSheet.#openSummoningDialog,
       grantPassivePerceptionFp: SKSKActorSheet.#grantPassivePerceptionFp,
       increaseStatusStack: SKSKActorSheet.#increaseStatusStack,
       decreaseStatusStack: SKSKActorSheet.#decreaseStatusStack,
@@ -1256,6 +1258,15 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
    */
   static #openPrayerDialog(event, target) {
     new SKSKPrayerDialog(this.actor).render(true);
+  }
+
+  /**
+   * Open the "Beschwörung" (Summoning) dialog (apps/summoning-dialog.mjs)
+   * from the sheet header - Character-only, same convention as
+   * #openTrainingDialog/#openPrayerDialog.
+   */
+  static #openSummoningDialog(event, target) {
+    new SKSKSummoningDialog(this.actor).render(true);
   }
 
   /**
