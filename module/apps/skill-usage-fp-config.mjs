@@ -209,7 +209,29 @@ const SKILL_SPECIFIC_TRIGGERS = {
     { key: 'criticalRoll', label: 'SKSK.SkillFpConfig.CriticalRoll' },
     { key: 'doubleCriticalRoll', label: 'SKSK.SkillFpConfig.DoubleCriticalRoll' },
   ],
-  massacre: [{ key: 'massKill', label: 'SKSK.SkillFpConfig.MassKill' }],
+  // Wired via 5 GM-tab buttons (helpers/massacre.mjs#grantMassKillFp, one
+  // per kill-count tier) - each tier grants a different, independently
+  // configured rate depending on the granting actor's own current Massacre
+  // skill level (clamped to that tier's own highest bucket below), except
+  // 1500 which is flat regardless of level. The "within 10 minutes" design
+  // wording isn't tracked at all - purely a manual GM judgment call.
+  massacre: [
+    { key: 'massKill20Level0', label: 'SKSK.SkillFpConfig.MassKill20Level0' },
+    { key: 'massKill20Level1', label: 'SKSK.SkillFpConfig.MassKill20Level1' },
+    { key: 'massKill50Level0', label: 'SKSK.SkillFpConfig.MassKill50Level0' },
+    { key: 'massKill50Level1', label: 'SKSK.SkillFpConfig.MassKill50Level1' },
+    { key: 'massKill50Level2', label: 'SKSK.SkillFpConfig.MassKill50Level2' },
+    { key: 'massKill150Level0', label: 'SKSK.SkillFpConfig.MassKill150Level0' },
+    { key: 'massKill150Level1', label: 'SKSK.SkillFpConfig.MassKill150Level1' },
+    { key: 'massKill150Level2', label: 'SKSK.SkillFpConfig.MassKill150Level2' },
+    { key: 'massKill150Level3', label: 'SKSK.SkillFpConfig.MassKill150Level3' },
+    { key: 'massKill500Level0', label: 'SKSK.SkillFpConfig.MassKill500Level0' },
+    { key: 'massKill500Level1', label: 'SKSK.SkillFpConfig.MassKill500Level1' },
+    { key: 'massKill500Level2', label: 'SKSK.SkillFpConfig.MassKill500Level2' },
+    { key: 'massKill500Level3', label: 'SKSK.SkillFpConfig.MassKill500Level3' },
+    { key: 'massKill500Level4', label: 'SKSK.SkillFpConfig.MassKill500Level4' },
+    { key: 'massKill1500', label: 'SKSK.SkillFpConfig.MassKill1500' },
+  ],
   // "meditationUsedInCombat" is wired (helpers/actions.mjs#rollMeditation) -
   // granted alongside Meditation's own "meditationUsed" whenever a Combat is
   // active, but only if the GM has also flipped the actor's own GM-tab

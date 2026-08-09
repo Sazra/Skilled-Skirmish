@@ -38,6 +38,7 @@ import { SKSKSourceDialog } from '../apps/source-dialog.mjs';
 import {
   grantInspirationDie, consumeInspirationCharge, rollOwnInspirationDie, rollGrantedInspirationDie,
 } from '../helpers/inspiration.mjs';
+import { grantMassKillFp, MASS_KILL_TIERS } from '../helpers/massacre.mjs';
 import {
   getStatusEffectDefinitions, getStatusStacks, increaseStatusStacks, decreaseStatusStacks, applyD20Malus,
   getStatusEffect, getStatusInstances, getStatusInstancesTotal, addStatusInstance, applyCauterization,
@@ -125,6 +126,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       openRestDialog: SKSKActorSheet.#openRestDialog,
       openTrainingDialog: SKSKActorSheet.#openTrainingDialog,
       openKillDialog: SKSKActorSheet.#openKillDialog,
+      grantMassKillFp: SKSKActorSheet.#grantMassKillFp,
       openPrayerDialog: SKSKActorSheet.#openPrayerDialog,
       openSummoningDialog: SKSKActorSheet.#openSummoningDialog,
       openTotemDialog: SKSKActorSheet.#openTotemDialog,
@@ -410,6 +412,8 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     context.genericRollModeChoices = CONFIG.SKSK.genericRollModes;
     // GM tab's attribute-bonus reset list - see helpers/attributeBonuses.mjs.
     context.resolvedAttributeBonuses = getResolvedAttributeBonuses(actor);
+    // GM tab's Mass Kill button row - see helpers/massacre.mjs.
+    context.massKillTiers = MASS_KILL_TIERS;
     // Actions tab's Weapons/Usable Items containers - "usable" Items are
     // Consumable and/or have Charges enabled (see data/item.mjs#charges) -
     // see helpers/actions.mjs#useItem.
@@ -1302,6 +1306,17 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
    */
   static #openKillDialog(event, target) {
     new SKSKKillDialog(this.actor).render(true);
+  }
+
+  /**
+   * GM tab's Mass Kill button row - see helpers/massacre.mjs#
+   * grantMassKillFp.
+   * @param {PointerEvent} event
+   * @param {HTMLElement} target   The clicked tier button (data-tier).
+   * @private
+   */
+  static async #grantMassKillFp(event, target) {
+    await grantMassKillFp(this.actor, Number(target.dataset.tier));
   }
 
   /**

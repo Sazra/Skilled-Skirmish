@@ -239,4 +239,13 @@
     </a>
   </div>
 
+  <div class="resource">
+    <label class="resource-label" title="{{localize 'SKSK.MassKill.SectionHint'}}">{{localize 'SKSK.MassKill.SectionTitle'}}</label>
+    <div class="flexrow flex-center mass-kill-buttons">
+      {{#each massKillTiers as |tier|}}
+      <button type="button" data-action="grantMassKillFp" data-tier="{{tier}}" title="{{localize 'SKSK.MassKill.SectionHint'}}">{{tier}}</button>
+      {{/each}}
+    </div>
+  </div>
+
 </section>
