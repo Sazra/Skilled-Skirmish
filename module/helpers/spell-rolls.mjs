@@ -15,6 +15,7 @@ import {
 } from './criticalRolls.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine, grantFlatSkillFp, checkReflexActionTrigger } from './skillFp.mjs';
 import { renderApplyDamageButton } from './damageApplication.mjs';
+import { consumePrimedTechnique, applyTechniqueBonusDamage } from './technique-rolls.mjs';
 
 // A Combat round is 6 seconds (see helpers/criticalRolls.mjs and the
 // Combat turn-start hooks in statusEffects.mjs), so a "minutes"-unit
@@ -157,6 +158,15 @@ async function postSpellChatCard(item, parts) {
  * with that switch respected (zeroed out when it's off), while the raw
  * overchargeCount (unconditional) still drives the always-shown "Überladen
  * (×N)" marker, since the AP/Mana cost was paid either way.
+ *
+ * A primed Technique (helpers/technique-rolls.mjs) is consumed here too -
+ * this is the one place shared by every resolution path, matching "the
+ * spell's effect actually happening" rather than "cast" (a deferred spell
+ * only consumes it once its AP debt/ritual minutes are paid off, not at the
+ * initial cast). Its own styleAttackBonus (from any active same-Kampfstil
+ * stand) applies to every attack roll this cast makes; its own bonusDamage
+ * payload (if any) applies once, to the first damage roll actually rolled
+ * (attack-triggered first, else save-triggered, else unconditional).
  * @param {Item} item   The spell item.
  * @param {number} [overchargeCount=0]
  * @return {Promise<string[]>}
@@ -166,6 +176,19 @@ async function renderSpellEffectParts(item, overchargeCount = 0) {
   const system = item.system;
   const parts = [];
   const effectiveOvercharge = system.overchargeAutoEffects !== false ? overchargeCount : 0;
+  const technique = actor ? await consumePrimedTechnique(actor) : null;
+  let techniqueDamageApplied = false;
+
+  const rollDamageWithTechnique = async (damage) => {
+    const { html, entry } = await renderDamageRoll(damage, actor, effectiveOvercharge);
+    if (technique && !techniqueDamageApplied) {
+      const adjusted = applyTechniqueBonusDamage(entry.amount, technique);
+      entry.amount = adjusted.total;
+      techniqueDamageApplied = true;
+      return { html: html + adjusted.line, entry };
+    }
+    return { html, entry };
+  };
 
   if (overchargeCount > 0) {
     parts.push(`<div class="sksk-roll-line"><strong>${game.i18n.format('SKSK.Spell.Roll.OverchargeActive', { count: overchargeCount })}</strong></div>`);
@@ -185,7 +208,7 @@ async function renderSpellEffectParts(item, overchargeCount = 0) {
   if (system.attackRoll.enabled) {
     const attackDamages = system.damages.filter(d => d.trigger === 'attack');
     const damageDice = attackDamages.map(damage => ({ damageType: damage.damageType, dieSizes: getDamageDieSizes(damage.formula) }));
-    const attackBonus = actor ? computeSpellAttackBonus(system, actor) : 0;
+    const attackBonus = actor ? computeSpellAttackBonus(system, actor) + (technique?.styleAttackBonus ?? 0) : 0;
     for (let i = 1; i <= system.attackRoll.count; i++) {
       const rolls = await rollAttackPair(attackBonus, actor);
       const rendered = await renderAttackPairHTML(rolls, 'magicResistance', actor, { damageDice });
@@ -193,7 +216,7 @@ async function renderSpellEffectParts(item, overchargeCount = 0) {
 
       const damageEntries = [];
       for (const damage of attackDamages) {
-        const { html, entry } = await renderDamageRoll(damage, actor, effectiveOvercharge);
+        const { html, entry } = await rollDamageWithTechnique(damage);
         parts.push(html);
         damageEntries.push(entry);
       }
@@ -210,7 +233,7 @@ async function renderSpellEffectParts(item, overchargeCount = 0) {
 
     const saveDamageEntries = [];
     for (const damage of system.damages.filter(d => d.trigger === 'save')) {
-      const { html, entry } = await renderDamageRoll(damage, actor, effectiveOvercharge);
+      const { html, entry } = await rollDamageWithTechnique(damage);
       parts.push(html);
       saveDamageEntries.push(entry);
     }
@@ -222,7 +245,7 @@ async function renderSpellEffectParts(item, overchargeCount = 0) {
 
   const unconditionalDamageEntries = [];
   for (const damage of system.damages.filter(d => d.trigger === 'unconditional')) {
-    const { html, entry } = await renderDamageRoll(damage, actor, effectiveOvercharge);
+    const { html, entry } = await rollDamageWithTechnique(damage);
     parts.push(html);
     unconditionalDamageEntries.push(entry);
   }

@@ -9,7 +9,7 @@ import {
 import { wrapCriticalBlock } from "./criticalRolls.mjs";
 import { grantSkillUsageFp, formatSkillFpGrantLine, checkReflexActionTrigger } from "./skillFp.mjs";
 import { renderApplyDamageButton } from "./damageApplication.mjs";
-import { consumePrimedTechnique } from "./technique-rolls.mjs";
+import { consumePrimedTechnique, applyTechniqueBonusDamage } from "./technique-rolls.mjs";
 
 /**
  * Post a simple chat card (an optional Roll, an AP-cost line, and a
@@ -42,29 +42,6 @@ export async function postActionChatCard(actor, title, roll, apCost, extraHTML =
   };
   ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));
   return ChatMessage.create(messageData);
-}
-
-/**
- * Apply a consumed Technique's own bonus damage (see helpers/technique-
- * rolls.mjs#consumePrimedTechnique) to an already-rolled damage total -
- * "flat" mode adds bonusDamageAmount, "multiply" mode multiplies by it
- * (rounded); either way, any active same-Kampfstil stand's own
- * styleDamageBonus is then added flat on top. Returns the unmodified total
- * and no chat line if nothing was consumed (technique is null) or it
- * wasn't a "bonusDamage" one (bonusDamageMode is null for "effect"
- * Techniques - those aren't wired into weapon damage at all yet, only into
- * the attack roll's own styleAttackBonus).
- * @param {number} total
- * @param {{item: Item, bonusDamageMode: string|null, bonusDamageAmount: number, styleDamageBonus: number}|null} technique
- * @return {{total: number, line: string}}
- */
-function applyTechniqueBonusDamage(total, technique) {
-  if (!technique || !technique.bonusDamageMode) return { total, line: '' };
-  const adjusted = technique.bonusDamageMode === 'multiply'
-    ? Math.round(total * technique.bonusDamageAmount) + technique.styleDamageBonus
-    : total + technique.bonusDamageAmount + technique.styleDamageBonus;
-  const line = `<div class="sksk-roll-line">${game.i18n.format('SKSK.Technique.Consumed', { name: technique.item.name })}</div>`;
-  return { total: adjusted, line };
 }
 
 /**

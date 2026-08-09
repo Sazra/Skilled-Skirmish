@@ -232,8 +232,11 @@ export function techniqueShowsEffectButton(item) {
 /**
  * Consume whichever "bonusDamage"/"effect" Technique this actor currently
  * has primed (if any) - called from a weapon/Martial Arts attack roll (see
- * helpers/actions.mjs). Clears the primed state and starts its own
- * cooldownRounds either way. Returns null if nothing was primed.
+ * helpers/actions.mjs#rollWeaponItem/rollMartialArtsAttack) or a spell's own
+ * effect resolution (see helpers/spell-rolls.mjs#renderSpellEffectParts, for
+ * both an immediate cast and a later AP-debt/ritual-minutes payoff). Clears
+ * the primed state and starts its own cooldownRounds either way. Returns
+ * null if nothing was primed.
  * @param {Actor} actor
  * @return {Promise<{item: Item, styleAttackBonus: number, bonusDamageMode: string|null, bonusDamageAmount: number, styleDamageBonus: number, effectTarget: string|null, effectId: string|null}|null>}
  */
@@ -253,4 +256,27 @@ export async function consumePrimedTechnique(actor) {
     effectTarget: item.system.category === 'effect' ? item.system.effectTarget : null,
     effectId: item.system.category === 'effect' ? item.system.effectId : null,
   };
+}
+
+/**
+ * Apply a consumed Technique's own bonus damage (see consumePrimedTechnique
+ * above) to an already-rolled damage total - "flat" mode adds
+ * bonusDamageAmount, "multiply" mode multiplies by it (rounded); either
+ * way, any active same-Kampfstil stand's own styleDamageBonus is then added
+ * flat on top. Returns the unmodified total and no chat line if nothing was
+ * consumed (technique is null) or it wasn't a "bonusDamage" one
+ * (bonusDamageMode is null for "effect" Techniques - those aren't wired
+ * into weapon/spell damage at all yet, only into the attack roll's own
+ * styleAttackBonus).
+ * @param {number} total
+ * @param {{item: Item, bonusDamageMode: string|null, bonusDamageAmount: number, styleDamageBonus: number}|null} technique
+ * @return {{total: number, line: string}}
+ */
+export function applyTechniqueBonusDamage(total, technique) {
+  if (!technique || !technique.bonusDamageMode) return { total, line: '' };
+  const adjusted = technique.bonusDamageMode === 'multiply'
+    ? Math.round(total * technique.bonusDamageAmount) + technique.styleDamageBonus
+    : total + technique.bonusDamageAmount + technique.styleDamageBonus;
+  const line = `<div class="sksk-roll-line">${game.i18n.format('SKSK.Technique.Consumed', { name: technique.item.name })}</div>`;
+  return { total: adjusted, line };
 }
