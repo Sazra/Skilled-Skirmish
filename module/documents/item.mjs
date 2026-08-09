@@ -1,5 +1,6 @@
 import { rollSpellItem } from '../helpers/spell-rolls.mjs';
 import { rollWeaponItem } from '../helpers/actions.mjs';
+import { grantFlatSkillFp, formatSkillFpGrantLine } from '../helpers/skillFp.mjs';
 
 /**
  * Extend the basic Item document.
@@ -20,8 +21,8 @@ export class SKSKItem extends Item {
   }
 
   /** @override */
-  async roll() {
-    if (this.type === 'spell') return rollSpellItem(this);
+  async roll(overchargeCount = 0) {
+    if (this.type === 'spell') return rollSpellItem(this, overchargeCount);
     if (this.type === 'weapon') return rollWeaponItem(this);
 
     const item = this;
@@ -29,22 +30,32 @@ export class SKSKItem extends Item {
     const rollMode = game.settings.get('core', 'rollMode');
     const label = `[${item.type}] ${item.name}`;
 
+    // Manakern's own flat FP grant (system.manaCoreFpGrant) - generic Items
+    // only, matching Spells' own equivalent in helpers/spell-rolls.mjs#
+    // rollSpellItem.
+    const fpHTML = this.type === 'item'
+      ? formatSkillFpGrantLine(await grantFlatSkillFp(this.actor, 'manaCore', this.system.manaCoreFpGrant))
+      : '';
+
     if (!this.system.formula) {
-      ChatMessage.create({
+      return ChatMessage.create({
         speaker: speaker,
         rollMode: rollMode,
         flavor: label,
-        content: item.system.description ?? '',
+        content: (item.system.description ?? '') + fpHTML,
       });
-    } else {
-      const rollData = this.getRollData();
-      const roll = new Roll(rollData.formula, rollData);
-      roll.toMessage({
-        speaker: speaker,
-        rollMode: rollMode,
-        flavor: label,
-      });
-      return roll;
     }
+
+    const rollData = this.getRollData();
+    const roll = await new Roll(rollData.formula, rollData).evaluate();
+    const messageData = {
+      speaker: speaker,
+      flavor: label,
+      content: `${await roll.render()}${fpHTML}`,
+      rolls: [roll],
+    };
+    ChatMessage.applyRollMode(messageData, rollMode);
+    await ChatMessage.create(messageData);
+    return roll;
   }
 }

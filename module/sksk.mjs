@@ -7,6 +7,8 @@ import { SKSK } from './helpers/config.mjs';
 import { registerSettings } from './helpers/settings.mjs';
 import { rollSavingThrowFromChat } from './helpers/spell-rolls.mjs';
 import { resolveHitEvaluationFromChat } from './helpers/attackRolls.mjs';
+import { applyDamageFromChat } from './helpers/damageApplication.mjs';
+import { claimInspirationDie } from './helpers/inspiration.mjs';
 import { computeSpeciesAura } from './helpers/attributes.mjs';
 import {
   ensurePredefinedStatusEffects, registerConfigStatusEffects, handleCombatTurnStart, handleCombatTurnEnd,
@@ -104,7 +106,7 @@ Hooks.once('ready', async function () {
     const button = event.target.closest('[data-action="rollSavingThrow"]');
     if (!button) return;
     event.preventDefault();
-    rollSavingThrowFromChat(button.dataset.itemUuid, Number(button.dataset.saveIndex));
+    rollSavingThrowFromChat(button.dataset.itemUuid, Number(button.dataset.saveIndex), Number(button.dataset.overcharge) || 0);
   });
 
   // Angriffswurf (attack roll) chat cards' "Evaluate" button - see
@@ -114,6 +116,24 @@ Hooks.once('ready', async function () {
     if (!button) return;
     event.preventDefault();
     resolveHitEvaluationFromChat(button);
+  });
+
+  // Any damage roll's "Apply Damage" button - see
+  // helpers/damageApplication.mjs#applyDamageFromChat.
+  document.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-action="applyDamage"]');
+    if (!button) return;
+    event.preventDefault();
+    applyDamageFromChat(button);
+  });
+
+  // An untargeted Inspiration grant's own chat "claim" button - see
+  // helpers/inspiration.mjs#claimInspirationDie.
+  document.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-action="claimInspiration"]');
+    if (!button) return;
+    event.preventDefault();
+    claimInspirationDie(button);
   });
 
   // A weapon's attributeOverride enforces the same single-attribute rule

@@ -1,0 +1,48 @@
+<div class="sksk-totem-dialog">
+  <ol class="items-list items-list-compact">
+    <li class="item flexrow items-header">
+      <div class="item-name">{{localize 'SKSK.TotemDialog.Name'}}</div>
+      <div class="item-name">{{localize 'SKSK.TotemDialog.ManaCostPerRound'}}</div>
+      <div class="item-controls"></div>
+    </li>
+    {{#each totems as |entry index|}}
+    <li class="item flexrow totem-row" data-index="{{index}}">
+      {{#if entry.bound}}
+      <div class="item-name">{{entry.name}}</div>
+      <div class="item-name">
+        <input type="text" data-totem-mana-cost data-index="{{index}}" value="{{entry.manaCostPerRound}}" data-dtype="Number" />
+      </div>
+      <div class="item-controls">
+        <a class="item-control" data-action="openTotemEffect" data-index="{{index}}"
+          title="{{localize 'SKSK.TotemDialog.EditEffects'}}">
+          <i class="fas fa-sliders-h"></i>
+        </a>
+        <a class="item-control" data-action="toggleTotemActive" data-index="{{index}}"
+          title="{{#if entry.active}}{{localize 'SKSK.TotemDialog.Deactivate'}}{{else}}{{localize 'SKSK.TotemDialog.Activate'}}{{/if}}">
+          <i class="fas {{#if entry.active}}fa-toggle-on{{else}}fa-toggle-off{{/if}}"></i>
+        </a>
+        <a class="item-control item-delete" data-action="unbindTotem" data-index="{{index}}"
+          title="{{localize 'SKSK.TotemDialog.Unbind'}}">
+          <i class="fas fa-trash"></i>
+        </a>
+      </div>
+      {{else}}
+      <div class="item-name">
+        <input type="text" data-totem-name placeholder="{{localize 'SKSK.TotemDialog.NamePlaceholder'}}" value="{{entry.name}}" />
+      </div>
+      <div class="item-name"></div>
+      <div class="item-controls">
+        <a class="item-control" data-action="bindTotem" data-index="{{index}}"
+          title="{{localize 'SKSK.TotemDialog.Bind'}}">
+          <i class="fas fa-link"></i>
+        </a>
+      </div>
+      {{/if}}
+    </li>
+    {{else}}
+    <li class="item flexrow">
+      <div class="item-name">{{localize 'SKSK.TotemDialog.NoSlots'}}</div>
+    </li>
+    {{/each}}
+  </ol>
+</div>

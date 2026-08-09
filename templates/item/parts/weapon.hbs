@@ -69,6 +69,18 @@
     </div>
   </details>
 
+  <details class="model-properties-details" data-sync="weapon-damage-type-override">
+    <summary class="resource-label">{{localize 'SKSK.Models.DamageTypeOverride'}}</summary>
+    <p class="hint">{{localize 'SKSK.Models.DamageTypeOverrideHint'}}</p>
+    <label class="casting-method-option">
+      <input type="checkbox" name="system.damageTypeOverride.enabled" {{checked system.damageTypeOverride.enabled}} />
+      {{localize 'SKSK.Models.DamageTypeOverrideEnabled'}}
+    </label>
+    <select name="system.damageTypeOverride.damageType">
+      {{selectOptions damageTypeChoices selected=system.damageTypeOverride.damageType localize=true}}
+    </select>
+  </details>
+
   <details class="model-properties-details property-overrides-section" data-sync="weapon-property-overrides">
     <summary class="resource-label">{{localize 'SKSK.Models.PropertyOverrides'}}</summary>
     <div class="grid grid-3col model-checkbox-grid">

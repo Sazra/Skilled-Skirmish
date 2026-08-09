@@ -1,0 +1,33 @@
+<div class="sksk-source-dialog flexcol">
+
+  <div class="resource">
+    <label class="resource-label">{{localize 'SKSK.SourceDialog.ActivateSource'}}</label>
+    <div class="grid grid-2col">
+      <div class="grid-span-1">
+        <label class="resource-label">{{localize 'SKSK.SourceDialog.ApCost'}}</label>
+        <input type="text" data-source-cost="sourceAbilityApCost" value="{{system.sourceAbilityApCost}}" data-dtype="Number" />
+      </div>
+      <div class="grid-span-1">
+        <label class="resource-label">{{localize 'SKSK.SourceDialog.ManaCost'}}</label>
+        <input type="text" data-source-cost="sourceAbilityManaCost" value="{{system.sourceAbilityManaCost}}" data-dtype="Number" />
+      </div>
+    </div>
+    <button type="button" data-action="activateSource">{{localize 'SKSK.SourceDialog.ActivateSource'}}</button>
+  </div>
+
+  <div class="resource">
+    <label class="resource-label">{{localize 'SKSK.SourceDialog.OpenEtherSource'}}</label>
+    <div class="grid grid-2col">
+      <div class="grid-span-1">
+        <label class="resource-label">{{localize 'SKSK.SourceDialog.ApCost'}}</label>
+        <input type="text" data-source-cost="etherSourceApCost" value="{{system.etherSourceApCost}}" data-dtype="Number" />
+      </div>
+      <div class="grid-span-1">
+        <label class="resource-label">{{localize 'SKSK.SourceDialog.ManaCost'}}</label>
+        <input type="text" data-source-cost="etherSourceManaCost" value="{{system.etherSourceManaCost}}" data-dtype="Number" />
+      </div>
+    </div>
+    <button type="button" data-action="openEtherSource">{{localize 'SKSK.SourceDialog.OpenEtherSource'}}</button>
+  </div>
+
+</div>

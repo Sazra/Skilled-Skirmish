@@ -3,6 +3,7 @@ import { SKSKModelsConfig } from '../apps/models-config.mjs';
 import { SKSKStatusEffectsConfig } from '../apps/status-effects-config.mjs';
 import { SKSKTrainingMethodsConfig } from '../apps/training-methods-config.mjs';
 import { SKSKSettingsExportImport } from '../apps/settings-export-import.mjs';
+import { SKSKSkillUsageFpConfig } from '../apps/skill-usage-fp-config.mjs';
 
 /**
  * Register world-scoped game settings for the system.
@@ -138,6 +139,25 @@ export function registerSettings() {
     label: 'SKSK.Settings.ExportImport.Label',
     icon: 'fas fa-file-export',
     type: SKSKSettingsExportImport,
+    restricted: true,
+  });
+
+  // GM-configurable FP-per-usage rates, keyed by skill - see
+  // apps/skill-usage-fp-config.mjs and helpers/skillFp.mjs. Characters only
+  // (like Training); NPCs never generate FP this way.
+  game.settings.register('sksk', 'skillUsageFp', {
+    scope: 'world',
+    config: false,
+    type: Object,
+    default: {},
+  });
+
+  game.settings.registerMenu('sksk', 'skillUsageFpMenu', {
+    name: 'SKSK.Settings.SkillUsageFp.Name',
+    hint: 'SKSK.Settings.SkillUsageFp.Hint',
+    label: 'SKSK.Settings.SkillUsageFp.Label',
+    icon: 'fas fa-bolt',
+    type: SKSKSkillUsageFpConfig,
     restricted: true,
   });
 }

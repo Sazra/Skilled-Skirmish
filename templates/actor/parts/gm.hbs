@@ -6,6 +6,18 @@
       <input type="checkbox" name="system.negativeLife.includeToughness" {{checked system.negativeLife.includeToughness}} />
       {{localize 'SKSK.NegativeLife.IncludeToughness'}}
     </label>
+    <label class="casting-method-option" title="{{localize 'SKSK.GM.SoulforceMeditationCombatFpEnabledHint'}}">
+      <input type="checkbox" name="system.soulforceMeditationCombatFpEnabled" {{checked system.soulforceMeditationCombatFpEnabled}} />
+      {{localize 'SKSK.GM.SoulforceMeditationCombatFpEnabled'}}
+    </label>
+    <label class="casting-method-option" title="{{localize 'SKSK.GM.SoulPowerResourceEnabledHint'}}">
+      <input type="checkbox" name="system.soulPowerResourceEnabled" {{checked system.soulPowerResourceEnabled}} />
+      {{localize 'SKSK.GM.SoulPowerResourceEnabled'}}
+    </label>
+    <label class="casting-method-option" title="{{localize 'SKSK.GM.SoulPowerMechanicEnabledHint'}}">
+      <input type="checkbox" name="system.soulPowerMechanicEnabled" {{checked system.soulPowerMechanicEnabled}} />
+      {{localize 'SKSK.GM.SoulPowerMechanicEnabled'}}
+    </label>
   </div>
 
   <div class="grid grid-2col">
@@ -59,6 +71,67 @@
   </div>
 
   <div class="resource">
+    <label class="resource-label" title="{{localize 'SKSK.GM.AssassinationBonusDiceHint'}}">
+      {{localize 'SKSK.GM.AssassinationBonusDice'}}
+    </label>
+    <input type="text" name="system.assassinationBonusDice" value="{{system.assassinationBonusDice}}" data-dtype="Number" />
+  </div>
+
+  <div class="resource">
+    <label class="resource-label" title="{{localize 'SKSK.GM.GenericCriticalRollModeHint'}}">
+      {{localize 'SKSK.GM.GenericCriticalRollMode'}}
+    </label>
+    <select name="system.genericCriticalRollMode">
+      {{selectOptions genericRollModeChoices selected=system.genericCriticalRollMode localize=true}}
+    </select>
+  </div>
+
+  <div class="grid grid-2col">
+    <div class="grid-span-1">
+      <label class="resource-label" title="{{localize 'SKSK.GM.ManaCapacityAccumulatorHint'}}">
+        {{localize 'SKSK.GM.ManaCapacityAccumulator'}}
+      </label>
+      <input type="text" name="system.manaCapacityAccumulator" value="{{system.manaCapacityAccumulator}}" data-dtype="Number" />
+    </div>
+    <div class="grid-span-1">
+      <label class="resource-label" title="{{localize 'SKSK.GM.ManaRegenerationAccumulatorHint'}}">
+        {{localize 'SKSK.GM.ManaRegenerationAccumulator'}}
+      </label>
+      <input type="text" name="system.manaRegenerationAccumulator" value="{{system.manaRegenerationAccumulator}}" data-dtype="Number" />
+    </div>
+  </div>
+
+  <div class="grid grid-2col">
+    <div class="grid-span-1">
+      <label class="resource-label" title="{{localize 'SKSK.GM.SummonSlotsBonusHint'}}">
+        {{localize 'SKSK.GM.SummonSlotsBonus'}}
+      </label>
+      <input type="text" name="system.summonSlotsBonus" value="{{system.summonSlotsBonus}}" data-dtype="Number" />
+    </div>
+    <div class="grid-span-1">
+      <label class="resource-label" title="{{localize 'SKSK.GM.SummonSlotsMultiplierHint'}}">
+        {{localize 'SKSK.GM.SummonSlotsMultiplier'}}
+      </label>
+      <input type="text" name="system.summonSlotsMultiplier" value="{{system.summonSlotsMultiplier}}" data-dtype="Number" />
+    </div>
+  </div>
+
+  <div class="grid grid-2col">
+    <div class="grid-span-1">
+      <label class="resource-label" title="{{localize 'SKSK.GM.TotemSlotsBonusHint'}}">
+        {{localize 'SKSK.GM.TotemSlotsBonus'}}
+      </label>
+      <input type="text" name="system.totemSlotsBonus" value="{{system.totemSlotsBonus}}" data-dtype="Number" />
+    </div>
+    <div class="grid-span-1">
+      <label class="resource-label" title="{{localize 'SKSK.GM.TotemSlotsMultiplierHint'}}">
+        {{localize 'SKSK.GM.TotemSlotsMultiplier'}}
+      </label>
+      <input type="text" name="system.totemSlotsMultiplier" value="{{system.totemSlotsMultiplier}}" data-dtype="Number" />
+    </div>
+  </div>
+
+  <div class="resource">
     <label class="resource-label">{{localize 'SKSK.MartialArtsAttack.SectionTitle'}}</label>
     <ol class="items-list">
       <li class="item flexrow items-header">
@@ -80,7 +153,7 @@
           </a>
         </div>
 
-        <div class="grid grid-3col">
+        <div class="grid grid-4col">
           <div class="grid-span-1">
             <label class="resource-label">{{localize 'SKSK.MartialArtsAttack.Formula'}}</label>
             <input type="text" name="system.martialArtsAttacks.{{index}}.formula" value="{{attack.formula}}"
@@ -95,6 +168,12 @@
             <label class="resource-label">{{localize 'SKSK.MartialArtsAttack.AttributeUsage'}}</label>
             <select name="system.martialArtsAttacks.{{index}}.attributeUsage">
               {{selectOptions ../attributeUsageChoices selected=attack.attributeUsage localize=true}}
+            </select>
+          </div>
+          <div class="grid-span-1">
+            <label class="resource-label">{{localize 'SKSK.MartialArtsAttack.DamageType'}}</label>
+            <select name="system.martialArtsAttacks.{{index}}.damageType">
+              {{selectOptions ../damageTypeChoices selected=attack.damageType localize=true}}
             </select>
           </div>
         </div>
@@ -151,6 +230,22 @@
       </li>
       {{/each}}
     </ol>
+  </div>
+
+  <div class="resource">
+    <label class="resource-label">{{localize 'SKSK.KillDialog.Title'}}</label>
+    <a class="item-control" data-action="openKillDialog" title="{{localize 'SKSK.KillDialog.Title'}}">
+      <i class="fas fa-skull"></i> {{localize 'SKSK.KillDialog.Title'}}
+    </a>
+  </div>
+
+  <div class="resource">
+    <label class="resource-label" title="{{localize 'SKSK.MassKill.SectionHint'}}">{{localize 'SKSK.MassKill.SectionTitle'}}</label>
+    <div class="flexrow flex-center mass-kill-buttons">
+      {{#each massKillTiers as |tier|}}
+      <button type="button" data-action="grantMassKillFp" data-tier="{{tier}}" title="{{localize 'SKSK.MassKill.SectionHint'}}">{{tier}}</button>
+      {{/each}}
+    </div>
   </div>
 
 </section>

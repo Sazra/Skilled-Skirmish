@@ -4,9 +4,11 @@ import { computeMovementSpeeds } from "./movement.mjs";
 import { canUseWeaponAttack, canMove, applyAdrenalinDamage } from "./statusEffects.mjs";
 import {
   computeWeaponAttackBonus, computeMartialArtsAttackBonus, rollAttackPair, renderAttackPairHTML,
-  getDamageDieSizes, rollCriticalBonusDamage,
+  getDamageDieSizes, getWeaponDamageType,
 } from "./attackRolls.mjs";
-import { wrapCriticalBlock, getAttackCriticalType } from "./criticalRolls.mjs";
+import { wrapCriticalBlock } from "./criticalRolls.mjs";
+import { grantSkillUsageFp, formatSkillFpGrantLine, checkReflexActionTrigger } from "./skillFp.mjs";
+import { renderApplyDamageButton } from "./damageApplication.mjs";
 
 /**
  * Post a simple chat card (an optional Roll, an AP-cost line, and a
@@ -54,27 +56,26 @@ export async function postActionChatCard(actor, title, roll, apCost, extraHTML =
 export async function rollWeaponItem(item) {
   const actor = item.actor;
   const parts = [];
-  const dieSizes = getDamageDieSizes(item.system.formula);
-  let brutalApplied = false;
+  const damageType = getWeaponDamageType(item.system);
+  const damageDice = [{ damageType, dieSizes: getDamageDieSizes(item.system.formula) }];
+  const damageEntries = [];
 
   if (actor) {
     const attackBonus = computeWeaponAttackBonus(actor, item);
     const rolls = await rollAttackPair(attackBonus, actor);
-    brutalApplied = rolls.some(roll => getAttackCriticalType(roll, actor) === 'success');
-    const rendered = await renderAttackPairHTML(rolls, 'armorClass', actor, { dieSizes, brutalApplied });
+    const rendered = await renderAttackPairHTML(rolls, 'armorClass', actor, { damageDice, killSkillKey: item.system.weaponType });
     parts.push(`<div class="sksk-roll-attack"><strong>${game.i18n.localize('SKSK.AttackRoll.Attack')}</strong></div>${rendered}`);
+
+    const fpGrant = await grantSkillUsageFp(actor, item.system.weaponType, 'weaponAttack');
+    parts.push(formatSkillFpGrantLine(fpGrant));
   }
 
   if (item.system.formula) {
     const roll = await new Roll(item.system.formula, item.getRollData()).evaluate();
     const rendered = await roll.render();
     parts.push(`<div class="sksk-roll-line"><strong>${game.i18n.localize('SKSK.Spell.Roll.Damage')}</strong></div>${rendered}`);
-    if (brutalApplied) {
-      const bonusRoll = await rollCriticalBonusDamage(actor, dieSizes);
-      if (bonusRoll) {
-        parts.push(`<div class="sksk-roll-line"><strong>${game.i18n.localize('SKSK.AttackRoll.CriticalBonusDamage')}</strong></div>${await bonusRoll.render()}`);
-      }
-    }
+    damageEntries.push({ damageType, amount: roll.total });
+    parts.push(renderApplyDamageButton(actor, damageEntries, item.system.weaponType));
   } else if (item.system.description) {
     const descriptionHTML = await foundry.applications.ux.TextEditor.implementation.enrichHTML(
       item.system.description ?? '', { relativeTo: item, secrets: item.isOwner }
@@ -163,26 +164,27 @@ export async function rollMartialArtsAttack(actor, index) {
   }
   if (!hasEnoughActionPoints(actor, attack.apCost)) return;
 
-  const dieSizes = getDamageDieSizes(attack.formula);
+  const damageDice = [{ damageType: attack.damageType, dieSizes: getDamageDieSizes(attack.formula) }];
   const attackBonus = computeMartialArtsAttackBonus(actor, attack);
   const rolls = await rollAttackPair(attackBonus, actor);
-  const brutalApplied = rolls.some(roll => getAttackCriticalType(roll, actor) === 'success');
-  const attackHTML = `<div class="sksk-roll-attack"><strong>${game.i18n.localize('SKSK.AttackRoll.Attack')}</strong></div>${await renderAttackPairHTML(rolls, 'armorClass', actor, { dieSizes, brutalApplied })}`;
+  const attackHTML = `<div class="sksk-roll-attack"><strong>${game.i18n.localize('SKSK.AttackRoll.Attack')}</strong></div>${await renderAttackPairHTML(rolls, 'armorClass', actor, { damageDice, killSkillKey: 'martialArts' })}`;
 
   const bonus = resolveMartialArtsAttributeBonus(actor, attack.attributes, attack.attributeUsage);
   const formula = bonus ? `${attack.formula} + ${bonus}` : attack.formula;
   const roll = await new Roll(formula, actor.getRollData()).evaluate();
   const renderedDamage = await roll.render();
-
-  let bonusDamageHTML = '';
-  if (brutalApplied) {
-    const bonusRoll = await rollCriticalBonusDamage(actor, dieSizes);
-    if (bonusRoll) {
-      bonusDamageHTML = `<div class="sksk-roll-line"><strong>${game.i18n.localize('SKSK.AttackRoll.CriticalBonusDamage')}</strong></div>${await bonusRoll.render()}`;
-    }
-  }
+  const damageEntries = [{ damageType: attack.damageType, amount: roll.total }];
+  const applyDamageHTML = renderApplyDamageButton(actor, damageEntries, 'martialArts');
 
   await actor.update(spendActionPoints(actor, attack.apCost));
+  let fpHTML = formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'martialArts', 'weaponAttack'));
+  // Every attack beyond the first (see the default-seeded "Main Hand"/
+  // "Off Hand" entries, though a GM may add more) counts as Ambidextrous'
+  // own "Zweitwaffe" (second weapon) trigger.
+  if (index >= 1) {
+    fpHTML += formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'ambidextrous', 'offHandAttack'));
+  }
+  fpHTML += formatSkillFpGrantLine(await checkReflexActionTrigger(actor));
 
   const apCostHTML = attack.apCost
     ? `<div class="sksk-roll-ap-cost"><strong>${game.i18n.localize('SKSK.Spell.APCost')}:</strong> ${attack.apCost}</div>`
@@ -190,7 +192,7 @@ export async function rollMartialArtsAttack(actor, index) {
   const messageData = {
     speaker: ChatMessage.getSpeaker({ actor }),
     flavor: attack.name || game.i18n.localize('SKSK.Action.MartialArtsAttack'),
-    content: `<div class="sksk-chat-card sksk-action-card">${attackHTML}${renderedDamage}${bonusDamageHTML}${apCostHTML}</div>`,
+    content: `<div class="sksk-chat-card sksk-action-card">${attackHTML}${renderedDamage}${applyDamageHTML}${fpHTML}${apCostHTML}</div>`,
     rolls: [roll],
   };
   ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));
@@ -242,7 +244,9 @@ export async function rollRegeneration(actor) {
   const life = actor.system.life;
   const newValue = Math.min(life.max, life.value + roll.total);
   await actor.update({ ...spendActionPoints(actor, apCost), 'system.life.value': newValue });
-  return postActionChatCard(actor, game.i18n.localize('SKSK.Action.Regeneration'), roll, apCost);
+  const fpGrant = await grantSkillUsageFp(actor, 'health', 'regenerationUsed');
+  const fpHTML = formatSkillFpGrantLine(fpGrant) + formatSkillFpGrantLine(await checkReflexActionTrigger(actor));
+  return postActionChatCard(actor, game.i18n.localize('SKSK.Action.Regeneration'), roll, apCost, fpHTML);
 }
 
 /**
@@ -264,8 +268,27 @@ export async function rollMeditation(actor) {
 
   const mana = actor.system.mana;
   const newValue = Math.min(mana.max, mana.value + roll.total);
-  await actor.update({ ...spendActionPoints(actor, apCost), 'system.mana.value': newValue });
-  return postActionChatCard(actor, game.i18n.localize('SKSK.Action.Meditation'), roll, apCost);
+  const restored = newValue - mana.value;
+  await actor.update({
+    ...spendActionPoints(actor, apCost),
+    'system.mana.value': newValue,
+    // Manaregeneration's own FP accumulator (see helpers/rest.mjs#
+    // applyRest, which turns this into FP on the next Anpassungs-/
+    // Genesungspause) - only the amount actually restored (post-cap), not
+    // the raw roll total.
+    'system.manaRegenerationAccumulator': (actor.system.manaRegenerationAccumulator ?? 0) + Math.max(0, restored),
+  });
+  const fpGrant = await grantSkillUsageFp(actor, 'meditation', 'meditationUsed');
+  // Seelenstärke's own extra trigger - only while a Combat is active, and
+  // only if the GM has also flipped this actor's own GM-tab switch on top
+  // of the usual GM-configured rate (see data/actor-base.mjs#
+  // soulforceMeditationCombatFpEnabled).
+  const soulforceGrant = (game.combat && actor.system.soulforceMeditationCombatFpEnabled)
+    ? await grantSkillUsageFp(actor, 'soulforce', 'meditationUsedInCombat')
+    : null;
+  const fpHTML = formatSkillFpGrantLine(fpGrant) + formatSkillFpGrantLine(soulforceGrant)
+    + formatSkillFpGrantLine(await checkReflexActionTrigger(actor));
+  return postActionChatCard(actor, game.i18n.localize('SKSK.Action.Meditation'), roll, apCost, fpHTML);
 }
 
 /**
@@ -299,7 +322,8 @@ export async function rollAdrenalin(actor) {
 
   if (roll.total > 0) await applyAdrenalinDamage(actor, roll.total);
 
-  return postActionChatCard(actor, game.i18n.localize('SKSK.Action.Adrenalin'), roll, 0);
+  const fpGrant = await grantSkillUsageFp(actor, 'adrenalin', 'adrenalinUsed');
+  return postActionChatCard(actor, game.i18n.localize('SKSK.Action.Adrenalin'), roll, 0, formatSkillFpGrantLine(fpGrant));
 }
 
 /**
@@ -326,8 +350,16 @@ export async function useMove(actor, movementType) {
   if (isFree && round !== null) updates['system.lastFreeMoveRound'] = round;
   if (Object.keys(updates).length) await actor.update(updates);
 
+  // Stamina's own "distance moved in combat" FP trigger - only while an
+  // actual Combat is tracking rounds, per the design spreadsheet's
+  // "im Kampf" wording; not for free exploration movement outside Combat.
+  const fpGrant = round !== null
+    ? await grantSkillUsageFp(actor, 'stamina', 'combatMovement', Math.ceil(speed / 20))
+    : null;
+
   const label = game.i18n.localize(CONFIG.SKSK.movementTypes[movementType] ?? movementType);
-  const extraHTML = `<div class="sksk-roll-line">${game.i18n.format('SKSK.Action.MoveDistance', { label, speed })}</div>`;
+  const extraHTML = `<div class="sksk-roll-line">${game.i18n.format('SKSK.Action.MoveDistance', { label, speed })}</div>`
+    + formatSkillFpGrantLine(fpGrant) + formatSkillFpGrantLine(await checkReflexActionTrigger(actor));
   return postActionChatCard(actor, game.i18n.localize('SKSK.Action.Move'), null, apCost, extraHTML);
 }
 
@@ -363,6 +395,13 @@ export async function useItem(actor, item) {
       await item.update({ 'system.quantity': Math.max(0, item.system.quantity - 1) });
     }
   }
+
+  // item.roll() (above) already posted its own chat card before AP was
+  // spent, so Reflexe's own FP trigger (which can only be checked once AP
+  // is actually deducted) gets a small chat card of its own instead, only
+  // when it actually fires.
+  const reflexGrant = await checkReflexActionTrigger(actor);
+  if (reflexGrant) await postActionChatCard(actor, game.i18n.localize('SKSK.Action.Use'), null, 0, formatSkillFpGrantLine(reflexGrant));
 }
 
 /**
@@ -379,7 +418,9 @@ export async function useDodge(actor) {
 
   const count = 1 + getActorSkillLevel(actor, 'reflexes');
   await actor.update(spendActionPoints(actor, apCost));
+  const fpGrant = await grantSkillUsageFp(actor, 'reflexes', 'dodgeUsed');
 
-  const extraHTML = `<div class="sksk-roll-line">${game.i18n.format('SKSK.Action.DodgeCount', { count })}</div>`;
+  const extraHTML = `<div class="sksk-roll-line">${game.i18n.format('SKSK.Action.DodgeCount', { count })}</div>`
+    + formatSkillFpGrantLine(fpGrant) + formatSkillFpGrantLine(await checkReflexActionTrigger(actor));
   return postActionChatCard(actor, game.i18n.localize('SKSK.Action.Dodge'), null, apCost, extraHTML);
 }

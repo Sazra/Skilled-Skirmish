@@ -4,13 +4,15 @@ import {
   onManageActiveEffect,
   prepareActiveEffectCategories,
 } from '../helpers/effects.mjs';
-import { evaluateSkillFormula, computeSkillBonusTotals, getActorSkillLevel } from '../helpers/skills.mjs';
-import { getSkillCheckDefinition, rollSkillCheck, nonEmptyAttributeSubsets } from '../helpers/skillRolls.mjs';
+import {
+  evaluateSkillFormula, computeSkillBonusTotals, getActorSkillLevel, isActorSkillUnlocked, getSkillStacks,
+} from '../helpers/skills.mjs';
+import { getSkillCheckDefinition, rollSkillCheck, nonEmptyAttributeSubsets, chooseSkillRollVariant } from '../helpers/skillRolls.mjs';
 import {
   getVisibleAttributeBonusDropdowns, getResolvedAttributeBonuses, chooseAttributeBonus,
   resetAttributeBonusChoice, resetAllAttributeBonusChoices, applyPendingAutoGrants,
 } from '../helpers/attributeBonuses.mjs';
-import { getAttributeMaxBreakdown, getAttributeUnlimitedBonusBreakdown } from '../helpers/attributes.mjs';
+import { getAttributeMaxBreakdown, getAttributeUnlimitedBonusBreakdown, computePassivePerception } from '../helpers/attributes.mjs';
 import {
   checkCombinedSpellPrerequisite,
   checkSimpleOrAdvancedSpellPrerequisite,
@@ -24,15 +26,26 @@ import { getLifeBreakdown, getNegativeLifeBreakdown } from '../helpers/life.mjs'
 import { getManaBreakdown } from '../helpers/mana.mjs';
 import { getArmorClassBreakdown, getMagicResistanceBreakdown } from '../helpers/defense.mjs';
 import { renderBreakdownHtml } from '../helpers/tooltips.mjs';
-import { rollMartialArtsAttack, rollRegeneration, rollMeditation, rollAdrenalin, useMove, useDodge, useItem } from '../helpers/actions.mjs';
+import { rollMartialArtsAttack, rollRegeneration, rollMeditation, rollAdrenalin, useMove, useDodge, useItem, postActionChatCard } from '../helpers/actions.mjs';
+import { chooseOverchargeCount } from '../helpers/spell-rolls.mjs';
 import { SKSKRestDialog } from '../apps/rest-dialog.mjs';
 import { SKSKTrainingDialog } from '../apps/training-dialog.mjs';
+import { SKSKKillDialog } from '../apps/kill-dialog.mjs';
+import { SKSKPrayerDialog } from '../apps/prayer-dialog.mjs';
+import { SKSKSummoningDialog } from '../apps/summoning-dialog.mjs';
+import { SKSKTotemDialog } from '../apps/totem-dialog.mjs';
+import { SKSKSourceDialog } from '../apps/source-dialog.mjs';
+import {
+  grantInspirationDie, consumeInspirationCharge, rollOwnInspirationDie, rollGrantedInspirationDie,
+} from '../helpers/inspiration.mjs';
+import { grantMassKillFp, MASS_KILL_TIERS } from '../helpers/massacre.mjs';
 import {
   getStatusEffectDefinitions, getStatusStacks, increaseStatusStacks, decreaseStatusStacks, applyD20Malus,
   getStatusEffect, getStatusInstances, getStatusInstancesTotal, addStatusInstance, applyCauterization,
   getAdrenalinDamage, setRestrainedConfig, attemptRestrainedEscapeManual,
 } from '../helpers/statusEffects.mjs';
-import { getGenericCriticalType, wrapCriticalBlock } from '../helpers/criticalRolls.mjs';
+import { wrapCriticalBlock, chooseGenericRollMode, evaluateD20WithMode, formatD20ModeSummaryLine } from '../helpers/criticalRolls.mjs';
+import { grantSkillUsageFp, formatSkillFpGrantLine } from '../helpers/skillFp.mjs';
 
 /**
  * Schema paths (relative to system.*) whose value input accepts the "+N"/
@@ -105,11 +118,20 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       rollRegeneration: SKSKActorSheet.#rollRegeneration,
       rollMeditation: SKSKActorSheet.#rollMeditation,
       rollAdrenalin: SKSKActorSheet.#rollAdrenalin,
+      grantInspiration: SKSKActorSheet.#grantInspiration,
+      rollGrantedInspiration: SKSKActorSheet.#rollGrantedInspiration,
       useMove: SKSKActorSheet.#useMove,
       useDodge: SKSKActorSheet.#useDodge,
       useItem: SKSKActorSheet.#useItem,
       openRestDialog: SKSKActorSheet.#openRestDialog,
       openTrainingDialog: SKSKActorSheet.#openTrainingDialog,
+      openKillDialog: SKSKActorSheet.#openKillDialog,
+      grantMassKillFp: SKSKActorSheet.#grantMassKillFp,
+      openPrayerDialog: SKSKActorSheet.#openPrayerDialog,
+      openSummoningDialog: SKSKActorSheet.#openSummoningDialog,
+      openTotemDialog: SKSKActorSheet.#openTotemDialog,
+      openSourceDialog: SKSKActorSheet.#openSourceDialog,
+      grantPassivePerceptionFp: SKSKActorSheet.#grantPassivePerceptionFp,
       increaseStatusStack: SKSKActorSheet.#increaseStatusStack,
       decreaseStatusStack: SKSKActorSheet.#decreaseStatusStack,
       addStatusInstance: SKSKActorSheet.#addStatusInstance,
@@ -386,8 +408,12 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     context.movementTypeChoices = CONFIG.SKSK.movementTypes;
     context.attributeChoices = CONFIG.SKSK.attributes;
     context.attributeUsageChoices = CONFIG.SKSK.attributeUsageTypes;
+    context.damageTypeChoices = CONFIG.SKSK.damageTypes;
+    context.genericRollModeChoices = CONFIG.SKSK.genericRollModes;
     // GM tab's attribute-bonus reset list - see helpers/attributeBonuses.mjs.
     context.resolvedAttributeBonuses = getResolvedAttributeBonuses(actor);
+    // GM tab's Mass Kill button row - see helpers/massacre.mjs.
+    context.massKillTiers = MASS_KILL_TIERS;
     // Actions tab's Weapons/Usable Items containers - "usable" Items are
     // Consumable and/or have Charges enabled (see data/item.mjs#charges) -
     // see helpers/actions.mjs#useItem.
@@ -777,21 +803,19 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
 
         if (row.isStackable) {
           // Weaknesses aren't leveled skills; the raw value IS the stack
-          // count (character: entered directly, NPC: formula result).
-          row.stacks = isNpc ? evaluateSkillFormula(row.formula, rollData) : row.points;
+          // count (character: entered directly, NPC: formula result) -
+          // see helpers/skills.mjs#getSkillStacks.
+          row.stacks = getSkillStacks(actor, key);
+        } else if (row.isBinary) {
+          // See helpers/skills.mjs#isActorSkillUnlocked (character: its own
+          // toggle; NPC: formula evaluates to 1).
+          row.unlocked = isActorSkillUnlocked(actor, key);
         } else if (isNpc) {
           // The formula computes total points directly; "L" in the
           // formula is replaced with the actor's level, so non-linear
           // scaling (e.g. "L * L") works, not just a flat rate per level.
-          const formulaResult = evaluateSkillFormula(row.formula, rollData);
-          if (row.isBinary) {
-            row.unlocked = formulaResult === 1;
-          } else {
-            row.points = formulaResult;
-            row.level = getActorSkillLevel(actor, key);
-          }
-        } else if (row.isBinary) {
-          row.unlocked = row.toggle;
+          row.points = evaluateSkillFormula(row.formula, rollData);
+          row.level = getActorSkillLevel(actor, key);
         } else {
           row.level = getActorSkillLevel(actor, key);
         }
@@ -850,6 +874,8 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     context.sizeCategory = getActorSizeCategory(actor);
     context.sizeCategoryChoices = CONFIG.SKSK.sizeCategories;
 
+    context.passivePerception = computePassivePerception(actor);
+
     context.favoriteSkills = Object.values(context.skillCategories ?? {})
       .flat()
       .filter(row => row.favorite);
@@ -857,6 +883,12 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     context.generalResources = GENERAL_RESOURCES
       .filter(r => !r.requiredSkill || getActorSkillLevel(actor, r.requiredSkill) >= 1)
       .map(r => ({ key: r.key, label: r.label, value: actor.system[r.key].value, max: actor.system[r.key].max }));
+
+    // Seelenstärke's own "Seelenmacht" (Soul Power) resource sidebar entry
+    // (resources.hbs/resources-npc.hbs) - shown once Seelenstärke reaches
+    // its own max level (5), or unconditionally while the GM tab's own
+    // soulPowerResourceEnabled switch is on.
+    context.soulPowerVisible = getActorSkillLevel(actor, 'soulforce') >= 5 || actor.system.soulPowerResourceEnabled;
   }
 
   /* -------------------------------------------- */
@@ -1007,6 +1039,16 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     // NPCs (their equivalent bonus stays fully dynamic) and once nothing
     // is left pending. See helpers/attributeBonuses.mjs.
     if (this.actor.isOwner) applyPendingAutoGrants(this.actor);
+
+    // Inspiration button's own Right-Click variant (spend a charge, roll
+    // the die for yourself) - ApplicationV2's own action map only ever
+    // dispatches "click", so this needs its own listener; suppresses the
+    // browser's native context menu. See helpers/inspiration.mjs#
+    // rollOwnInspirationDie.
+    this.element.querySelector('[data-action="grantInspiration"]')?.addEventListener('contextmenu', async event => {
+      event.preventDefault();
+      await rollOwnInspirationDie(this.actor);
+    });
   }
 
   /**
@@ -1186,6 +1228,32 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
   }
 
   /**
+   * Actions tab's Inspiration button, plain/Shift+Click - see
+   * helpers/inspiration.mjs. Right-Click is handled separately via a
+   * "contextmenu" listener bound in _onRender (ApplicationV2's own action
+   * map only ever dispatches "click").
+   * @param {PointerEvent} event
+   * @param {HTMLElement} target
+   * @private
+   */
+  static async #grantInspiration(event, target) {
+    if (event.shiftKey) return consumeInspirationCharge(this.actor);
+    await grantInspirationDie(this.actor);
+  }
+
+  /**
+   * Sheet header's Inspiration Die field - rolls (and clears) whatever die
+   * this actor currently holds. See helpers/inspiration.mjs#
+   * rollGrantedInspirationDie.
+   * @param {PointerEvent} event
+   * @param {HTMLElement} target
+   * @private
+   */
+  static async #rollGrantedInspiration(event, target) {
+    await rollGrantedInspirationDie(this.actor);
+  }
+
+  /**
    * Use the Move action for the movement type currently chosen in the
    * Actions tab's selector - see helpers/actions.mjs#useMove.
    * @param {PointerEvent} event
@@ -1229,6 +1297,71 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
    */
   static #openTrainingDialog(event, target) {
     new SKSKTrainingDialog(this.actor).render(true);
+  }
+
+  /**
+   * Open the "Kill markieren" dialog (apps/kill-dialog.mjs) from the GM
+   * tab - a fully manual Kill FP grant, independent of the automatic one
+   * wired into helpers/damageApplication.mjs#applyDamageFromChat.
+   */
+  static #openKillDialog(event, target) {
+    new SKSKKillDialog(this.actor).render(true);
+  }
+
+  /**
+   * GM tab's Mass Kill button row - see helpers/massacre.mjs#
+   * grantMassKillFp.
+   * @param {PointerEvent} event
+   * @param {HTMLElement} target   The clicked tier button (data-tier).
+   * @private
+   */
+  static async #grantMassKillFp(event, target) {
+    await grantMassKillFp(this.actor, Number(target.dataset.tier));
+  }
+
+  /**
+   * Open the "Gebet" (Prayer) dialog (apps/prayer-dialog.mjs) from the
+   * sheet header - Character-only, same convention as #openTrainingDialog.
+   */
+  static #openPrayerDialog(event, target) {
+    new SKSKPrayerDialog(this.actor).render(true);
+  }
+
+  /**
+   * Open the "Beschwörung" (Summoning) dialog (apps/summoning-dialog.mjs)
+   * from the sheet header - Character-only, same convention as
+   * #openTrainingDialog/#openPrayerDialog.
+   */
+  static #openSummoningDialog(event, target) {
+    new SKSKSummoningDialog(this.actor).render(true);
+  }
+
+  /**
+   * Open the "Totem" dialog (apps/totem-dialog.mjs) from the sheet header -
+   * Character-only, same convention as #openSummoningDialog.
+   */
+  static #openTotemDialog(event, target) {
+    new SKSKTotemDialog(this.actor).render(true);
+  }
+
+  /**
+   * Open the "Quelle" (Source) dialog (apps/source-dialog.mjs) from the
+   * sheet header - Character-only, same convention as #openTotemDialog.
+   */
+  static #openSourceDialog(event, target) {
+    new SKSKSourceDialog(this.actor).render(true);
+  }
+
+  /**
+   * Grant Observation's "passiveDetection" FP from the sheet header's
+   * Passive Perception field - a flat, freely repeatable grant (same
+   * pattern as the Kill dialog's own confirm), no dialog needed since
+   * there's nothing to choose.
+   */
+  static async #grantPassivePerceptionFp(event, target) {
+    const grant = await grantSkillUsageFp(this.actor, 'observation', 'passiveDetection');
+    if (!grant) return;
+    await postActionChatCard(this.actor, game.i18n.localize('SKSK.General.PassivePerception'), null, 0, formatSkillFpGrantLine(grant));
   }
 
   /**
@@ -1306,12 +1439,17 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
   }
 
   /**
-   * Handle clickable rolls.
+   * Handle clickable rolls - Shift+clicking a spell prompts to Überladen
+   * (Overcharge) it first (see helpers/spell-rolls.mjs#
+   * chooseOverchargeCount), skipped entirely if this actor is already
+   * mid-cast (same condition rollSpellItem itself guards on) to avoid
+   * popping the dialog pointlessly. A plain click, or Shift+click on any
+   * non-spell item, behaves exactly as before.
    * @param {PointerEvent} event   The originating click event.
    * @param {HTMLElement} target   The capturing HTML element.
    * @private
    */
-  static #onRoll(event, target) {
+  static async #onRoll(event, target) {
     event.preventDefault();
     const dataset = target.dataset;
 
@@ -1320,7 +1458,19 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       if (dataset.rollType == 'item') {
         const itemId = target.closest('.item').dataset.itemId;
         const item = this.actor.items.get(itemId);
-        if (item) return item.roll();
+        if (!item) return;
+
+        if (event.shiftKey && item.type === 'spell') {
+          const pendingSpell = this.actor.system.pendingSpell;
+          if ((pendingSpell?.apCost ?? 0) > 0 || (pendingSpell?.roundsRemaining ?? 0) > 0) {
+            return ui.notifications.warn(game.i18n.localize('SKSK.Spell.Roll.AlreadyConcentrating'));
+          }
+          const count = await chooseOverchargeCount(this.actor, item);
+          if (!count) return;
+          return item.roll(count);
+        }
+
+        return item.roll();
       }
     }
 
@@ -1329,36 +1479,59 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     // universal D20 malus and Dazed's Str/Dex/Con/App-specific one (see
     // helpers/statusEffects.mjs) can be folded in.
     if (dataset.roll) {
+      const mode = await chooseGenericRollMode();
+      if (!mode) return;
+
       let label = dataset.label ? `[attribute] ${dataset.label}` : '';
       const formula = applyD20Malus(dataset.roll, this.actor, dataset.attributeKey ?? null);
-      let roll = new Roll(formula, this.actor.getRollData());
-      roll.evaluate().then(async evaluated => {
-        const criticalType = getGenericCriticalType(evaluated);
-        const messageData = {
-          speaker: ChatMessage.getSpeaker({ actor: this.actor }),
-          flavor: label,
-          content: wrapCriticalBlock(await evaluated.render(), criticalType),
-          rolls: [evaluated],
-        };
-        ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));
-        return ChatMessage.create(messageData);
-      });
-      return roll;
+      const result = await evaluateD20WithMode(formula, this.actor.getRollData(), mode);
+      const { roll, criticalType, doubleCritical } = result;
+
+      // A pure attribute roll (not a skill check) generates FP for that
+      // attribute's own "Unbegrenzte X" skill, if configured - see
+      // helpers/skillFp.mjs and CONFIG.SKSK.unlimitedAttributeSkills.
+      let fpHTML = '';
+      const unlimitedSkill = dataset.attributeKey ? CONFIG.SKSK.unlimitedAttributeSkills[dataset.attributeKey] : null;
+      if (unlimitedSkill) {
+        fpHTML = formatSkillFpGrantLine(await grantSkillUsageFp(this.actor, unlimitedSkill, 'attributeRoll'));
+      }
+      fpHTML += formatD20ModeSummaryLine(result, mode);
+      // Luck's own "criticalRoll"/"doubleCriticalRoll" FP - any generic (non-
+      // Angriffswurf) D20 roll's critical success/double critical, see
+      // helpers/criticalRolls.mjs#evaluateD20WithMode.
+      if (criticalType === 'success') {
+        fpHTML += formatSkillFpGrantLine(await grantSkillUsageFp(this.actor, 'luck', 'criticalRoll'));
+      }
+      if (doubleCritical) {
+        fpHTML += formatSkillFpGrantLine(await grantSkillUsageFp(this.actor, 'luck', 'doubleCriticalRoll'));
+      }
+
+      const messageData = {
+        speaker: ChatMessage.getSpeaker({ actor: this.actor }),
+        flavor: label,
+        content: wrapCriticalBlock(await roll.render(), criticalType) + fpHTML,
+        rolls: [roll],
+      };
+      ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));
+      return ChatMessage.create(messageData);
     }
   }
 
   /**
    * Handle clicking a skill (skills.hbs' name, or general-overview.hbs'
    * favorited skill row) to roll its skill check: 1d20 + skill level +
-   * attribute modifier(s). Skills with a single fixed attribute roll
-   * immediately. Skills with more than one possible attribute prompt with
-   * one button per valid option - clicking a button both makes the choice
-   * and rolls with it in the same action, closing the dialog. An "oder"
-   * skill (attributeMode "choice") offers one button per individual
-   * attribute; an "und/oder" skill ("combine") instead offers one button
-   * per non-empty combination of its attributes (each summed together),
-   * since the player may want any subset, not just single attributes -
-   * see helpers/skillRolls.mjs.
+   * attribute modifier(s). Some skills (see helpers/skillRolls.mjs#
+   * SKILL_ROLL_VARIANTS) first prompt for which variant of their roll is
+   * being made (e.g. Fallen: setting vs. disarming a trap) - same roll,
+   * different flavor/FP trigger; skipped entirely for skills with none
+   * defined. Skills with a single fixed attribute then roll immediately.
+   * Skills with more than one possible attribute prompt with one button
+   * per valid option - clicking a button both makes the choice and rolls
+   * with it in the same action, closing the dialog. An "oder" skill
+   * (attributeMode "choice") offers one button per individual attribute;
+   * an "und/oder" skill ("combine") instead offers one button per
+   * non-empty combination of its attributes (each summed together), since
+   * the player may want any subset, not just single attributes.
    * @param {PointerEvent} event   The originating click event.
    * @param {HTMLElement} target   The capturing HTML element, carrying data-skill.
    * @private
@@ -1369,9 +1542,12 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     const def = getSkillCheckDefinition(skillKey);
     if (!def) return;
 
+    const { chosen, variant } = await chooseSkillRollVariant(skillKey, def);
+    if (!chosen) return;
+
     const attributes = def.attributes;
     if (attributes.length === 1) {
-      return rollSkillCheck(this.actor, skillKey, attributes);
+      return rollSkillCheck(this.actor, skillKey, attributes, variant);
     }
 
     const isCombine = def.attributeMode === 'combine';
@@ -1383,14 +1559,14 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     }));
 
     const promptKey = isCombine ? 'SKSK.Skill.CombineAttributePrompt' : 'SKSK.Skill.ChooseAttributePrompt';
-    const chosen = await foundry.applications.api.DialogV2.wait({
+    const chosenAttributes = await foundry.applications.api.DialogV2.wait({
       window: { title: game.i18n.localize(def.label) },
       content: `<p>${game.i18n.localize(promptKey)}</p>`,
       buttons,
       rejectClose: false,
     });
-    if (!chosen?.length) return;
-    return rollSkillCheck(this.actor, skillKey, chosen);
+    if (!chosenAttributes?.length) return;
+    return rollSkillCheck(this.actor, skillKey, chosenAttributes, variant);
   }
 
   /**

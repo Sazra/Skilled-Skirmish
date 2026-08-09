@@ -1,0 +1,12 @@
+<div class="sksk-kill-dialog">
+  <div class="resource">
+    <label class="resource-label">{{localize 'SKSK.KillDialog.Skill'}}</label>
+    <select data-kill-field="skillKey">
+      {{#each skillChoices as |def key|}}
+      <option value="{{key}}" {{#if (eq key ../skillKey)}}selected{{/if}}>{{localize def.label}}</option>
+      {{/each}}
+    </select>
+  </div>
+
+  <button type="button" data-action="confirm">{{localize 'SKSK.KillDialog.Confirm'}}</button>
+</div>

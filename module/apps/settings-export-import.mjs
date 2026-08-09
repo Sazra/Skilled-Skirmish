@@ -5,7 +5,7 @@ const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
  * helpers/settings.mjs) - exported/imported together as one flat JSON blob
  * so a GM can back up or transfer a world's SKSK configuration (skill point
  * costs, carry weight formula, Materials/Models/Status Effects/Training
- * Methods lists) without manually re-entering everything.
+ * Methods/Skill Usage FP lists) without manually re-entering everything.
  */
 const EXPORTABLE_SETTINGS = [
   'skillPointsLevel5',
@@ -16,6 +16,7 @@ const EXPORTABLE_SETTINGS = [
   'armorModels',
   'statusEffects',
   'trainingMethods',
+  'skillUsageFp',
 ];
 
 /**

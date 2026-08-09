@@ -42,6 +42,23 @@ export default class SKSKSpell extends SKSKItemBase {
 
     schema.manaCost = new fields.NumberField({ ...requiredInteger, initial: 1, min: 0 });
     schema.apCost = new fields.NumberField({ ...requiredInteger, initial: 1, min: 1 });
+    // What apCost's own number actually counts - a flat AP amount (the
+    // default), or a casting time in minutes/hours/days instead. Minutes
+    // drains all of the caster's AP every Combat round for apCost*10
+    // rounds (see helpers/spell-rolls.mjs#rollSpellItem/
+    // handlePendingSpellTurnStart); hours/days are pure downtime - no AP
+    // cost, no Combat-round tie-in at all. Only ever affects Ritualism's
+    // own "hours spent" FP once a "Ritual" casting-method spell resolves
+    // (see helpers/spells.mjs#computeRitualHours) for non-"ap" units.
+    schema.apCostUnit = new fields.StringField({
+      required: true, blank: false, initial: "ap",
+      choices: ["ap", "minutes", "hours", "days"]
+    });
+
+    // Manakern's own flat FP grant (to the "manaCore" skill) whenever this
+    // spell is cast - a designer-set value on the item itself, not a GM-
+    // configured rate. See helpers/skillFp.mjs#grantFlatSkillFp.
+    schema.manaCoreFpGrant = new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 });
 
     // One or more ranges, each paired with the indicator describing how
     // that leg of the spell travels/applies (e.g. a fireball is a 30m
@@ -76,6 +93,16 @@ export default class SKSKSpell extends SKSKItemBase {
     // and any Class/Species/Talent combinedSchoolOverrides check (see
     // helpers/spells.mjs#checkCombinedSpellPrerequisite).
     schema.mastered = new fields.BooleanField({ initial: false });
+
+    // Whether Überladen (Overcharge)'s automatic effect scaling (saving
+    // throw DC +1, ranges +20%, damage +50%, all per Überladung - see
+    // helpers/spell-rolls.mjs#renderSpellEffectParts) applies to this
+    // spell. On by default; turn off for a spell whose Overcharge effect
+    // is custom/hand-written (e.g. a status effect with no clean formula)
+    // - the caster still pays Overcharge's increased AP/Mana cost either
+    // way (see helpers/spells.mjs#computeSpellApCost/computeSpellManaCost),
+    // just without any automatic scaling - the GM adjusts it manually.
+    schema.overchargeAutoEffects = new fields.BooleanField({ initial: true });
 
     // Whether the spell needs an attack roll at all (vs. the target's
     // Magic Resistance) is left as a placeholder switch for now - the

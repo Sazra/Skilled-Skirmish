@@ -156,6 +156,10 @@ SKSK.predefinedStatusEffects = [
     id: 'concentration', img: 'icons/svg/aura.svg',
     nameKey: 'SKSK.StatusEffect.Concentration.Name', descriptionKey: 'SKSK.StatusEffect.Concentration.Description',
   },
+  {
+    id: 'concealed', img: 'icons/svg/invisible.svg',
+    nameKey: 'SKSK.StatusEffect.Concealed.Name', descriptionKey: 'SKSK.StatusEffect.Concealed.Description',
+  },
 ];
 
 // Restrained's own escape-check timing choices - see
@@ -306,6 +310,14 @@ SKSK.castingMethods = {
   concentration: 'SKSK.Spell.CastingMethod.Concentration',
 };
 
+// What a spell's own apCost number counts - see data/spell.mjs#apCostUnit.
+SKSK.apCostUnits = {
+  ap: 'SKSK.Spell.ApCostUnit.Ap',
+  minutes: 'SKSK.Spell.ApCostUnit.Minutes',
+  hours: 'SKSK.Spell.ApCostUnit.Hours',
+  days: 'SKSK.Spell.ApCostUnit.Days',
+};
+
 // The elements a spell's Damage entries can deal - the same 20 elements
 // used by the Resistance/Weakness/Immunity/Absorb skill categories, so a
 // spell's damage type always lines up with an actor's defenses.
@@ -349,6 +361,15 @@ SKSK.attributeUsageTypes = {
   highestSingle: 'SKSK.AttributeUsage.HighestSingle',
   all: 'SKSK.AttributeUsage.All',
   highestMultiple: 'SKSK.AttributeUsage.HighestMultiple',
+};
+
+// The GM-tab preset for generic (non-Angriffswurf) D20 rolls that trigger
+// fully automatically - see data/actor-base.mjs#genericCriticalRollMode/
+// helpers/criticalRolls.mjs#evaluateD20WithMode.
+SKSK.genericRollModes = {
+  neutral: 'SKSK.GenericRoll.ModeNeutral',
+  advantage: 'SKSK.GenericRoll.ModeAdvantage',
+  disadvantage: 'SKSK.GenericRoll.ModeDisadvantage',
 };
 
 SKSK.talentTypes = {

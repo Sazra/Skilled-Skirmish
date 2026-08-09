@@ -1,0 +1,20 @@
+<section class="tab {{tab.cssClass}}" data-group="primary" data-tab="{{tab.id}}">
+  <p class="hint">{{localize categoryHint}}</p>
+
+  <ol class="items-list">
+    {{#each skills as |skill|}}
+    <li class="item flexcol skill-fp-panel">
+      <label class="resource-label">{{localize skill.label}}</label>
+      <div class="grid grid-3col">
+        {{#each skill.fields as |field|}}
+        <div class="grid-span-1">
+          <label class="resource-label">{{localize field.label}}</label>
+          <input type="text" name="skillFp.{{skill.key}}.{{field.key}}" value="{{lookup skill.values field.key}}"
+            data-dtype="Number" placeholder="0" />
+        </div>
+        {{/each}}
+      </div>
+    </li>
+    {{/each}}
+  </ol>
+</section>

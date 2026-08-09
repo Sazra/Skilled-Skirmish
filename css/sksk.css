@@ -782,6 +782,13 @@
   margin: 0;
 }
 
+/* Totem dialog rows carry up to three icons (Effects/Toggle/Delete) once
+   bound - items-list-compact's single-icon 32px column is too narrow. */
+.sksk .totem-dialog .items-list-compact .item-controls {
+  flex: 0 0 96px;
+  justify-content: flex-end;
+}
+
 .sksk .items-list .item {
   align-items: center;
   padding: 0 2px;
@@ -1156,6 +1163,15 @@
   margin: 2px 0 6px;
 }
 
+/* "Schaden anwenden" (Apply Damage - see helpers/damageApplication.mjs) -
+   kept visually distinct from Evaluate Hit above it. */
+.sksk-chat-card .sksk-apply-damage {
+  width: auto;
+  line-height: normal;
+  margin: 2px 0 6px;
+  border-color: var(--color-level-error, #ff6060);
+}
+
 /* Critical successes/failures (see helpers/criticalRolls.mjs): green/red on
    the die's own rendered total, and on any inline outcome label wrapped the
    same way. Not scoped to .sksk-chat-card - the plain attribute-check
@@ -1272,6 +1288,61 @@ span.sksk-critical-failure {
   overflow-y: auto;
 }
 
+/* Configure Skill Usage FP settings app - same fixed-tab-bar/scrolling-
+   content pattern as .sksk.models-config above. */
+.application.sksk.skill-usage-fp-config .window-content {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sksk.skill-usage-fp-config .window-content>section.tab {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 8px;
+}
+
+.sksk .skill-fp-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.sksk .skill-fp-table th,
+.sksk .skill-fp-table td {
+  border: 1px solid var(--color-border-light-tertiary, #7a7971);
+  padding: 2px 6px;
+  text-align: left;
+}
+
+.sksk .skill-fp-table th {
+  position: sticky;
+  top: 0;
+  color: var(--color-text-primary);
+  background: color-mix(in srgb, var(--color-text-primary) 8%, transparent);
+  font-weight: bold;
+}
+
+.sksk .skill-fp-table input {
+  width: 100%;
+  min-width: 40px;
+  text-align: center;
+}
+
+/* Production/Rogue/Magic/Fighter/Misc/Special tabs of the Skill Usage FP
+   config app - a per-skill card list instead of a uniform table, since
+   different skills there need different fields. */
+.sksk .skill-fp-panel {
+  align-items: stretch;
+  padding: 6px 4px;
+  gap: 4px;
+  border-bottom: 1px solid var(--color-border-light-tertiary, #7a7971);
+}
+
+.sksk .skill-fp-panel input {
+  width: 100%;
+  text-align: center;
+}
+
 /* Formula-breakdown hover tooltips (Life/Negative Life/Mana/AC/MR labels
    on the resources sidebar - see helpers/tooltips.mjs). NOT scoped under
    .sksk: Foundry's TooltipManager reparents the tooltip element onto
@@ -1321,6 +1392,22 @@ span.sksk-critical-failure {
 }
 
 .sksk .sheet-header .header-rest .item-control {
+  font-size: 20px;
+}
+
+/* Header Passive Perception field (helpers/attributes.mjs#
+   computePassivePerception) - clickable to grant Observation's own
+   passiveDetection FP (sheets/actor-sheet.mjs#_grantPassivePerceptionFp). */
+.sksk .sheet-header .header-passive-perception {
+  flex: 0 0 80px;
+  display: flex;
+  flex-direction: column;
+  align-self: center;
+  gap: 4px;
+}
+
+.sksk .sheet-header .header-passive-perception .item-control {
+  text-align: center;
   font-size: 20px;
 }
 

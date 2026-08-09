@@ -164,3 +164,17 @@ export function getAttributeMaxBreakdown(actor, attributeKey) {
 
   return { rows, total: computeAttributeMax(actor, attributeKey) };
 }
+
+/**
+ * Passive Perception, shown as a clickable field in the sheet header (see
+ * sheets/actor-sheet.mjs#_prepareGeneral) - the raw Perception attribute
+ * value plus half the actor's Observation skill level, rounded down.
+ * Clicking it grants Observation's own "passiveDetection" FP (see
+ * sheets/actor-sheet.mjs#_grantPassivePerceptionFp).
+ * @param {Actor} actor
+ * @return {number}
+ */
+export function computePassivePerception(actor) {
+  const perceptionValue = actor.system.attributes?.per?.value ?? 0;
+  return perceptionValue + Math.floor(getActorSkillLevel(actor, 'observation') / 2);
+}

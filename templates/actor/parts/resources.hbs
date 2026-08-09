@@ -35,6 +35,15 @@
       </div>
     </div>
 
+    {{#if soulPowerVisible}}
+    <div class="resource flex-group-center">
+      <label class="resource-label" title="{{localize 'SKSK.Resource.SoulPowerHint'}}">{{localize 'SKSK.Resource.SoulPower'}}</label>
+      <div class="resource-content flexrow flex-center flex-between">
+        <input type="text" name="system.soulPower.value" value="{{system.soulPower.value}}" data-dtype="Number" />
+      </div>
+    </div>
+    {{/if}}
+
     <div class="resource flex-group-center">
       <label class="resource-label" data-tooltip="{{localize 'SKSK.Resource.AC'}}" data-tooltip-html="{{armorClassTooltip}}">
         {{localize 'SKSK.Resource.AC'}}

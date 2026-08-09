@@ -1,0 +1,40 @@
+<div class="sksk-summoning-dialog">
+  <ol class="items-list items-list-compact">
+    <li class="item flexrow items-header">
+      <div class="item-name">{{localize 'SKSK.SummoningDialog.Name'}}</div>
+      <div class="item-name">{{localize 'SKSK.SummoningDialog.Level'}}</div>
+      <div class="item-controls"></div>
+    </li>
+    {{#each summons as |entry index|}}
+    <li class="item flexrow summon-row" data-index="{{index}}">
+      {{#if entry.summoned}}
+      <div class="item-name">{{entry.name}}</div>
+      <div class="item-name">{{entry.level}}</div>
+      <div class="item-controls">
+        <a class="item-control item-delete" data-action="clearSummon" data-index="{{index}}"
+          title="{{localize 'SKSK.SummoningDialog.Clear'}}">
+          <i class="fas fa-trash"></i>
+        </a>
+      </div>
+      {{else}}
+      <div class="item-name">
+        <input type="text" data-summon-name value="{{entry.name}}" placeholder="{{localize 'SKSK.SummoningDialog.NamePlaceholder'}}" />
+      </div>
+      <div class="item-name">
+        <input type="text" data-summon-level value="{{entry.level}}" data-dtype="Number" />
+      </div>
+      <div class="item-controls">
+        <a class="item-control" data-action="simulateSummon" data-index="{{index}}"
+          title="{{localize 'SKSK.SummoningDialog.Summon'}}">
+          <i class="fas fa-dragon"></i>
+        </a>
+      </div>
+      {{/if}}
+    </li>
+    {{else}}
+    <li class="item flexrow">
+      <div class="item-name">{{localize 'SKSK.SummoningDialog.NoSlots'}}</div>
+    </li>
+    {{/each}}
+  </ol>
+</div>

@@ -35,7 +35,7 @@
             },
             "ExportImport": {
                 "Name": "Einstellungen exportieren/importieren",
-                "Hint": "Exportiert die SKSK-Einstellungen dieser Welt (Fertigkeitspunktkosten, Formel für Tragegewicht, Materialien, Modelle, Statuseffekte, Trainingsmethoden) als JSON-Datei, oder importiert sie aus einer solchen - z.B. um die Konfiguration einer Welt zu sichern oder in eine andere Welt zu übertragen.",
+                "Hint": "Exportiert die SKSK-Einstellungen dieser Welt (Fertigkeitspunktkosten, Formel für Tragegewicht, Materialien, Modelle, Statuseffekte, Trainingsmethoden, Fertigkeitsnutzungs-FP) als JSON-Datei, oder importiert sie aus einer solchen - z.B. um die Konfiguration einer Welt zu sichern oder in eine andere Welt zu übertragen.",
                 "Label": "Einstellungen exportieren/importieren",
                 "Export": "Einstellungen exportieren",
                 "Import": "Einstellungen importieren",
@@ -45,6 +45,11 @@
                 "ImportConfirmTitle": "Einstellungen importieren?",
                 "ImportConfirmContent": "Dadurch werden {count} Einstellung(en) mit den Werten aus der gewählten Datei überschrieben. Dies kann nicht rückgängig gemacht werden. Fortfahren?",
                 "ImportSuccess": "{count} Einstellung(en) importiert."
+            },
+            "SkillUsageFp": {
+                "Name": "Fertigkeitsnutzungs-FP",
+                "Hint": "Wie viele FP ein Charakter durch das Nutzen einer Fertigkeit generiert (Fertigkeitswürfe, Waffenangriffe, gewirkte Zauber, Attributswürfe, ...) - nur Charaktere, unterteilt nach Fertigkeiten-Kategorie.",
+                "Label": "Fertigkeitsnutzungs-FP konfigurieren"
             }
         },
         "Movement": {
@@ -76,6 +81,9 @@
             "Overview": "Übersicht",
             "MovementSpeeds": "Bewegungsgeschwindigkeiten",
             "SizeCategory": "Größenkategorie",
+            "PassivePerception": "Passive Wahrnehmung",
+            "InspirationDie": "Inspirationswürfel",
+            "InspirationDieHint": "Klicken, um den aktuell gehaltenen Inspirationswürfel zu würfeln (und dabei zu verbrauchen), sobald jemand einen vergeben hat.",
             "FavoriteSkills": "Favorisierte Fertigkeiten",
             "NoFavoriteSkills": "Noch keine favorisierten Fertigkeiten - im Fertigkeiten-Tab markieren.",
             "AdditionalResources": "Zusätzliche Ressourcen",
@@ -136,6 +144,92 @@
             "RemoveSecondarySkill": "Entfernen",
             "NoSecondarySkills": "Noch keine Nebenfertigkeiten."
         },
+        "SkillFpConfig": {
+            "Skill": "Fertigkeit",
+            "SkillCheck": "FP / Fertigkeitswurf",
+            "WeaponAttack": "FP / Waffenangriff",
+            "Kill": "FP / Kill",
+            "HitTaken": "FP / Erlittener Angriff",
+            "SpellCastPerLevel": "FP / Gewirkte Zauberstufe",
+            "AttributeRoll": "FP / Attributswurf",
+            "DamageTaken": "FP / Erlittener Schaden",
+            "WeaponsHint": "FP wird pro Fertigkeitswurf und pro Waffenangriff (inkl. Kampfkunst) mit dieser Fertigkeit generiert, sowie pro Kill - sobald der \"Schaden anwenden\"-Button einen Gegner auf 0 Leben und maximales negatives Leben bringt, oder manuell über den \"Kill markieren\"-Button auf der GM-Seite eines Akteurs.",
+            "ArmorsHint": "FP wird generiert, sobald der Charakter Ziel einer Angriffswurf-Bewertung einer Waffe oder eines Kampfkunstangriffs ist (Treffer oder Fehlschlag), für jede aktuell ausgerüstete Rüstungs-Fertigkeit (getragene Körperrüstung plus Schild, falls vorhanden).",
+            "MagicSchoolsHint": "FP wird pro Zauberstufe generiert, sobald ein Einfacher oder Fortgeschrittener Zauber dieser Magieschule gewirkt wird (z.B. eine Rate von 1 und ein Zauber der Stufe 3 ergibt 3 FP).",
+            "AttributeHint": "FP wird generiert, sobald der entsprechende reine Attributswurf (kein Fertigkeitswurf) durchgeführt wird - betrifft nur die 8 \"Unbegrenzte X\"-Fertigkeiten, je eine pro Attribut.",
+            "ResistancesHint": "FP wird generiert, sobald Schaden des entsprechenden Elements über den \"Schaden anwenden\"-Button genommen wurde - als einzige Fertigkeiten-Kategorie jedoch gedeckelt: automatischer Gewinn kann eine Resistenz nie über Stufe 3 (zzgl. etwaiger Fertigkeitsbonusstufen durch Items) hinaus anheben; manuelle Stufenänderungen sind davon unberührt.",
+            "ProductionHint": "Jedes Feld unten ist noch nicht automatisiert - es gibt noch kein Herstellungs-/Braukunst-System, das diese erkennen könnte.",
+            "RogueHint": "Der Fertigkeitswurf für Fallen lässt den Spieler zwischen \"Falle stellen\" und \"Falle entschärfen\" wählen (beides automatisiert); Fingerfertigkeit bietet ebenso eine Wahl zwischen Basis-Fertigkeitswurf, Schlossknacken und Taschendiebstahl (ebenfalls automatisiert). Attentat ist ebenfalls automatisiert: Attentatsangriff generiert FP, sobald ein Waffen-/Kampfkunstangriff bei aktiver Tarnung trifft (zusammen mit dem Attentat-Zusatzschaden), Attentatstötung zusätzlich, wenn derselbe Angriff den Verteidiger tötet.",
+            "MagicHint": "Konzentrationswürfe, genutzte Meditationswürfel, jeder gewirkte Zauber (Magiekontrolle, Spruchkürzung sobald Magiekontrolle Stufe 1 erreicht), die Tagesabrechnung von Manakapazität/Manaregeneration (bei der nächsten Anpassungspause+), Manakerns fester Wert pro Item, Ritualismus' Stunden pro gewirktem Ritual-Zauber (mindestens 1 Stunde, auch bei AP-Kosten oder unter 60 Minuten Wirkzeit), genutzte Überladungen (Shift+Klick auf einen Zauber), Quellengebunden/Äthergebunden (über den eigenen \"Quelle\"-Button im Kopfbereich - Genutzte Quellenfähigkeit bei \"Quelle aktivieren\", Geöffnete Quelle bei \"Ätherquelle öffnen\", jeweils mit eigenen editierbaren AP-/Mana-Kosten, ohne Nutzungslimit) sowie Beschwörung (über den Beschwörungs-Button im Kopfbereich - Stufe der beschworenen Kreatur bei \"Beschwören\", Tag der Beschwörungs-Existenz für jeden noch aktiven Platz bei der nächsten Anpassungspause+) sind automatisiert; alles andere unten (u.a. Verzauberungsstunden) ist noch nicht automatisiert - es gibt noch kein passendes System.",
+            "FighterHint": "Genutzte Trefferwürfel, Kampf-Bewegung, genutztes Ausweichen, Reflexaktion (4+ AP im eigenen Zug verbraucht), genutztes Adrenalin, kritische Treffer (inkl. Doppel-Krit) und Brutals Bonus-Schadenspunkte sind automatisiert; alles andere unten ist noch nicht automatisiert.",
+            "MiscHint": "Gewirkte Bardenmagie (Singen), Getarnt-Sein zu Beginn des eigenen Zuges (Schleichen), Gebete über den Gebets-Button im Kopfbereich (Glaube), Klicks auf das Passive-Wahrnehmung-Feld im Kopfbereich (Beobachtung), das Umwandeln eines Schadensanwenden-Eintrags in Heilung durch die Absorption des Verteidigers (Heiler - wird dem Verursacher gutgeschrieben, skaliert mit dem geheilten Betrag), Totem (über den Totem-Button im Kopfbereich - Totem-Bindung eingegangen bei \"Totem binden\", Genutztes Totem bei \"Totem aktivieren\") sowie Inspiration (über den Inspiration-Button im Aktionen-Tab und das Inspirationswürfel-Feld im Kopfbereich - wird immer dem ursprünglichen Vergeber gutgeschrieben, sobald ein Würfel tatsächlich gewürfelt wird, egal ob durch dessen Halter oder durch den Vergeber selbst per Rechtsklick-Selbstwurf) sind automatisiert; alles andere unten ist noch nicht automatisiert - es gibt noch kein passendes System.",
+            "SpecialHint": "Ein gelandeter Treffer (Trefferkorrektur), ein abgewehrter Angriff (Verteidigungskorrektur), 0 Leben mit verbleibendem negativen Leben zu Beginn des eigenen Zuges (Zähigkeit), jeder kritische Erfolg/doppelt kritische Erfolg bei einem generischen (Nicht-Angriffswurf-)W20-Wurf - Fertigkeitswürfe, Rettungswürfe, Attributswürfe und der manuelle Fesselung-Fluchtversuch fragen jedes Mal Neutral/Vorteil/Nachteil ab; Fesselungs eigener Zugbeginn-/Zugende-Wurf, der Gift-Erneuerungswurf und Konzentration nutzen stattdessen die Hintergrundwurf-Modus-Voreinstellung im GM-Tab ohne Dialog (Glücks eigener \"Kritischer Wurf\"/\"Doppelt kritischer Wurf\", dem Würfelnden gutgeschrieben - doppelt nur bei Vorteil/Nachteil mit beiden kritischen Würfeln) - Seelenstärkes eigener \"Genutzter Meditationswürfel im Kampf\" (zusätzlich zu Meditations eigenem FP, sobald ein Kampf aktiv ist, aber nur solange der GM-Tab-Schalter \"Seelenstärke: FP für Meditation im Kampf\" ebenfalls aktiv ist, standardmäßig aus) sowie Massakers eigene 5 Massentötung-Buttons im GM-Tab (20/50/150/500/1500 getötete Personen innerhalb von etwa 10 Minuten, eine rein manuelle GM-Entscheidung - die Rate jeder Abstufung hängt von der aktuellen Massaker-Fertigkeitsstufe des Akteurs ab, einzeln konfigurierbar je Abstufung/Stufen-Kombination in den Fertigkeitsnutzungs-FP-Einstellungen) - sind automatisiert; alles andere unten ist noch nicht automatisiert.",
+            "PotionBrewed": "FP / Gebrauter Trank (noch nicht automatisiert)",
+            "ItemCrafted": "FP / Hergestellter Gegenstand (noch nicht automatisiert)",
+            "ItemCraftFailed": "FP / Fehlgeschlagene Herstellung (noch nicht automatisiert)",
+            "DishCooked": "FP / Gekochtes Gericht (noch nicht automatisiert)",
+            "CookFailed": "FP / Fehlgeschlagenes Kochen (noch nicht automatisiert)",
+            "EnchantmentLevel": "FP / Verzauberungsstufe (noch nicht automatisiert)",
+            "AssassinationAttack": "FP / Attentatsangriff",
+            "AssassinationKill": "FP / Attentatstötung",
+            "TrapSet": "FP / Falle gestellt",
+            "TrapDisarmed": "FP / Falle entschärft",
+            "StealthRound": "FP / Runde getarnt zu Zugbeginn",
+            "LockPicked": "FP / Schloss geknackt",
+            "Pickpocket": "FP / Taschendiebstahl durchgeführt",
+            "ConcentrationCheck": "FP / Konzentrationswurf",
+            "MeditationUsed": "FP / Genutzter Meditationswürfel",
+            "SummonLevel": "FP / Stufe der beschworenen Kreatur",
+            "SummonExistenceDay": "FP / Tag der Beschwörungs-Existenz",
+            "MagicControlSpellCast": "FP / Jeder gewirkte Zauber",
+            "DailyManaSpent": "FP / Angesammelter Betrag, bei der nächsten Anpassungspause+",
+            "RitualHour": "FP / Stunde mit Ritual verbracht",
+            "EnchantingHour": "FP / Stunde mit Verzauberung verbracht (noch nicht automatisiert)",
+            "ChantShorteningSpellCast": "FP / Jeder gewirkte Zauber (sobald Magiekontrolle Stufe 1 erreicht)",
+            "OverchargeUsed": "FP / Genutzte Überladung",
+            "SourceAbilityUsed": "FP / Genutzte Quellenfähigkeit",
+            "SourceOpened": "FP / Geöffnete Quelle",
+            "RegenerationUsed": "FP / Genutzter Trefferwürfel",
+            "CombatMovement": "FP / 20m Bewegung im Kampf",
+            "TechniqueCooldownRound": "FP / Runde Abklingzeit der Techniken (noch nicht automatisiert)",
+            "DodgeUsed": "FP / Genutztes Ausweichen",
+            "ReflexActionUsed": "FP / Reflexaktion (4+ AP in einem Zug verbraucht)",
+            "CriticalHit": "FP / Gelandeter kritischer Treffer",
+            "DoubleCriticalHit": "FP / Beide Würfe kritisch",
+            "CriticalBonusDamagePoint": "FP / Punkt Bonus-Schaden bei Krit",
+            "AdrenalinUsed": "FP / Genutztes Adrenalin",
+            "OffHandAttack": "FP / Nebenhand-Angriff",
+            "PassiveDetection": "FP / Passive Erkennung",
+            "Prayer": "FP / Gebet",
+            "HealedCreature": "FP / Geheilte Kreatur",
+            "BardicSpellCast": "FP / Gewirkte Bardenmagie",
+            "FlankAttack": "FP / Flankenangriff (noch nicht automatisiert)",
+            "InspirationUsed": "FP / Genutzter Inspirationswürfel",
+            "TotemBond": "FP / Totem-Bindung eingegangen",
+            "TotemUsed": "FP / Genutztes Totem",
+            "ZeroLifeRound": "FP / Runde bei 0 Leben (mit verbleibendem negativen Leben) zu Zugbeginn",
+            "CriticalRoll": "FP / Kritischer Wurf",
+            "DoubleCriticalRoll": "FP / Doppelt kritischer Wurf",
+            "MassKill20Level0": "FP / 20 Getötete (Stufe 0)",
+            "MassKill20Level1": "FP / 20 Getötete (Stufe 1+)",
+            "MassKill50Level0": "FP / 50 Getötete (Stufe 0)",
+            "MassKill50Level1": "FP / 50 Getötete (Stufe 1)",
+            "MassKill50Level2": "FP / 50 Getötete (Stufe 2+)",
+            "MassKill150Level0": "FP / 150 Getötete (Stufe 0)",
+            "MassKill150Level1": "FP / 150 Getötete (Stufe 1)",
+            "MassKill150Level2": "FP / 150 Getötete (Stufe 2)",
+            "MassKill150Level3": "FP / 150 Getötete (Stufe 3+)",
+            "MassKill500Level0": "FP / 500 Getötete (Stufe 0)",
+            "MassKill500Level1": "FP / 500 Getötete (Stufe 1)",
+            "MassKill500Level2": "FP / 500 Getötete (Stufe 2)",
+            "MassKill500Level3": "FP / 500 Getötete (Stufe 3)",
+            "MassKill500Level4": "FP / 500 Getötete (Stufe 4+)",
+            "MassKill1500": "FP / 1500 Getötete (jede Stufe)",
+            "MeditationUsedInCombat": "FP / Genutzter Meditationswürfel im Kampf",
+            "SoulPowerTraded": "FP / Eingetauschte Seelenmacht (noch nicht automatisiert)",
+            "AttackHit": "FP / Gelandeter Angriff",
+            "AttackDefended": "FP / Abgewehrter Angriff"
+        },
         "Life": {
             "MaxComputed": "Automatisch berechnet aus Klassen, Konstitution, Gesundheit, Zähigkeit und Fähigkeiten - nicht direkt bearbeitbar"
         },
@@ -165,6 +259,8 @@
             "NegativeLifeAbbr": "Neg. Leben",
             "Mana": "Mana",
             "Barrier": "Barriere",
+            "SoulPower": "Seelenmacht",
+            "SoulPowerHint": "Seelenstärkes eigene Sammel-Ressource - ohne Maximum, gedacht zum Ausgeben über eine noch nicht angebundene Eintausch-Mechanik (siehe der GM-Tab-Schalter \"Seelenstärke: Neue Mechanik aktivieren\").",
             "AC": "AC",
             "MR": "MR",
             "AP": "AP",
@@ -205,7 +301,29 @@
             "CriticalHitThreshold": "Schwelle für kritischen Erfolg",
             "CriticalHitThresholdHint": "Der niedrigste natürliche W20-Wurf (nur bei einem Angriffswurf), der als kritischer Erfolg zählt. Standardmäßig 20; wird er z.B. auf 15 gesenkt, lösen 15 bis 20 alle einen kritischen Erfolg aus.",
             "CriticalFailureThreshold": "Schwelle für kritischen Fehlschlag",
-            "CriticalFailureThresholdHint": "Der höchste natürliche W20-Wurf (nur bei einem Angriffswurf), der als kritischer Fehlschlag zählt. Standardmäßig 1; wird er z.B. auf 5 erhöht, lösen 1 bis 5 alle einen kritischen Fehlschlag aus."
+            "CriticalFailureThresholdHint": "Der höchste natürliche W20-Wurf (nur bei einem Angriffswurf), der als kritischer Fehlschlag zählt. Standardmäßig 1; wird er z.B. auf 5 erhöht, lösen 1 bis 5 alle einen kritischen Fehlschlag aus.",
+            "AssassinationBonusDice": "Attentat-Zusatzwürfel",
+            "AssassinationBonusDiceHint": "Zusätzliche Würfel derselben Größe wie Attentats aktuelle Fertigkeitsstufe (siehe Angriffswurf-Auswertung) - hat keine Wirkung auf Stufe 0, die nur einen festen Bonus ohne Würfel gewährt.",
+            "ManaCapacityAccumulator": "Manakapazität-FP-Sammler",
+            "ManaCapacityAccumulatorHint": "Reale Manakosten, die seit der letzten Anpassungs-/Genesungspause für gewirkte Zauber gezahlt wurden - wird bei der nächsten mit der Manakapazität-Rate aus den Fertigkeitsnutzungs-FP-Einstellungen multipliziert, abgerundet und dann auf 0 zurückgesetzt. Nicht zum manuellen Bearbeiten gedacht, aber hier bei Bedarf einsehbar/anpassbar.",
+            "ManaRegenerationAccumulator": "Manaregeneration-FP-Sammler",
+            "ManaRegenerationAccumulatorHint": "Tatsächlich wiederhergestelltes Mana (Meditation, passive Regeneration durch Zeit/Pausen) seit der letzten Anpassungs-/Genesungspause - wird bei der nächsten mit der Manaregeneration-Rate aus den Fertigkeitsnutzungs-FP-Einstellungen multipliziert, abgerundet und dann auf 0 zurückgesetzt. Nicht zum manuellen Bearbeiten gedacht, aber hier bei Bedarf einsehbar/anpassbar.",
+            "GenericCriticalRollMode": "Hintergrundwurf-Modus",
+            "GenericCriticalRollModeHint": "Neutral/Vorteil/Nachteil-Voreinstellung, die NUR von vollautomatischen generischen (Nicht-Angriffswurf-)W20-Prüfungen genutzt wird, die ohne spielerseitigen Dialog auslösen - Fesselungs eigener Fluchtversuch bei Zugbeginn/-ende, Gift-Erneuerungswurf, Konzentration. Spielerausgelöste generische Würfe (Fertigkeitswurf, Attributswurf, Rettungswurf, manueller Fesselung-Fluchtversuch) fragen stattdessen immer frisch ab und ignorieren dieses Feld. Von Active Effects ansteuerbar.",
+            "SummonSlotsBonus": "Beschwörungsplätze-Bonus",
+            "SummonSlotsBonusHint": "Eine feste Anpassung (positiv oder negativ) an Beschwörungs eigener Listenplatz-Anzahl (siehe der Beschwörungs-Button im Kopfbereich), zusätzlich zum Willenskraft-Modifikator - wird vor dem Multiplikator unten angewendet.",
+            "SummonSlotsMultiplier": "Beschwörungsplätze-Multiplikator",
+            "SummonSlotsMultiplierHint": "Multipliziert (Willenskraft-Modifikator + der Bonus oben) - abgerundet, nie unter 0. Standardmäßig 1 (keine Änderung).",
+            "TotemSlotsBonus": "Totemplätze-Bonus",
+            "TotemSlotsBonusHint": "Eine feste Anpassung (positiv oder negativ) an Totems eigener Listenplatz-Anzahl (siehe der Totem-Button im Kopfbereich), zusätzlich zur Stufe der Fertigkeit Totem - wird vor dem Multiplikator unten angewendet.",
+            "TotemSlotsMultiplier": "Totemplätze-Multiplikator",
+            "TotemSlotsMultiplierHint": "Multipliziert (Totem-Fertigkeitsstufe + der Bonus oben) - abgerundet, nie unter 0. Standardmäßig 1 (keine Änderung).",
+            "SoulforceMeditationCombatFpEnabled": "Seelenstärke: FP für Meditation im Kampf",
+            "SoulforceMeditationCombatFpEnabledHint": "Ob das Nutzen eines Meditationswürfels während eines aktiven Kampfes zusätzlich Seelenstärkes eigenes \"Genutzter Meditationswürfel im Kampf\"-FP gewährt (weiterhin skaliert mit der eigenen konfigurierten Rate dieses Triggers in den Fertigkeitsnutzungs-FP-Einstellungen). Standardmäßig aus. Von Active Effects ansteuerbar.",
+            "SoulPowerResourceEnabled": "Seelenstärke: Seelenmacht-Ressource anzeigen",
+            "SoulPowerResourceEnabledHint": "Zeigt die Seelenmacht-Ressource in der Seitenleiste bereits an, bevor Seelenstärke ihre eigene maximale Stufe (5) erreicht hat - sie wird ohnehin angezeigt, sobald diese Stufe erreicht ist, daher wirkt sich dieser Schalter nur vorher aus. Standardmäßig aus. Von Active Effects ansteuerbar.",
+            "SoulPowerMechanicEnabled": "Seelenstärke: Neue Mechanik aktivieren (reserviert)",
+            "SoulPowerMechanicEnabledHint": "Reserviert für Seelenmachts eigene Eintausch-Mechanik (ihren \"Eingetauschte Seelenmacht\"-FP-Trigger) - noch nicht entworfen oder angebunden, wird angegangen sobald jeder Fertigkeitsnutzungs-FP-Trigger vollständig implementiert ist. Hat aktuell keine Auswirkung. Von Active Effects ansteuerbar."
         },
         "AttributeUsage": {
             "HighestSingle": "Nutze Höchsten (Nur Ein Attribut)",
@@ -221,6 +339,7 @@
             "APCost": "AP-Kosten",
             "Attributes": "Attribute",
             "AttributeUsage": "Attributsnutzung",
+            "DamageType": "Schadenstyp",
             "Add": "Angriff hinzufügen",
             "Remove": "Entfernen",
             "None": "Noch keine Kampfkunstangriffe definiert."
@@ -231,6 +350,9 @@
             "Adrenalin": "Adrenalin",
             "AdrenalinHint": "Kostet keine AP, reduziert aber die Adrenalin-Ladungen um 1 und stellt 1 AP wieder her. Jede Nutzung würfelt (Nutzungen insgesamt - 1)d4 als neuen Schaden am maximalen Leben - die erste Nutzung kostet noch kein maximales Leben.",
             "NotEnoughAdrenalin": "Keine Adrenalin-Ladungen mehr übrig.",
+            "Inspiration": "Inspiration",
+            "InspirationHint": "Vergibt einen Inspirationswürfel (Größe abhängig von der eigenen Inspiration-Fertigkeitsstufe) an das aktuelle Ziel, oder bietet ihn im Chat an, damit ihn jemand beansprucht, falls nichts anvisiert ist - verbraucht in beiden Fällen die AP-Kosten oben und 1 Inspirationsladung. Shift-Klick verbraucht nur eine Ladung, ohne etwas zu vergeben (um eine spezielle Fähigkeit zu simulieren, die Inspirationsladungen verbraucht). Rechtsklick verbraucht eine Ladung und würfelt den Würfel sofort für sich selbst.",
+            "Grant": "Vergeben",
             "Move": "Bewegen",
             "MoveHint": "Die erste Nutzung jede Kampfrunde ist kostenlos, alle weiteren Nutzungen in dieser Runde kosten 1 AP.",
             "MoveDistance": "Bewegt sich {speed}m ({label}).",
@@ -316,11 +438,107 @@
             "NoGain": "Keine FP generiert - zu wenig Zeit für die Rate jeder Fertigkeit aufgewendet.",
             "SkillGained": "{skill}: nicht integrierte FP +{amount}"
         },
+        "SkillFp": {
+            "Gained": "{skill}: nicht integrierte FP +{amount}"
+        },
+        "KillDialog": {
+            "Title": "Kill markieren",
+            "Skill": "Waffenfertigkeit",
+            "Confirm": "Kill-FP vergeben",
+            "NoGain": "Keine FP generiert - für diese Fertigkeit ist keine Kill-Rate konfiguriert."
+        },
+        "MassKill": {
+            "SectionTitle": "Massentötung",
+            "SectionHint": "Gewährt Massakers eigenes Massentötungs-FP für das Töten dieser Anzahl an Personen innerhalb von (etwa) 10 Minuten - eine rein manuelle GM-Entscheidung, das Zeitfenster selbst wird nicht getrackt. Die Höhe hängt von der aktuellen Massaker-Fertigkeitsstufe dieses Akteurs ab (die Rate jeder Stufe/Stufen-Kombination wird in den Fertigkeitsnutzungs-FP-Einstellungen konfiguriert).",
+            "Title": "Massentötung ({count})",
+            "NoGain": "Keine FP generiert - für diese Abstufung ist bei der aktuellen Massaker-Stufe des Akteurs keine Rate konfiguriert."
+        },
+        "PrayerDialog": {
+            "Title": "Gebet",
+            "Hours": "Stunden",
+            "Confirm": "Gebets-FP vergeben",
+            "NoGain": "Keine FP generiert - für Glaube ist keine Gebets-Rate konfiguriert."
+        },
+        "Prayer": {
+            "Title": "Beten"
+        },
+        "SummoningDialog": {
+            "Title": "Beschwörung",
+            "Name": "Name",
+            "Level": "Level",
+            "LevelValue": "Level {level}",
+            "NamePlaceholder": "Name der Beschwörung (nur zur Orientierung)",
+            "Summon": "Beschwören",
+            "Clear": "Löschen",
+            "NoGain": "Keine FP generiert - für diesen Auslöser ist keine Beschwörungs-Rate konfiguriert.",
+            "NoSlots": "Keine Beschwörungsplätze verfügbar - prüfe den Willenskraft-Modifikator und die Beschwörungsplätze-Einstellungen im GM-Tab."
+        },
+        "Summoning": {
+            "Title": "Beschwören"
+        },
+        "TotemDialog": {
+            "Title": "Totem",
+            "Name": "Name",
+            "ManaCostPerRound": "Manakosten / Runde",
+            "NamePlaceholder": "Name des Totems (nur zur Orientierung)",
+            "Bind": "Totem binden",
+            "Unbind": "Totem freigeben",
+            "Activate": "Totem aktivieren",
+            "Deactivate": "Totem deaktivieren",
+            "EditEffects": "Effekte bearbeiten",
+            "ActivationCost": "-2 AP, -{mana} Mana",
+            "NoGain": "Keine FP generiert - für diesen Auslöser ist keine Totem-Rate konfiguriert.",
+            "NoSlots": "Keine Totemplätze verfügbar - prüfe die Stufe der Fertigkeit Totem und die Totemplätze-Einstellungen im GM-Tab.",
+            "NotEnoughMana": "Nicht genug Mana.",
+            "AutoDeactivated": "{name}: automatisch deaktiviert - nicht genug Mana, um den Unterhalt zu bezahlen."
+        },
+        "Totem": {
+            "Title": "Totem"
+        },
+        "SourceDialog": {
+            "Title": "Quelle",
+            "ActivateSource": "Quelle aktivieren",
+            "OpenEtherSource": "Ätherquelle öffnen",
+            "ApCost": "AP-Kosten",
+            "ManaCost": "Mana-Kosten",
+            "ActionCost": "-{ap} AP, -{mana} Mana",
+            "NoGain": "Keine FP generiert - für diesen Auslöser ist keine Rate konfiguriert.",
+            "NotEnoughMana": "Nicht genug Mana."
+        },
+        "Source": {
+            "Title": "Quelle"
+        },
+        "Inspiration": {
+            "Title": "Inspiration",
+            "Cost": "-{ap} AP, -1 Inspirationsladung",
+            "GrantedTo": "Hat {name} einen d{die}-Inspirationswürfel vergeben.",
+            "AlreadyHasBetter": "{name} hält bereits einen gleichwertigen oder besseren Inspirationswürfel.",
+            "ClaimButton": "d{die}-Inspirationswürfel beanspruchen",
+            "Claimed": "{name} beansprucht den d{die}-Inspirationswürfel.",
+            "ChargeConsumed": "Inspirationsladung verbraucht",
+            "RolledForSelf": "Eigenen Inspirationswürfel gewürfelt",
+            "DieUsed": "Inspirationswürfel genutzt",
+            "NotEnoughCharges": "Keine Inspirationsladungen mehr übrig.",
+            "NoLevel": "Keine Inspiration-Fertigkeitsstufe - Würfelgröße kann nicht bestimmt werden.",
+            "NoDieHeld": "Aktuell kein Inspirationswürfel vorhanden."
+        },
+        "GenericRoll": {
+            "ChooseModeTitle": "Wurfmodus wählen",
+            "ChooseModePrompt": "Welchen Modus soll dieser Wurf nutzen?",
+            "ModeNeutral": "Neutral (einmal würfeln)",
+            "ModeAdvantage": "Vorteil (zweimal würfeln, besserer zählt)",
+            "ModeDisadvantage": "Nachteil (zweimal würfeln, schlechterer zählt)",
+            "ModeSummary": "{mode}: Wurf A {totalA} / Wurf B {totalB} - Wurf {chosen} zählt"
+        },
         "AttackRoll": {
             "Attack": "Angriff",
             "RollA": "Wurf A",
             "RollB": "Wurf B",
             "Evaluate": "Treffer auswerten",
+            "ChooseModePrompt": "Welcher Wurf zählt?",
+            "ModeNeutral": "Neutral (Wurf A zählt)",
+            "ModeAdvantage": "Vorteil (besserer Wurf zählt)",
+            "ModeDisadvantage": "Nachteil (schlechterer Wurf zählt)",
             "NoDefender": "Du hast weder ein Ziel ausgewählt noch einen zugewiesenen Charakter - kann nicht ausgewertet werden.",
             "EvaluationTitle": "Trefferauswertung ({defender})",
             "EvaluationLine": "{label} ({total}) gegen {statLabel} ({statValue}): {outcome}",
@@ -329,7 +547,13 @@
             "CriticalHit": "Kritischer Treffer",
             "CriticalMiss": "Kritisch Verfehlt",
             "PrecisionRoll": "Präzisionswurf",
-            "CriticalBonusDamage": "Kritischer Zusatzschaden"
+            "CriticalBonusDamage": "Kritischer Zusatzschaden",
+            "AssassinationDamage": "Attentat-Zusatzschaden",
+            "ApplyDamage": "Schaden anwenden",
+            "DamageApplied": "{type}-Schaden angewendet: {amount}",
+            "DamageAbsorbedIntoHealing": "{type}-Schaden absorbiert - stattdessen {amount} Heilung",
+            "DamageAppliedTitle": "Schaden angewendet ({defender})",
+            "KillConfirmed": "{defender} wurde besiegt!"
         },
         "Gender": {
             "Male": "Männlich",
@@ -582,7 +806,7 @@
             "Special": {
                 "Luck": "Glück",
                 "Massacre": "Gemetzel",
-                "SoulForce": "Seelenkraft",
+                "SoulForce": "Seelenstärke",
                 "HitCorrection": "Trefferkorrektur",
                 "DefenseCorrection": "Verteidigungskorrektur",
                 "CorpusImmortalis": "Corpus Immortalis",
@@ -592,7 +816,15 @@
             "GainHint": "Noch nicht integrierte Fertigkeitspunkte - werden bei einer Anpassungs- oder Genesungspause zu den normalen Punkten hinzugefügt (und danach zurückgesetzt).",
             "ChooseAttributePrompt": "Wähle, welches Attribut verwendet werden soll:",
             "CombineAttributePrompt": "Wähle, welche(s) Attribut(e) verwendet werden soll(en):",
-            "RollButton": "Würfeln"
+            "RollButton": "Würfeln",
+            "ChooseVariantPrompt": "Wähle, was mit diesem Wurf getan wird:",
+            "Variant": {
+                "TrapSet": "Falle stellen",
+                "TrapDisarmed": "Falle entschärfen",
+                "SleightOfHandBase": "Basis-Fertigkeitswurf",
+                "LockPicked": "Schloss knacken",
+                "Pickpocket": "Taschendiebstahl"
+            }
         },
         "SkillCategory": {
             "Weapons": "Waffenfertigkeiten",
@@ -647,7 +879,16 @@
         "Spell": {
             "ManaCost": "Mana",
             "APCost": "AP",
+            "ApCostUnitLabel": "Einheit",
+            "ApCostUnit": {
+                "Ap": "AP",
+                "Minutes": "Minuten",
+                "Hours": "Stunden",
+                "Days": "Tage"
+            },
             "Ranges": "Reichweite",
+            "OverchargeAutoEffects": "Automatische Überladungs-Effekte",
+            "OverchargeAutoEffectsHint": "Wenn aktiv, skalieren Rettungswurf-DC (+1), Reichweite (+20%) und Schaden (+50%) automatisch pro Überladung. Deaktivieren für Zauber mit handgeschriebenem Custom-Effekt - die erhöhten AP-/Mana-Kosten gelten trotzdem, aber die konkrete Wirkung wird dann manuell berechnet.",
             "PrerequisiteNotMet": "Voraussetzung nicht erfüllt: {details}",
             "Section": {
                 "General": "Allgemein",
@@ -722,7 +963,16 @@
                 "ApOwed": "Nicht genug AP - {paid} jetzt bezahlt, {remaining} noch offen. Konzentration ist nötig, um den Zauber fertigzustellen.",
                 "ApPaidTowardSpell": "{paid} AP für den ausstehenden Zauber bezahlt ({remaining} noch offen)",
                 "AlreadyConcentrating": "Beende erst den aktuellen Zauber (oder lass die Konzentration brechen), bevor du einen weiteren wirkst.",
-                "SpellCancelled": "Der kanalisierte Zauber wird abgebrochen - seine Manakosten sind verloren."
+                "SpellCancelled": "Der kanalisierte Zauber wird abgebrochen - seine Manakosten sind verloren.",
+                "RitualMinutesStarted": "Ritual begonnen - {minutes} Minuten Wirkzeit ({rounds} Runden). Jede Runde werden alle AP verbraucht.",
+                "RitualRoundPassed": "Ritual-Runde vollzogen - {remaining} Runden verbleibend.",
+                "RitualDowntime": "Wirkzeit: {value} {unit} - als Downtime-Ritual gewirkt, keine AP-Kosten.",
+                "OverchargeTitle": "Überladen: {name}",
+                "ChooseOverchargePrompt": "Wie oft überladen?",
+                "OverchargeCount": "{count}× überladen",
+                "OverchargeActive": "Überladen (×{count}) - keine Reduzierung durch Spruchkürzung.",
+                "OverchargeRanges": "Reichweite (überladen): {ranges}",
+                "OverchargeDamage": "Überladen: {amount} Schaden"
             }
         },
         "DamageType": {
@@ -865,12 +1115,17 @@
             "Concentration": {
                 "Name": "Konzentration",
                 "Description": "Diese Kreatur konzentriert sich auf eine Aufgabe. Erleidet sie Schaden, muss sie einen Konzentrations-Check (1W20 + Konstitutionsmodifikator + Fertigkeitsstufe Konzentration) gegen eine Schwierigkeit von (Schaden / 2, mindestens 5) bestehen, sonst bricht ihre Konzentration (dieser Statuseffekt wird entfernt). Mehrere \"Schaden am Anfang des Zuges\"-Quellen werden für diesen Check in derselben Runde zusammengerechnet und nur einmal geprüft."
+            },
+            "Concealed": {
+                "Name": "Tarnung",
+                "Description": "Diese Kreatur ist im Kampf getarnt/versteckt. Solange aktiv, generiert sie zu Beginn jedes eigenen Kampfzuges Schleichens eigene ausstehende FP (falls konfiguriert)."
             }
         },
         "Models": {
             "Name": "Name",
             "DiceFormula": "Wurfformel",
             "FlatBonus": "Fester Wert",
+            "DamageType": "Schadenstyp",
             "Attributes": "Genutzte Attributsmodifikatoren",
             "Properties": "Eigenschaften",
             "HardenedValue": "Härte-Wert (X)",
@@ -888,7 +1143,11 @@
             "PropertyOverrides": "Eigenschaften-Anpassungen",
             "AttributeOverride": "Attribut-Überschreibung",
             "AttributeOverrideHint": "Der Angriffsbonus dieser Waffe durch Attribute stammt normalerweise aus den genutzten Attributsmodifikatoren ihres Modells. Aktiviere dies für eine einzigartige Variante dieses Modells, die stattdessen andere Attribute nutzen soll.",
-            "AttributeOverrideEnabled": "Attribute dieser Waffe überschreiben"
+            "AttributeOverrideEnabled": "Attribute dieser Waffe überschreiben",
+            "DamageType": "Schadenstyp",
+            "DamageTypeOverride": "Schadenstyp-Überschreibung",
+            "DamageTypeOverrideHint": "Der Schadenstyp dieser Waffe (für Resistenz/Schwäche/Immunität/Absorption) stammt normalerweise aus dem Schadenstyp ihres Modells. Aktiviere dies für eine einzigartige Variante dieses Modells, die stattdessen einen anderen Schadenstyp verursachen soll.",
+            "DamageTypeOverrideEnabled": "Schadenstyp dieser Waffe überschreiben"
         },
         "ModelProperty": {
             "Heavy": {
@@ -1031,6 +1290,10 @@
                 "Name": "Stachlig",
                 "Hint": "Kreaturen, die den Träger eines solchen Gegenstands mit einem Nahkampfwaffenangriff angreifen, erleiden 1d6 Spitzschaden."
             }
+        },
+        "ItemSheet": {
+            "ManaCoreFpGrant": "Manakern-FP-Gewinn",
+            "ManaCoreFpGrantHint": "Feste FP, die bei jeder Nutzung an die Fertigkeit Manakern vergeben werden - ein am Item selbst festgelegter Wert, keine GM-konfigurierte Rate."
         }
     },
     "TYPES": {

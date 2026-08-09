@@ -35,7 +35,7 @@
       },
       "ExportImport": {
         "Name": "Export/Import Settings",
-        "Hint": "Export this world's SKSK settings (skill point costs, carry weight formula, Materials, Models, Status Effects, Training Methods) to a JSON file, or import them from one - e.g. to back up a world's configuration or copy it to another world.",
+        "Hint": "Export this world's SKSK settings (skill point costs, carry weight formula, Materials, Models, Status Effects, Training Methods, Skill Usage FP) to a JSON file, or import them from one - e.g. to back up a world's configuration or copy it to another world.",
         "Label": "Export/Import Settings",
         "Export": "Export Settings",
         "Import": "Import Settings",
@@ -45,6 +45,11 @@
         "ImportConfirmTitle": "Import Settings?",
         "ImportConfirmContent": "This will overwrite {count} setting(s) with the values from the chosen file. This cannot be undone. Continue?",
         "ImportSuccess": "{count} setting(s) imported."
+      },
+      "SkillUsageFp": {
+        "Name": "Skill Usage FP",
+        "Hint": "How many FP a Character generates for using a skill (skill checks, weapon attacks, spells cast, attribute rolls, ...) - Characters only, per skill category.",
+        "Label": "Configure Skill Usage FP"
       }
     },
     "Movement": {
@@ -76,6 +81,9 @@
       "Overview": "Overview",
       "MovementSpeeds": "Movement Speeds",
       "SizeCategory": "Size Category",
+      "PassivePerception": "Passive Perception",
+      "InspirationDie": "Inspiration Die",
+      "InspirationDieHint": "Click to roll (and consume) the Inspiration die you're currently holding, once someone has granted you one.",
       "FavoriteSkills": "Favorite Skills",
       "NoFavoriteSkills": "No favorite skills yet - star one in the Skills tab.",
       "AdditionalResources": "Additional Resources",
@@ -136,6 +144,92 @@
       "RemoveSecondarySkill": "Remove",
       "NoSecondarySkills": "No secondary skills yet."
     },
+    "SkillFpConfig": {
+      "Skill": "Skill",
+      "SkillCheck": "FP / Skill Check",
+      "WeaponAttack": "FP / Weapon Attack",
+      "Kill": "FP / Kill",
+      "HitTaken": "FP / Attack Suffered",
+      "SpellCastPerLevel": "FP / Spell Level Cast",
+      "AttributeRoll": "FP / Attribute Roll",
+      "DamageTaken": "FP / Damage Taken",
+      "WeaponsHint": "FP generated per skill check and per weapon attack (including Martial Arts) using that skill, plus per kill - once the \"Apply Damage\" button brings a target to 0 Life and maximum Negative Life, or manually via the \"Mark Kill\" button on an actor's GM tab.",
+      "ArmorsHint": "FP generated whenever the Character is the target of a weapon or Martial Arts attack evaluation (hit or miss), for every armor-category skill currently equipped (worn body armor plus Shield, if any).",
+      "MagicSchoolsHint": "FP generated per spell level whenever a Simple or Advanced spell of that magic school is cast (e.g. a rate of 1 and a level-3 spell grants 3 FP).",
+      "AttributeHint": "FP generated whenever the corresponding attribute's own roll (not a skill check) is made - only the 8 \"Unlimited X\" skills apply, one per attribute.",
+      "ResistancesHint": "FP generated whenever damage of the corresponding element is taken via the \"Apply Damage\" button - the only skill category that's capped, though: automatic gain can never raise a Resistance past level 3 (plus any item-granted skill bonus levels); manual level changes are unaffected.",
+      "ProductionHint": "Every field below is not yet automated - no crafting/brewing system exists yet to detect any of these.",
+      "RogueHint": "Fallen's roll lets the player choose \"Falle stellen\" or \"Falle entschärfen\" when they use it (both automated); Fingerfertigkeit's roll likewise offers a choice between its base check, Schlossknacken and Taschendiebstahl (also automated). Assassination is automated too: Assassination Attack grants FP whenever a weapon/Martial Arts attack hits while Concealed (alongside Assassination's own bonus damage), Assassination Kill additionally if that same attack kills the defender.",
+      "MagicHint": "Concentration checks, used Meditation dice, any spell cast (Magic Control, Chant Shortening once Magic Control reaches level 1), Mana Capacity/Mana Regeneration's own daily settlement (on the next Anpassungspause+), Mana Core's flat per-item grant, Ritualism's hours per Ritual spell cast (at least 1 hour, even under the AP unit or a sub-60-minute casting time), Overcharge used (Shift+click a spell), Source-Bound/Ether-Bound (via the header's own \"Quelle\" button - Source Ability Used on \"Quelle aktivieren\", Source Opened on \"Ätherquelle öffnen\", each paying its own editable AP/Mana cost, no usage limit), and Summoning (via the header's Summoning button - Summoned Creature Level on \"Beschwören\", Day of Summon's Existence for every still-active slot on the next Anpassungspause+) are all automated; everything else below (enchanting hours) is not yet automated - no matching system exists yet.",
+      "FighterHint": "Regeneration dice used, combat movement, Dodge used, Reflexaktion (4+ AP spent in one turn), Adrenalin used, critical hits (incl. double crit) and Brutality's bonus damage points are automated; everything else below is not yet automated.",
+      "MiscHint": "Bardic magic cast (Singing), being Concealed at the start of your own turn (Stealth), prayer via the header's Prayer button (Faith), clicks on the header's Passive Perception field (Observation), Apply Damage converting an entry into healing via the defender's own Absorption (Healer - credited to whoever caused it, scaled by the healed amount), Totem (via the header's Totem button - Totem Bond Formed on \"Totem binden\", Totem Used on \"Totem aktivieren\"), and Inspiration (via the Actions tab's own Inspiration button and the header's own Inspiration Die field - credited to whoever originally granted a die once it's actually rolled, whether by its own holder or via the granter's own Right-Click self-roll) are automated; everything else below is not yet automated - no matching system exists yet.",
+      "SpecialHint": "A landed hit (Hit Correction), a defended-against attack (Defense Correction), being at 0 Life with Negative Life left at the start of your own turn (Tenacity), any generic (non-Angriffswurf) D20 roll's critical success/double critical - skill checks, saving throws, attribute checks, and a manual Restrained escape attempt prompt for Neutral/Vorteil/Nachteil every time; Restrained's own turn-start/end check, Poison's recheck, and Concentration instead use the GM tab's Background Roll Mode preset with no dialog (Luck's own \"Critical Roll\"/\"Double Critical Roll\", credited to whoever rolled it - double only from Vorteil/Nachteil, both dice critical) - Soulforce's own \"Meditation Die Used in Combat\" (alongside Meditation's own FP whenever a Combat is active, but only while the GM tab's own \"Soulforce: FP for Meditation in Combat\" switch is also on, off by default), and Massacre's own 5 GM-tab Mass Kill buttons (20/50/150/500/1500 people killed within roughly 10 minutes, a fully manual GM judgment call - each tier's own rate depends on the actor's current Massacre skill level, independently configured per tier/level combination in the Skill Usage FP settings) - are automated; everything else below is not yet automated.",
+      "PotionBrewed": "FP / Potion Brewed (not yet automated)",
+      "ItemCrafted": "FP / Item Crafted (not yet automated)",
+      "ItemCraftFailed": "FP / Crafting Failed (not yet automated)",
+      "DishCooked": "FP / Dish Cooked (not yet automated)",
+      "CookFailed": "FP / Cooking Failed (not yet automated)",
+      "EnchantmentLevel": "FP / Enchantment Level (not yet automated)",
+      "AssassinationAttack": "FP / Assassination Attack",
+      "AssassinationKill": "FP / Assassination Kill",
+      "TrapSet": "FP / Trap Set",
+      "TrapDisarmed": "FP / Trap Disarmed",
+      "StealthRound": "FP / Round Concealed at Own Turn Start",
+      "LockPicked": "FP / Lock Picked",
+      "Pickpocket": "FP / Pickpocket Performed",
+      "ConcentrationCheck": "FP / Concentration Check",
+      "MeditationUsed": "FP / Meditation Die Used",
+      "SummonLevel": "FP / Summoned Creature Level",
+      "SummonExistenceDay": "FP / Day of Summon's Existence",
+      "MagicControlSpellCast": "FP / Any Spell Cast",
+      "DailyManaSpent": "FP / Accumulated Amount, on the Next Anpassungspause+",
+      "RitualHour": "FP / Hour Spent on a Ritual",
+      "EnchantingHour": "FP / Hour Spent Enchanting (not yet automated)",
+      "ChantShorteningSpellCast": "FP / Any Spell Cast (once Magic Control reaches level 1)",
+      "OverchargeUsed": "FP / Overcharge Used",
+      "SourceAbilityUsed": "FP / Source Ability Used",
+      "SourceOpened": "FP / Source Opened",
+      "RegenerationUsed": "FP / Regeneration Die Used",
+      "CombatMovement": "FP / 20m Moved in Combat",
+      "TechniqueCooldownRound": "FP / Round of Technique Cooldown (not yet automated)",
+      "DodgeUsed": "FP / Dodge Used",
+      "ReflexActionUsed": "FP / Reflexaktion (4+ AP Spent in One Turn)",
+      "CriticalHit": "FP / Critical Hit Landed",
+      "DoubleCriticalHit": "FP / Both Rolls Critical",
+      "CriticalBonusDamagePoint": "FP / Point of Critical Bonus Damage",
+      "AdrenalinUsed": "FP / Adrenalin Used",
+      "OffHandAttack": "FP / Off-Hand Attack",
+      "PassiveDetection": "FP / Passive Detection",
+      "Prayer": "FP / Prayer",
+      "HealedCreature": "FP / Creature Healed",
+      "BardicSpellCast": "FP / Bardic Spell Cast",
+      "FlankAttack": "FP / Flanking Attack (not yet automated)",
+      "InspirationUsed": "FP / Inspiration Die Used",
+      "TotemBond": "FP / Totem Bond Formed",
+      "TotemUsed": "FP / Totem Used",
+      "ZeroLifeRound": "FP / Round at 0 Life (with Negative Life left) at Own Turn Start",
+      "CriticalRoll": "FP / Critical Roll",
+      "DoubleCriticalRoll": "FP / Double Critical Roll",
+      "MassKill20Level0": "FP / 20 Killed (Level 0)",
+      "MassKill20Level1": "FP / 20 Killed (Level 1+)",
+      "MassKill50Level0": "FP / 50 Killed (Level 0)",
+      "MassKill50Level1": "FP / 50 Killed (Level 1)",
+      "MassKill50Level2": "FP / 50 Killed (Level 2+)",
+      "MassKill150Level0": "FP / 150 Killed (Level 0)",
+      "MassKill150Level1": "FP / 150 Killed (Level 1)",
+      "MassKill150Level2": "FP / 150 Killed (Level 2)",
+      "MassKill150Level3": "FP / 150 Killed (Level 3+)",
+      "MassKill500Level0": "FP / 500 Killed (Level 0)",
+      "MassKill500Level1": "FP / 500 Killed (Level 1)",
+      "MassKill500Level2": "FP / 500 Killed (Level 2)",
+      "MassKill500Level3": "FP / 500 Killed (Level 3)",
+      "MassKill500Level4": "FP / 500 Killed (Level 4+)",
+      "MassKill1500": "FP / 1500 Killed (Any Level)",
+      "MeditationUsedInCombat": "FP / Meditation Die Used in Combat",
+      "SoulPowerTraded": "FP / Soul Power Traded (not yet automated)",
+      "AttackHit": "FP / Attack Landed",
+      "AttackDefended": "FP / Attack Defended Against"
+    },
     "Life": {
       "MaxComputed": "Automatically calculated from Classes, Constitution, Health, Tenacity and abilities - not directly editable"
     },
@@ -165,6 +259,8 @@
       "NegativeLifeAbbr": "Neg. Life",
       "Mana": "Mana",
       "Barrier": "Barrier",
+      "SoulPower": "Soul Power",
+      "SoulPowerHint": "Soulforce's own collection resource - no maximum, meant to be spent via a trade-in mechanic that's still unwired (see the GM tab's own \"Soulforce: Enable New Mechanic\" switch).",
       "AC": "AC",
       "MR": "MR",
       "AP": "AP",
@@ -205,7 +301,29 @@
       "CriticalHitThreshold": "Critical Hit Threshold",
       "CriticalHitThresholdHint": "The lowest natural d20 result (on an Angriffswurf/attack roll only) that counts as a critical success. 20 by default; lowering it to e.g. 15 means 15-20 all critically hit.",
       "CriticalFailureThreshold": "Critical Failure Threshold",
-      "CriticalFailureThresholdHint": "The highest natural d20 result (on an Angriffswurf/attack roll only) that counts as a critical failure. 1 by default; raising it to e.g. 5 means 1-5 all critically fail."
+      "CriticalFailureThresholdHint": "The highest natural d20 result (on an Angriffswurf/attack roll only) that counts as a critical failure. 1 by default; raising it to e.g. 5 means 1-5 all critically fail.",
+      "AssassinationBonusDice": "Assassination Bonus Dice",
+      "AssassinationBonusDiceHint": "Extra dice of the same size as Assassination's current skill level (see Evaluate Hit) - has no effect at level 0, which only grants a flat bonus with no dice.",
+      "ManaCapacityAccumulator": "Mana Capacity FP Accumulator",
+      "ManaCapacityAccumulatorHint": "Real mana cost paid for spells cast since the last Anpassungs-/Genesungspause - multiplied by the Mana Capacity skillUsageFp rate and floored on the next one, then reset to 0. Not meant to be hand-edited, but visible/adjustable here if needed.",
+      "ManaRegenerationAccumulator": "Mana Regeneration FP Accumulator",
+      "ManaRegenerationAccumulatorHint": "Mana actually restored (Meditation, passive regen from time/Rest) since the last Anpassungs-/Genesungspause - multiplied by the Mana Regeneration skillUsageFp rate and floored on the next one, then reset to 0. Not meant to be hand-edited, but visible/adjustable here if needed.",
+      "GenericCriticalRollMode": "Background Roll Mode",
+      "GenericCriticalRollModeHint": "Neutral/Advantage/Disadvantage preset used ONLY by fully automatic generic (non-Angriffswurf) D20 checks that trigger with no player-facing dialog - Restrained's own turn-start/end escape check, Poison's recheck, Concentration. Player-triggered generic rolls (skill checks, attribute checks, saving throws, a manual Restrained escape attempt) always prompt fresh instead and ignore this. Targetable by Active Effects.",
+      "SummonSlotsBonus": "Summon Slots Bonus",
+      "SummonSlotsBonusHint": "A flat adjustment (positive or negative) to Summoning's own slot count (see the Summoning header button), on top of the Willpower modifier - applied before the multiplier below.",
+      "SummonSlotsMultiplier": "Summon Slots Multiplier",
+      "SummonSlotsMultiplierHint": "Multiplies (Willpower modifier + the bonus above) - floored, never below 0. 1 by default (no change).",
+      "TotemSlotsBonus": "Totem Slots Bonus",
+      "TotemSlotsBonusHint": "A flat adjustment (positive or negative) to Totem's own slot count (see the Totem header button), on top of the Totem skill's own level - applied before the multiplier below.",
+      "TotemSlotsMultiplier": "Totem Slots Multiplier",
+      "TotemSlotsMultiplierHint": "Multiplies (Totem skill level + the bonus above) - floored, never below 0. 1 by default (no change).",
+      "SoulforceMeditationCombatFpEnabled": "Soulforce: FP for Meditation in Combat",
+      "SoulforceMeditationCombatFpEnabledHint": "Whether using a Meditation die while a Combat is active also grants Soulforce's own \"Meditation Used in Combat\" FP (still scaled by that trigger's own configured rate in the Skill Usage FP settings). Off by default. Targetable by Active Effects.",
+      "SoulPowerResourceEnabled": "Soulforce: Show Soul Power Resource",
+      "SoulPowerResourceEnabledHint": "Shows the Soul Power resource on the sidebar even before Soulforce reaches its own max level (5) - it's shown regardless once that level is reached, so this only matters earlier. Off by default. Targetable by Active Effects.",
+      "SoulPowerMechanicEnabled": "Soulforce: Enable New Mechanic (reserved)",
+      "SoulPowerMechanicEnabledHint": "Reserved for Soul Power's own trade-in mechanic (its \"Soul Power Traded\" FP trigger) - not yet designed or wired up, to be tackled once every skill-usage FP trigger is fully implemented. Has no effect yet. Targetable by Active Effects."
     },
     "AttributeUsage": {
       "HighestSingle": "Use Highest (Only One Attribute)",
@@ -221,6 +339,7 @@
       "APCost": "AP Cost",
       "Attributes": "Attributes",
       "AttributeUsage": "Attribute Usage",
+      "DamageType": "Damage Type",
       "Add": "Add Attack",
       "Remove": "Remove",
       "None": "No Martial Arts Attacks defined yet."
@@ -231,6 +350,9 @@
       "Adrenalin": "Adrenalin",
       "AdrenalinHint": "Costs no AP, but reduces Adrenalin charges by 1 and restores 1 AP. Each use rolls (lifetime uses - 1)d4 as new Max Life Damage - the first use costs no max Life yet.",
       "NotEnoughAdrenalin": "No Adrenalin charges left.",
+      "Inspiration": "Inspiration",
+      "InspirationHint": "Grants an Inspiration die (size based on your own Inspiration skill level) to your current target, or offers it in chat for anyone to claim if nothing is targeted - spends the AP cost above and 1 Inspiration charge either way. Shift+Click to just spend a charge without granting anything (to simulate a special ability that consumes Inspiration charges). Right-Click to spend a charge and roll the die immediately for yourself.",
+      "Grant": "Grant",
       "Move": "Move",
       "MoveHint": "The first use each Combat round is free; every further use that round costs 1 AP.",
       "MoveDistance": "Moves {speed}m ({label}).",
@@ -316,11 +438,107 @@
       "NoGain": "No FP generated - too little time spent for any skill's rate.",
       "SkillGained": "{skill}: pending FP +{amount}"
     },
+    "SkillFp": {
+      "Gained": "{skill}: pending FP +{amount}"
+    },
+    "KillDialog": {
+      "Title": "Mark Kill",
+      "Skill": "Weapon Skill",
+      "Confirm": "Grant Kill FP",
+      "NoGain": "No FP generated - no Kill rate configured for that skill."
+    },
+    "MassKill": {
+      "SectionTitle": "Mass Kill",
+      "SectionHint": "Grants Massacre's own Mass Kill FP for killing this many people within (roughly) 10 minutes - a fully manual GM judgment call, the time window itself isn't tracked. The amount depends on this actor's own current Massacre skill level (each tier's own rate is configured in the Skill Usage FP settings).",
+      "Title": "Mass Kill ({count})",
+      "NoGain": "No FP generated - no rate configured for this tier at the actor's current Massacre level."
+    },
+    "PrayerDialog": {
+      "Title": "Prayer",
+      "Hours": "Hours",
+      "Confirm": "Grant Prayer FP",
+      "NoGain": "No FP generated - no Prayer rate configured for Faith."
+    },
+    "Prayer": {
+      "Title": "Pray"
+    },
+    "SummoningDialog": {
+      "Title": "Summoning",
+      "Name": "Name",
+      "Level": "Level",
+      "LevelValue": "Level {level}",
+      "NamePlaceholder": "Summon name (orientation only)",
+      "Summon": "Summon",
+      "Clear": "Clear",
+      "NoGain": "No FP generated - no Summoning rate configured for that trigger.",
+      "NoSlots": "No summon slots available - check the Willpower modifier and the GM tab's Summon Slots settings."
+    },
+    "Summoning": {
+      "Title": "Summon"
+    },
+    "TotemDialog": {
+      "Title": "Totem",
+      "Name": "Name",
+      "ManaCostPerRound": "Mana Cost / Round",
+      "NamePlaceholder": "Totem name (orientation only)",
+      "Bind": "Bind Totem",
+      "Unbind": "Unbind Totem",
+      "Activate": "Activate Totem",
+      "Deactivate": "Deactivate Totem",
+      "EditEffects": "Edit Effects",
+      "ActivationCost": "-2 AP, -{mana} Mana",
+      "NoGain": "No FP generated - no Totem rate configured for that trigger.",
+      "NoSlots": "No totem slots available - check the Totem skill's level and the GM tab's Totem Slots settings.",
+      "NotEnoughMana": "Not enough Mana.",
+      "AutoDeactivated": "{name}: automatically deactivated - not enough Mana to pay its upkeep."
+    },
+    "Totem": {
+      "Title": "Totem"
+    },
+    "SourceDialog": {
+      "Title": "Source",
+      "ActivateSource": "Activate Source",
+      "OpenEtherSource": "Open Ether Source",
+      "ApCost": "AP Cost",
+      "ManaCost": "Mana Cost",
+      "ActionCost": "-{ap} AP, -{mana} Mana",
+      "NoGain": "No FP generated - no rate configured for that trigger.",
+      "NotEnoughMana": "Not enough Mana."
+    },
+    "Source": {
+      "Title": "Source"
+    },
+    "Inspiration": {
+      "Title": "Inspiration",
+      "Cost": "-{ap} AP, -1 Inspiration Charge",
+      "GrantedTo": "Granted a d{die} Inspiration die to {name}.",
+      "AlreadyHasBetter": "{name} already holds an equal or better Inspiration die.",
+      "ClaimButton": "Claim d{die} Inspiration Die",
+      "Claimed": "{name} claims the d{die} Inspiration die.",
+      "ChargeConsumed": "Inspiration Charge Spent",
+      "RolledForSelf": "Rolled Own Inspiration Die",
+      "DieUsed": "Inspiration Die Used",
+      "NotEnoughCharges": "No Inspiration charges left.",
+      "NoLevel": "No Inspiration skill level - can't determine a die size.",
+      "NoDieHeld": "No Inspiration die currently held."
+    },
+    "GenericRoll": {
+      "ChooseModeTitle": "Choose Roll Mode",
+      "ChooseModePrompt": "Which mode should this roll use?",
+      "ModeNeutral": "Neutral (roll once)",
+      "ModeAdvantage": "Advantage (roll twice, better counts)",
+      "ModeDisadvantage": "Disadvantage (roll twice, worse counts)",
+      "ModeSummary": "{mode}: Roll A {totalA} / Roll B {totalB} - Roll {chosen} counts"
+    },
     "AttackRoll": {
       "Attack": "Attack",
       "RollA": "Roll A",
       "RollB": "Roll B",
       "Evaluate": "Evaluate Hit",
+      "ChooseModePrompt": "Which roll counts?",
+      "ModeNeutral": "Neutral (Roll A counts)",
+      "ModeAdvantage": "Advantage (better roll counts)",
+      "ModeDisadvantage": "Disadvantage (worse roll counts)",
       "NoDefender": "You have no target selected and no assigned character - cannot evaluate.",
       "EvaluationTitle": "Hit Evaluation ({defender})",
       "EvaluationLine": "{label} ({total}) vs {statLabel} ({statValue}): {outcome}",
@@ -329,7 +547,13 @@
       "CriticalHit": "Critical Hit",
       "CriticalMiss": "Critical Miss",
       "PrecisionRoll": "Precision Roll",
-      "CriticalBonusDamage": "Critical Bonus Damage"
+      "CriticalBonusDamage": "Critical Bonus Damage",
+      "AssassinationDamage": "Assassination Bonus Damage",
+      "ApplyDamage": "Apply Damage",
+      "DamageApplied": "{type} damage applied: {amount}",
+      "DamageAbsorbedIntoHealing": "{type} damage absorbed - {amount} healing instead",
+      "DamageAppliedTitle": "Damage Applied ({defender})",
+      "KillConfirmed": "{defender} has been defeated!"
     },
     "Gender": {
       "Male": "Male",
@@ -578,7 +802,15 @@
       "GainHint": "Not-yet-integrated skill points - added to the real points (and reset to 0) once an Adjustment or Recuperation Pause is taken.",
       "ChooseAttributePrompt": "Choose which attribute to use:",
       "CombineAttributePrompt": "Choose which attribute(s) to use:",
-      "RollButton": "Roll"
+      "RollButton": "Roll",
+      "ChooseVariantPrompt": "Choose what you're doing with this roll:",
+      "Variant": {
+        "TrapSet": "Set a Trap",
+        "TrapDisarmed": "Disarm a Trap",
+        "SleightOfHandBase": "Base Check",
+        "LockPicked": "Pick a Lock",
+        "Pickpocket": "Pickpocket"
+      }
     },
     "SkillCategory": {
       "Weapons": "Weapon Skills",
@@ -647,7 +879,16 @@
     "Spell": {
       "ManaCost": "Mana",
       "APCost": "AP",
+      "ApCostUnitLabel": "Unit",
+      "ApCostUnit": {
+        "Ap": "AP",
+        "Minutes": "Minutes",
+        "Hours": "Hours",
+        "Days": "Days"
+      },
       "Ranges": "Range",
+      "OverchargeAutoEffects": "Automatic Overcharge Effects",
+      "OverchargeAutoEffectsHint": "When on, saving throw DC (+1), range (+20%) and damage (+50%) all scale automatically per Überladung. Turn off for a spell with a hand-written Custom Effect - the increased AP/Mana cost still applies either way, but the actual effect is then calculated manually.",
       "PrerequisiteNotMet": "Prerequisite not met: {details}",
       "Section": {
         "General": "General",
@@ -722,7 +963,16 @@
         "ApOwed": "Not enough AP - {paid} paid now, {remaining} still owed. Concentration is required to finish casting.",
         "ApPaidTowardSpell": "{paid} AP paid toward the pending spell ({remaining} still owed)",
         "AlreadyConcentrating": "Finish casting (or let Concentration break on) your current spell before casting another.",
-        "SpellCancelled": "The spell being channeled is cancelled - its Mana cost is lost."
+        "SpellCancelled": "The spell being channeled is cancelled - its Mana cost is lost.",
+        "RitualMinutesStarted": "Ritual begun - {minutes} minutes casting time ({rounds} rounds). All AP is spent every round.",
+        "RitualRoundPassed": "Ritual round completed - {remaining} rounds remaining.",
+        "RitualDowntime": "Casting time: {value} {unit} - cast as a downtime ritual, no AP cost.",
+        "OverchargeTitle": "Overcharge: {name}",
+        "ChooseOverchargePrompt": "How many times to overcharge?",
+        "OverchargeCount": "Overcharge ×{count}",
+        "OverchargeActive": "Overcharged (×{count}) - no reduction from Chant Shortening.",
+        "OverchargeRanges": "Range (overcharged): {ranges}",
+        "OverchargeDamage": "Overcharged: {amount} damage"
       }
     },
     "DamageType": {
@@ -865,12 +1115,17 @@
       "Concentration": {
         "Name": "Concentration",
         "Description": "This creature is concentrating on a task. If it takes damage, it must pass a Concentration check (1d20 + Constitution modifier + Concentration skill level) against a DC of (damage / 2, minimum 5), or its concentration breaks (this status effect is removed). Multiple \"damage at the start of the turn\" sources are summed together and checked only once per round."
+      },
+      "Concealed": {
+        "Name": "Concealed",
+        "Description": "This creature is concealed/hidden in combat. While active, it generates Stealth's own pending FP (if configured) at the start of each of its own Combat turns."
       }
     },
     "Models": {
       "Name": "Name",
       "DiceFormula": "Roll Formula",
       "FlatBonus": "Flat Value",
+      "DamageType": "Damage Type",
       "Attributes": "Attribute Modifiers Used",
       "Properties": "Properties",
       "HardenedValue": "Hardened Value (X)",
@@ -888,7 +1143,11 @@
       "PropertyOverrides": "Property Overrides",
       "AttributeOverride": "Attribute Override",
       "AttributeOverrideHint": "This weapon's Angriffswurf (attack roll) attribute bonus normally draws from its Model's own Attribute Modifiers Used. Enable this for a unique variant of that Model that should use different attributes instead.",
-      "AttributeOverrideEnabled": "Override this weapon's attributes"
+      "AttributeOverrideEnabled": "Override this weapon's attributes",
+      "DamageType": "Damage Type",
+      "DamageTypeOverride": "Damage Type Override",
+      "DamageTypeOverrideHint": "This weapon's damage type (for Resistance/Weakness/Immunity/Absorption purposes) normally draws from its Model's own Damage Type. Enable this for a unique variant of that Model that should deal a different damage type instead.",
+      "DamageTypeOverrideEnabled": "Override this weapon's damage type"
     },
     "ModelProperty": {
       "Heavy": {
@@ -1031,6 +1290,10 @@
         "Name": "Spiky",
         "Hint": "Creatures that attack the bearer of such an item with a melee weapon attack take 1d6 piercing damage."
       }
+    },
+    "ItemSheet": {
+      "ManaCoreFpGrant": "Manakern FP Grant",
+      "ManaCoreFpGrantHint": "Flat FP granted to the Manakern skill each time this is used - a designer-set value on this item itself, not a GM-configured rate."
     }
   },
   "TYPES": {

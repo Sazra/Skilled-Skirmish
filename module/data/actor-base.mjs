@@ -118,6 +118,20 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       value: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
       max: new fields.NumberField({ ...requiredInteger, initial: 0 })
     });
+    // The Inspiration die this actor currently holds, granted by another
+    // actor (or itself, via a self-roll) - see helpers/inspiration.mjs.
+    // size is the die's face count (4/6/8/10/12, matching the granter's own
+    // Inspiration skill level 1-5), 0 = none held. Shown on both Character
+    // and NPC sheet headers - clicking it rolls and clears the die
+    // (helpers/inspiration.mjs#rollGrantedInspirationDie), crediting
+    // grantedByUuid's own Inspiration skill with "inspirationUsed" FP (if
+    // that actor still exists and is a Character). Granting a new die only
+    // overwrites an already-held one if its size is strictly higher.
+    schema.inspirationDie = new fields.SchemaField({
+      size: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+      grantedByUuid: new fields.StringField({ required: true, blank: true, initial: "" }),
+      grantedByName: new fields.StringField({ required: true, blank: true, initial: "" }),
+    });
     // Locked (max 0) until the Adrenalin skill reaches level 1 - see
     // helpers/generalResources.mjs#computeMaxAdrenalinCharges.
     schema.adrenalinCharges = new fields.SchemaField({
@@ -159,6 +173,28 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // helpers/criticalRolls.mjs#getGenericCriticalType.
     schema.criticalHitThreshold = new fields.NumberField({ ...requiredInteger, initial: 20, min: 10, max: 20 });
     schema.criticalFailureThreshold = new fields.NumberField({ ...requiredInteger, initial: 1, min: 1, max: 10 });
+    // The Neutral/Vorteil/Nachteil mode preset used by generic (non-
+    // Angriffswurf) D20 rolls that trigger fully automatically, with no
+    // player-facing choice dialog (Restrained's own turn-start/end escape
+    // check, Poison's recheck, Concentration) - see helpers/criticalRolls.mjs
+    // #evaluateD20WithMode. Player-triggered generic rolls (skill checks,
+    // attribute checks, saving throws, a manual Restrained escape attempt)
+    // instead prompt fresh every time via chooseGenericRollMode, ignoring
+    // this field entirely. Plain, directly user-editable on the GM tab and
+    // equally targetable by Active Effects, same convention as
+    // criticalHitThreshold above.
+    schema.genericCriticalRollMode = new fields.StringField({
+      required: true, blank: false, initial: "neutral",
+      choices: ["neutral", "advantage", "disadvantage"],
+    });
+    // Extra dice added to Assassination's own bonus damage (see helpers/
+    // attackRolls.mjs#rollAssassinationBonusDamage), on top of whatever
+    // dice its own skill-level table already grants - same convention as
+    // criticalHitThreshold above (plain, directly user-editable on the GM
+    // tab and equally targetable by Active Effects). Has no effect at
+    // Assassination level 0, which grants a flat bonus with no die size to
+    // extend.
+    schema.assassinationBonusDice = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
     // A creature's innate "natural armor" bonus, scaling with level - see
     // helpers/defense.mjs#computeNaturalMaterialBonus. adjustment is a
     // plain, user-editable (GM tab) flat modifier; bonus is not meant to be
@@ -189,6 +225,13 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       'stormancy', 'chaomancy', 'demomancy', 'drakomancy', 'necromancy', 'miracles',
       'feymancy', 'geomancy', 'biomancy', 'cryomancy', 'witchery',
     ].map(key => [key, new fields.NumberField({ ...requiredInteger, initial: 0 })])));
+    // A flat bonus to the maximum number of Überladungen (Overcharge
+    // stacks) a caster may apply to a single spell cast, beyond "1 + their
+    // Überladen skill level" - not meant to be hand-edited, purely an
+    // Active Effect target ("system.overchargeMaxBonus"), same convention
+    // as naturalMaterialBonus.bonus above. See helpers/spells.mjs#
+    // computeMaxOverchargeCount.
+    schema.overchargeMaxBonus = new fields.NumberField({ ...requiredInteger, initial: 0 });
 
     schema.biography = new fields.StringField({ required: true, blank: true });
 
@@ -267,6 +310,12 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       name: new fields.StringField({ required: true, blank: true, initial: "" }),
       formula: new fields.StringField({ required: true, blank: true, initial: "1d4" }),
       apCost: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+      // For Resistance/Weakness/Immunity/Absorption purposes (see
+      // helpers/defense.mjs#applyElementalDefense) - a weapon Item resolves
+      // this from its Model/attributeOverride instead (see
+      // helpers/attackRolls.mjs#getWeaponDamageType); a Martial Arts attack
+      // has no such Model to draw from, so it's a plain per-entry field.
+      damageType: new fields.StringField({ required: true, blank: false, initial: "blunt" }),
       attributes: new fields.SchemaField(attackAttributesSchema),
       attributeUsage: new fields.StringField({
         required: true, blank: false, initial: "highestMultiple",
@@ -283,11 +332,11 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
         return [
           {
             name: game.i18n.localize('SKSK.MartialArtsAttack.DefaultMainHand'),
-            formula: "1d4", apCost: 2, attributes: strDexOnly, attributeUsage: "highestMultiple",
+            formula: "1d4", apCost: 2, damageType: "blunt", attributes: strDexOnly, attributeUsage: "highestMultiple",
           },
           {
             name: game.i18n.localize('SKSK.MartialArtsAttack.DefaultOffHand'),
-            formula: "1d4", apCost: 1, attributes: { ...strDexOnly }, attributeUsage: "highestMultiple",
+            formula: "1d4", apCost: 1, damageType: "blunt", attributes: { ...strDexOnly }, attributeUsage: "highestMultiple",
           },
         ];
       },
@@ -298,6 +347,20 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // user-editable there (0 is a valid, explicitly allowed value).
     schema.regenerationApCost = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
     schema.meditationApCost = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+    // apps/source-dialog.mjs's own AP/Mana costs - directly user-editable
+    // there (0 is a valid, explicitly allowed value), same convention as
+    // regenerationApCost/meditationApCost above. "Quelle aktivieren"
+    // (Source-Bound) and "Ätherquelle öffnen" (Ether-Bound) each spend their
+    // own independent amount before granting their own FP trigger.
+    schema.sourceAbilityApCost = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+    schema.sourceAbilityManaCost = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+    schema.etherSourceApCost = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+    schema.etherSourceManaCost = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+    // Actions tab's Inspiration row (helpers/inspiration.mjs) - directly
+    // user-editable there (0 allowed), same convention as regeneration/
+    // meditationApCost above. Shared by the grant/shift-consume/right-click
+    // self-roll variants alike.
+    schema.inspirationApCost = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
     // The last Combat round the Move action was used for free in - not
     // meant to be hand-edited. null outside of (or before ever using Move
     // in) combat. See helpers/actions.mjs#useMove.
@@ -306,6 +369,87 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // even by a Rest), since each use permanently costs more max Life than
     // the last. Not meant to be hand-edited. See helpers/actions.mjs#rollAdrenalin.
     schema.adrenalinUsedCount = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+    // Mana Capacity/Mana Regeneration's own FP accumulators (GM tab,
+    // editable) - real mana cost paid for spells cast / mana actually
+    // restored (Meditation, passive regen from time/Rest), summed up since
+    // the last Anpassungs-/Genesungspause. Multiplied by the skillUsageFp
+    // "dailyManaSpent" rate and floored on the next qualifying Pause, then
+    // reset to 0 - see helpers/rest.mjs#applyRest.
+    schema.manaCapacityAccumulator = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+    schema.manaRegenerationAccumulator = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+    // Reflexe's own "Reflexaktion" FP trigger has already fired this Combat
+    // turn - reset to false every turn start. Not meant to be hand-edited.
+    // See helpers/skillFp.mjs#checkReflexActionTrigger.
+    schema.reflexActionGranted = new fields.BooleanField({ initial: false });
+    // Beschwörung's (Summoning) own list of active summon slots - resized
+    // (padded/truncated) to the current slot count whenever apps/summoning-
+    // dialog.mjs renders, see helpers/summoning.mjs#getResizedSummons. An
+    // empty slot has blank name/summoned false; "Beschwören" fills name/
+    // level and sets summoned true (granting Summoning's "summonLevel" FP,
+    // scaled by level), "Löschen" clears it back to empty. Every still-
+    // summoned slot grants "summonExistenceDay" FP on the next Anpassungs-/
+    // Genesungspause - see helpers/rest.mjs#applyRest.
+    schema.summons = new fields.ArrayField(new fields.SchemaField({
+      name: new fields.StringField({ required: true, blank: true, initial: "" }),
+      level: new fields.NumberField({ ...requiredInteger, initial: 1, min: 0 }),
+      summoned: new fields.BooleanField({ initial: false }),
+    }));
+    // GM-tab adjustments to Summoning's own slot count, on top of the
+    // Willpower modifier - summonSlotsBonus is added first (positive or
+    // negative), summonSlotsMultiplier applied after; floored, never below
+    // 0. See helpers/summoning.mjs#computeSummonSlots.
+    schema.summonSlotsBonus = new fields.NumberField({ ...requiredInteger, initial: 0 });
+    schema.summonSlotsMultiplier = new fields.NumberField({ required: true, nullable: false, initial: 1, min: 0 });
+    // Totem's own list of totem slots - resized (padded/truncated) to the
+    // current slot count whenever apps/totem-dialog.mjs renders, see
+    // helpers/totem.mjs#getResizedTotems. An empty slot has blank name/
+    // bound false; "Totem binden" fills name, sets bound true (granting
+    // Totem's "totemBond" FP) and creates a linked, initially-disabled
+    // ActiveEffect (effectId) the player configures via the dialog's own
+    // Effects button (Foundry's native effect editor - free-form Changes).
+    // "Totem aktivieren" pays 2 AP + manaCostPerRound Mana up front,
+    // flips active true and that effect's own disabled false (granting
+    // "totemUsed" FP); "Totem deaktivieren" reverses both, no FP. Every
+    // still-active totem drains manaCostPerRound Mana at this actor's own
+    // Combat turn start, auto-deactivating on insufficient Mana - see
+    // helpers/statusEffects.mjs#handleTotemTurnStart. "Zeile löschen/
+    // freigeben" clears the slot AND deletes its linked effect.
+    schema.totems = new fields.ArrayField(new fields.SchemaField({
+      name: new fields.StringField({ required: true, blank: true, initial: "" }),
+      bound: new fields.BooleanField({ initial: false }),
+      active: new fields.BooleanField({ initial: false }),
+      effectId: new fields.StringField({ required: true, blank: true, initial: "" }),
+      manaCostPerRound: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+    }));
+    // GM-tab adjustments to Totem's own slot count, on top of the Totem
+    // skill's own level - same convention as summonSlotsBonus/
+    // summonSlotsMultiplier above. See helpers/totem.mjs#computeTotemSlots.
+    schema.totemSlotsBonus = new fields.NumberField({ ...requiredInteger, initial: 0 });
+    schema.totemSlotsMultiplier = new fields.NumberField({ required: true, nullable: false, initial: 1, min: 0 });
+    // GM-tab switch gating Seelenstärke's "meditationUsedInCombat" FP
+    // trigger (helpers/actions.mjs#rollMeditation) - off by default, since
+    // unlike every other skill-usage trigger (gated purely by its own GM-
+    // configured rate being > 0) this one is disruptive enough to combat
+    // pacing that the GM opted for an explicit extra switch on top.
+    schema.soulforceMeditationCombatFpEnabled = new fields.BooleanField({ initial: false });
+    // Seelenstärke's own "Seelenmacht" (Soul Power) resource - a collection
+    // pool with no maximum (like barrier above), meant to be fed by
+    // SoulPowerTraded's own trade-in mechanic once that's designed (see
+    // soulPowerMechanicEnabled below). Shown on the resources sidebar once
+    // Seelenstärke reaches its own max level (5) or soulPowerResourceEnabled
+    // is on - see sheets/actor-sheet.mjs#_prepareGeneral.
+    schema.soulPower = new fields.SchemaField({
+      value: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+    });
+    // GM-tab switch that shows the Soul Power resource above even before
+    // Seelenstärke reaches level 5 - off by default (the resource is shown
+    // regardless once that level is reached, so this only matters early).
+    schema.soulPowerResourceEnabled = new fields.BooleanField({ initial: false });
+    // GM-tab switch reserved for Soul Power's own trade-in mechanic - not
+    // yet implemented (see helpers/skillFp.mjs's "soulPowerTraded" trigger,
+    // still unwired); to be designed and wired up once every skill-usage FP
+    // trigger is fully implemented. Currently has no effect on its own.
+    schema.soulPowerMechanicEnabled = new fields.BooleanField({ initial: false });
     // A spell whose AP cost couldn't be fully paid at cast time - itemId
     // (blank = none pending) references the spell Item still owed apCost
     // AP, paid off gradually at the start of this actor's later Combat
@@ -315,6 +459,18 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     schema.pendingSpell = new fields.SchemaField({
       itemId: new fields.StringField({ required: true, blank: true, initial: "" }),
       apCost: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+      // A "minutes"-unit spell's own debt kind (see helpers/spell-rolls.mjs#
+      // rollSpellItem/handlePendingSpellTurnStart) - counts down by 1 every
+      // Combat turn start, draining all AP each time, instead of apCost's
+      // fixed amount paid down incrementally. Only one of apCost/
+      // roundsRemaining is ever active at once for a given pendingSpell.
+      roundsRemaining: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+      // How many times this pending spell was overcharged at cast time
+      // (see helpers/spells.mjs#computeMaxOverchargeCount) - carried
+      // through to whichever later moment it actually resolves (see
+      // helpers/spell-rolls.mjs#resolvePendingSpell), so a deferred
+      // overcharged cast still scales its saving throws/ranges/damage.
+      overchargeCount: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
     });
 
     const attributeKeys = Object.keys(CONFIG.SKSK.attributes);

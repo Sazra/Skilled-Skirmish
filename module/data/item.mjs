@@ -46,6 +46,11 @@ export default class SKSKItem extends SKSKItemBase {
 
     schema.formula = new fields.StringField({ blank: true });
 
+    // Manakern's own flat FP grant (to the "manaCore" skill) whenever this
+    // item is used - a designer-set value on the item itself, not a GM-
+    // configured rate. See helpers/skillFp.mjs#grantFlatSkillFp.
+    schema.manaCoreFpGrant = new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 });
+
     // Zero or more mana-cost discounts for a specific magic school (of any
     // spellType) - e.g. a ring granting a flat -5 discount on a school.
     // percent stacks additively with every other source (including the

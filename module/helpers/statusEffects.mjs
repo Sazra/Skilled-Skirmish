@@ -1,8 +1,11 @@
 import { postActionChatCard } from './actions.mjs';
 import { getClassAbilityLevels, actorHasAdvancedClass } from './abilities.mjs';
-import { getActorSkillLevel } from './skills.mjs';
+import { getActorSkillLevel, getSkillLabel } from './skills.mjs';
 import { handlePendingSpellTurnStart } from './spell-rolls.mjs';
-import { getGenericCriticalType, resolveCheckSuccess, wrapCriticalBlock } from './criticalRolls.mjs';
+import {
+  resolveCheckSuccess, wrapCriticalBlock, chooseGenericRollMode, evaluateD20WithMode, formatD20ModeSummaryLine,
+} from './criticalRolls.mjs';
+import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
 
 /**
  * Movement types (CONFIG.SKSK.movementTypes) Dazed does NOT reduce.
@@ -127,19 +130,20 @@ function clampResourceChange(value, max, delta) {
  * Directly apply a Life change (damage or healing) to system.life.value,
  * clamped via clampResourceChange - every turn-start effect that affects
  * current Life (Poison, Frostbite, Wound, custom Life ticks) goes through
- * this rather than only narrating the amount in chat. Damage that would
- * take Life below 0 doesn't just get floored away - whatever's left over
- * once Life hits 0 carries through onto system.negativeLife.value instead
- * (clamped at its own max), regardless of which of the above dealt it.
- * Healing never interacts with Negative Life here (Rest already handles
- * healing it directly, on its own tiers).
+ * this rather than only narrating the amount in chat, as does the
+ * Angriffswurf "Apply Damage" button (see helpers/damageApplication.mjs).
+ * Damage that would take Life below 0 doesn't just get floored away -
+ * whatever's left over once Life hits 0 carries through onto
+ * system.negativeLife.value instead (clamped at its own max), regardless
+ * of which of the above dealt it. Healing never interacts with Negative
+ * Life here (Rest already handles healing it directly, on its own tiers).
  * @param {Actor} actor
  * @param {number} delta   Positive to heal, negative to damage.
  * @return {Promise<{lifeDelta: number, negativeLifeDelta: number}>} The
  *   amounts actually applied to each (may differ from delta once clamped);
  *   negativeLifeDelta is positive when Negative Life worsens.
  */
-async function applyLifeChange(actor, delta) {
+export async function applyLifeChange(actor, delta) {
   if (!delta) return { lifeDelta: 0, negativeLifeDelta: 0 };
   const life = actor.system.life;
   const newLifeValue = clampResourceChange(life.value, life.max, delta);
@@ -606,20 +610,24 @@ export async function setRestrainedConfig(actor, config) {
  * Roll Restrained's escape check (Strength) against its own configured
  * DC - success removes the status entirely (matching Poison's "a passed
  * check cures it" convention); failure leaves it in place. Used both by
- * the automatic start/end-of-turn timings and (with an AP cost gate
- * first) the player-triggered one - see attemptRestrainedEscapeManual.
+ * the automatic start/end-of-turn timings (mode omitted - falls back to
+ * the actor's own GM-tab preset, system.genericCriticalRollMode, with no
+ * dialog) and (with an AP cost gate first) the player-triggered one, which
+ * instead prompts fresh every time - see attemptRestrainedEscapeManual.
  * @param {Actor} actor
+ * @param {"neutral"|"advantage"|"disadvantage"} [mode]
  * @return {Promise<void>}
  */
-export async function attemptRestrainedEscape(actor) {
+export async function attemptRestrainedEscape(actor, mode = null) {
   const effect = getStatusEffect(actor, 'restrained');
   if (!effect) return;
 
+  const resolvedMode = mode ?? actor.system.genericCriticalRollMode;
   const dc = effect.getFlag('sksk', 'dc') ?? 0;
   const strMod = actor.system.attributes?.str?.mod ?? 0;
   const formula = applyD20Malus(`1d20 + ${strMod}`, actor, 'str');
-  const roll = await new Roll(formula, actor.getRollData()).evaluate();
-  const criticalType = getGenericCriticalType(roll);
+  const result = await evaluateD20WithMode(formula, actor.getRollData(), resolvedMode);
+  const { roll, criticalType, doubleCritical } = result;
   const success = resolveCheckSuccess(roll.total, dc, criticalType);
 
   if (success) await setStatusStacks(actor, 'restrained', 0);
@@ -628,14 +636,26 @@ export async function attemptRestrainedEscape(actor) {
     : criticalType === 'failure' ? 'SKSK.Spell.Roll.CriticalFailure'
     : success ? 'SKSK.Spell.Roll.Success' : 'SKSK.Spell.Roll.Failure';
   const outcome = game.i18n.localize(outcomeKey);
-  const extraHTML = `<div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.RestrainedCheck', { dc })}: ${outcome}</div>`;
+  // Luck's own "criticalRoll"/"doubleCriticalRoll" FP - any generic (non-
+  // Angriffswurf) D20 roll's critical success/double critical, see
+  // helpers/criticalRolls.mjs#evaluateD20WithMode.
+  let luckHTML = criticalType === 'success'
+    ? formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'luck', 'criticalRoll'))
+    : '';
+  if (doubleCritical) {
+    luckHTML += formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'luck', 'doubleCriticalRoll'));
+  }
+  luckHTML += formatD20ModeSummaryLine(result, resolvedMode);
+  const extraHTML = `<div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.RestrainedCheck', { dc })}: ${outcome}</div>${luckHTML}`;
   await postActionChatCard(actor, getStatusEffectName('restrained'), roll, 0, extraHTML, criticalType);
 }
 
 /**
  * Player-triggered escape attempt (Restrained's "apCost" timing) - spends
  * its configured AP cost first (if any), aborting if the actor can't
- * afford it.
+ * afford it, then prompts for Neutral/Vorteil/Nachteil (unlike the
+ * automatic start/end-of-turn timings, which use the actor's own GM-tab
+ * preset instead - see attemptRestrainedEscape).
  * @param {Actor} actor
  * @return {Promise<void>}
  */
@@ -644,12 +664,14 @@ export async function attemptRestrainedEscapeManual(actor) {
   if (!effect) return;
 
   const apCost = effect.getFlag('sksk', 'apCost') ?? 0;
-  if (apCost > 0) {
-    const ap = actor.system.actionPoints.value;
-    if (ap < apCost) return ui.notifications.warn(game.i18n.localize('SKSK.Action.NotEnoughAP'));
-    await actor.update({ 'system.actionPoints.value': ap - apCost });
-  }
-  await attemptRestrainedEscape(actor);
+  const ap = actor.system.actionPoints.value;
+  if (apCost > 0 && ap < apCost) return ui.notifications.warn(game.i18n.localize('SKSK.Action.NotEnoughAP'));
+
+  const mode = await chooseGenericRollMode();
+  if (!mode) return;
+
+  if (apCost > 0) await actor.update({ 'system.actionPoints.value': ap - apCost });
+  await attemptRestrainedEscape(actor, mode);
 }
 
 /**
@@ -769,6 +791,10 @@ async function handleActionPointsTurnStart(actor) {
   const updates = {};
   if (ap.value !== ap.max) updates['system.actionPoints.value'] = ap.max;
   if (rp.value !== rp.max) updates['system.reactionPoints.value'] = rp.max;
+  // Reflexe's own "Reflexaktion" FP trigger (see helpers/skillFp.mjs#
+  // checkReflexActionTrigger) fires at most once per turn - reset here,
+  // before AP is actually spent on anything this turn.
+  if (actor.system.reflexActionGranted) updates['system.reflexActionGranted'] = false;
   if (Object.keys(updates).length) await actor.update(updates);
 
   await handleDazedTurnStart(actor);
@@ -805,8 +831,11 @@ async function handlePoisonTurnStart(actor, round) {
     totalDamage += damageDealtFrom(lifeChange);
     const conMod = actor.system.attributes?.con?.mod ?? 0;
     const checkFormula = applyD20Malus(`1d20 + ${conMod}`, actor, 'con');
-    const checkRoll = await new Roll(checkFormula, actor.getRollData()).evaluate();
-    const criticalType = getGenericCriticalType(checkRoll);
+    // Fully automatic (turn-start) check - uses the actor's own GM-tab
+    // preset (system.genericCriticalRollMode) rather than a per-check
+    // dialog, see helpers/criticalRolls.mjs#evaluateD20WithMode.
+    const checkResult = await evaluateD20WithMode(checkFormula, actor.getRollData(), actor.system.genericCriticalRollMode);
+    const { roll: checkRoll, criticalType, doubleCritical } = checkResult;
     const success = resolveCheckSuccess(checkRoll.total, def.dc, criticalType);
 
     if (success) {
@@ -820,10 +849,21 @@ async function handlePoisonTurnStart(actor, round) {
       : criticalType === 'failure' ? 'SKSK.Spell.Roll.CriticalFailure'
       : success ? 'SKSK.Spell.Roll.Success' : 'SKSK.Spell.Roll.Failure';
     const outcome = game.i18n.localize(outcomeKey);
+    // Luck's own "criticalRoll"/"doubleCriticalRoll" FP - any generic (non-
+    // Angriffswurf) D20 roll's critical success/double critical, see
+    // helpers/criticalRolls.mjs#evaluateD20WithMode.
+    let luckHTML = criticalType === 'success'
+      ? formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'luck', 'criticalRoll'))
+      : '';
+    if (doubleCritical) {
+      luckHTML += formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'luck', 'doubleCriticalRoll'));
+    }
+    luckHTML += formatD20ModeSummaryLine(checkResult, actor.system.genericCriticalRollMode);
     const extraHTML = `
       ${negativeLifeOverflowHTML(negativeLifeDelta)}
       <div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.PoisonCheck', { dc: def.dc })}: ${outcome}</div>
       ${checkRendered}
+      ${luckHTML}
     `;
     await postActionChatCard(actor, getStatusEffectName(severityId), damageRoll, 0, extraHTML);
   }
@@ -963,19 +1003,23 @@ export async function checkConcentration(actor, damage) {
   const conMod = actor.system.attributes?.con?.mod ?? 0;
   const concentrationLevel = getActorSkillLevel(actor, 'concentration');
   const formula = applyD20Malus(`1d20 + ${conMod} + ${concentrationLevel}`, actor, 'con');
-  const roll = await new Roll(formula, actor.getRollData()).evaluate();
-  const criticalType = getGenericCriticalType(roll);
+  // Fully automatic (damage-triggered) check - uses the actor's own GM-tab
+  // preset (system.genericCriticalRollMode) rather than a per-check dialog,
+  // see helpers/criticalRolls.mjs#evaluateD20WithMode.
+  const result = await evaluateD20WithMode(formula, actor.getRollData(), actor.system.genericCriticalRollMode);
+  const { roll, criticalType, doubleCritical } = result;
   const success = resolveCheckSuccess(roll.total, dc, criticalType);
 
   // A failed check breaks Concentration outright - if a spell (see
-  // helpers/spell-rolls.mjs#rollSpellItem) was still being paid off in AP
-  // instalments, that cancels it too: its remaining AP debt is forgiven,
-  // but the Mana it already cost at cast time is not refunded.
+  // helpers/spell-rolls.mjs#rollSpellItem) was still being paid off, in AP
+  // instalments or a "minutes"-unit ritual's own round countdown, that
+  // cancels it too: its remaining debt is forgiven, but the Mana it
+  // already cost at cast time is not refunded.
   let cancelledSpell = false;
   if (!success) {
     await setStatusStacks(actor, 'concentration', 0);
-    if (actor.system.pendingSpell?.apCost) {
-      await actor.update({ 'system.pendingSpell': { itemId: '', apCost: 0 } });
+    if (actor.system.pendingSpell?.apCost || actor.system.pendingSpell?.roundsRemaining) {
+      await actor.update({ 'system.pendingSpell': { itemId: '', apCost: 0, roundsRemaining: 0 } });
       cancelledSpell = true;
     }
   }
@@ -984,11 +1028,101 @@ export async function checkConcentration(actor, damage) {
     : criticalType === 'failure' ? 'SKSK.Spell.Roll.CriticalFailure'
     : success ? 'SKSK.Spell.Roll.Success' : 'SKSK.Spell.Roll.Failure';
   const outcome = game.i18n.localize(outcomeKey);
+  const fpGrant = await grantSkillUsageFp(actor, 'concentration', 'concentrationCheck');
+  // Luck's own "criticalRoll"/"doubleCriticalRoll" FP - any generic (non-
+  // Angriffswurf) D20 roll's critical success/double critical, see
+  // helpers/criticalRolls.mjs#evaluateD20WithMode.
+  let luckHTML = criticalType === 'success'
+    ? formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'luck', 'criticalRoll'))
+    : '';
+  if (doubleCritical) {
+    luckHTML += formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'luck', 'doubleCriticalRoll'));
+  }
+  luckHTML += formatD20ModeSummaryLine(result, actor.system.genericCriticalRollMode);
   const extraHTML = `
     <div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.ConcentrationCheck', { dc })}: ${outcome}</div>
     ${cancelledSpell ? `<div class="sksk-roll-line">${game.i18n.localize('SKSK.Spell.Roll.SpellCancelled')}</div>` : ''}
+    ${formatSkillFpGrantLine(fpGrant)}
+    ${luckHTML}
   `;
   await postActionChatCard(actor, getStatusEffectName('concentration'), roll, 0, extraHTML, criticalType);
+}
+
+/**
+ * Schleichen's own "im Kampf getarnt" FP trigger: while the Concealed
+ * status (see CONFIG.SKSK.predefinedStatusEffects) is active, grant
+ * Stealth's "stealthRound" FP every time this actor's own Combat turn
+ * begins. A no-op (posts nothing) if the GM hasn't configured a rate for
+ * it - keeps this silent by default rather than spamming a 0 FP line.
+ * @param {Actor} actor
+ * @return {Promise<void>}
+ */
+async function handleStealthTurnStart(actor) {
+  if (getStatusStacks(actor, 'concealed') <= 0) return;
+  const fpGrant = await grantSkillUsageFp(actor, 'stealth', 'stealthRound');
+  if (!fpGrant) return;
+  await postActionChatCard(actor, getStatusEffectName('concealed'), null, 0, formatSkillFpGrantLine(fpGrant));
+}
+
+/**
+ * Zähigkeit's own "0 Leben, aber noch negatives Leben" FP trigger: grants
+ * Tenacity's "zeroLifeRound" FP at the start of this actor's own Combat
+ * turn whenever it's at 0 Life but still has Negative Life left (i.e.
+ * still clinging on, not yet truly downed/dead). A no-op (posts nothing)
+ * if the GM hasn't configured a rate for it.
+ * @param {Actor} actor
+ * @return {Promise<void>}
+ */
+async function handleTenacityTurnStart(actor) {
+  if (actor.system.life.value > 0 || actor.system.negativeLife.value <= 0) return;
+  const fpGrant = await grantSkillUsageFp(actor, 'tenacity', 'zeroLifeRound');
+  if (!fpGrant) return;
+  await postActionChatCard(actor, game.i18n.localize(getSkillLabel('tenacity')), null, 0, formatSkillFpGrantLine(fpGrant));
+}
+
+/**
+ * Totem's own per-round Mana upkeep: at this actor's own Combat turn start,
+ * drains every still-active totem's own manaCostPerRound from system.mana
+ * (processed in list order, sharing the one Mana pool) - a totem that can't
+ * be paid for is auto-deactivated (its linked ActiveEffect's disabled flag
+ * flips back to true) instead of ever pushing Mana negative. Silent unless
+ * at least one totem is active; auto-deactivations get their own chat line.
+ * See apps/totem-dialog.mjs#toggleTotemActive for the player-triggered
+ * activate/deactivate flow this mirrors.
+ * @param {Actor} actor
+ * @return {Promise<void>}
+ */
+async function handleTotemTurnStart(actor) {
+  const totems = actor.system.totems ?? [];
+  if (!totems.some(entry => entry.active)) return;
+
+  let mana = actor.system.mana.value;
+  const updated = [];
+  const deactivatedNames = [];
+  for (const entry of totems) {
+    if (!entry.active) { updated.push(entry); continue; }
+    const cost = entry.manaCostPerRound ?? 0;
+    if (mana >= cost) {
+      mana -= cost;
+      updated.push(entry);
+    } else {
+      updated.push({ ...entry, active: false });
+      deactivatedNames.push(entry.name || '?');
+      const effect = entry.effectId ? actor.effects.get(entry.effectId) : null;
+      if (effect) await effect.update({ disabled: true });
+    }
+  }
+
+  const updates = { 'system.totems': updated };
+  if (mana !== actor.system.mana.value) updates['system.mana.value'] = mana;
+  await actor.update(updates);
+
+  if (deactivatedNames.length) {
+    const lines = deactivatedNames
+      .map(name => `<div class="sksk-roll-line">${game.i18n.format('SKSK.TotemDialog.AutoDeactivated', { name })}</div>`)
+      .join('');
+    await postActionChatCard(actor, game.i18n.localize('SKSK.TotemDialog.Title'), null, 0, lines);
+  }
 }
 
 /**
@@ -1000,7 +1134,10 @@ export async function checkConcentration(actor, damage) {
  * damage, custom status effects' own Life/Mana turn-start ticks,
  * Concentration's check against however much of that combined damage
  * actually landed (checked once for the round's total, not once per
- * source), and Restrained's automatic escape check (if timed to "start").
+ * source), Restrained's automatic escape check (if timed to "start"),
+ * Schleichen's Concealed-status FP trigger, Zähigkeit's 0-Life FP trigger,
+ * and Totem's per-round Mana upkeep (auto-deactivating any totem it can't
+ * afford).
  * @param {Actor} actor
  * @param {number} round
  * @return {Promise<void>}
@@ -1014,6 +1151,9 @@ export async function handleCombatTurnStart(actor, round) {
   totalDamage += await handleCustomTurnStart(actor);
   await checkConcentration(actor, totalDamage);
   await handleRestrainedTurnStart(actor);
+  await handleStealthTurnStart(actor);
+  await handleTenacityTurnStart(actor);
+  await handleTotemTurnStart(actor);
 }
 
 /**
