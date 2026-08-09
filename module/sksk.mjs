@@ -48,6 +48,7 @@ Hooks.once('init', function () {
     weapon: models.SKSKWeapon,
     armor: models.SKSKArmor,
     spell: models.SKSKSpell,
+    technique: models.SKSKTechnique,
   });
 
   foundry.applications.apps.DocumentSheetConfig.registerSheet(Actor, 'sksk', SKSKActorSheet, {
@@ -56,7 +57,7 @@ Hooks.once('init', function () {
     label: 'SKSK.SheetLabels.Actor',
   });
   foundry.applications.apps.DocumentSheetConfig.registerSheet(Item, 'sksk', SKSKItemSheet, {
-    types: ['item', 'feature', 'talent', 'class', 'species', 'weapon', 'armor', 'spell'],
+    types: ['item', 'feature', 'talent', 'class', 'species', 'weapon', 'armor', 'spell', 'technique'],
     makeDefault: true,
     label: 'SKSK.SheetLabels.Item',
   });

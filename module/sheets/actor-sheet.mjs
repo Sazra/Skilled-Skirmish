@@ -39,6 +39,7 @@ import {
   grantInspirationDie, consumeInspirationCharge, rollOwnInspirationDie, rollGrantedInspirationDie,
 } from '../helpers/inspiration.mjs';
 import { grantMassKillFp, MASS_KILL_TIERS } from '../helpers/massacre.mjs';
+import { SKSKTechniqueDialog } from '../apps/technique-dialog.mjs';
 import {
   getStatusEffectDefinitions, getStatusStacks, increaseStatusStacks, decreaseStatusStacks, applyD20Malus,
   getStatusEffect, getStatusInstances, getStatusInstancesTotal, addStatusInstance, applyCauterization,
@@ -131,6 +132,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       openSummoningDialog: SKSKActorSheet.#openSummoningDialog,
       openTotemDialog: SKSKActorSheet.#openTotemDialog,
       openSourceDialog: SKSKActorSheet.#openSourceDialog,
+      openTechniqueDialog: SKSKActorSheet.#openTechniqueDialog,
       grantPassivePerceptionFp: SKSKActorSheet.#grantPassivePerceptionFp,
       increaseStatusStack: SKSKActorSheet.#increaseStatusStack,
       decreaseStatusStack: SKSKActorSheet.#decreaseStatusStack,
@@ -1350,6 +1352,15 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
    */
   static #openSourceDialog(event, target) {
     new SKSKSourceDialog(this.actor).render(true);
+  }
+
+  /**
+   * Open the "Techniken" (Techniques) dialog (apps/technique-dialog.mjs)
+   * from the Actions tab - unlike the header dialogs above, available for
+   * both Character and NPC sheets (the Actions tab itself is shared).
+   */
+  static #openTechniqueDialog(event, target) {
+    new SKSKTechniqueDialog(this.actor).render(true);
   }
 
   /**

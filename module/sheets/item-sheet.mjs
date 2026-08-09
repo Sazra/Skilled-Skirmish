@@ -9,6 +9,10 @@ import { computeSavingThrowValue, computeDamageBonus, computeCombinedSchoolOverr
 import { getMaterials, getMaterial } from '../helpers/materials.mjs';
 import { getWeaponModels, getArmorModels, getWeaponModel, getArmorModel, getOverridablePropertiesFor } from '../helpers/models.mjs';
 import { computeEffectiveProperties } from '../helpers/properties.mjs';
+import { getCombatStyles } from '../helpers/combatStyles.mjs';
+import {
+  techniqueHasDuration, techniqueShowsEffectButton, getTechniqueStatusLabel, getTechniqueActionLabel, activateTechnique,
+} from '../helpers/technique-rolls.mjs';
 
 /**
  * Extend the basic ItemSheet with some very simple modifications
@@ -52,6 +56,8 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       addMovementBonus: SKSKItemSheet.#addMovementBonus,
       addChargeBonus: SKSKItemSheet.#addChargeBonus,
       addAttributeMaxModifier: SKSKItemSheet.#addAttributeMaxModifier,
+      activateTechnique: SKSKItemSheet.#activateTechnique,
+      openTechniqueEffect: SKSKItemSheet.#openTechniqueEffect,
     }
   };
 
@@ -148,6 +154,9 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       // Unlike the generic Item type, Weapon has no Quantity field.
       parts.header.template = `systems/sksk/templates/item/parts/header-weapon.hbs`;
       parts.attributes.template = `systems/sksk/templates/item/parts/weapon.hbs`;
+    } else if (itemType === 'technique') {
+      parts.header.template = `systems/sksk/templates/item/parts/header-technique.hbs`;
+      parts.attributes.template = `systems/sksk/templates/item/parts/technique.hbs`;
     }
 
     return parts;
@@ -167,6 +176,8 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       delete tabs.effects;
     } else if (group === 'primary' && this.item.type === 'spell') {
       tabs.attributes.label = 'TYPES.Item.spell';
+    } else if (group === 'primary' && this.item.type === 'technique') {
+      tabs.attributes.label = 'TYPES.Item.technique';
     }
     return tabs;
   }
@@ -399,6 +410,25 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       }
     }
 
+    if (item.type === 'technique') {
+      context.techniqueCategoryChoices = CONFIG.SKSK.techniqueCategories;
+      context.combatStyleChoices = Object.fromEntries(getCombatStyles().map(s => [s.id, s.name]));
+      context.bonusDamageModeChoices = CONFIG.SKSK.bonusDamageModes;
+      context.effectTargetChoices = CONFIG.SKSK.techniqueEffectTargets;
+      context.hasCombatStyles = getCombatStyles().length > 0;
+      context.isStand = item.system.category === 'stand';
+      context.isBonusDamage = item.system.category === 'bonusDamage';
+      context.isEffect = item.system.category === 'effect';
+      // Only stand, and effect targeting the wielder itself, are genuine
+      // duration-ticking buffs - bonusDamage/effect-attackTarget are primed
+      // instead, consumed by the next weapon/Martial Arts attack (see
+      // helpers/technique-rolls.mjs).
+      context.showDuration = techniqueHasDuration(item);
+      context.showEffectId = techniqueShowsEffectButton(item);
+      context.statusLabel = getTechniqueStatusLabel(item);
+      context.actionLabel = getTechniqueActionLabel(item);
+    }
+
     return context;
   }
 
@@ -567,6 +597,27 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
 
   static async #addAttributeMaxModifier(event, target) {
     await this.#addArrayEntry('attributeMaxModifiers', { attribute: 'str', operation: 'add', value: 1 });
+  }
+
+  /**
+   * The Technique sheet's own Activate/Deactivate (or Prime/Cancel) button
+   * - see helpers/technique-rolls.mjs#activateTechnique. A no-op if this
+   * Item isn't actually owned by an Actor (nothing to spend AP/Mana from).
+   */
+  static async #activateTechnique(event, target) {
+    if (!this.item.actor) return ui.notifications.warn(game.i18n.localize('SKSK.Technique.NotOwned'));
+    await activateTechnique(this.item.actor, this.item);
+  }
+
+  /**
+   * Open a Technique's own linked ActiveEffect (bound the first time it's
+   * activated - see helpers/technique-rolls.mjs#ensureLinkedEffect) in
+   * Foundry's native effect config sheet.
+   */
+  static async #openTechniqueEffect(event, target) {
+    const effect = this.item.system.effectId ? this.item.actor?.effects.get(this.item.system.effectId) : null;
+    if (!effect) return ui.notifications.warn(game.i18n.localize('SKSK.Technique.NoEffectYet'));
+    effect.sheet.render(true);
   }
 
   /**

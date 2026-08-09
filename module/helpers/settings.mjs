@@ -2,6 +2,7 @@ import { SKSKMaterialsConfig } from '../apps/materials-config.mjs';
 import { SKSKModelsConfig } from '../apps/models-config.mjs';
 import { SKSKStatusEffectsConfig } from '../apps/status-effects-config.mjs';
 import { SKSKTrainingMethodsConfig } from '../apps/training-methods-config.mjs';
+import { SKSKCombatStylesConfig } from '../apps/combat-styles-config.mjs';
 import { SKSKSettingsExportImport } from '../apps/settings-export-import.mjs';
 import { SKSKSkillUsageFpConfig } from '../apps/skill-usage-fp-config.mjs';
 
@@ -127,6 +128,26 @@ export function registerSettings() {
     label: 'SKSK.Settings.TrainingMethods.Label',
     icon: 'fas fa-dumbbell',
     type: SKSKTrainingMethodsConfig,
+    restricted: true,
+  });
+
+  // GM-configurable list of Kampfstile (each entry {id, name}) - see
+  // apps/combat-styles-config.mjs and data/technique.mjs. A Technique item
+  // stores the chosen style's id and resolves it against this live list at
+  // render/roll time, same convention as Training Methods above.
+  game.settings.register('sksk', 'combatStyles', {
+    scope: 'world',
+    config: false,
+    type: Array,
+    default: [],
+  });
+
+  game.settings.registerMenu('sksk', 'combatStylesMenu', {
+    name: 'SKSK.Settings.CombatStyles.Name',
+    hint: 'SKSK.Settings.CombatStyles.Hint',
+    label: 'SKSK.Settings.CombatStyles.Label',
+    icon: 'fas fa-fist-raised',
+    type: SKSKCombatStylesConfig,
     restricted: true,
   });
 

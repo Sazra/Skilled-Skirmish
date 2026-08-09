@@ -1,0 +1,32 @@
+<div class="sksk-combat-styles-config">
+  <p class="hint">{{localize 'SKSK.Settings.CombatStyles.Hint'}}</p>
+
+  <ol class="items-list">
+    <li class="item flexrow items-header">
+      <div class="item-name">{{localize 'SKSK.CombatStyle.Name'}}</div>
+      <div class="item-controls">
+        <a class="item-control" data-action="addStyle" title="{{localize 'SKSK.CombatStyle.Add'}}">
+          <i class="fas fa-plus"></i>
+        </a>
+      </div>
+    </li>
+    {{#each styles as |style index|}}
+    <li class="item flexrow">
+      <div class="item-name">
+        <input type="text" name="styles.{{index}}.name" value="{{style.name}}"
+          placeholder="{{localize 'SKSK.CombatStyle.Name'}}" />
+      </div>
+      <div class="item-controls">
+        <a class="item-control item-delete" data-action="removeStyle" data-index="{{index}}"
+          title="{{localize 'SKSK.CombatStyle.Remove'}}">
+          <i class="fas fa-trash"></i>
+        </a>
+      </div>
+    </li>
+    {{else}}
+    <li class="item flexrow">
+      <div class="item-name">{{localize 'SKSK.CombatStyle.None'}}</div>
+    </li>
+    {{/each}}
+  </ol>
+</div>

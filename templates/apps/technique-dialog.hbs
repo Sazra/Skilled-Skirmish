@@ -1,0 +1,40 @@
+<div class="sksk-technique-dialog">
+  <ol class="items-list items-list-compact">
+    <li class="item flexrow items-header">
+      <div class="item-name">{{localize 'Name'}}</div>
+      <div class="item-name">{{localize 'SKSK.Technique.CategoryLabel'}}</div>
+      <div class="item-name">{{localize 'SKSK.Technique.Status'}}</div>
+      <div class="item-controls">
+        <a class="item-control" data-action="createTechnique" title="{{localize 'DOCUMENT.New' type='technique'}}">
+          <i class="fas fa-plus"></i>
+        </a>
+      </div>
+    </li>
+    {{#each techniques as |entry|}}
+    <li class="item flexrow" data-item-id="{{entry.item.id}}">
+      <div class="item-name">
+        <a data-action="editTechnique" data-item-id="{{entry.item.id}}">{{entry.item.name}}</a>
+      </div>
+      <div class="item-name">{{localize entry.categoryLabel}}</div>
+      <div class="item-name">{{entry.statusLabel}}</div>
+      <div class="item-controls">
+        <a class="item-control" data-action="activateTechnique" data-item-id="{{entry.item.id}}" title="{{localize entry.actionLabel}}">
+          <i class="fas fa-bolt"></i>
+        </a>
+        {{#if entry.showEffectButton}}
+        <a class="item-control" data-action="openTechniqueEffect" data-item-id="{{entry.item.id}}" title="{{localize 'SKSK.Technique.EditEffect'}}">
+          <i class="fas fa-sliders-h"></i>
+        </a>
+        {{/if}}
+        <a class="item-control item-delete" data-action="deleteTechnique" data-item-id="{{entry.item.id}}" title="{{localize 'DOCUMENT.Delete' type='Item'}}">
+          <i class="fas fa-trash"></i>
+        </a>
+      </div>
+    </li>
+    {{else}}
+    <li class="item flexrow">
+      <div class="item-name">{{localize 'SKSK.Technique.None'}}</div>
+    </li>
+    {{/each}}
+  </ol>
+</div>

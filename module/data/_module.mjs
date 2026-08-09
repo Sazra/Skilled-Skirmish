@@ -11,3 +11,4 @@ export { default as SKSKWeapon } from "./weapon.mjs";
 export { default as SKSKSpecies } from "./species.mjs";
 export { default as SKSKClass } from "./class.mjs";
 export { default as SKSKSpell } from "./spell.mjs";
+export { default as SKSKTechnique } from "./technique.mjs";

@@ -318,6 +318,25 @@ SKSK.apCostUnits = {
   days: 'SKSK.Spell.ApCostUnit.Days',
 };
 
+// A Technique's own category - see data/technique.mjs#category.
+SKSK.techniqueCategories = {
+  stand: 'SKSK.Technique.Category.Stand',
+  bonusDamage: 'SKSK.Technique.Category.BonusDamage',
+  effect: 'SKSK.Technique.Category.Effect',
+};
+
+// A "bonusDamage" Technique's own mode - see data/technique.mjs#bonusDamageMode.
+SKSK.bonusDamageModes = {
+  flat: 'SKSK.Technique.BonusDamageMode.Flat',
+  multiply: 'SKSK.Technique.BonusDamageMode.Multiply',
+};
+
+// An "effect" Technique's own target - see data/technique.mjs#effectTarget.
+SKSK.techniqueEffectTargets = {
+  self: 'SKSK.Technique.EffectTarget.Self',
+  attackTarget: 'SKSK.Technique.EffectTarget.AttackTarget',
+};
+
 // The elements a spell's Damage entries can deal - the same 20 elements
 // used by the Resistance/Weakness/Immunity/Absorb skill categories, so a
 // spell's damage type always lines up with an actor's defenses.

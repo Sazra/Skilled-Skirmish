@@ -17,6 +17,7 @@ const EXPORTABLE_SETTINGS = [
   'statusEffects',
   'trainingMethods',
   'skillUsageFp',
+  'combatStyles',
 ];
 
 /**

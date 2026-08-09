@@ -1126,6 +1126,65 @@ async function handleTotemTurnStart(actor) {
 }
 
 /**
+ * Whether a Technique's own "active" flag represents a genuine duration-
+ * ticking buff (stand, or an "effect" targeting its own wielder) rather
+ * than a "primed, awaiting the next weapon/Martial Arts attack" marker
+ * (bonusDamage, or an "effect" targeting the attack's own target) - see
+ * data/technique.mjs.
+ * @param {Item} item
+ * @return {boolean}
+ */
+function techniqueHasDuration(item) {
+  return item.system.category === 'stand' || (item.system.category === 'effect' && item.system.effectTarget === 'self');
+}
+
+/**
+ * Technique's own per-round ticking, at this actor's own Combat turn start:
+ * every still-active stand/self-effect Technique's own duration counts down
+ * by 1, auto-deactivating (disabling its own linked ActiveEffect, starting
+ * its own cooldown) once it hits 0 - see helpers/technique-rolls.mjs#
+ * toggleStandTechnique for the player-triggered equivalent. Every Technique
+ * currently on cooldown (inactive, roundsRemaining > 0) also counts down by
+ * 1, granting Technique's own "techniqueCooldownRound" FP for each round
+ * elapsed. Primed-but-not-duration-based Techniques (bonusDamage, or an
+ * "effect" targeting the attack's own target) aren't touched here at all -
+ * they stay primed until consumed by this actor's next weapon/Martial Arts
+ * attack (helpers/actions.mjs) or manually cancelled.
+ * @param {Actor} actor
+ * @return {Promise<void>}
+ */
+async function handleTechniqueTurnStart(actor) {
+  const techniques = actor.items.filter(i => i.type === 'technique');
+  if (!techniques.length) return;
+
+  const lines = [];
+  for (const item of techniques) {
+    if (item.system.active && techniqueHasDuration(item)) {
+      const remaining = (item.system.roundsRemaining ?? 0) - 1;
+      if (remaining > 0) {
+        await item.update({ 'system.roundsRemaining': remaining });
+      } else {
+        const effect = item.system.effectId ? actor.effects.get(item.system.effectId) : null;
+        if (effect) await effect.update({ disabled: true });
+        await item.update({ 'system.active': false, 'system.roundsRemaining': item.system.cooldownRounds });
+        lines.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Technique.Expired', { name: item.name })}</div>`);
+      }
+      continue;
+    }
+
+    if (!item.system.active && (item.system.roundsRemaining ?? 0) > 0) {
+      const fpGrant = await grantSkillUsageFp(actor, 'technique', 'techniqueCooldownRound');
+      if (fpGrant) lines.push(`<div class="sksk-roll-line"><strong>${item.name}</strong></div>${formatSkillFpGrantLine(fpGrant)}`);
+      await item.update({ 'system.roundsRemaining': Math.max(0, item.system.roundsRemaining - 1) });
+    }
+  }
+
+  if (lines.length) {
+    await postActionChatCard(actor, game.i18n.localize('SKSK.Technique.TurnStartTitle'), null, 0, lines.join(''));
+  }
+}
+
+/**
  * Called once for whichever actor's Combat turn is beginning (see the
  * "combatTurnChange" hook in sksk.mjs) - refills AP/RP, runs Dazed's AP
  * drain, and pays down any pending spell's AP debt (see
@@ -1136,8 +1195,9 @@ async function handleTotemTurnStart(actor) {
  * actually landed (checked once for the round's total, not once per
  * source), Restrained's automatic escape check (if timed to "start"),
  * Schleichen's Concealed-status FP trigger, Zähigkeit's 0-Life FP trigger,
- * and Totem's per-round Mana upkeep (auto-deactivating any totem it can't
- * afford).
+ * Totem's per-round Mana upkeep (auto-deactivating any totem it can't
+ * afford), and Technique's own duration/cooldown ticking (auto-
+ * deactivating any expired stand/self-effect, granting cooldown-round FP).
  * @param {Actor} actor
  * @param {number} round
  * @return {Promise<void>}
@@ -1154,6 +1214,7 @@ export async function handleCombatTurnStart(actor, round) {
   await handleStealthTurnStart(actor);
   await handleTenacityTurnStart(actor);
   await handleTotemTurnStart(actor);
+  await handleTechniqueTurnStart(actor);
 }
 
 /**
