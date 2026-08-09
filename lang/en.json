@@ -161,7 +161,7 @@
       "MagicHint": "Concentration checks, used Meditation dice, any spell cast (Magic Control, Chant Shortening once Magic Control reaches level 1), Mana Capacity/Mana Regeneration's own daily settlement (on the next Anpassungspause+), Mana Core's flat per-item grant, Ritualism's hours per Ritual spell cast (at least 1 hour, even under the AP unit or a sub-60-minute casting time), Overcharge used (Shift+click a spell), and Summoning (via the header's Summoning button - Summoned Creature Level on \"Beschwören\", Day of Summon's Existence for every still-active slot on the next Anpassungspause+) are all automated; everything else below (enchanting hours) is not yet automated - no matching system exists yet.",
       "FighterHint": "Regeneration dice used, combat movement, Dodge used, Reflexaktion (4+ AP spent in one turn), Adrenalin used, critical hits (incl. double crit) and Brutality's bonus damage points are automated; everything else below is not yet automated.",
       "MiscHint": "Bardic magic cast (Singing), being Concealed at the start of your own turn (Stealth), prayer via the header's Prayer button (Faith), clicks on the header's Passive Perception field (Observation), Apply Damage converting an entry into healing via the defender's own Absorption (Healer - credited to whoever caused it, scaled by the healed amount), and Totem (via the header's Totem button - Totem Bond Formed on \"Totem binden\", Totem Used on \"Totem aktivieren\") are automated; everything else below is not yet automated - no matching system exists yet.",
-      "SpecialHint": "A landed hit (Hit Correction), a defended-against attack (Defense Correction), being at 0 Life with Negative Life left at the start of your own turn (Tenacity), and any generic (non-Angriffswurf) D20 roll's critical success/double critical - skill checks, saving throws, attribute checks, and a manual Restrained escape attempt prompt for Neutral/Vorteil/Nachteil every time; Restrained's own turn-start/end check, Poison's recheck, and Concentration instead use the GM tab's Background Roll Mode preset with no dialog (Luck's own \"Critical Roll\"/\"Double Critical Roll\", credited to whoever rolled it - double only from Vorteil/Nachteil, both dice critical) - are automated; everything else below is not yet automated.",
+      "SpecialHint": "A landed hit (Hit Correction), a defended-against attack (Defense Correction), being at 0 Life with Negative Life left at the start of your own turn (Tenacity), any generic (non-Angriffswurf) D20 roll's critical success/double critical - skill checks, saving throws, attribute checks, and a manual Restrained escape attempt prompt for Neutral/Vorteil/Nachteil every time; Restrained's own turn-start/end check, Poison's recheck, and Concentration instead use the GM tab's Background Roll Mode preset with no dialog (Luck's own \"Critical Roll\"/\"Double Critical Roll\", credited to whoever rolled it - double only from Vorteil/Nachteil, both dice critical) - and Soulforce's own \"Meditation Die Used in Combat\" (alongside Meditation's own FP whenever a Combat is active, but only while the GM tab's own \"Soulforce: FP for Meditation in Combat\" switch is also on, off by default) - are automated; everything else below is not yet automated.",
       "PotionBrewed": "FP / Potion Brewed (not yet automated)",
       "ItemCrafted": "FP / Item Crafted (not yet automated)",
       "ItemCraftFailed": "FP / Crafting Failed (not yet automated)",
@@ -209,8 +209,8 @@
       "CriticalRoll": "FP / Critical Roll",
       "DoubleCriticalRoll": "FP / Double Critical Roll",
       "MassKill": "FP / Mass Kill Tier (not yet automated)",
+      "MeditationUsedInCombat": "FP / Meditation Die Used in Combat",
       "SoulPowerTraded": "FP / Soul Power Traded (not yet automated)",
-      "AllMeditationDiceConsumed": "FP / All Meditation Dice Consumed (not yet automated)",
       "AttackHit": "FP / Attack Landed",
       "AttackDefended": "FP / Attack Defended Against"
     },
@@ -243,6 +243,8 @@
       "NegativeLifeAbbr": "Neg. Life",
       "Mana": "Mana",
       "Barrier": "Barrier",
+      "SoulPower": "Soul Power",
+      "SoulPowerHint": "Soulforce's own collection resource - no maximum, meant to be spent via a trade-in mechanic that's still unwired (see the GM tab's own \"Soulforce: Enable New Mechanic\" switch).",
       "AC": "AC",
       "MR": "MR",
       "AP": "AP",
@@ -299,7 +301,13 @@
       "TotemSlotsBonus": "Totem Slots Bonus",
       "TotemSlotsBonusHint": "A flat adjustment (positive or negative) to Totem's own slot count (see the Totem header button), on top of the Totem skill's own level - applied before the multiplier below.",
       "TotemSlotsMultiplier": "Totem Slots Multiplier",
-      "TotemSlotsMultiplierHint": "Multiplies (Totem skill level + the bonus above) - floored, never below 0. 1 by default (no change)."
+      "TotemSlotsMultiplierHint": "Multiplies (Totem skill level + the bonus above) - floored, never below 0. 1 by default (no change).",
+      "SoulforceMeditationCombatFpEnabled": "Soulforce: FP for Meditation in Combat",
+      "SoulforceMeditationCombatFpEnabledHint": "Whether using a Meditation die while a Combat is active also grants Soulforce's own \"Meditation Used in Combat\" FP (still scaled by that trigger's own configured rate in the Skill Usage FP settings). Off by default. Targetable by Active Effects.",
+      "SoulPowerResourceEnabled": "Soulforce: Show Soul Power Resource",
+      "SoulPowerResourceEnabledHint": "Shows the Soul Power resource on the sidebar even before Soulforce reaches its own max level (5) - it's shown regardless once that level is reached, so this only matters earlier. Off by default. Targetable by Active Effects.",
+      "SoulPowerMechanicEnabled": "Soulforce: Enable New Mechanic (reserved)",
+      "SoulPowerMechanicEnabledHint": "Reserved for Soul Power's own trade-in mechanic (its \"Soul Power Traded\" FP trigger) - not yet designed or wired up, to be tackled once every skill-usage FP trigger is fully implemented. Has no effect yet. Targetable by Active Effects."
     },
     "AttributeUsage": {
       "HighestSingle": "Use Highest (Only One Attribute)",

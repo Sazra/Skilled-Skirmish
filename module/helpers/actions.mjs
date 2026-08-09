@@ -279,7 +279,15 @@ export async function rollMeditation(actor) {
     'system.manaRegenerationAccumulator': (actor.system.manaRegenerationAccumulator ?? 0) + Math.max(0, restored),
   });
   const fpGrant = await grantSkillUsageFp(actor, 'meditation', 'meditationUsed');
-  const fpHTML = formatSkillFpGrantLine(fpGrant) + formatSkillFpGrantLine(await checkReflexActionTrigger(actor));
+  // Seelenstärke's own extra trigger - only while a Combat is active, and
+  // only if the GM has also flipped this actor's own GM-tab switch on top
+  // of the usual GM-configured rate (see data/actor-base.mjs#
+  // soulforceMeditationCombatFpEnabled).
+  const soulforceGrant = (game.combat && actor.system.soulforceMeditationCombatFpEnabled)
+    ? await grantSkillUsageFp(actor, 'soulforce', 'meditationUsedInCombat')
+    : null;
+  const fpHTML = formatSkillFpGrantLine(fpGrant) + formatSkillFpGrantLine(soulforceGrant)
+    + formatSkillFpGrantLine(await checkReflexActionTrigger(actor));
   return postActionChatCard(actor, game.i18n.localize('SKSK.Action.Meditation'), roll, apCost, fpHTML);
 }
 

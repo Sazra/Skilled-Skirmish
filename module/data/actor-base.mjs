@@ -398,6 +398,30 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // summonSlotsMultiplier above. See helpers/totem.mjs#computeTotemSlots.
     schema.totemSlotsBonus = new fields.NumberField({ ...requiredInteger, initial: 0 });
     schema.totemSlotsMultiplier = new fields.NumberField({ required: true, nullable: false, initial: 1, min: 0 });
+    // GM-tab switch gating Seelenstärke's "meditationUsedInCombat" FP
+    // trigger (helpers/actions.mjs#rollMeditation) - off by default, since
+    // unlike every other skill-usage trigger (gated purely by its own GM-
+    // configured rate being > 0) this one is disruptive enough to combat
+    // pacing that the GM opted for an explicit extra switch on top.
+    schema.soulforceMeditationCombatFpEnabled = new fields.BooleanField({ initial: false });
+    // Seelenstärke's own "Seelenmacht" (Soul Power) resource - a collection
+    // pool with no maximum (like barrier above), meant to be fed by
+    // SoulPowerTraded's own trade-in mechanic once that's designed (see
+    // soulPowerMechanicEnabled below). Shown on the resources sidebar once
+    // Seelenstärke reaches its own max level (5) or soulPowerResourceEnabled
+    // is on - see sheets/actor-sheet.mjs#_prepareGeneral.
+    schema.soulPower = new fields.SchemaField({
+      value: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+    });
+    // GM-tab switch that shows the Soul Power resource above even before
+    // Seelenstärke reaches level 5 - off by default (the resource is shown
+    // regardless once that level is reached, so this only matters early).
+    schema.soulPowerResourceEnabled = new fields.BooleanField({ initial: false });
+    // GM-tab switch reserved for Soul Power's own trade-in mechanic - not
+    // yet implemented (see helpers/skillFp.mjs's "soulPowerTraded" trigger,
+    // still unwired); to be designed and wired up once every skill-usage FP
+    // trigger is fully implemented. Currently has no effect on its own.
+    schema.soulPowerMechanicEnabled = new fields.BooleanField({ initial: false });
     // A spell whose AP cost couldn't be fully paid at cast time - itemId
     // (blank = none pending) references the spell Item still owed apCost
     // AP, paid off gradually at the start of this actor's later Combat

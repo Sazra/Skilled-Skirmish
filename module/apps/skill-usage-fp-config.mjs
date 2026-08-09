@@ -202,9 +202,14 @@ const SKILL_SPECIFIC_TRIGGERS = {
     { key: 'doubleCriticalRoll', label: 'SKSK.SkillFpConfig.DoubleCriticalRoll' },
   ],
   massacre: [{ key: 'massKill', label: 'SKSK.SkillFpConfig.MassKill' }],
+  // "meditationUsedInCombat" is wired (helpers/actions.mjs#rollMeditation) -
+  // granted alongside Meditation's own "meditationUsed" whenever a Combat is
+  // active, but only if the GM has also flipped the actor's own GM-tab
+  // switch (system.soulforceMeditationCombatFpEnabled, off by default - see
+  // data/actor-base.mjs) on top of this rate being > 0.
   soulforce: [
+    { key: 'meditationUsedInCombat', label: 'SKSK.SkillFpConfig.MeditationUsedInCombat' },
     { key: 'soulPowerTraded', label: 'SKSK.SkillFpConfig.SoulPowerTraded' },
-    { key: 'allMeditationDiceConsumed', label: 'SKSK.SkillFpConfig.AllMeditationDiceConsumed' },
   ],
   hitCorrection: [{ key: 'attackHit', label: 'SKSK.SkillFpConfig.AttackHit' }],
   defenseCorrection: [{ key: 'attackDefended', label: 'SKSK.SkillFpConfig.AttackDefended' }],

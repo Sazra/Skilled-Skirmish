@@ -872,6 +872,12 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     context.generalResources = GENERAL_RESOURCES
       .filter(r => !r.requiredSkill || getActorSkillLevel(actor, r.requiredSkill) >= 1)
       .map(r => ({ key: r.key, label: r.label, value: actor.system[r.key].value, max: actor.system[r.key].max }));
+
+    // Seelenstärke's own "Seelenmacht" (Soul Power) resource sidebar entry
+    // (resources.hbs/resources-npc.hbs) - shown once Seelenstärke reaches
+    // its own max level (5), or unconditionally while the GM tab's own
+    // soulPowerResourceEnabled switch is on.
+    context.soulPowerVisible = getActorSkillLevel(actor, 'soulforce') >= 5 || actor.system.soulPowerResourceEnabled;
   }
 
   /* -------------------------------------------- */

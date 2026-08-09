@@ -161,7 +161,7 @@
             "MagicHint": "Konzentrationswürfe, genutzte Meditationswürfel, jeder gewirkte Zauber (Magiekontrolle, Spruchkürzung sobald Magiekontrolle Stufe 1 erreicht), die Tagesabrechnung von Manakapazität/Manaregeneration (bei der nächsten Anpassungspause+), Manakerns fester Wert pro Item, Ritualismus' Stunden pro gewirktem Ritual-Zauber (mindestens 1 Stunde, auch bei AP-Kosten oder unter 60 Minuten Wirkzeit), genutzte Überladungen (Shift+Klick auf einen Zauber) sowie Beschwörung (über den Beschwörungs-Button im Kopfbereich - Stufe der beschworenen Kreatur bei \"Beschwören\", Tag der Beschwörungs-Existenz für jeden noch aktiven Platz bei der nächsten Anpassungspause+) sind automatisiert; alles andere unten (u.a. Verzauberungsstunden) ist noch nicht automatisiert - es gibt noch kein passendes System.",
             "FighterHint": "Genutzte Trefferwürfel, Kampf-Bewegung, genutztes Ausweichen, Reflexaktion (4+ AP im eigenen Zug verbraucht), genutztes Adrenalin, kritische Treffer (inkl. Doppel-Krit) und Brutals Bonus-Schadenspunkte sind automatisiert; alles andere unten ist noch nicht automatisiert.",
             "MiscHint": "Gewirkte Bardenmagie (Singen), Getarnt-Sein zu Beginn des eigenen Zuges (Schleichen), Gebete über den Gebets-Button im Kopfbereich (Glaube), Klicks auf das Passive-Wahrnehmung-Feld im Kopfbereich (Beobachtung), das Umwandeln eines Schadensanwenden-Eintrags in Heilung durch die Absorption des Verteidigers (Heiler - wird dem Verursacher gutgeschrieben, skaliert mit dem geheilten Betrag) sowie Totem (über den Totem-Button im Kopfbereich - Totem-Bindung eingegangen bei \"Totem binden\", Genutztes Totem bei \"Totem aktivieren\") sind automatisiert; alles andere unten ist noch nicht automatisiert - es gibt noch kein passendes System.",
-            "SpecialHint": "Ein gelandeter Treffer (Trefferkorrektur), ein abgewehrter Angriff (Verteidigungskorrektur), 0 Leben mit verbleibendem negativen Leben zu Beginn des eigenen Zuges (Zähigkeit) sowie jeder kritische Erfolg/doppelt kritische Erfolg bei einem generischen (Nicht-Angriffswurf-)W20-Wurf - Fertigkeitswürfe, Rettungswürfe, Attributswürfe und der manuelle Fesselung-Fluchtversuch fragen jedes Mal Neutral/Vorteil/Nachteil ab; Fesselungs eigener Zugbeginn-/Zugende-Wurf, der Gift-Erneuerungswurf und Konzentration nutzen stattdessen die Hintergrundwurf-Modus-Voreinstellung im GM-Tab ohne Dialog (Glücks eigener \"Kritischer Wurf\"/\"Doppelt kritischer Wurf\", dem Würfelnden gutgeschrieben - doppelt nur bei Vorteil/Nachteil mit beiden kritischen Würfeln) - sind automatisiert; alles andere unten ist noch nicht automatisiert.",
+            "SpecialHint": "Ein gelandeter Treffer (Trefferkorrektur), ein abgewehrter Angriff (Verteidigungskorrektur), 0 Leben mit verbleibendem negativen Leben zu Beginn des eigenen Zuges (Zähigkeit), jeder kritische Erfolg/doppelt kritische Erfolg bei einem generischen (Nicht-Angriffswurf-)W20-Wurf - Fertigkeitswürfe, Rettungswürfe, Attributswürfe und der manuelle Fesselung-Fluchtversuch fragen jedes Mal Neutral/Vorteil/Nachteil ab; Fesselungs eigener Zugbeginn-/Zugende-Wurf, der Gift-Erneuerungswurf und Konzentration nutzen stattdessen die Hintergrundwurf-Modus-Voreinstellung im GM-Tab ohne Dialog (Glücks eigener \"Kritischer Wurf\"/\"Doppelt kritischer Wurf\", dem Würfelnden gutgeschrieben - doppelt nur bei Vorteil/Nachteil mit beiden kritischen Würfeln) - sowie Seelenstärkes eigener \"Genutzter Meditationswürfel im Kampf\" (zusätzlich zu Meditations eigenem FP, sobald ein Kampf aktiv ist, aber nur solange der GM-Tab-Schalter \"Seelenstärke: FP für Meditation im Kampf\" ebenfalls aktiv ist, standardmäßig aus) - sind automatisiert; alles andere unten ist noch nicht automatisiert.",
             "PotionBrewed": "FP / Gebrauter Trank (noch nicht automatisiert)",
             "ItemCrafted": "FP / Hergestellter Gegenstand (noch nicht automatisiert)",
             "ItemCraftFailed": "FP / Fehlgeschlagene Herstellung (noch nicht automatisiert)",
@@ -209,8 +209,8 @@
             "CriticalRoll": "FP / Kritischer Wurf",
             "DoubleCriticalRoll": "FP / Doppelt kritischer Wurf",
             "MassKill": "FP / Massaker-Stufe (noch nicht automatisiert)",
+            "MeditationUsedInCombat": "FP / Genutzter Meditationswürfel im Kampf",
             "SoulPowerTraded": "FP / Eingetauschte Seelenmacht (noch nicht automatisiert)",
-            "AllMeditationDiceConsumed": "FP / Alle Meditationswürfel verbraucht (noch nicht automatisiert)",
             "AttackHit": "FP / Gelandeter Angriff",
             "AttackDefended": "FP / Abgewehrter Angriff"
         },
@@ -243,6 +243,8 @@
             "NegativeLifeAbbr": "Neg. Leben",
             "Mana": "Mana",
             "Barrier": "Barriere",
+            "SoulPower": "Seelenmacht",
+            "SoulPowerHint": "Seelenstärkes eigene Sammel-Ressource - ohne Maximum, gedacht zum Ausgeben über eine noch nicht angebundene Eintausch-Mechanik (siehe der GM-Tab-Schalter \"Seelenstärke: Neue Mechanik aktivieren\").",
             "AC": "AC",
             "MR": "MR",
             "AP": "AP",
@@ -299,7 +301,13 @@
             "TotemSlotsBonus": "Totemplätze-Bonus",
             "TotemSlotsBonusHint": "Eine feste Anpassung (positiv oder negativ) an Totems eigener Listenplatz-Anzahl (siehe der Totem-Button im Kopfbereich), zusätzlich zur Stufe der Fertigkeit Totem - wird vor dem Multiplikator unten angewendet.",
             "TotemSlotsMultiplier": "Totemplätze-Multiplikator",
-            "TotemSlotsMultiplierHint": "Multipliziert (Totem-Fertigkeitsstufe + der Bonus oben) - abgerundet, nie unter 0. Standardmäßig 1 (keine Änderung)."
+            "TotemSlotsMultiplierHint": "Multipliziert (Totem-Fertigkeitsstufe + der Bonus oben) - abgerundet, nie unter 0. Standardmäßig 1 (keine Änderung).",
+            "SoulforceMeditationCombatFpEnabled": "Seelenstärke: FP für Meditation im Kampf",
+            "SoulforceMeditationCombatFpEnabledHint": "Ob das Nutzen eines Meditationswürfels während eines aktiven Kampfes zusätzlich Seelenstärkes eigenes \"Genutzter Meditationswürfel im Kampf\"-FP gewährt (weiterhin skaliert mit der eigenen konfigurierten Rate dieses Triggers in den Fertigkeitsnutzungs-FP-Einstellungen). Standardmäßig aus. Von Active Effects ansteuerbar.",
+            "SoulPowerResourceEnabled": "Seelenstärke: Seelenmacht-Ressource anzeigen",
+            "SoulPowerResourceEnabledHint": "Zeigt die Seelenmacht-Ressource in der Seitenleiste bereits an, bevor Seelenstärke ihre eigene maximale Stufe (5) erreicht hat - sie wird ohnehin angezeigt, sobald diese Stufe erreicht ist, daher wirkt sich dieser Schalter nur vorher aus. Standardmäßig aus. Von Active Effects ansteuerbar.",
+            "SoulPowerMechanicEnabled": "Seelenstärke: Neue Mechanik aktivieren (reserviert)",
+            "SoulPowerMechanicEnabledHint": "Reserviert für Seelenmachts eigene Eintausch-Mechanik (ihren \"Eingetauschte Seelenmacht\"-FP-Trigger) - noch nicht entworfen oder angebunden, wird angegangen sobald jeder Fertigkeitsnutzungs-FP-Trigger vollständig implementiert ist. Hat aktuell keine Auswirkung. Von Active Effects ansteuerbar."
         },
         "AttributeUsage": {
             "HighestSingle": "Nutze Höchsten (Nur Ein Attribut)",
@@ -746,7 +754,7 @@
             "Special": {
                 "Luck": "Glück",
                 "Massacre": "Gemetzel",
-                "SoulForce": "Seelenkraft",
+                "SoulForce": "Seelenstärke",
                 "HitCorrection": "Trefferkorrektur",
                 "DefenseCorrection": "Verteidigungskorrektur",
                 "CorpusImmortalis": "Corpus Immortalis",
