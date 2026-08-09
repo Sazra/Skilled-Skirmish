@@ -155,6 +155,9 @@ const SKILL_SPECIFIC_TRIGGERS = {
   // chooseOverchargeCount) - scaled by however many times the cast was
   // overcharged.
   overcharge: [{ key: 'overchargeUsed', label: 'SKSK.SkillFpConfig.OverchargeUsed' }],
+  // Both wired via the header's own "Quelle" (Source) button - apps/source-
+  // dialog.mjs. Each spends its own directly-editable AP/Mana cost (0
+  // allowed), repeatable with no usage limit.
   sourceBound: [{ key: 'sourceAbilityUsed', label: 'SKSK.SkillFpConfig.SourceAbilityUsed' }],
   etherBound: [{ key: 'sourceOpened', label: 'SKSK.SkillFpConfig.SourceOpened' }],
   // chantless ("Spruchlose Magie") isn't listed at all - "Kann nicht
@@ -185,6 +188,11 @@ const SKILL_SPECIFIC_TRIGGERS = {
   healer: [{ key: 'healedCreature', label: 'SKSK.SkillFpConfig.HealedCreature' }],
   singing: [{ key: 'bardicSpellCast', label: 'SKSK.SkillFpConfig.BardicSpellCast' }],
   tactic: [{ key: 'flankAttack', label: 'SKSK.SkillFpConfig.FlankAttack' }],
+  // Wired via the Actions tab's own Inspiration button (grant/Shift-consume/
+  // Right-Click self-roll) and the header's own Inspiration Die field
+  // (helpers/inspiration.mjs) - always credited to whoever originally
+  // granted the die, once it's actually rolled (by its holder or the
+  // granter's own self-roll), not to the eventual roller.
   inspiration: [{ key: 'inspirationUsed', label: 'SKSK.SkillFpConfig.InspirationUsed' }],
   totem: [
     { key: 'totemBond', label: 'SKSK.SkillFpConfig.TotemBond' },

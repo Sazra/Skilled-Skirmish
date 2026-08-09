@@ -31,6 +31,18 @@
   </div>
 
   <div class="resource action-row">
+    <label class="resource-label" title="{{localize 'SKSK.Action.InspirationHint'}}">{{localize 'SKSK.Action.Inspiration'}}</label>
+    <div class="flexrow flex-center action-row-controls">
+      <label class="ap-cost-label" title="{{localize 'SKSK.Spell.APCost'}}">
+        {{localize 'SKSK.Spell.APCost'}}
+        <input type="text" name="system.inspirationApCost" value="{{system.inspirationApCost}}" data-dtype="Number" class="ap-cost-input" />
+      </label>
+      <span class="ap-cost-label">{{system.inspirationCharges.value}} / {{system.inspirationCharges.max}}</span>
+      <button type="button" data-action="grantInspiration" title="{{localize 'SKSK.Action.InspirationHint'}}">{{localize 'SKSK.Action.Grant'}}</button>
+    </div>
+  </div>
+
+  <div class="resource action-row">
     <label class="resource-label" title="{{localize 'SKSK.Action.MoveHint'}}">{{localize 'SKSK.Action.Move'}}</label>
     <div class="flexrow flex-center action-row-controls">
       <select class="move-type-select">

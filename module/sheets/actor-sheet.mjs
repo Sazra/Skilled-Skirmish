@@ -34,6 +34,10 @@ import { SKSKKillDialog } from '../apps/kill-dialog.mjs';
 import { SKSKPrayerDialog } from '../apps/prayer-dialog.mjs';
 import { SKSKSummoningDialog } from '../apps/summoning-dialog.mjs';
 import { SKSKTotemDialog } from '../apps/totem-dialog.mjs';
+import { SKSKSourceDialog } from '../apps/source-dialog.mjs';
+import {
+  grantInspirationDie, consumeInspirationCharge, rollOwnInspirationDie, rollGrantedInspirationDie,
+} from '../helpers/inspiration.mjs';
 import {
   getStatusEffectDefinitions, getStatusStacks, increaseStatusStacks, decreaseStatusStacks, applyD20Malus,
   getStatusEffect, getStatusInstances, getStatusInstancesTotal, addStatusInstance, applyCauterization,
@@ -113,6 +117,8 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       rollRegeneration: SKSKActorSheet.#rollRegeneration,
       rollMeditation: SKSKActorSheet.#rollMeditation,
       rollAdrenalin: SKSKActorSheet.#rollAdrenalin,
+      grantInspiration: SKSKActorSheet.#grantInspiration,
+      rollGrantedInspiration: SKSKActorSheet.#rollGrantedInspiration,
       useMove: SKSKActorSheet.#useMove,
       useDodge: SKSKActorSheet.#useDodge,
       useItem: SKSKActorSheet.#useItem,
@@ -122,6 +128,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       openPrayerDialog: SKSKActorSheet.#openPrayerDialog,
       openSummoningDialog: SKSKActorSheet.#openSummoningDialog,
       openTotemDialog: SKSKActorSheet.#openTotemDialog,
+      openSourceDialog: SKSKActorSheet.#openSourceDialog,
       grantPassivePerceptionFp: SKSKActorSheet.#grantPassivePerceptionFp,
       increaseStatusStack: SKSKActorSheet.#increaseStatusStack,
       decreaseStatusStack: SKSKActorSheet.#decreaseStatusStack,
@@ -1028,6 +1035,16 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     // NPCs (their equivalent bonus stays fully dynamic) and once nothing
     // is left pending. See helpers/attributeBonuses.mjs.
     if (this.actor.isOwner) applyPendingAutoGrants(this.actor);
+
+    // Inspiration button's own Right-Click variant (spend a charge, roll
+    // the die for yourself) - ApplicationV2's own action map only ever
+    // dispatches "click", so this needs its own listener; suppresses the
+    // browser's native context menu. See helpers/inspiration.mjs#
+    // rollOwnInspirationDie.
+    this.element.querySelector('[data-action="grantInspiration"]')?.addEventListener('contextmenu', async event => {
+      event.preventDefault();
+      await rollOwnInspirationDie(this.actor);
+    });
   }
 
   /**
@@ -1207,6 +1224,32 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
   }
 
   /**
+   * Actions tab's Inspiration button, plain/Shift+Click - see
+   * helpers/inspiration.mjs. Right-Click is handled separately via a
+   * "contextmenu" listener bound in _onRender (ApplicationV2's own action
+   * map only ever dispatches "click").
+   * @param {PointerEvent} event
+   * @param {HTMLElement} target
+   * @private
+   */
+  static async #grantInspiration(event, target) {
+    if (event.shiftKey) return consumeInspirationCharge(this.actor);
+    await grantInspirationDie(this.actor);
+  }
+
+  /**
+   * Sheet header's Inspiration Die field - rolls (and clears) whatever die
+   * this actor currently holds. See helpers/inspiration.mjs#
+   * rollGrantedInspirationDie.
+   * @param {PointerEvent} event
+   * @param {HTMLElement} target
+   * @private
+   */
+  static async #rollGrantedInspiration(event, target) {
+    await rollGrantedInspirationDie(this.actor);
+  }
+
+  /**
    * Use the Move action for the movement type currently chosen in the
    * Actions tab's selector - see helpers/actions.mjs#useMove.
    * @param {PointerEvent} event
@@ -1284,6 +1327,14 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
    */
   static #openTotemDialog(event, target) {
     new SKSKTotemDialog(this.actor).render(true);
+  }
+
+  /**
+   * Open the "Quelle" (Source) dialog (apps/source-dialog.mjs) from the
+   * sheet header - Character-only, same convention as #openTotemDialog.
+   */
+  static #openSourceDialog(event, target) {
+    new SKSKSourceDialog(this.actor).render(true);
   }
 
   /**

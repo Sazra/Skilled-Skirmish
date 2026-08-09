@@ -57,4 +57,10 @@
       <i class="fas fa-clock"></i>
     </a>
   </div>
+  <div class="header-inspiration-die flex-group-center">
+    <label class="resource-label">{{localize 'SKSK.General.InspirationDie'}}</label>
+    <a class="item-control" data-action="rollGrantedInspiration" title="{{localize 'SKSK.General.InspirationDieHint'}}">
+      {{#if system.inspirationDie.size}}d{{system.inspirationDie.size}}{{else}}–{{/if}}
+    </a>
+  </div>
 </header>

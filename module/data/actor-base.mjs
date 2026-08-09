@@ -118,6 +118,20 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       value: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
       max: new fields.NumberField({ ...requiredInteger, initial: 0 })
     });
+    // The Inspiration die this actor currently holds, granted by another
+    // actor (or itself, via a self-roll) - see helpers/inspiration.mjs.
+    // size is the die's face count (4/6/8/10/12, matching the granter's own
+    // Inspiration skill level 1-5), 0 = none held. Shown on both Character
+    // and NPC sheet headers - clicking it rolls and clears the die
+    // (helpers/inspiration.mjs#rollGrantedInspirationDie), crediting
+    // grantedByUuid's own Inspiration skill with "inspirationUsed" FP (if
+    // that actor still exists and is a Character). Granting a new die only
+    // overwrites an already-held one if its size is strictly higher.
+    schema.inspirationDie = new fields.SchemaField({
+      size: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+      grantedByUuid: new fields.StringField({ required: true, blank: true, initial: "" }),
+      grantedByName: new fields.StringField({ required: true, blank: true, initial: "" }),
+    });
     // Locked (max 0) until the Adrenalin skill reaches level 1 - see
     // helpers/generalResources.mjs#computeMaxAdrenalinCharges.
     schema.adrenalinCharges = new fields.SchemaField({
@@ -333,6 +347,20 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // user-editable there (0 is a valid, explicitly allowed value).
     schema.regenerationApCost = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
     schema.meditationApCost = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+    // apps/source-dialog.mjs's own AP/Mana costs - directly user-editable
+    // there (0 is a valid, explicitly allowed value), same convention as
+    // regenerationApCost/meditationApCost above. "Quelle aktivieren"
+    // (Source-Bound) and "Ätherquelle öffnen" (Ether-Bound) each spend their
+    // own independent amount before granting their own FP trigger.
+    schema.sourceAbilityApCost = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+    schema.sourceAbilityManaCost = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+    schema.etherSourceApCost = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+    schema.etherSourceManaCost = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+    // Actions tab's Inspiration row (helpers/inspiration.mjs) - directly
+    // user-editable there (0 allowed), same convention as regeneration/
+    // meditationApCost above. Shared by the grant/shift-consume/right-click
+    // self-roll variants alike.
+    schema.inspirationApCost = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
     // The last Combat round the Move action was used for free in - not
     // meant to be hand-edited. null outside of (or before ever using Move
     // in) combat. See helpers/actions.mjs#useMove.
