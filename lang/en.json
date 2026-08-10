@@ -523,6 +523,87 @@
       "Expired": "{name}: duration expired - deactivated.",
       "TurnStartTitle": "Techniques"
     },
+    "SoulPath": {
+      "SectionTitle": "Soul Path",
+      "TabLabel": "Soul Path",
+      "Tab": {
+        "Properties": "Properties"
+      },
+      "Stage": {
+        "Sammlung": "Collection",
+        "Staerkung": "Strengthening",
+        "Kristallisierung": "Crystallization",
+        "Erwachen": "Awakening",
+        "Aufstieg": "Ascension"
+      },
+      "Type": {
+        "Weapon": "Weapon",
+        "Body": "Body",
+        "Magic": "Magic",
+        "HybridWeaponBody": "Weapon/Body Hybrid",
+        "HybridWeaponMagic": "Weapon/Magic Hybrid",
+        "HybridBodyMagic": "Body/Magic Hybrid",
+        "HybridAll": "Universal Hybrid"
+      },
+      "AbilityType": {
+        "Active": "Active",
+        "Passive": "Passive"
+      },
+      "BreakthroughMode": {
+        "Once": "Once",
+        "RepeatableUntilNext": "Repeatable Until Next Breakthrough",
+        "Repeatable": "Repeatable"
+      },
+      "Elements": "Elements",
+      "ElementsHint": "Hold Ctrl/Cmd (or Shift for a range) to select multiple.",
+      "PathTypeLabel": "Path Type",
+      "PathAbilitiesSection": "Path Abilities",
+      "AddPathAbility": "Add Path Ability",
+      "AbilityTypeLabel": "Type",
+      "ApCost": "AP Cost",
+      "ManaCost": "Mana Cost",
+      "Duration": "Duration (Rounds)",
+      "Cooldown": "Cooldown (Rounds)",
+      "LockedBehindBreakthrough": "Locked Behind Breakthrough",
+      "RequiredStage": "Required Stage",
+      "RequiredBreakthroughIndex": "Required Breakthrough #",
+      "RequiredBreakthroughIndexHint": "0-based position within the chosen stage (0 = its first breakthrough).",
+      "EditEffect": "Edit Effect",
+      "NoEffectYet": "No linked Active Effect yet - unlock/activate this first.",
+      "StatusActive": "Active ({rounds} rounds left)",
+      "StatusCooldown": "Cooldown ({rounds} rounds left)",
+      "StatusReady": "Ready",
+      "Activate": "Activate",
+      "Deactivate": "Deactivate",
+      "PathAbilityActivated": "{name} activated.",
+      "PathAbilityDeactivated": "{name} deactivated.",
+      "NotEnoughAP": "Not enough AP.",
+      "NotEnoughMana": "Not enough Mana.",
+      "AddBreakthrough": "Add Breakthrough",
+      "Cost": "Cost (Seelenenergie)",
+      "Difficulty": "Difficulty",
+      "Mode": "Mode",
+      "CostIncreasePerCompletion": "Cost Increase per Completion",
+      "DifficultyIncreasePerCompletion": "Difficulty Increase per Completion",
+      "CompletedCount": "Completed",
+      "NoPathBound": "No Soul Path bound yet - ask your GM.",
+      "AttemptBreakthrough": "Attempt Breakthrough",
+      "EffectiveCost": "Cost: {cost} Seelenenergie",
+      "EffectiveDifficulty": "Difficulty: {difficulty}",
+      "NotEnoughSoulPower": "Not enough Seelenenergie for this Durchbruch (need at least {cost}).",
+      "NotAttemptable": "This Durchbruch can't be attempted right now.",
+      "NoPathAbilities": "No Path Abilities unlocked yet.",
+      "BreakthroughAttemptTitle": "{name} - Durchbruch Attempt",
+      "BreakthroughRollLine": "Roll: {roll} + {excessBonus} (excess Seelenenergie) + {abilityBonus} (bonuses) = {total} vs. Difficulty {difficulty}",
+      "BreakthroughCostPaidLine": "Seelenenergie spent: {amount}",
+      "BreakthroughSuccess": "Durchbruch geschafft!",
+      "BreakthroughFailure": "Durchbruch failed.",
+      "GmSectionTitle": "Seelenpfad",
+      "Create": "Create Soul Path",
+      "AlreadyHasOne": "This actor already has a Soul Path bound - remove it first.",
+      "PathAbilityExpired": "{name}: duration expired - deactivated.",
+      "TurnStartTitle": "Soul Path"
+    },
     "PrayerDialog": {
       "Title": "Prayer",
       "Hours": "Hours",
@@ -1067,6 +1148,9 @@
       "Ice": "Ice",
       "Disease": "Disease"
     },
+    "PathElement": {
+      "Mana": "Mana"
+    },
     "Effect": {
       "Source": "Source",
       "Toggle": "Toggle Effect",
@@ -1380,7 +1464,8 @@
       "class": "Class",
       "species": "Species",
       "spell": "Spell",
-      "technique": "Technique"
+      "technique": "Technique",
+      "soulPath": "Soul Path"
     }
   }
 }

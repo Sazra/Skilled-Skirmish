@@ -1486,3 +1486,27 @@ span.sksk-critical-failure {
   width: 100%;
   min-height: 80px;
 }
+
+/* Soul Path (Item sheet's own Properties/stage tabs, templates/item/parts/
+   soul-path-*.hbs) - the Name/Description fields for Path Abilities and
+   Durchbrüche stretch to fill their row (the delete icon stays fixed-width)
+   instead of sitting at their cramped default input size. */
+.sksk .soul-path-wide-field {
+  /* flex-basis 0 (not auto) - an <input>'s own content-based auto basis is
+     large enough that, combined with the row's own flex-wrap: wrap, the
+     sibling delete icon gets pushed onto its own line instead of sharing
+     this one. */
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* Soul Path (actor sheet tab, templates/actor/parts/soul-path.hbs) - the
+   bound path's own name, ~3 sizes larger than the resource-label baseline
+   it's otherwise styled like, so it actually reads as a heading. */
+.sksk .soul-path-heading .soul-path-name {
+  font-size: 24px;
+}
+
+.sksk .soul-path-description {
+  margin-bottom: 8px;
+}

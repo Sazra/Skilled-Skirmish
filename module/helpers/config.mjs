@@ -685,3 +685,82 @@ SKSK.modelProperties = {
   flawless: { label: 'SKSK.ModelProperty.Flawless.Name', hint: 'SKSK.ModelProperty.Flawless.Hint', appliesTo: ['lightArmor', 'heavyArmor'] },
   spiky: { label: 'SKSK.ModelProperty.Spiky.Name', hint: 'SKSK.ModelProperty.Spiky.Hint', appliesTo: ['lightArmor', 'heavyArmor'] },
 };
+
+// A Seelenpfad (Soul Path)'s own "Elemente" multi-select - every damage
+// type and magic school (simple/advanced/combined) it can be attuned to,
+// plus the special "mana" element - see data/soulPath.mjs#elements. A
+// plain merge (damageTypes' own labels win on the handful of overlapping
+// keys - fire/water/earth/air/life/death/light/nature/dark exist in both
+// damageTypes and simpleMagicSchools with near-identical German/English
+// text either way).
+SKSK.pathElements = {
+  ...SKSK.damageTypes,
+  ...SKSK.simpleMagicSchools,
+  ...SKSK.advancedMagicSchools,
+  ...SKSK.combinedMagicSchools,
+  mana: 'SKSK.PathElement.Mana',
+};
+
+// A Seelenpfad's own type - see data/soulPath.mjs#pathType.
+SKSK.pathTypes = {
+  weapon: 'SKSK.SoulPath.Type.Weapon',
+  body: 'SKSK.SoulPath.Type.Body',
+  magic: 'SKSK.SoulPath.Type.Magic',
+  hybridWeaponBody: 'SKSK.SoulPath.Type.HybridWeaponBody',
+  hybridWeaponMagic: 'SKSK.SoulPath.Type.HybridWeaponMagic',
+  hybridBodyMagic: 'SKSK.SoulPath.Type.HybridBodyMagic',
+  hybridAll: 'SKSK.SoulPath.Type.HybridAll',
+};
+
+// FontAwesome (solid) icon class per pathType/element, shown flanking the
+// bound Soul Path's own name on the actor sheet's Soul Path tab (see
+// sheets/actor-sheet.mjs#_prepareSoulPath) - no image-asset precedent
+// exists anywhere else in this codebase for this kind of badge, so these
+// are a best-effort pick; swap any that render as an empty box in-browser.
+SKSK.pathTypeIcons = {
+  weapon: 'fa-khanda',
+  body: 'fa-person-running',
+  magic: 'fa-wand-magic-sparkles',
+  hybridWeaponBody: 'fa-shield-halved',
+  hybridWeaponMagic: 'fa-explosion',
+  hybridBodyMagic: 'fa-person-rays',
+  hybridAll: 'fa-infinity',
+};
+SKSK.pathElementIcons = {
+  fire: 'fa-fire', water: 'fa-droplet', earth: 'fa-mountain', air: 'fa-wind',
+  light: 'fa-sun', dark: 'fa-moon', life: 'fa-heart', death: 'fa-skull',
+  mental: 'fa-brain', nature: 'fa-leaf', cold: 'fa-snowflake', heat: 'fa-temperature-high',
+  blunt: 'fa-hammer', sharp: 'fa-scissors', piercing: 'fa-bullseye', poison: 'fa-flask',
+  acid: 'fa-vial', electricity: 'fa-bolt', ice: 'fa-icicles', disease: 'fa-virus',
+  trickery: 'fa-masks-theater', martialArts: 'fa-hand-fist', bardic: 'fa-music',
+  space: 'fa-atom', time: 'fa-clock', blood: 'fa-heart-pulse', divination: 'fa-eye',
+  stormancy: 'fa-cloud-bolt', chaomancy: 'fa-dice', demomancy: 'fa-fire-flame-curved',
+  drakomancy: 'fa-dragon', necromancy: 'fa-skull-crossbones', miracles: 'fa-hands-praying',
+  feymancy: 'fa-hat-wizard', geomancy: 'fa-gem', biomancy: 'fa-dna',
+  cryomancy: 'fa-temperature-arrow-down', witchery: 'fa-broom', mana: 'fa-circle-nodes',
+};
+
+// A Path Ability's own type - see data/soulPath.mjs#pathAbilities.
+SKSK.pathAbilityTypes = {
+  active: 'SKSK.SoulPath.AbilityType.Active',
+  passive: 'SKSK.SoulPath.AbilityType.Passive',
+};
+
+// A Durchbruch (breakthrough) entry's own repeat mode - see
+// data/soulPath.mjs.
+SKSK.soulPathBreakthroughModes = {
+  once: 'SKSK.SoulPath.BreakthroughMode.Once',
+  repeatableUntilNext: 'SKSK.SoulPath.BreakthroughMode.RepeatableUntilNext',
+  repeatable: 'SKSK.SoulPath.BreakthroughMode.Repeatable',
+};
+
+// The 5 progression stages, in this exact order - both the Item sheet's
+// own tab order and data/soulPath.mjs's own schema keys, and the order
+// helpers/soulPathRolls.mjs's sequential-unlock logic walks through.
+SKSK.soulPathStages = {
+  sammlung: 'SKSK.SoulPath.Stage.Sammlung',
+  staerkung: 'SKSK.SoulPath.Stage.Staerkung',
+  kristallisierung: 'SKSK.SoulPath.Stage.Kristallisierung',
+  erwachen: 'SKSK.SoulPath.Stage.Erwachen',
+  aufstieg: 'SKSK.SoulPath.Stage.Aufstieg',
+};

@@ -13,6 +13,10 @@ import { getCombatStyles } from '../helpers/combatStyles.mjs';
 import {
   techniqueHasDuration, techniqueShowsEffectButton, getTechniqueStatusLabel, getTechniqueActionLabel, activateTechnique,
 } from '../helpers/technique-rolls.mjs';
+import {
+  togglePathAbility, getPathAbilityStatusLabel, getPathAbilityActionLabel,
+} from '../helpers/soulPathRolls.mjs';
+import { SKSKSoulPathElementsDialog } from '../apps/soul-path-elements-dialog.mjs';
 
 /**
  * Extend the basic ItemSheet with some very simple modifications
@@ -58,6 +62,12 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       addAttributeMaxModifier: SKSKItemSheet.#addAttributeMaxModifier,
       activateTechnique: SKSKItemSheet.#activateTechnique,
       openTechniqueEffect: SKSKItemSheet.#openTechniqueEffect,
+      addPathAbility: SKSKItemSheet.#addPathAbility,
+      addBreakthrough: SKSKItemSheet.#addBreakthrough,
+      togglePathAbility: SKSKItemSheet.#togglePathAbility,
+      openPathAbilityEffect: SKSKItemSheet.#openPathAbilityEffect,
+      openBreakthroughEffect: SKSKItemSheet.#openBreakthroughEffect,
+      openSoulPathElementsDialog: SKSKItemSheet.#openSoulPathElementsDialog,
     }
   };
 
@@ -68,6 +78,16 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
         { id: "description", label: "Description" },
         { id: "attributes", label: "Attributes" },
         { id: "effects", label: "Effects" },
+        // Soul Path only - replaces the 3 tabs above entirely (see
+        // _prepareTabs/_configureRenderParts) with its own 6: Properties,
+        // then the 5 progression stages in order (see helpers/config.mjs#
+        // soulPathStages).
+        { id: "soulPathProperties", label: "SKSK.SoulPath.Tab.Properties" },
+        { id: "sammlung", label: "SKSK.SoulPath.Stage.Sammlung" },
+        { id: "staerkung", label: "SKSK.SoulPath.Stage.Staerkung" },
+        { id: "kristallisierung", label: "SKSK.SoulPath.Stage.Kristallisierung" },
+        { id: "erwachen", label: "SKSK.SoulPath.Stage.Erwachen" },
+        { id: "aufstieg", label: "SKSK.SoulPath.Stage.Aufstieg" },
       ],
       initial: "description",
     },
@@ -102,6 +122,34 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
     },
     effects: {
       template: "systems/sksk/templates/item/parts/effects.hbs",
+      scrollable: [""],
+    },
+    soulPathProperties: {
+      template: "systems/sksk/templates/item/parts/soul-path-properties.hbs",
+      scrollable: [""],
+    },
+    // Each stage has its own template (not shared - sharing one template
+    // path across multiple PARTS entries broke tab-context resolution for
+    // every part past the first using that path) with the stage key baked
+    // in directly, rather than driven by {{tab.id}}.
+    sammlung: {
+      template: "systems/sksk/templates/item/parts/soul-path-sammlung.hbs",
+      scrollable: [""],
+    },
+    staerkung: {
+      template: "systems/sksk/templates/item/parts/soul-path-staerkung.hbs",
+      scrollable: [""],
+    },
+    kristallisierung: {
+      template: "systems/sksk/templates/item/parts/soul-path-kristallisierung.hbs",
+      scrollable: [""],
+    },
+    erwachen: {
+      template: "systems/sksk/templates/item/parts/soul-path-erwachen.hbs",
+      scrollable: [""],
+    },
+    aufstieg: {
+      template: "systems/sksk/templates/item/parts/soul-path-aufstieg.hbs",
       scrollable: [""],
     },
   };
@@ -157,6 +205,22 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
     } else if (itemType === 'technique') {
       parts.header.template = `systems/sksk/templates/item/parts/header-technique.hbs`;
       parts.attributes.template = `systems/sksk/templates/item/parts/technique.hbs`;
+    } else if (itemType === 'soulPath') {
+      // Soul Path replaces the shared description/attributes/effects triple
+      // entirely with its own 6 tabs (see static TABS/PARTS above) - none
+      // of the 3 generic parts apply to it.
+      parts.header.template = `systems/sksk/templates/item/parts/header-soul-path.hbs`;
+      delete parts.description;
+      delete parts.attributes;
+      delete parts.effects;
+    } else {
+      // Every other item type has no use for Soul Path's own 6 tabs.
+      delete parts.soulPathProperties;
+      delete parts.sammlung;
+      delete parts.staerkung;
+      delete parts.kristallisierung;
+      delete parts.erwachen;
+      delete parts.aufstieg;
     }
 
     return parts;
@@ -178,6 +242,18 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       tabs.attributes.label = 'TYPES.Item.spell';
     } else if (group === 'primary' && this.item.type === 'technique') {
       tabs.attributes.label = 'TYPES.Item.technique';
+    } else if (group === 'primary' && this.item.type === 'soulPath') {
+      delete tabs.description;
+      delete tabs.attributes;
+      delete tabs.effects;
+    }
+    if (group === 'primary' && this.item.type !== 'soulPath') {
+      delete tabs.soulPathProperties;
+      delete tabs.sammlung;
+      delete tabs.staerkung;
+      delete tabs.kristallisierung;
+      delete tabs.erwachen;
+      delete tabs.aufstieg;
     }
     return tabs;
   }
@@ -429,6 +505,21 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       context.actionLabel = getTechniqueActionLabel(item);
     }
 
+    if (item.type === 'soulPath') {
+      context.pathTypeChoices = CONFIG.SKSK.pathTypes;
+      context.pathAbilityTypeChoices = CONFIG.SKSK.pathAbilityTypes;
+      context.breakthroughModeChoices = CONFIG.SKSK.soulPathBreakthroughModes;
+      context.soulPathStageChoices = CONFIG.SKSK.soulPathStages;
+      context.pathAbilityStatuses = (item.system.pathAbilities ?? []).map(getPathAbilityStatusLabel);
+      context.pathAbilityActionLabels = (item.system.pathAbilities ?? []).map(getPathAbilityActionLabel);
+      // Elements are picked via apps/soul-path-elements-dialog.mjs now (see
+      // the Properties tab's own button) rather than an in-sheet
+      // <select multiple> - this is just the button's own preview text.
+      context.pathElementsPreview = (item.system.elements ?? [])
+        .map(key => game.i18n.localize(CONFIG.SKSK.pathElements[key] ?? key))
+        .join(', ');
+    }
+
     return context;
   }
 
@@ -438,9 +529,18 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
   async _onRender(context, options) {
     await super._onRender(context, options);
 
-    const activeTab = this.tabGroups?.primary
-      ?? this.constructor.TABS.primary.initial;
+    // Foundry's own tabGroups.primary always initializes to static
+    // TABS.primary.initial ("description") regardless of item type, even
+    // though Soul Path has no "description" tab at all (see
+    // _prepareTabs) - fall back to its own first tab whenever the current
+    // value doesn't correspond to an actually-rendered section, rather
+    // than only when it's falsy.
+    let activeTab = this.tabGroups?.primary;
+    if (!activeTab || !this.element.querySelector(`.tab[data-group="primary"][data-tab="${activeTab}"]`)) {
+      activeTab = this.item.type === 'soulPath' ? 'soulPathProperties' : this.constructor.TABS.primary.initial;
+    }
     if (activeTab && this.element.querySelector(`.tab[data-group="primary"][data-tab="${activeTab}"]`)) {
+      this.tabGroups.primary = activeTab;
       this.changeTab(activeTab, "primary", { force: true, updatePosition: false });
     }
 
@@ -460,6 +560,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       this.element.querySelector('.property-overrides-section')
         ?.addEventListener('change', this.#onPropertyOverrideChange.bind(this));
     }
+
   }
 
   /* -------------------------------------------- */
@@ -617,6 +718,62 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
   static async #openTechniqueEffect(event, target) {
     const effect = this.item.system.effectId ? this.item.actor?.effects.get(this.item.system.effectId) : null;
     if (!effect) return ui.notifications.warn(game.i18n.localize('SKSK.Technique.NoEffectYet'));
+    effect.sheet.render(true);
+  }
+
+  /**
+   * The Properties tab's "Elements" button - opens apps/
+   * soul-path-elements-dialog.mjs's checkbox-list window.
+   */
+  static #openSoulPathElementsDialog(event, target) {
+    new SKSKSoulPathElementsDialog(this.item).render(true);
+  }
+
+  static async #addPathAbility(event, target) {
+    await this.#addArrayEntry('pathAbilities', {
+      name: '', description: '', type: 'passive', apCost: 0, manaCost: 0, durationRounds: 1, cooldownRounds: 0,
+    });
+  }
+
+  static async #addBreakthrough(event, target) {
+    const stage = target.dataset.stage;
+    await this.#addArrayEntry(stage, {
+      name: '', description: '', cost: 0, difficulty: 0, mode: 'once',
+    });
+  }
+
+  /**
+   * A Path Ability's own Activate/Deactivate button - see helpers/
+   * soulPathRolls.mjs#togglePathAbility. A no-op if this Item isn't owned
+   * by an Actor (nothing to spend AP/Mana from).
+   */
+  static async #togglePathAbility(event, target) {
+    if (!this.item.actor) return ui.notifications.warn(game.i18n.localize('SKSK.Technique.NotOwned'));
+    await togglePathAbility(this.item.actor, this.item, Number(target.dataset.index));
+  }
+
+  /**
+   * Open a Path Ability's own linked ActiveEffect (bound the first time it
+   * unlocks/activates) in Foundry's native effect config sheet.
+   */
+  static async #openPathAbilityEffect(event, target) {
+    const index = Number(target.dataset.index);
+    const effectId = this.item.system.pathAbilities?.[index]?.effectId;
+    const effect = effectId ? this.item.actor?.effects.get(effectId) : null;
+    if (!effect) return ui.notifications.warn(game.i18n.localize('SKSK.SoulPath.NoEffectYet'));
+    effect.sheet.render(true);
+  }
+
+  /**
+   * Open a Durchbruch (breakthrough) entry's own linked ActiveEffect (bound
+   * on its first completion) in Foundry's native effect config sheet.
+   */
+  static async #openBreakthroughEffect(event, target) {
+    const stage = target.dataset.stage;
+    const index = Number(target.dataset.index);
+    const effectId = this.item.system[stage]?.[index]?.effectId;
+    const effect = effectId ? this.item.actor?.effects.get(effectId) : null;
+    if (!effect) return ui.notifications.warn(game.i18n.localize('SKSK.SoulPath.NoEffectYet'));
     effect.sheet.render(true);
   }
 

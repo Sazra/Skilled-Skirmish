@@ -2,6 +2,7 @@ import { postActionChatCard } from './actions.mjs';
 import { getClassAbilityLevels, actorHasAdvancedClass } from './abilities.mjs';
 import { getActorSkillLevel, getSkillLabel } from './skills.mjs';
 import { handlePendingSpellTurnStart } from './spell-rolls.mjs';
+import { handlePathAbilityTurnStart } from './soulPathRolls.mjs';
 import {
   resolveCheckSuccess, wrapCriticalBlock, chooseGenericRollMode, evaluateD20WithMode, formatD20ModeSummaryLine,
 } from './criticalRolls.mjs';
@@ -1196,8 +1197,12 @@ async function handleTechniqueTurnStart(actor) {
  * source), Restrained's automatic escape check (if timed to "start"),
  * Schleichen's Concealed-status FP trigger, Zähigkeit's 0-Life FP trigger,
  * Totem's per-round Mana upkeep (auto-deactivating any totem it can't
- * afford), and Technique's own duration/cooldown ticking (auto-
- * deactivating any expired stand/self-effect, granting cooldown-round FP).
+ * afford), Technique's own duration/cooldown ticking (auto-deactivating any
+ * expired stand/self-effect, granting cooldown-round FP), and a bound Soul
+ * Path's own active Path Abilities' duration/cooldown ticking (helpers/
+ * soulPathRolls.mjs#handlePathAbilityTurnStart, same shape as Technique's
+ * own stand ticking, minus the cooldown-round FP grant - no such trigger
+ * exists for Path Abilities).
  * @param {Actor} actor
  * @param {number} round
  * @return {Promise<void>}
@@ -1215,6 +1220,7 @@ export async function handleCombatTurnStart(actor, round) {
   await handleTenacityTurnStart(actor);
   await handleTotemTurnStart(actor);
   await handleTechniqueTurnStart(actor);
+  await handlePathAbilityTurnStart(actor);
 }
 
 /**

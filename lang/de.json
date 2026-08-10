@@ -523,6 +523,87 @@
             "Expired": "{name}: Wirkungsdauer abgelaufen - deaktiviert.",
             "TurnStartTitle": "Techniken"
         },
+        "SoulPath": {
+            "SectionTitle": "Seelenpfad",
+            "TabLabel": "Seelenpfad",
+            "Tab": {
+                "Properties": "Eigenschaften"
+            },
+            "Stage": {
+                "Sammlung": "Sammlung",
+                "Staerkung": "Stärkung",
+                "Kristallisierung": "Kristallisierung",
+                "Erwachen": "Erwachen",
+                "Aufstieg": "Aufstieg"
+            },
+            "Type": {
+                "Weapon": "Waffe",
+                "Body": "Körper",
+                "Magic": "Magie",
+                "HybridWeaponBody": "Hybrid (Waffe/Körper)",
+                "HybridWeaponMagic": "Hybrid (Waffe/Magie)",
+                "HybridBodyMagic": "Hybrid (Körper/Magie)",
+                "HybridAll": "Hybrid (alle)"
+            },
+            "AbilityType": {
+                "Active": "Aktiv",
+                "Passive": "Passiv"
+            },
+            "BreakthroughMode": {
+                "Once": "Einmalig",
+                "RepeatableUntilNext": "Mehrfach bis nächster Durchbruch abgeschlossen",
+                "Repeatable": "Mehrfach"
+            },
+            "Elements": "Elemente",
+            "ElementsHint": "Strg/Cmd gedrückt halten (oder Umschalt für einen Bereich), um mehrere auszuwählen.",
+            "PathTypeLabel": "Pfadtyp",
+            "PathAbilitiesSection": "Pfadfähigkeiten",
+            "AddPathAbility": "Pfadfähigkeit hinzufügen",
+            "AbilityTypeLabel": "Typ",
+            "ApCost": "AP-Kosten",
+            "ManaCost": "Mana-Kosten",
+            "Duration": "Dauer (Runden)",
+            "Cooldown": "Abklingzeit (Runden)",
+            "LockedBehindBreakthrough": "Hinter Durchbruch versteckt",
+            "RequiredStage": "Benötigte Stufe",
+            "RequiredBreakthroughIndex": "Benötigter Durchbruch #",
+            "RequiredBreakthroughIndexHint": "Nullbasierte Position innerhalb der gewählten Stufe (0 = deren erster Durchbruch).",
+            "EditEffect": "Effekt bearbeiten",
+            "NoEffectYet": "Noch kein verlinkter Effekt - erst freischalten/aktivieren.",
+            "StatusActive": "Aktiv (noch {rounds} Runden)",
+            "StatusCooldown": "Abklingzeit (noch {rounds} Runden)",
+            "StatusReady": "Bereit",
+            "Activate": "Aktivieren",
+            "Deactivate": "Deaktivieren",
+            "PathAbilityActivated": "{name} aktiviert.",
+            "PathAbilityDeactivated": "{name} deaktiviert.",
+            "NotEnoughAP": "Nicht genug AP.",
+            "NotEnoughMana": "Nicht genug Mana.",
+            "AddBreakthrough": "Durchbruch hinzufügen",
+            "Cost": "Kosten (Seelenenergie)",
+            "Difficulty": "Schwierigkeit",
+            "Mode": "Modus",
+            "CostIncreasePerCompletion": "Kostensteigerung pro geschafftem Durchbruch",
+            "DifficultyIncreasePerCompletion": "Schwierigkeitssteigerung pro geschafftem Durchbruch",
+            "CompletedCount": "Geschafft",
+            "NoPathBound": "Noch kein Seelenpfad gebunden - fragt euren Spielleiter.",
+            "AttemptBreakthrough": "Durchbruch versuchen",
+            "EffectiveCost": "Kosten: {cost} Seelenenergie",
+            "EffectiveDifficulty": "Schwierigkeit: {difficulty}",
+            "NotEnoughSoulPower": "Nicht genug Seelenenergie für diesen Durchbruch (mindestens {cost} nötig).",
+            "NotAttemptable": "Dieser Durchbruch kann gerade nicht versucht werden.",
+            "NoPathAbilities": "Noch keine Pfadfähigkeiten freigeschaltet.",
+            "BreakthroughAttemptTitle": "{name} - Durchbruchsversuch",
+            "BreakthroughRollLine": "Wurf: {roll} + {excessBonus} (überschüssige Seelenenergie) + {abilityBonus} (Boni) = {total} vs. Schwierigkeit {difficulty}",
+            "BreakthroughCostPaidLine": "Verbrauchte Seelenenergie: {amount}",
+            "BreakthroughSuccess": "Durchbruch geschafft!",
+            "BreakthroughFailure": "Durchbruch nicht geschafft.",
+            "GmSectionTitle": "Seelenpfad",
+            "Create": "Seelenpfad erstellen",
+            "AlreadyHasOne": "Dieser Akteur hat bereits einen gebundenen Seelenpfad - erst entfernen.",
+            "PathAbilityExpired": "{name}: Wirkungsdauer abgelaufen - deaktiviert.",
+            "TurnStartTitle": "Seelenpfad"
+        },
         "PrayerDialog": {
             "Title": "Gebet",
             "Hours": "Stunden",
@@ -1067,6 +1148,9 @@
             "Ice": "Eis",
             "Disease": "Krankheit"
         },
+        "PathElement": {
+            "Mana": "Mana"
+        },
         "Effect": {
             "Source": "Quelle",
             "Toggle": "Effekt Umschalten",
@@ -1380,7 +1464,8 @@
             "armor": "Rüstung",
             "weapon": "Waffe",
             "spell": "Zauber",
-            "technique": "Technik"
+            "technique": "Technik",
+            "soulPath": "Seelenpfad"
         }
     }
 }

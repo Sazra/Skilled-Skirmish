@@ -55,8 +55,10 @@
           <div class="item-name"></div>
           <div class="item-name flexrow flex-center">
             <input type="text" name="system.{{res.key}}.value" value="{{res.value}}" data-dtype="Number" />
+            {{#unless res.noMax}}
             <span>/</span>
             <span class="resource-computed">{{res.max}}</span>
+            {{/unless}}
           </div>
           <div class="item-controls"></div>
         </li>

@@ -41,6 +41,11 @@ import {
 import { grantMassKillFp, MASS_KILL_TIERS } from '../helpers/massacre.mjs';
 import { SKSKTechniqueDialog } from '../apps/technique-dialog.mjs';
 import {
+  getSoulPathItem, isPathAbilityVisible, getPathAbilityStatusLabel, getPathAbilityActionLabel,
+  isBreakthroughUnlocked, isBreakthroughAttemptable, getBreakthroughEffectiveValues,
+  attemptBreakthrough, togglePathAbility,
+} from '../helpers/soulPathRolls.mjs';
+import {
   getStatusEffectDefinitions, getStatusStacks, increaseStatusStacks, decreaseStatusStacks, applyD20Malus,
   getStatusEffect, getStatusInstances, getStatusInstancesTotal, addStatusInstance, applyCauterization,
   getAdrenalinDamage, setRestrainedConfig, attemptRestrainedEscapeManual,
@@ -142,6 +147,13 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       resetAttributeBonus: SKSKActorSheet.#resetAttributeBonus,
       resetAllAttributeBonuses: SKSKActorSheet.#resetAllAttributeBonuses,
       configureToken: SKSKActorSheet.#configureToken,
+      attemptBreakthrough: SKSKActorSheet.#attemptBreakthrough,
+      togglePathAbility: SKSKActorSheet.#togglePathAbility,
+      openPathAbilityEffect: SKSKActorSheet.#openPathAbilityEffect,
+      openBreakthroughEffect: SKSKActorSheet.#openBreakthroughEffect,
+      createSoulPath: SKSKActorSheet.#createSoulPath,
+      editSoulPath: SKSKActorSheet.#editSoulPath,
+      deleteSoulPath: SKSKActorSheet.#deleteSoulPath,
     },
     // Drop target for assigning existing Items (of any type) to this actor
     // by dragging them from the sidebar, a compendium, or another sheet.
@@ -158,9 +170,27 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
         { id: "skills", label: "SKSK.SheetLabels.Skills" },
         { id: "spells", label: "Spells" },
         { id: "effects", label: "Effects" },
+        // Only rendered/shown once unlocked - see _configureRenderParts/
+        // _prepareContext (same soulforce level 5 / soulPowerResourceEnabled
+        // condition already used for the Soul Power resource itself).
+        { id: "soulPath", label: "SKSK.SoulPath.TabLabel" },
         { id: "gm", label: "SKSK.SheetLabels.GM" },
       ],
       initial: "general",
+    },
+    // Sub-tabs shown inside the Soul Path tab, one per progression stage -
+    // hardcoded rather than derived from CONFIG.SKSK for the same reason as
+    // skillCategories/spellSimpleSchools above (static fields evaluate
+    // before CONFIG.SKSK is populated).
+    soulPathStages: {
+      tabs: [
+        { id: "sammlung", label: "SKSK.SoulPath.Stage.Sammlung" },
+        { id: "staerkung", label: "SKSK.SoulPath.Stage.Staerkung" },
+        { id: "kristallisierung", label: "SKSK.SoulPath.Stage.Kristallisierung" },
+        { id: "erwachen", label: "SKSK.SoulPath.Stage.Erwachen" },
+        { id: "aufstieg", label: "SKSK.SoulPath.Stage.Aufstieg" },
+      ],
+      initial: "sammlung",
     },
     // Sub-tabs shown inside the General tab - Character (formerly its own
     // top-level tab) and Actions (new) alongside the General tab's
@@ -310,6 +340,10 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       template: "systems/sksk/templates/actor/parts/effects.hbs",
       scrollable: [""],
     },
+    soulPath: {
+      template: "systems/sksk/templates/actor/parts/soul-path.hbs",
+      scrollable: [""],
+    },
     gm: {
       template: "systems/sksk/templates/actor/parts/gm.hbs",
       scrollable: [""],
@@ -336,7 +370,34 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     // also _prepareContext, which hides its tab-bar button).
     if (!game.user.isGM) delete parts.gm;
 
+    // The Soul Path tab only exists once unlocked - same condition as the
+    // Soul Power resource itself (see _prepareGeneral) - not rendered into
+    // the DOM at all otherwise (see also _prepareContext, which hides its
+    // tab-bar button).
+    if (!this.#isSoulPathUnlocked) {
+      delete parts.soulPath;
+      // If the tab was active and just got revoked (e.g. a GM flips
+      // soulPowerResourceEnabled off while the sheet is open), Foundry's
+      // own render pipeline tries to restore "soulPath" as the active tab
+      // on the freshly-rebuilt DOM and throws since it no longer exists -
+      // reset it here, before that pipeline runs, rather than only in
+      // _onRender (too late for Foundry's own restoration attempt).
+      if (this.tabGroups?.primary === 'soulPath') {
+        this.tabGroups.primary = this.constructor.TABS.primary.initial;
+      }
+    }
+
     return parts;
+  }
+
+  /**
+   * Whether the Soul Path tab (and the Soul Power resource) should be
+   * visible - Seelenstärke reaching its own max level (5), or the GM tab's
+   * own soulPowerResourceEnabled switch being on.
+   * @type {boolean}
+   */
+  get #isSoulPathUnlocked() {
+    return getActorSkillLevel(this.actor, 'soulforce') >= 5 || this.actor.system.soulPowerResourceEnabled;
   }
 
   /**
@@ -402,6 +463,10 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     // The GM tab holds background information/switches irrelevant to
     // players - hidden from the tab bar entirely for non-GM users.
     if (!game.user.isGM) delete context.tabs.gm;
+    // The Soul Path tab is hidden from the tab bar entirely until unlocked
+    // - see #isSoulPathUnlocked.
+    if (!this.#isSoulPathUnlocked) delete context.tabs.soulPath;
+    context.soulPathStageTabs = Object.values(this._prepareTabs('soulPathStages'));
     context.generalSectionTabs = Object.values(this._prepareTabs('generalSections'));
     context.characterSectionTabs = Object.values(this._prepareTabs('characterSections'));
     context.genderChoices = CONFIG.SKSK.genders;
@@ -458,6 +523,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     this._prepareSkills(context);
     this._prepareSpells(context);
     this._prepareGeneral(context);
+    await this._prepareSoulPath(context);
 
     // Carried vs. max carry weight (see helpers/inventory.mjs), shown at
     // the top of the Items tab. maxCarryWeight is Infinity for Titanic
@@ -886,11 +952,81 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       .filter(r => !r.requiredSkill || getActorSkillLevel(actor, r.requiredSkill) >= 1)
       .map(r => ({ key: r.key, label: r.label, value: actor.system[r.key].value, max: actor.system[r.key].max }));
 
-    // Seelenstärke's own "Seelenmacht" (Soul Power) resource sidebar entry
-    // (resources.hbs/resources-npc.hbs) - shown once Seelenstärke reaches
-    // its own max level (5), or unconditionally while the GM tab's own
-    // soulPowerResourceEnabled switch is on.
-    context.soulPowerVisible = getActorSkillLevel(actor, 'soulforce') >= 5 || actor.system.soulPowerResourceEnabled;
+    // Seelenstärke's own "Seelenmacht" (Soul Power) resource - listed among
+    // the Additional Resources (general-overview.hbs) rather than the
+    // resources sidebar, since (like Barrier) it's unbounded and has no
+    // max - shown under the same condition that gates the Soul Path tab
+    // itself (see #isSoulPathUnlocked).
+    if (this.#isSoulPathUnlocked) {
+      context.generalResources.push({ key: 'soulPower', label: 'SKSK.Resource.SoulPower', value: actor.system.soulPower.value, noMax: true });
+    }
+  }
+
+  /**
+   * Build the Soul Path tab's data: the bound Item (if any), its icon
+   * badges, the visible (unlocked) Path Abilities, and each stage's own
+   * "frontier"-filtered Durchbruch list - every already-completed entry
+   * (history, read-only) plus at most one more (the next unlocked-but-
+   * incomplete entry, carrying its own effective cost/difficulty for the
+   * Attempt button) - nothing beyond that is included at all, per the
+   * "not shown until reached" design (see helpers/soulPathRolls.mjs#
+   * isBreakthroughUnlocked). context.soulPathItem is always resolved (the
+   * GM tab's own bind/edit/delete section needs it regardless of whether
+   * the Soul Path tab itself is currently unlocked) - only the tab's own
+   * richer context (icons/abilities/stage entries) is skipped while locked.
+   * @param {Object} context
+   * @return {Promise<undefined>}
+   */
+  async _prepareSoulPath(context) {
+    const actor = this.actor;
+    const item = getSoulPathItem(actor);
+    context.soulPathItem = item;
+    if (!item || !this.#isSoulPathUnlocked) return;
+
+    context.soulPathDescriptionHTML = await foundry.applications.ux.TextEditor.implementation.enrichHTML(
+      item.system.description ?? '', { relativeTo: item, secrets: item.isOwner }
+    );
+
+    context.soulPathTypeIcon = CONFIG.SKSK.pathTypeIcons[item.system.pathType];
+    context.soulPathElementIcons = (item.system.elements ?? [])
+      .map(key => CONFIG.SKSK.pathElementIcons[key])
+      .filter(Boolean);
+
+    context.visiblePathAbilities = (item.system.pathAbilities ?? [])
+      .map((entry, index) => ({ entry, index }))
+      .filter(({ index }) => isPathAbilityVisible(item, index))
+      .map(({ entry, index }) => ({
+        ...entry, index,
+        statusLabel: getPathAbilityStatusLabel(entry),
+        actionLabel: getPathAbilityActionLabel(entry),
+      }));
+
+    context.soulPathStageEntries = {};
+    for (const stageKey of Object.keys(CONFIG.SKSK.soulPathStages)) {
+      const stage = item.system[stageKey] ?? [];
+      const rows = [];
+      for (let index = 0; index < stage.length; index++) {
+        const entry = stage[index];
+        const completedAtLeastOnce = (entry.completedCount ?? 0) >= 1;
+        if (completedAtLeastOnce) {
+          rows.push({ ...entry, index, completedAtLeastOnce, attemptable: false });
+          continue;
+        }
+        if (isBreakthroughUnlocked(item, stageKey, index)) {
+          const { cost, difficulty } = getBreakthroughEffectiveValues(item, stageKey, index);
+          rows.push({
+            ...entry, index, completedAtLeastOnce,
+            attemptable: isBreakthroughAttemptable(item, stageKey, index),
+            effectiveCost: cost, effectiveDifficulty: difficulty,
+          });
+        }
+        // The first not-yet-completed entry is the frontier (shown if
+        // unlocked, hidden entirely otherwise) - nothing past it can be
+        // reachable yet, so stop here regardless.
+        break;
+      }
+      context.soulPathStageEntries[stageKey] = rows;
+    }
   }
 
   /* -------------------------------------------- */
@@ -998,6 +1134,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     for (const group of [
       'primary', 'generalSections', 'characterSections', 'skillCategories', 'spellTypes',
       'spellSimpleSchools', 'spellAdvancedSchools', 'spellCombinedSchools', 'spellSystemlessCategories',
+      'soulPathStages',
     ]) {
       const active = this.tabGroups?.[group] ?? this.constructor.TABS[group].initial;
       if (active && this.element.querySelector(`.tab[data-group="${group}"][data-tab="${active}"]`)) {
@@ -1068,6 +1205,12 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
 
     // Already an owned item on this actor - nothing to do.
     if (item.actor === this.actor) return;
+
+    // At most one Soul Path per actor - reject a second rather than
+    // silently replacing (or duplicating) the GM's already-authored one.
+    if (item.type === 'soulPath' && getSoulPathItem(this.actor)) {
+      return ui.notifications.warn(game.i18n.localize('SKSK.SoulPath.AlreadyHasOne'));
+    }
 
     const itemData = item.toObject();
     return this.actor.createEmbeddedDocuments('Item', [itemData]);
@@ -1361,6 +1504,91 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
    */
   static #openTechniqueDialog(event, target) {
     new SKSKTechniqueDialog(this.actor).render(true);
+  }
+
+  /**
+   * A Durchbruch's own "Attempt" button - see helpers/soulPathRolls.mjs#
+   * attemptBreakthrough.
+   * @param {PointerEvent} event
+   * @param {HTMLElement} target   Carries data-stage/data-index.
+   */
+  static async #attemptBreakthrough(event, target) {
+    const item = getSoulPathItem(this.actor);
+    if (!item) return;
+    await attemptBreakthrough(this.actor, item, target.dataset.stage, Number(target.dataset.index));
+  }
+
+  /**
+   * A Path Ability's own Activate/Deactivate button - see helpers/
+   * soulPathRolls.mjs#togglePathAbility.
+   * @param {PointerEvent} event
+   * @param {HTMLElement} target   Carries data-index.
+   */
+  static async #togglePathAbility(event, target) {
+    const item = getSoulPathItem(this.actor);
+    if (!item) return;
+    await togglePathAbility(this.actor, item, Number(target.dataset.index));
+  }
+
+  /**
+   * Open a Path Ability's own linked ActiveEffect in Foundry's native
+   * effect config sheet.
+   * @param {PointerEvent} event
+   * @param {HTMLElement} target   Carries data-index.
+   */
+  static #openPathAbilityEffect(event, target) {
+    const item = getSoulPathItem(this.actor);
+    const effectId = item?.system.pathAbilities?.[Number(target.dataset.index)]?.effectId;
+    const effect = effectId ? this.actor.effects.get(effectId) : null;
+    if (!effect) return ui.notifications.warn(game.i18n.localize('SKSK.SoulPath.NoEffectYet'));
+    effect.sheet.render(true);
+  }
+
+  /**
+   * Open a Durchbruch's own linked ActiveEffect in Foundry's native effect
+   * config sheet.
+   * @param {PointerEvent} event
+   * @param {HTMLElement} target   Carries data-stage/data-index.
+   */
+  static #openBreakthroughEffect(event, target) {
+    const item = getSoulPathItem(this.actor);
+    const effectId = item?.system[target.dataset.stage]?.[Number(target.dataset.index)]?.effectId;
+    const effect = effectId ? this.actor.effects.get(effectId) : null;
+    if (!effect) return ui.notifications.warn(game.i18n.localize('SKSK.SoulPath.NoEffectYet'));
+    effect.sheet.render(true);
+  }
+
+  /**
+   * GM tab's "Create Soul Path" button - guarded against a second one
+   * (only one Soul Path Item is ever expected per actor).
+   */
+  static async #createSoulPath(event, target) {
+    if (getSoulPathItem(this.actor)) return;
+    await Item.create({ name: game.i18n.localize('SKSK.SoulPath.SectionTitle'), type: 'soulPath' }, { parent: this.actor });
+  }
+
+  /**
+   * GM tab's "Edit" button for the bound Soul Path.
+   */
+  static #editSoulPath(event, target) {
+    getSoulPathItem(this.actor)?.sheet.render(true);
+  }
+
+  /**
+   * GM tab's "Delete" button for the bound Soul Path - also cleans up
+   * every per-entry ActiveEffect it created (Path Abilities and every
+   * stage's own Durchbrüche), since deleting the Item itself doesn't
+   * touch the actor-level effects it's merely linked to by id.
+   */
+  static async #deleteSoulPath(event, target) {
+    const item = getSoulPathItem(this.actor);
+    if (!item) return;
+    const effectIds = [
+      ...(item.system.pathAbilities ?? []).map(a => a.effectId),
+      ...Object.keys(CONFIG.SKSK.soulPathStages).flatMap(stageKey => (item.system[stageKey] ?? []).map(e => e.effectId)),
+    ].filter(Boolean);
+    if (effectIds.length) await this.actor.deleteEmbeddedDocuments('ActiveEffect', effectIds);
+    await item.delete();
   }
 
   /**
