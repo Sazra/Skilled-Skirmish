@@ -280,3 +280,46 @@ export function applyTechniqueBonusDamage(total, technique) {
   const line = `<div class="sksk-roll-line">${game.i18n.format('SKSK.Technique.Consumed', { name: technique.item.name })}</div>`;
   return { total: adjusted, line };
 }
+
+/**
+ * The {itemUuid, effectId} payload renderApplyDamageButton (see helpers/
+ * damageApplication.mjs) needs to also apply a consumed "effect"/
+ * "attackTarget" Technique's own linked ActiveEffect to whoever that button
+ * ends up resolving as the defender - null for anything else consumed
+ * (bonusDamage, effect/self - the latter is applied to the caster/attacker
+ * itself at prime time instead, via toggleStandTechnique's own duration-
+ * based sibling path, not here).
+ * @param {{item: Item, effectTarget: string|null}|null} technique
+ * @return {{itemUuid: string, effectId: string}|null}
+ */
+export function getTechniqueEffectPayload(technique) {
+  if (!technique || technique.effectTarget !== 'attackTarget' || !technique.effectId) return null;
+  return { itemUuid: technique.item.uuid, effectId: technique.effectId };
+}
+
+/**
+ * Copy a consumed "effect"/"attackTarget" Technique's own linked
+ * ActiveEffect (see getTechniqueEffectPayload above and ensureLinkedEffect) -
+ * which stays on the granting actor, always disabled, purely as a template -
+ * onto the resolved defender as a fresh, enabled ActiveEffect, leaving that
+ * template untouched for the next time this Technique gets primed. A no-op
+ * (returns "") if the granting Item or its own template effect can no
+ * longer be found.
+ * @param {string} itemUuid
+ * @param {string} effectId
+ * @param {Actor} defender
+ * @return {Promise<string>}
+ */
+export async function applyTechniqueEffectToTarget(itemUuid, effectId, defender) {
+  const item = itemUuid ? await fromUuid(itemUuid) : null;
+  const template = item?.actor?.effects.get(effectId);
+  if (!template) return '';
+
+  const effectData = template.toObject();
+  delete effectData._id;
+  effectData.disabled = false;
+  effectData.origin = item.uuid;
+  await defender.createEmbeddedDocuments('ActiveEffect', [effectData]);
+
+  return `<div class="sksk-roll-line">${game.i18n.format('SKSK.Technique.EffectApplied', { name: item.name, target: defender.name })}</div>`;
+}

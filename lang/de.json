@@ -518,6 +518,8 @@
             "Primed": "{name} vorbereitet - wirkt auf den nächsten Waffen-/Kampfkunstangriff.",
             "PrimeCancelled": "Vorbereitung von {name} abgebrochen.",
             "Consumed": "Technik genutzt: {name}",
+            "ApplyEffect": "Effekt anwenden",
+            "EffectApplied": "{name}: Effekt auf {target} angewendet.",
             "Expired": "{name}: Wirkungsdauer abgelaufen - deaktiviert.",
             "TurnStartTitle": "Techniken"
         },

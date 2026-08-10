@@ -15,7 +15,7 @@ import {
 } from './criticalRolls.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine, grantFlatSkillFp, checkReflexActionTrigger } from './skillFp.mjs';
 import { renderApplyDamageButton } from './damageApplication.mjs';
-import { consumePrimedTechnique, applyTechniqueBonusDamage } from './technique-rolls.mjs';
+import { consumePrimedTechnique, applyTechniqueBonusDamage, getTechniqueEffectPayload } from './technique-rolls.mjs';
 
 // A Combat round is 6 seconds (see helpers/criticalRolls.mjs and the
 // Combat turn-start hooks in statusEffects.mjs), so a "minutes"-unit
@@ -178,6 +178,15 @@ async function renderSpellEffectParts(item, overchargeCount = 0) {
   const effectiveOvercharge = system.overchargeAutoEffects !== false ? overchargeCount : 0;
   const technique = actor ? await consumePrimedTechnique(actor) : null;
   let techniqueDamageApplied = false;
+  // Consumed at most once, by whichever of the (up to 3) Apply-Damage
+  // buttons below renders first - see renderApplyDamageButton's own
+  // techniqueEffect param (helpers/damageApplication.mjs).
+  let pendingTechniqueEffect = getTechniqueEffectPayload(technique);
+  const takeTechniqueEffect = () => {
+    const payload = pendingTechniqueEffect;
+    pendingTechniqueEffect = null;
+    return payload;
+  };
 
   const rollDamageWithTechnique = async (damage) => {
     const { html, entry } = await renderDamageRoll(damage, actor, effectiveOvercharge);
@@ -220,7 +229,7 @@ async function renderSpellEffectParts(item, overchargeCount = 0) {
         parts.push(html);
         damageEntries.push(entry);
       }
-      parts.push(renderApplyDamageButton(actor, damageEntries, null));
+      parts.push(renderApplyDamageButton(actor, damageEntries, null, takeTechniqueEffect()));
 
       if (system.savingThrows.length) {
         const buttons = system.savingThrows.map((save, index) => renderSavingThrowButton(save, index, item, effectiveOvercharge)).join('');
@@ -237,7 +246,7 @@ async function renderSpellEffectParts(item, overchargeCount = 0) {
       parts.push(html);
       saveDamageEntries.push(entry);
     }
-    parts.push(renderApplyDamageButton(actor, saveDamageEntries, null));
+    parts.push(renderApplyDamageButton(actor, saveDamageEntries, null, takeTechniqueEffect()));
     for (const effect of system.statusEffects.filter(e => e.trigger === 'save')) {
       parts.push(renderStatusEffect(effect));
     }
@@ -249,7 +258,7 @@ async function renderSpellEffectParts(item, overchargeCount = 0) {
     parts.push(html);
     unconditionalDamageEntries.push(entry);
   }
-  parts.push(renderApplyDamageButton(actor, unconditionalDamageEntries, null));
+  parts.push(renderApplyDamageButton(actor, unconditionalDamageEntries, null, takeTechniqueEffect()));
   for (const effect of system.statusEffects.filter(e => e.trigger === 'unconditional')) {
     parts.push(renderStatusEffect(effect));
   }

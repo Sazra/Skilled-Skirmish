@@ -3,9 +3,8 @@ import SKSKItemBase from "./item-base.mjs";
 /**
  * A "Technik" (Technique) - modifies a weapon/Martial Arts attack or a
  * spell cast (see helpers/actions.mjs#rollWeaponItem/rollMartialArtsAttack
- * and helpers/spell-rolls.mjs#renderSpellEffectParts; a target-"effect"
- * Technique's own linked ActiveEffect isn't actually applied to whoever
- * gets hit yet, for either path), belongs to exactly one Kampfstil
+ * and helpers/spell-rolls.mjs#renderSpellEffectParts), belongs to exactly
+ * one Kampfstil
  * (combat/technique style - see apps/combat-styles-config.mjs, resolved by
  * id against the "combatStyles" world setting), and
  * comes in one of three categories with very different activation shapes:

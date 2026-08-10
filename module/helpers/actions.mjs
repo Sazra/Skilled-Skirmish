@@ -9,7 +9,7 @@ import {
 import { wrapCriticalBlock } from "./criticalRolls.mjs";
 import { grantSkillUsageFp, formatSkillFpGrantLine, checkReflexActionTrigger } from "./skillFp.mjs";
 import { renderApplyDamageButton } from "./damageApplication.mjs";
-import { consumePrimedTechnique, applyTechniqueBonusDamage } from "./technique-rolls.mjs";
+import { consumePrimedTechnique, applyTechniqueBonusDamage, getTechniqueEffectPayload } from "./technique-rolls.mjs";
 
 /**
  * Post a simple chat card (an optional Roll, an AP-cost line, and a
@@ -85,12 +85,13 @@ export async function rollWeaponItem(item) {
     const { total, line } = applyTechniqueBonusDamage(roll.total, technique);
     parts.push(line);
     damageEntries.push({ damageType, amount: total });
-    parts.push(renderApplyDamageButton(actor, damageEntries, item.system.weaponType));
+    parts.push(renderApplyDamageButton(actor, damageEntries, item.system.weaponType, getTechniqueEffectPayload(technique)));
   } else if (item.system.description) {
     const descriptionHTML = await foundry.applications.ux.TextEditor.implementation.enrichHTML(
       item.system.description ?? '', { relativeTo: item, secrets: item.isOwner }
     );
     parts.push(`<div class="sksk-roll-description">${descriptionHTML}</div>`);
+    parts.push(renderApplyDamageButton(actor, [], item.system.weaponType, getTechniqueEffectPayload(technique)));
   }
 
   const messageData = {
@@ -186,7 +187,7 @@ export async function rollMartialArtsAttack(actor, index) {
   const renderedDamage = await roll.render();
   const { total: damageTotal, line: techniqueLine } = applyTechniqueBonusDamage(roll.total, technique);
   const damageEntries = [{ damageType: attack.damageType, amount: damageTotal }];
-  const applyDamageHTML = renderApplyDamageButton(actor, damageEntries, 'martialArts');
+  const applyDamageHTML = renderApplyDamageButton(actor, damageEntries, 'martialArts', getTechniqueEffectPayload(technique));
 
   await actor.update(spendActionPoints(actor, attack.apCost));
   let fpHTML = formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'martialArts', 'weaponAttack'));

@@ -518,6 +518,8 @@
       "Primed": "{name} primed - applies to your next weapon/Martial Arts attack.",
       "PrimeCancelled": "{name}'s priming cancelled.",
       "Consumed": "Technique used: {name}",
+      "ApplyEffect": "Apply Effect",
+      "EffectApplied": "{name}: effect applied to {target}.",
       "Expired": "{name}: duration expired - deactivated.",
       "TurnStartTitle": "Techniques"
     },
