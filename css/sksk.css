@@ -1490,14 +1490,24 @@ span.sksk-critical-failure {
 /* Soul Path (Item sheet's own Properties/stage tabs, templates/item/parts/
    soul-path-*.hbs) - the Name/Description fields for Path Abilities and
    Durchbrüche stretch to fill their row (the delete icon stays fixed-width)
-   instead of sitting at their cramped default input size. */
+   instead of sitting at their cramped default input size. Name shares a
+   .flexrow with the delete icon (flex-basis 0, not auto - an <input>'s own
+   content-based auto basis is large enough that, combined with the row's
+   own flex-wrap: wrap, the delete icon gets pushed onto its own line
+   otherwise). Description sits alone on its own line, but .items-list
+   .item.expandable-item (the <li> wrapping both) is styled display:block,
+   NOT flex, despite also carrying a "flexcol" class - flex-basis/grow are
+   no-ops on a non-flex-item, so the textarea needs a genuine block-context
+   width instead. */
 .sksk .soul-path-wide-field {
-  /* flex-basis 0 (not auto) - an <input>'s own content-based auto basis is
-     large enough that, combined with the row's own flex-wrap: wrap, the
-     sibling delete icon gets pushed onto its own line instead of sharing
-     this one. */
   flex: 1 1 0;
   min-width: 0;
+}
+
+.sksk textarea.soul-path-wide-field {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Soul Path (actor sheet tab, templates/actor/parts/soul-path.hbs) - the
