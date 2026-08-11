@@ -1,0 +1,47 @@
+<div class="sksk-production-fp-dialog flexcol">
+
+  <div class="resource">
+    <label class="resource-label">{{localize 'SKSK.ProductionFp.Alchemy'}}</label>
+    <div class="grid grid-2col">
+      <div class="grid-span-1">
+        <label class="resource-label">{{localize 'SKSK.ProductionFp.Essences'}}</label>
+        <input type="text" name="essences" value="1" data-dtype="Number" />
+      </div>
+      <div class="grid-span-1">
+        <label class="resource-label">{{localize 'SKSK.ProductionFp.Quality'}}</label>
+        <input type="text" name="alchemyQuality" value="100" data-dtype="Number" />
+      </div>
+    </div>
+    <button type="button" data-action="grantAlchemy">{{localize 'SKSK.ProductionFp.Grant'}}</button>
+  </div>
+
+  <div class="resource">
+    <label class="resource-label">{{localize 'SKSK.ProductionFp.Crafting'}}</label>
+    <label class="resource-label">{{localize 'SKSK.ProductionFp.Quality'}}</label>
+    <input type="text" name="craftingQuality" value="100" data-dtype="Number" />
+    <button type="button" data-action="grantCrafting">{{localize 'SKSK.ProductionFp.Grant'}}</button>
+  </div>
+
+  <div class="resource">
+    <label class="resource-label">{{localize 'SKSK.ProductionFp.Cooking'}}</label>
+    <label class="resource-label">{{localize 'SKSK.ProductionFp.Quality'}}</label>
+    <input type="text" name="cookingQuality" value="100" data-dtype="Number" />
+    <button type="button" data-action="grantCooking">{{localize 'SKSK.ProductionFp.Grant'}}</button>
+  </div>
+
+  <div class="resource">
+    <label class="resource-label">{{localize 'SKSK.ProductionFp.Enchanting'}}</label>
+    <div class="grid grid-2col">
+      <div class="grid-span-1">
+        <label class="resource-label">{{localize 'SKSK.ProductionFp.Quality'}}</label>
+        <input type="text" name="enchantingQuality" value="100" data-dtype="Number" />
+      </div>
+      <div class="grid-span-1">
+        <label class="resource-label">{{localize 'SKSK.ProductionFp.RitualHours'}}</label>
+        <input type="text" name="enchantingHours" value="0" data-dtype="Number" />
+      </div>
+    </div>
+    <button type="button" data-action="grantEnchanting">{{localize 'SKSK.ProductionFp.Grant'}}</button>
+  </div>
+
+</div>

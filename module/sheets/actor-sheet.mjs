@@ -35,6 +35,7 @@ import { SKSKPrayerDialog } from '../apps/prayer-dialog.mjs';
 import { SKSKSummoningDialog } from '../apps/summoning-dialog.mjs';
 import { SKSKTotemDialog } from '../apps/totem-dialog.mjs';
 import { SKSKSourceDialog } from '../apps/source-dialog.mjs';
+import { SKSKProductionFpDialog } from '../apps/production-fp-dialog.mjs';
 import {
   grantInspirationDie, consumeInspirationCharge, rollOwnInspirationDie, rollGrantedInspirationDie,
 } from '../helpers/inspiration.mjs';
@@ -137,6 +138,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       openSummoningDialog: SKSKActorSheet.#openSummoningDialog,
       openTotemDialog: SKSKActorSheet.#openTotemDialog,
       openSourceDialog: SKSKActorSheet.#openSourceDialog,
+      openProductionFpDialog: SKSKActorSheet.#openProductionFpDialog,
       openTechniqueDialog: SKSKActorSheet.#openTechniqueDialog,
       grantPassivePerceptionFp: SKSKActorSheet.#grantPassivePerceptionFp,
       increaseStatusStack: SKSKActorSheet.#increaseStatusStack,
@@ -1504,6 +1506,15 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
    */
   static #openSourceDialog(event, target) {
     new SKSKSourceDialog(this.actor).render(true);
+  }
+
+  /**
+   * Open the "Herstellungs-FP" (Production FP) dialog (apps/production-fp-
+   * dialog.mjs) from the sheet header - Character-only, same convention as
+   * #openSourceDialog.
+   */
+  static #openProductionFpDialog(event, target) {
+    new SKSKProductionFpDialog(this.actor).render(true);
   }
 
   /**

@@ -76,17 +76,16 @@ const MIXED_CATEGORY_HINTS = {
  * out in each field's own label below.
  */
 const SKILL_SPECIFIC_TRIGGERS = {
-  // Production (Herstellungsfertigkeiten) - no crafting system exists yet,
-  // every field here is unwired.
-  alchemy: [{ key: 'potionBrewed', label: 'SKSK.SkillFpConfig.PotionBrewed' }],
-  crafting: [
-    { key: 'itemCrafted', label: 'SKSK.SkillFpConfig.ItemCrafted' },
-    { key: 'itemCraftFailed', label: 'SKSK.SkillFpConfig.ItemCraftFailed' },
-  ],
-  cooking: [
-    { key: 'dishCooked', label: 'SKSK.SkillFpConfig.DishCooked' },
-    { key: 'cookFailed', label: 'SKSK.SkillFpConfig.CookFailed' },
-  ],
+  // Production (Herstellungsfertigkeiten) - wired via the "Herstellungs-FP"
+  // header dialog (apps/production-fp-dialog.mjs, Character-only): a player
+  // enters an already-resolved crafting action's own quality% (and, for
+  // Alchemy, essence count) and the dialog scales the rate below by it - see
+  // helpers/productionFp.mjs. Enchanting additionally grants Ritualism's own
+  // "ritualHour" trigger (see the magic category below) for the same
+  // session's ritual duration, if any.
+  alchemy: [{ key: 'essenceProcessed', label: 'SKSK.SkillFpConfig.EssenceProcessed' }],
+  crafting: [{ key: 'itemCrafted', label: 'SKSK.SkillFpConfig.ItemCrafted' }],
+  cooking: [{ key: 'dishCooked', label: 'SKSK.SkillFpConfig.DishCooked' }],
   enchanting: [{ key: 'enchantmentLevel', label: 'SKSK.SkillFpConfig.EnchantmentLevel' }],
 
   // Rogue (Fingerfertigkeiten) - no trap/lock-picking system exists yet, but
