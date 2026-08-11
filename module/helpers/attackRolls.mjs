@@ -6,6 +6,14 @@ import { getAttackCriticalType, resolveCheckSuccess, wrapCriticalBlock, wrapCrit
 import { getEquippedArmorSkillKeys } from './defense.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
 import { resolveClickDefender, renderApplyDamageButton } from './damageApplication.mjs';
+import { checkFlanking } from './flanking.mjs';
+
+/**
+ * Tactic level 10's own flat AC bonus (see helpers/flanking.mjs) - a
+ * creature gets this specifically against an enemy it is itself flanking,
+ * applied only to armorClass comparisons (never magicResistance).
+ */
+const FLANKING_AC_BONUS = 5;
 
 /**
  * Präzision's own minimum Präzisionswurf result, per skill level (1-5) -
@@ -30,14 +38,20 @@ const ATTACK_MODES = [
  * Prompt for which of an Angriffswurf's two d20s counts - one button per
  * mode (see ATTACK_MODES), clicking one both makes the choice and resolves
  * the promise with it, matching helpers/skillRolls.mjs#chooseSkillRollVariant's
- * own one-click dialog pattern.
+ * own one-click dialog pattern. The dialog always offers all three modes and
+ * never auto-picks one - suggestedMode (see helpers/flanking.mjs, threaded
+ * through the Evaluate button's own data-flanking attribute) only appends a
+ * "(recommended)" hint to that one button's label.
+ * @param {string|null} [suggestedMode]
  * @return {Promise<string|null>} The chosen mode's id, or null/undefined if
  *   the dialog was closed without picking one - the caller should abort.
  */
-async function chooseAttackMode() {
+async function chooseAttackMode(suggestedMode = null) {
   const buttons = ATTACK_MODES.map(mode => ({
     action: mode.id,
-    label: game.i18n.localize(mode.label),
+    label: mode.id === suggestedMode
+      ? game.i18n.format('SKSK.AttackRoll.ModeRecommended', { mode: game.i18n.localize(mode.label) })
+      : game.i18n.localize(mode.label),
     callback: () => mode.id,
   }));
   return foundry.applications.api.DialogV2.wait({
@@ -359,11 +373,11 @@ export async function maybeRollPrecision(actor, isOrdinaryHit) {
  * @param {[Roll, Roll]} rolls
  * @param {"armorClass"|"magicResistance"} comparisonType
  * @param {Actor|null} actor   The attacker, whose own critical thresholds apply.
- * @param {{damageDice?: Array<{damageType: string, dieSizes: number[]}>, killSkillKey?: string|null}} [damageInfo]
+ * @param {{damageDice?: Array<{damageType: string, dieSizes: number[]}>, killSkillKey?: string|null, flanking?: boolean}} [damageInfo]
  * @return {Promise<string>}
  */
 export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor, damageInfo = {}) {
-  const { damageDice = [], killSkillKey = null } = damageInfo;
+  const { damageDice = [], killSkillKey = null, flanking = false } = damageInfo;
   const critA = getAttackCriticalType(rollA, actor);
   const critB = getAttackCriticalType(rollB, actor);
   const renderedA = wrapCriticalBlock(await rollA.render(), critA);
@@ -383,7 +397,7 @@ export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor
       data-roll-a="${rollA.total}" data-roll-b="${rollB.total}" data-comparison-type="${comparisonType}"
       data-crit-a="${critA ?? ''}" data-crit-b="${critB ?? ''}" data-attacker-uuid="${actor?.uuid ?? ''}"
       data-damage-dice="${encodeURIComponent(JSON.stringify(damageDice))}"
-      data-kill-skill="${killSkillKey ?? ''}">
+      data-kill-skill="${killSkillKey ?? ''}" data-flanking="${flanking}">
       ${game.i18n.localize('SKSK.AttackRoll.Evaluate')}
     </button>
   `;
@@ -434,7 +448,7 @@ export async function resolveHitEvaluationFromChat(button) {
   const defender = resolveClickDefender();
   if (!defender) return ui.notifications.warn(game.i18n.localize('SKSK.AttackRoll.NoDefender'));
 
-  const mode = await chooseAttackMode();
+  const mode = await chooseAttackMode(button.dataset.flanking === 'true' ? 'advantage' : null);
   if (!mode) return;
 
   const attacker = button.dataset.attackerUuid ? await fromUuid(button.dataset.attackerUuid) : null;
@@ -457,11 +471,21 @@ export async function resolveHitEvaluationFromChat(button) {
   }
 
   const comparisonType = button.dataset.comparisonType;
-  const statValue = comparisonType === 'magicResistance' ? defender.system.magicResistance : defender.system.armorClass;
   const statLabel = game.i18n.localize(comparisonType === 'magicResistance' ? 'SKSK.Resource.MR' : 'SKSK.Resource.AC');
 
+  // Tactic level 10 (see helpers/flanking.mjs): the defender gets a flat AC
+  // bonus specifically against an attacker it is itself flanking - checked
+  // from the defender's own side, symmetric to the attacker's own flanking
+  // bonus above. AC-only, never applies to a magicResistance comparison.
+  const defenderFlanks = comparisonType === 'armorClass' && attacker
+    && getActorSkillLevel(defender, 'tactic') >= 10 && checkFlanking(defender, attacker).flanking;
+  const statValue = (comparisonType === 'magicResistance' ? defender.system.magicResistance : defender.system.armorClass)
+    + (defenderFlanks ? FLANKING_AC_BONUS : 0);
+
   const hit = resolveCheckSuccess(chosenTotal, statValue, criticalType);
-  let extraHTML = '';
+  let extraHTML = defenderFlanks
+    ? `<div class="sksk-roll-line">${game.i18n.format('SKSK.AttackRoll.FlankingDefenseBonus', { bonus: FLANKING_AC_BONUS, defender: defender.name })}</div>`
+    : '';
 
   if (criticalType === null && hit) {
     const precision = await maybeRollPrecision(attacker, true);

@@ -8,8 +8,37 @@ import {
 } from "./attackRolls.mjs";
 import { wrapCriticalBlock } from "./criticalRolls.mjs";
 import { grantSkillUsageFp, formatSkillFpGrantLine, checkReflexActionTrigger } from "./skillFp.mjs";
-import { renderApplyDamageButton } from "./damageApplication.mjs";
+import { renderApplyDamageButton, resolveClickDefender } from "./damageApplication.mjs";
 import { consumePrimedTechnique, applyTechniqueBonusDamage, getTechniqueEffectPayload } from "./technique-rolls.mjs";
+import { checkFlanking } from "./flanking.mjs";
+
+/**
+ * The intended target's flanking result (see helpers/flanking.mjs) for an
+ * about-to-roll Angriffswurf, resolved via the same defender-lookup used at
+ * Evaluate-time (helpers/damageApplication.mjs#resolveClickDefender) - here
+ * called BEFORE rolling, since Flankieren's own flat attack bonus (equal to
+ * the attacker's own Tactic level) needs to go into the roll itself, not
+ * just the later hit comparison. A no-op ({flanking: false}) if there's no
+ * resolvable defender yet, or it would resolve to the attacker itself.
+ * @param {Actor} actor
+ * @return {{flanking: boolean}}
+ */
+function resolveAttackFlanking(actor) {
+  const defender = resolveClickDefender();
+  return defender && defender !== actor ? checkFlanking(actor, defender) : { flanking: false };
+}
+
+/**
+ * A short chat line noting a detected Flankieren bonus, or '' if none
+ * applied - shared by rollWeaponItem/rollMartialArtsAttack.
+ * @param {{flanking: boolean}} flank
+ * @param {number} bonus
+ * @return {string}
+ */
+function formatFlankingBonusLine(flank, bonus) {
+  if (!flank.flanking) return '';
+  return `<div class="sksk-roll-line">${game.i18n.format('SKSK.AttackRoll.FlankingBonus', { bonus })}</div>`;
+}
 
 /**
  * Post a simple chat card (an optional Roll, an AP-cost line, and a
@@ -69,13 +98,19 @@ export async function rollWeaponItem(item) {
   const technique = actor ? await consumePrimedTechnique(actor) : null;
 
   if (actor) {
-    const attackBonus = computeWeaponAttackBonus(actor, item) + (technique?.styleAttackBonus ?? 0);
+    const flank = resolveAttackFlanking(actor);
+    const flankBonus = flank.flanking ? getActorSkillLevel(actor, 'tactic') : 0;
+    const attackBonus = computeWeaponAttackBonus(actor, item) + (technique?.styleAttackBonus ?? 0) + flankBonus;
     const rolls = await rollAttackPair(attackBonus, actor);
-    const rendered = await renderAttackPairHTML(rolls, 'armorClass', actor, { damageDice, killSkillKey: item.system.weaponType });
+    const rendered = await renderAttackPairHTML(rolls, 'armorClass', actor, {
+      damageDice, killSkillKey: item.system.weaponType, flanking: flank.flanking,
+    });
     parts.push(`<div class="sksk-roll-attack"><strong>${game.i18n.localize('SKSK.AttackRoll.Attack')}</strong></div>${rendered}`);
+    parts.push(formatFlankingBonusLine(flank, flankBonus));
 
     const fpGrant = await grantSkillUsageFp(actor, item.system.weaponType, 'weaponAttack');
     parts.push(formatSkillFpGrantLine(fpGrant));
+    if (flank.flanking) parts.push(formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'tactic', 'flankAttack')));
   }
 
   if (item.system.formula) {
@@ -177,9 +212,13 @@ export async function rollMartialArtsAttack(actor, index) {
 
   const damageDice = [{ damageType: attack.damageType, dieSizes: getDamageDieSizes(attack.formula) }];
   const technique = await consumePrimedTechnique(actor);
-  const attackBonus = computeMartialArtsAttackBonus(actor, attack) + (technique?.styleAttackBonus ?? 0);
+  const flank = resolveAttackFlanking(actor);
+  const flankBonus = flank.flanking ? getActorSkillLevel(actor, 'tactic') : 0;
+  const attackBonus = computeMartialArtsAttackBonus(actor, attack) + (technique?.styleAttackBonus ?? 0) + flankBonus;
   const rolls = await rollAttackPair(attackBonus, actor);
-  const attackHTML = `<div class="sksk-roll-attack"><strong>${game.i18n.localize('SKSK.AttackRoll.Attack')}</strong></div>${await renderAttackPairHTML(rolls, 'armorClass', actor, { damageDice, killSkillKey: 'martialArts' })}`;
+  const attackHTML = `<div class="sksk-roll-attack"><strong>${game.i18n.localize('SKSK.AttackRoll.Attack')}</strong></div>${await renderAttackPairHTML(rolls, 'armorClass', actor, {
+    damageDice, killSkillKey: 'martialArts', flanking: flank.flanking,
+  })}${formatFlankingBonusLine(flank, flankBonus)}`;
 
   const bonus = resolveMartialArtsAttributeBonus(actor, attack.attributes, attack.attributeUsage);
   const formula = bonus ? `${attack.formula} + ${bonus}` : attack.formula;
@@ -191,6 +230,7 @@ export async function rollMartialArtsAttack(actor, index) {
 
   await actor.update(spendActionPoints(actor, attack.apCost));
   let fpHTML = formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'martialArts', 'weaponAttack'));
+  if (flank.flanking) fpHTML += formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'tactic', 'flankAttack'));
   // Every attack beyond the first (see the default-seeded "Main Hand"/
   // "Off Hand" entries, though a GM may add more) counts as Ambidextrous'
   // own "Zweitwaffe" (second weapon) trigger.
