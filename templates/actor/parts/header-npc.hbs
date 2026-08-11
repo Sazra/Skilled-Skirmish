@@ -1,66 +1,62 @@
 {{!-- Sheet Header --}}
 <header class="sheet-header">
   <img class="profile-img" src="{{actor.img}}" data-edit="img" title="{{actor.name}}" height="100" width="100" />
-  <div class="header-fields">
-    <h1 class="charname"><input name="name" type="text" value="{{actor.name}}" placeholder="Name" /></h1>
 
-    <div class="header-items flexrow">
-      <div class="header-item-list">
-        <label class="resource-label">Class</label>
-        <ol class="items-list compact-list">
-          {{#each classes as |cls|}}
-          <li class="item flexrow" data-item-id="{{cls._id}}">
-            <a class="item-name flexrow" data-action="editItem">
-              <img class="item-image" src="{{cls.img}}" width="16" height="16" />
-              <span>{{cls.name}}</span>
-              <span class="item-type-label">({{cls.typeLabel}})</span>
-            </a>
-            <a class="item-control item-delete" data-action="deleteItem" title="Remove">
-              <i class="fas fa-times"></i>
-            </a>
-          </li>
-          {{/each}}
-        </ol>
-      </div>
-      <div class="header-item-list">
-        <label class="resource-label">Species</label>
-        <ol class="items-list compact-list">
-          {{#each species as |sp|}}
-          <li class="item flexrow" data-item-id="{{sp._id}}">
-            <a class="item-name flexrow" data-action="editItem">
-              <img class="item-image" src="{{sp.img}}" width="16" height="16" />
-              <span>{{sp.name}}</span>
-              <span class="item-type-label">({{sp.typeLabel}})</span>
-            </a>
-            <a class="item-control item-delete" data-action="deleteItem" title="Remove">
-              <i class="fas fa-times"></i>
-            </a>
-          </li>
-          {{/each}}
-        </ol>
-      </div>
+  <div class="header-row header-row-1">
+    <h1 class="charname"><input name="name" type="text" value="{{actor.name}}" placeholder="Name" /></h1>
+    <div class="header-level flex-group-center">
+      <label for="system.resources.level.value" class="resource-label">Level</label>
+      <input type="text" name="system.resources.level.value" value="{{system.resources.level.value}}"
+        data-dtype="Number" />
     </div>
   </div>
-  <div class="header-level flex-group-center">
-    <label for="system.resources.level.value" class="resource-label">Level</label>
-    <input type="text" name="system.resources.level.value" value="{{system.resources.level.value}}"
-      data-dtype="Number" />
+
+  <div class="header-row header-row-2">
+    <div class="header-item-list">
+      <ol class="items-list compact-list">
+        {{#each species as |sp|}}
+        <li class="item flexrow" data-item-id="{{sp._id}}">
+          <a class="item-name flexrow" data-action="editItem">
+            <span>{{sp.name}}</span>
+            <span class="item-type-label">({{sp.typeLabel}})</span>
+          </a>
+        </li>
+        {{/each}}
+      </ol>
+    </div>
+    <div class="header-item-list">
+      <ol class="items-list compact-list">
+        {{#each classes as |cls|}}
+        <li class="item flexrow" data-item-id="{{cls._id}}">
+          <a class="item-name flexrow" data-action="editItem">
+            <span>{{cls.name}}</span>
+            <span class="item-type-label">({{cls.typeLabel}})</span>
+          </a>
+        </li>
+        {{/each}}
+      </ol>
+    </div>
+    <div class="header-size flex-group-center">
+      <label for="system.sizeCategory" class="resource-label">{{localize 'SKSK.General.SizeCategory'}}</label>
+      <select name="system.sizeCategory">
+        {{selectOptions sizeCategoryChoices selected=sizeCategory localize=true}}
+      </select>
+    </div>
+    <div class="header-rest flex-group-center">
+      <a class="item-control" data-action="openRestDialog" title="{{localize 'SKSK.Rest.Title'}}">
+        <i class="fas fa-clock"></i>
+      </a>
+    </div>
+    <div class="header-inspiration-die flex-group-center">
+      <label class="resource-label">{{localize 'SKSK.General.InspirationDie'}}</label>
+      <a class="item-control" data-action="rollGrantedInspiration" title="{{localize 'SKSK.General.InspirationDieHint'}}">
+        {{#if system.inspirationDie.size}}d{{system.inspirationDie.size}}{{else}}–{{/if}}
+      </a>
+    </div>
   </div>
-  <div class="header-size flex-group-center">
-    <label for="system.sizeCategory" class="resource-label">{{localize 'SKSK.General.SizeCategory'}}</label>
-    <select name="system.sizeCategory">
-      {{selectOptions sizeCategoryChoices selected=sizeCategory localize=true}}
-    </select>
-  </div>
-  <div class="header-rest flex-group-center">
-    <a class="item-control" data-action="openRestDialog" title="{{localize 'SKSK.Rest.Title'}}">
-      <i class="fas fa-clock"></i>
-    </a>
-  </div>
-  <div class="header-inspiration-die flex-group-center">
-    <label class="resource-label">{{localize 'SKSK.General.InspirationDie'}}</label>
-    <a class="item-control" data-action="rollGrantedInspiration" title="{{localize 'SKSK.General.InspirationDieHint'}}">
-      {{#if system.inspirationDie.size}}d{{system.inspirationDie.size}}{{else}}–{{/if}}
-    </a>
+
+  <div class="header-passive-perception flex-group-center">
+    <label class="resource-label">{{localize 'SKSK.General.PassivePerceptionLine1'}}<br>{{localize 'SKSK.General.PassivePerceptionLine2'}}</label>
+    <span class="item-control">{{passivePerception}}</span>
   </div>
 </header>

@@ -294,6 +294,20 @@
   flex-basis: 100px;
 }
 
+/* NPC header's own single Rest icon - Characters have this (plus 6 more)
+   pulled out into the collapsible .header-toolbar instead (see below), but
+   NPCs keep it inline; flex: 0 0 auto so it only ever takes up as much
+   width as the icon itself needs, never stretching. */
+.sksk .sheet-header .header-rest {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+}
+
+.sksk .sheet-header .header-rest .item-control {
+  font-size: 20px;
+}
+
 .sksk .sheet-header .header-level input {
   width: 100%;
   text-align: center;
@@ -357,12 +371,19 @@
 }
 
 .sksk.actor .window-content>section.tab {
-  flex: 1;
-  /* Once header + tabs + body would exceed this, the body stops growing
-     and scrolls internally instead - this is what caps the sheet's
-     overall (max) height, without touching window-content's own overflow
-     (which has to stay visible for the side panels). */
-  max-height: 420px;
+  /* Fixed (not max) height, so every tab's body is exactly the same size
+     regardless of how much content it holds - matches the Spells tab's own
+     natural height (its vertical type-tab strip alone needs ~370px), which
+     used to be the tallest tab and is now just what every other tab also
+     gets locked to. Content taller than this still scrolls internally
+     rather than growing the window, same as before.
+     flex-basis (not the height property) is what actually governs a flex
+     item's size along its container's main axis (.window-content is
+     flex-direction: column) - the old "flex: 1" (flex-basis: 0%, grow: 1)
+     silently ignored any height set alongside it, growing to fit content
+     instead; "0 0 388px" (no grow, no shrink) is what makes this genuinely
+     fixed. */
+  flex: 0 0 388px;
   margin: 0;
   padding: 8px;
   overflow-y: auto;
@@ -747,12 +768,23 @@
   color: var(--color-text-hyperlink);
 }
 
+/* No overflow-y/scrollbar-width here (deliberately, see git history) -
+   every actor/item sheet tab and every settings app with tabs already
+   scrolls its own outer section.tab (or, for untabbed single-part apps
+   like Materials/Status Effects config, its whole window-content), and
+   small popup dialogs without a tab system (Source/Totem/Summoning/
+   Technique) never cap this element's height at all (height: 'auto',
+   nothing here ever sets max-height on an .items-list). Giving every list
+   its own overflow-y: auto on top of that was always redundant, and in
+   practice occasionally came out a few px short of its own content
+   (rounding) - showing a second, useless scrollbar alongside the real
+   outer one, confirmed on the Spells tab's per-school lists and roughly
+   half the Skills tab's category lists (whichever ones the rounding
+   happened to land on). */
 .sksk .items-list {
   list-style: none;
   margin: 0;
   padding: 0;
-  overflow-y: auto;
-  scrollbar-width: thin;
   color: var(--color-text-primary);
 }
 
