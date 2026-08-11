@@ -1,6 +1,7 @@
 import { rollSpellItem } from '../helpers/spell-rolls.mjs';
 import { rollWeaponItem } from '../helpers/actions.mjs';
 import { grantFlatSkillFp, formatSkillFpGrantLine } from '../helpers/skillFp.mjs';
+import { activateTechnique } from '../helpers/technique-rolls.mjs';
 
 /**
  * Extend the basic Item document.
@@ -24,6 +25,7 @@ export class SKSKItem extends Item {
   async roll(overchargeCount = 0) {
     if (this.type === 'spell') return rollSpellItem(this, overchargeCount);
     if (this.type === 'weapon') return rollWeaponItem(this);
+    if (this.type === 'technique') return activateTechnique(this.actor, this);
 
     const item = this;
     const speaker = ChatMessage.getSpeaker({ actor: this.actor });

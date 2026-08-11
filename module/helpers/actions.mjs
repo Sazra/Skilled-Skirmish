@@ -9,6 +9,7 @@ import {
 import { wrapCriticalBlock } from "./criticalRolls.mjs";
 import { grantSkillUsageFp, formatSkillFpGrantLine, checkReflexActionTrigger } from "./skillFp.mjs";
 import { renderApplyDamageButton } from "./damageApplication.mjs";
+import { consumePrimedTechnique, applyTechniqueBonusDamage, getTechniqueEffectPayload } from "./technique-rolls.mjs";
 
 /**
  * Post a simple chat card (an optional Roll, an AP-cost line, and a
@@ -60,8 +61,15 @@ export async function rollWeaponItem(item) {
   const damageDice = [{ damageType, dieSizes: getDamageDieSizes(item.system.formula) }];
   const damageEntries = [];
 
+  // A primed Technique (helpers/technique-rolls.mjs) is consumed by this
+  // actor's own very next weapon/Martial Arts attack, whichever comes
+  // first - its styleAttackBonus (from any active same-Kampfstil stand)
+  // applies to the attack roll below; its own bonusDamage payload (if
+  // any) applies to the damage roll further down.
+  const technique = actor ? await consumePrimedTechnique(actor) : null;
+
   if (actor) {
-    const attackBonus = computeWeaponAttackBonus(actor, item);
+    const attackBonus = computeWeaponAttackBonus(actor, item) + (technique?.styleAttackBonus ?? 0);
     const rolls = await rollAttackPair(attackBonus, actor);
     const rendered = await renderAttackPairHTML(rolls, 'armorClass', actor, { damageDice, killSkillKey: item.system.weaponType });
     parts.push(`<div class="sksk-roll-attack"><strong>${game.i18n.localize('SKSK.AttackRoll.Attack')}</strong></div>${rendered}`);
@@ -74,13 +82,16 @@ export async function rollWeaponItem(item) {
     const roll = await new Roll(item.system.formula, item.getRollData()).evaluate();
     const rendered = await roll.render();
     parts.push(`<div class="sksk-roll-line"><strong>${game.i18n.localize('SKSK.Spell.Roll.Damage')}</strong></div>${rendered}`);
-    damageEntries.push({ damageType, amount: roll.total });
-    parts.push(renderApplyDamageButton(actor, damageEntries, item.system.weaponType));
+    const { total, line } = applyTechniqueBonusDamage(roll.total, technique);
+    parts.push(line);
+    damageEntries.push({ damageType, amount: total });
+    parts.push(renderApplyDamageButton(actor, damageEntries, item.system.weaponType, getTechniqueEffectPayload(technique)));
   } else if (item.system.description) {
     const descriptionHTML = await foundry.applications.ux.TextEditor.implementation.enrichHTML(
       item.system.description ?? '', { relativeTo: item, secrets: item.isOwner }
     );
     parts.push(`<div class="sksk-roll-description">${descriptionHTML}</div>`);
+    parts.push(renderApplyDamageButton(actor, [], item.system.weaponType, getTechniqueEffectPayload(technique)));
   }
 
   const messageData = {
@@ -165,7 +176,8 @@ export async function rollMartialArtsAttack(actor, index) {
   if (!hasEnoughActionPoints(actor, attack.apCost)) return;
 
   const damageDice = [{ damageType: attack.damageType, dieSizes: getDamageDieSizes(attack.formula) }];
-  const attackBonus = computeMartialArtsAttackBonus(actor, attack);
+  const technique = await consumePrimedTechnique(actor);
+  const attackBonus = computeMartialArtsAttackBonus(actor, attack) + (technique?.styleAttackBonus ?? 0);
   const rolls = await rollAttackPair(attackBonus, actor);
   const attackHTML = `<div class="sksk-roll-attack"><strong>${game.i18n.localize('SKSK.AttackRoll.Attack')}</strong></div>${await renderAttackPairHTML(rolls, 'armorClass', actor, { damageDice, killSkillKey: 'martialArts' })}`;
 
@@ -173,8 +185,9 @@ export async function rollMartialArtsAttack(actor, index) {
   const formula = bonus ? `${attack.formula} + ${bonus}` : attack.formula;
   const roll = await new Roll(formula, actor.getRollData()).evaluate();
   const renderedDamage = await roll.render();
-  const damageEntries = [{ damageType: attack.damageType, amount: roll.total }];
-  const applyDamageHTML = renderApplyDamageButton(actor, damageEntries, 'martialArts');
+  const { total: damageTotal, line: techniqueLine } = applyTechniqueBonusDamage(roll.total, technique);
+  const damageEntries = [{ damageType: attack.damageType, amount: damageTotal }];
+  const applyDamageHTML = renderApplyDamageButton(actor, damageEntries, 'martialArts', getTechniqueEffectPayload(technique));
 
   await actor.update(spendActionPoints(actor, attack.apCost));
   let fpHTML = formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'martialArts', 'weaponAttack'));
@@ -192,7 +205,7 @@ export async function rollMartialArtsAttack(actor, index) {
   const messageData = {
     speaker: ChatMessage.getSpeaker({ actor }),
     flavor: attack.name || game.i18n.localize('SKSK.Action.MartialArtsAttack'),
-    content: `<div class="sksk-chat-card sksk-action-card">${attackHTML}${renderedDamage}${applyDamageHTML}${fpHTML}${apCostHTML}</div>`,
+    content: `<div class="sksk-chat-card sksk-action-card">${attackHTML}${renderedDamage}${techniqueLine}${applyDamageHTML}${fpHTML}${apCostHTML}</div>`,
     rolls: [roll],
   };
   ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));

@@ -167,6 +167,8 @@ const SKILL_SPECIFIC_TRIGGERS = {
   // Fighter (Kämpferfertigkeiten).
   health: [{ key: 'regenerationUsed', label: 'SKSK.SkillFpConfig.RegenerationUsed' }],
   stamina: [{ key: 'combatMovement', label: 'SKSK.SkillFpConfig.CombatMovement' }],
+  // Wired via helpers/statusEffects.mjs#handleTechniqueTurnStart - granted
+  // once per Combat round any owned Technique Item spends on cooldown.
   technique: [{ key: 'techniqueCooldownRound', label: 'SKSK.SkillFpConfig.TechniqueCooldownRound' }],
   reflexes: [
     { key: 'dodgeUsed', label: 'SKSK.SkillFpConfig.DodgeUsed' },

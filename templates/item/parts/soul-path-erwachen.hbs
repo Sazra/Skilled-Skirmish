@@ -1,0 +1,58 @@
+<section class="tab {{tab.cssClass}}" data-group="primary" data-tab="erwachen">
+
+  <div class="resource">
+    <ol class="items-list">
+      {{#each system.erwachen as |entry index|}}
+      <li class="item flexcol expandable-item">
+        <div class="flexrow flex-between">
+          <input type="text" class="soul-path-wide-field" name="system.erwachen.{{index}}.name" value="{{entry.name}}" placeholder="Name" />
+          <a class="item-control item-delete" data-action="removeArrayEntry" data-field="erwachen" data-index="{{index}}" title="Remove">
+            <i class="fas fa-trash"></i>
+          </a>
+        </div>
+        <textarea name="system.erwachen.{{index}}.description" rows="2" placeholder="Description">{{entry.description}}</textarea>
+
+        <div class="grid grid-2col">
+          <div class="grid-span-1">
+            <label class="resource-label">{{localize 'SKSK.SoulPath.Cost'}}</label>
+            <input type="text" name="system.erwachen.{{index}}.cost" value="{{entry.cost}}" data-dtype="Number" />
+          </div>
+          <div class="grid-span-1">
+            <label class="resource-label">{{localize 'SKSK.SoulPath.Difficulty'}}</label>
+            <input type="text" name="system.erwachen.{{index}}.difficulty" value="{{entry.difficulty}}" data-dtype="Number" />
+          </div>
+        </div>
+
+        <label class="resource-label">{{localize 'SKSK.SoulPath.Mode'}}</label>
+        <select name="system.erwachen.{{index}}.mode">
+          {{selectOptions ../breakthroughModeChoices selected=entry.mode localize=true}}
+        </select>
+
+        {{#unless (eq entry.mode "once")}}
+        <div class="grid grid-2col">
+          <div class="grid-span-1">
+            <label class="resource-label">{{localize 'SKSK.SoulPath.CostIncreasePerCompletion'}}</label>
+            <input type="text" name="system.erwachen.{{index}}.costIncreasePerCompletion" value="{{entry.costIncreasePerCompletion}}" data-dtype="Number" />
+          </div>
+          <div class="grid-span-1">
+            <label class="resource-label">{{localize 'SKSK.SoulPath.DifficultyIncreasePerCompletion'}}</label>
+            <input type="text" name="system.erwachen.{{index}}.difficultyIncreasePerCompletion" value="{{entry.difficultyIncreasePerCompletion}}" data-dtype="Number" />
+          </div>
+        </div>
+        {{/unless}}
+
+        <div class="flexrow flex-between">
+          <span class="ap-cost-label">{{localize 'SKSK.SoulPath.CompletedCount'}}: {{entry.completedCount}}</span>
+          {{#if entry.effectId}}
+          <a class="item-control" data-action="openBreakthroughEffect" data-stage="erwachen" data-index="{{index}}">{{localize 'SKSK.SoulPath.EditEffect'}}</a>
+          {{/if}}
+        </div>
+      </li>
+      {{/each}}
+    </ol>
+    <a class="item-control item-create" data-action="addBreakthrough" data-stage="erwachen" title="{{localize 'SKSK.SoulPath.AddBreakthrough'}}">
+      <i class="fas fa-plus"></i> {{localize 'SKSK.SoulPath.AddBreakthrough'}}
+    </a>
+  </div>
+
+</section>

@@ -433,11 +433,15 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // pacing that the GM opted for an explicit extra switch on top.
     schema.soulforceMeditationCombatFpEnabled = new fields.BooleanField({ initial: false });
     // Seelenstärke's own "Seelenmacht" (Soul Power) resource - a collection
-    // pool with no maximum (like barrier above), meant to be fed by
-    // SoulPowerTraded's own trade-in mechanic once that's designed (see
-    // soulPowerMechanicEnabled below). Shown on the resources sidebar once
-    // Seelenstärke reaches its own max level (5) or soulPowerResourceEnabled
-    // is on - see sheets/actor-sheet.mjs#_prepareGeneral.
+    // pool with no maximum (like barrier above), spent wholesale on a
+    // Seelenpfad's own Durchbruch attempts (see helpers/soulPathRolls.mjs#
+    // attemptBreakthrough) and meant to also be fed by SoulPowerTraded's own
+    // trade-in mechanic once that's designed (see soulPowerMechanicEnabled
+    // below). Shown among the Additional Resources (general-overview.hbs)
+    // once Seelenstärke reaches its own max level (5) or
+    // soulPowerResourceEnabled is on - see sheets/actor-sheet.mjs#
+    // _prepareGeneral - the same condition also gates the Soul Path tab's
+    // own visibility (sheets/actor-sheet.mjs#_configureRenderParts).
     schema.soulPower = new fields.SchemaField({
       value: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
     });
@@ -450,6 +454,16 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // still unwired); to be designed and wired up once every skill-usage FP
     // trigger is fully implemented. Currently has no effect on its own.
     schema.soulPowerMechanicEnabled = new fields.BooleanField({ initial: false });
+    // A Seelenpfad's own Durchbruch (breakthrough) roll bonus pool - a plain
+    // field, deliberately never recomputed in prepareDerivedData (unlike
+    // e.g. armorClass), purely an Active Effect ADD-mode target
+    // ("system.soulPathBreakthroughBonus") - same convention as life.bonus/
+    // mana.bonus/customArmorClassBonus above ("not meant to be hand-edited,
+    // but targeted by Active Effects"). Summed automatically (no custom
+    // aggregation code) from every unlocked/active Path Ability's own linked
+    // effect, every completed Durchbruch's own linked effect, and any other
+    // Item's effect - see helpers/soulPathRolls.mjs#attemptBreakthrough.
+    schema.soulPathBreakthroughBonus = new fields.NumberField({ ...requiredInteger, initial: 0 });
     // A spell whose AP cost couldn't be fully paid at cast time - itemId
     // (blank = none pending) references the spell Item still owed apCost
     // AP, paid off gradually at the start of this actor's later Combat

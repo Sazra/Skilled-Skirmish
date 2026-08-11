@@ -33,9 +33,14 @@
                 "Hint": "Trainingsmethoden, die Charaktere (über den Trainings-Button im Kopfbereich) nutzen können, um pro trainierter Stunde noch nicht integrierte FP für eine Hauptfertigkeit und beliebig viele Nebenfertigkeiten zu generieren.",
                 "Label": "Trainingsmethoden konfigurieren"
             },
+            "CombatStyles": {
+                "Name": "Kampfstile",
+                "Hint": "Die benannten Kampfstile (Technik-Stile), denen Technik-Items zugeordnet werden können - siehe das Stil-Feld auf dem Technik-Item-Sheet.",
+                "Label": "Kampfstile konfigurieren"
+            },
             "ExportImport": {
                 "Name": "Einstellungen exportieren/importieren",
-                "Hint": "Exportiert die SKSK-Einstellungen dieser Welt (Fertigkeitspunktkosten, Formel für Tragegewicht, Materialien, Modelle, Statuseffekte, Trainingsmethoden, Fertigkeitsnutzungs-FP) als JSON-Datei, oder importiert sie aus einer solchen - z.B. um die Konfiguration einer Welt zu sichern oder in eine andere Welt zu übertragen.",
+                "Hint": "Exportiert die SKSK-Einstellungen dieser Welt (Fertigkeitspunktkosten, Formel für Tragegewicht, Materialien, Modelle, Statuseffekte, Trainingsmethoden, Fertigkeitsnutzungs-FP, Kampfstile) als JSON-Datei, oder importiert sie aus einer solchen - z.B. um die Konfiguration einer Welt zu sichern oder in eine andere Welt zu übertragen.",
                 "Label": "Einstellungen exportieren/importieren",
                 "Export": "Einstellungen exportieren",
                 "Import": "Einstellungen importieren",
@@ -144,6 +149,12 @@
             "RemoveSecondarySkill": "Entfernen",
             "NoSecondarySkills": "Noch keine Nebenfertigkeiten."
         },
+        "CombatStyle": {
+            "Name": "Name",
+            "Add": "Kampfstil hinzufügen",
+            "Remove": "Entfernen",
+            "None": "Noch keine Kampfstile angelegt."
+        },
         "SkillFpConfig": {
             "Skill": "Fertigkeit",
             "SkillCheck": "FP / Fertigkeitswurf",
@@ -161,7 +172,7 @@
             "ProductionHint": "Jedes Feld unten ist noch nicht automatisiert - es gibt noch kein Herstellungs-/Braukunst-System, das diese erkennen könnte.",
             "RogueHint": "Der Fertigkeitswurf für Fallen lässt den Spieler zwischen \"Falle stellen\" und \"Falle entschärfen\" wählen (beides automatisiert); Fingerfertigkeit bietet ebenso eine Wahl zwischen Basis-Fertigkeitswurf, Schlossknacken und Taschendiebstahl (ebenfalls automatisiert). Attentat ist ebenfalls automatisiert: Attentatsangriff generiert FP, sobald ein Waffen-/Kampfkunstangriff bei aktiver Tarnung trifft (zusammen mit dem Attentat-Zusatzschaden), Attentatstötung zusätzlich, wenn derselbe Angriff den Verteidiger tötet.",
             "MagicHint": "Konzentrationswürfe, genutzte Meditationswürfel, jeder gewirkte Zauber (Magiekontrolle, Spruchkürzung sobald Magiekontrolle Stufe 1 erreicht), die Tagesabrechnung von Manakapazität/Manaregeneration (bei der nächsten Anpassungspause+), Manakerns fester Wert pro Item, Ritualismus' Stunden pro gewirktem Ritual-Zauber (mindestens 1 Stunde, auch bei AP-Kosten oder unter 60 Minuten Wirkzeit), genutzte Überladungen (Shift+Klick auf einen Zauber), Quellengebunden/Äthergebunden (über den eigenen \"Quelle\"-Button im Kopfbereich - Genutzte Quellenfähigkeit bei \"Quelle aktivieren\", Geöffnete Quelle bei \"Ätherquelle öffnen\", jeweils mit eigenen editierbaren AP-/Mana-Kosten, ohne Nutzungslimit) sowie Beschwörung (über den Beschwörungs-Button im Kopfbereich - Stufe der beschworenen Kreatur bei \"Beschwören\", Tag der Beschwörungs-Existenz für jeden noch aktiven Platz bei der nächsten Anpassungspause+) sind automatisiert; alles andere unten (u.a. Verzauberungsstunden) ist noch nicht automatisiert - es gibt noch kein passendes System.",
-            "FighterHint": "Genutzte Trefferwürfel, Kampf-Bewegung, genutztes Ausweichen, Reflexaktion (4+ AP im eigenen Zug verbraucht), genutztes Adrenalin, kritische Treffer (inkl. Doppel-Krit) und Brutals Bonus-Schadenspunkte sind automatisiert; alles andere unten ist noch nicht automatisiert.",
+            "FighterHint": "Genutzte Trefferwürfel, Kampf-Bewegung, genutztes Ausweichen, Reflexaktion (4+ AP im eigenen Zug verbraucht), genutztes Adrenalin, kritische Treffer (inkl. Doppel-Krit), Brutals Bonus-Schadenspunkte sowie Techniks eigene Abklingzeit-Runden (jedes im Besitz befindliche Technik-Item, das sich gerade in der Abklingzeit befindet, gewährt einmal pro Kampfrunde darin) sind automatisiert; alles andere unten ist noch nicht automatisiert.",
             "MiscHint": "Gewirkte Bardenmagie (Singen), Getarnt-Sein zu Beginn des eigenen Zuges (Schleichen), Gebete über den Gebets-Button im Kopfbereich (Glaube), Klicks auf das Passive-Wahrnehmung-Feld im Kopfbereich (Beobachtung), das Umwandeln eines Schadensanwenden-Eintrags in Heilung durch die Absorption des Verteidigers (Heiler - wird dem Verursacher gutgeschrieben, skaliert mit dem geheilten Betrag), Totem (über den Totem-Button im Kopfbereich - Totem-Bindung eingegangen bei \"Totem binden\", Genutztes Totem bei \"Totem aktivieren\") sowie Inspiration (über den Inspiration-Button im Aktionen-Tab und das Inspirationswürfel-Feld im Kopfbereich - wird immer dem ursprünglichen Vergeber gutgeschrieben, sobald ein Würfel tatsächlich gewürfelt wird, egal ob durch dessen Halter oder durch den Vergeber selbst per Rechtsklick-Selbstwurf) sind automatisiert; alles andere unten ist noch nicht automatisiert - es gibt noch kein passendes System.",
             "SpecialHint": "Ein gelandeter Treffer (Trefferkorrektur), ein abgewehrter Angriff (Verteidigungskorrektur), 0 Leben mit verbleibendem negativen Leben zu Beginn des eigenen Zuges (Zähigkeit), jeder kritische Erfolg/doppelt kritische Erfolg bei einem generischen (Nicht-Angriffswurf-)W20-Wurf - Fertigkeitswürfe, Rettungswürfe, Attributswürfe und der manuelle Fesselung-Fluchtversuch fragen jedes Mal Neutral/Vorteil/Nachteil ab; Fesselungs eigener Zugbeginn-/Zugende-Wurf, der Gift-Erneuerungswurf und Konzentration nutzen stattdessen die Hintergrundwurf-Modus-Voreinstellung im GM-Tab ohne Dialog (Glücks eigener \"Kritischer Wurf\"/\"Doppelt kritischer Wurf\", dem Würfelnden gutgeschrieben - doppelt nur bei Vorteil/Nachteil mit beiden kritischen Würfeln) - Seelenstärkes eigener \"Genutzter Meditationswürfel im Kampf\" (zusätzlich zu Meditations eigenem FP, sobald ein Kampf aktiv ist, aber nur solange der GM-Tab-Schalter \"Seelenstärke: FP für Meditation im Kampf\" ebenfalls aktiv ist, standardmäßig aus) sowie Massakers eigene 5 Massentötung-Buttons im GM-Tab (20/50/150/500/1500 getötete Personen innerhalb von etwa 10 Minuten, eine rein manuelle GM-Entscheidung - die Rate jeder Abstufung hängt von der aktuellen Massaker-Fertigkeitsstufe des Akteurs ab, einzeln konfigurierbar je Abstufung/Stufen-Kombination in den Fertigkeitsnutzungs-FP-Einstellungen) - sind automatisiert; alles andere unten ist noch nicht automatisiert.",
             "PotionBrewed": "FP / Gebrauter Trank (noch nicht automatisiert)",
@@ -191,7 +202,7 @@
             "SourceOpened": "FP / Geöffnete Quelle",
             "RegenerationUsed": "FP / Genutzter Trefferwürfel",
             "CombatMovement": "FP / 20m Bewegung im Kampf",
-            "TechniqueCooldownRound": "FP / Runde Abklingzeit der Techniken (noch nicht automatisiert)",
+            "TechniqueCooldownRound": "FP / Runde Abklingzeit der Techniken",
             "DodgeUsed": "FP / Genutztes Ausweichen",
             "ReflexActionUsed": "FP / Reflexaktion (4+ AP in einem Zug verbraucht)",
             "CriticalHit": "FP / Gelandeter kritischer Treffer",
@@ -452,6 +463,146 @@
             "SectionHint": "Gewährt Massakers eigenes Massentötungs-FP für das Töten dieser Anzahl an Personen innerhalb von (etwa) 10 Minuten - eine rein manuelle GM-Entscheidung, das Zeitfenster selbst wird nicht getrackt. Die Höhe hängt von der aktuellen Massaker-Fertigkeitsstufe dieses Akteurs ab (die Rate jeder Stufe/Stufen-Kombination wird in den Fertigkeitsnutzungs-FP-Einstellungen konfiguriert).",
             "Title": "Massentötung ({count})",
             "NoGain": "Keine FP generiert - für diese Abstufung ist bei der aktuellen Massaker-Stufe des Akteurs keine Rate konfiguriert."
+        },
+        "Technique": {
+            "SectionTitle": "Techniken",
+            "OpenDialog": "Techniken öffnen",
+            "None": "Noch keine Techniken im Besitz.",
+            "CategoryLabel": "Kategorie",
+            "Category": {
+                "Stand": "Haltung",
+                "BonusDamage": "Bonusschaden",
+                "Effect": "Effekte"
+            },
+            "CombatStyle": "Kampfstil",
+            "NoCombatStyles": "Noch keine Kampfstile angelegt - siehe das Kampfstile-Einstellungsmenü.",
+            "Cooldown": "Abklingzeit (Runden)",
+            "CooldownHint": "Kampfrunden, in denen diese Technik nach Deaktivierung/Verbrauch nicht nutzbar ist.",
+            "Duration": "Wirkungsdauer (Runden)",
+            "DurationHint": "Kampfrunden, die diese Technik nach Aktivierung aktiv bleibt - gilt nur für Haltung sowie Effekte-Techniken, die den eigenen Anwender betreffen.",
+            "BonusDamageModeLabel": "Bonusschaden-Modus",
+            "BonusDamageMode": {
+                "Flat": "Fester Betrag",
+                "Multiply": "Multiplikator"
+            },
+            "BonusDamageAmount": "Betrag",
+            "EffectTargetLabel": "Effekt-Ziel",
+            "EffectTarget": {
+                "Self": "Sich selbst (wie eine Haltung)",
+                "AttackTarget": "Ziel des Angriffs"
+            },
+            "EffectTargetHint": "Ob der verknüpfte Active Effect dieser Technik auf den eigenen Anwender wirkt (wie eine Haltung aktiviert, mit Wirkungsdauer) oder auf denjenigen, den der nächste Waffen-/Kampfkunstangriff trifft (wie Bonusschaden vorbereitet, durch diesen Angriff verbraucht).",
+            "StyleBonusSection": "Bonus auf Techniken des gleichen Stils (solange aktiv)",
+            "StyleBonusHint": "Wird auf jede andere Technik des gleichen Kampfstils angewendet, wenn diese aktiviert/verbraucht wird, während diese Haltung aktiv ist - alles andere, was diese Haltung selbst gewährt (AC/MR, Ressourcenpunkte, Attribut-/Fertigkeitsboni, ...), läuft stattdessen über ihren eigenen verknüpften Active Effect (Button „Effekt bearbeiten“ unten).",
+            "StyleAttackBonus": "Angriffswurf-Bonus",
+            "StyleDamageBonus": "Schadensbonus",
+            "StyleApCostDiscount": "AP-Kosten-Rabatt",
+            "StyleManaCostDiscount": "Mana-Kosten-Rabatt",
+            "Status": "Status",
+            "StatusActive": "Aktiv (noch {rounds} Runden)",
+            "StatusPrimed": "Vorbereitet - wartet auf nächsten Angriff",
+            "StatusCooldown": "Abklingzeit (noch {rounds} Runden)",
+            "StatusReady": "Bereit",
+            "Activate": "Aktivieren",
+            "Deactivate": "Deaktivieren",
+            "Prime": "Vorbereiten",
+            "CancelPrime": "Abbrechen",
+            "EditEffect": "Effekt bearbeiten",
+            "NotOwned": "Diese Technik gehört keinem Akteur.",
+            "NoEffectYet": "Noch kein verknüpfter Active Effect - zuerst diese Technik einmal aktivieren.",
+            "NotEnoughMana": "Nicht genug Mana.",
+            "AlreadyPrimed": "{name} ist bereits vorbereitet - es kann immer nur eine Technik gleichzeitig vorbereitet sein.",
+            "OnCooldown": "{name} befindet sich noch in der Abklingzeit (noch {rounds} Runden).",
+            "Activated": "{name} aktiviert ({style}).",
+            "Deactivated": "{name} deaktiviert.",
+            "Primed": "{name} vorbereitet - wirkt auf den nächsten Waffen-/Kampfkunstangriff.",
+            "PrimeCancelled": "Vorbereitung von {name} abgebrochen.",
+            "Consumed": "Technik genutzt: {name}",
+            "ApplyEffect": "Effekt anwenden",
+            "EffectApplied": "{name}: Effekt auf {target} angewendet.",
+            "Expired": "{name}: Wirkungsdauer abgelaufen - deaktiviert.",
+            "TurnStartTitle": "Techniken"
+        },
+        "SoulPath": {
+            "SectionTitle": "Seelenpfad",
+            "TabLabel": "Seelenpfad",
+            "Tab": {
+                "Properties": "Eigenschaften"
+            },
+            "Stage": {
+                "Sammlung": "Sammlung",
+                "Staerkung": "Stärkung",
+                "Kristallisierung": "Kristallisierung",
+                "Erwachen": "Erwachen",
+                "Aufstieg": "Aufstieg"
+            },
+            "Type": {
+                "Weapon": "Waffe",
+                "Body": "Körper",
+                "Magic": "Magie",
+                "HybridWeaponBody": "Hybrid (Waffe/Körper)",
+                "HybridWeaponMagic": "Hybrid (Waffe/Magie)",
+                "HybridBodyMagic": "Hybrid (Körper/Magie)",
+                "HybridAll": "Hybrid (alle)"
+            },
+            "AbilityType": {
+                "Active": "Aktiv",
+                "Passive": "Passiv"
+            },
+            "BreakthroughMode": {
+                "Once": "Einmalig",
+                "RepeatableUntilNext": "Mehrfach bis nächster Durchbruch abgeschlossen",
+                "Repeatable": "Mehrfach"
+            },
+            "Elements": "Elemente",
+            "ElementsHint": "Strg/Cmd gedrückt halten (oder Umschalt für einen Bereich), um mehrere auszuwählen.",
+            "PathTypeLabel": "Pfadtyp",
+            "PathAbilitiesSection": "Pfadfähigkeiten",
+            "AddPathAbility": "Pfadfähigkeit hinzufügen",
+            "AbilityTypeLabel": "Typ",
+            "ApCost": "AP-Kosten",
+            "ManaCost": "Mana-Kosten",
+            "Duration": "Dauer (Runden)",
+            "Cooldown": "Abklingzeit (Runden)",
+            "LockedBehindBreakthrough": "Hinter Durchbruch versteckt",
+            "RequiredStage": "Benötigte Stufe",
+            "RequiredBreakthroughIndex": "Benötigter Durchbruch #",
+            "RequiredBreakthroughIndexHint": "Nullbasierte Position innerhalb der gewählten Stufe (0 = deren erster Durchbruch).",
+            "EditEffect": "Effekt bearbeiten",
+            "NoEffectYet": "Noch kein verlinkter Effekt - erst freischalten/aktivieren.",
+            "StatusActive": "Aktiv (noch {rounds} Runden)",
+            "StatusCooldown": "Abklingzeit (noch {rounds} Runden)",
+            "StatusReady": "Bereit",
+            "Activate": "Aktivieren",
+            "Deactivate": "Deaktivieren",
+            "PathAbilityActivated": "{name} aktiviert.",
+            "PathAbilityDeactivated": "{name} deaktiviert.",
+            "NotEnoughAP": "Nicht genug AP.",
+            "NotEnoughMana": "Nicht genug Mana.",
+            "AddBreakthrough": "Durchbruch hinzufügen",
+            "Cost": "Kosten (Seelenenergie)",
+            "Difficulty": "Schwierigkeit",
+            "Mode": "Modus",
+            "CostIncreasePerCompletion": "Kostensteigerung pro geschafftem Durchbruch",
+            "DifficultyIncreasePerCompletion": "Schwierigkeitssteigerung pro geschafftem Durchbruch",
+            "CompletedCount": "Geschafft",
+            "NoPathBound": "Noch kein Seelenpfad gebunden - fragt euren Spielleiter.",
+            "AttemptBreakthrough": "Durchbruch versuchen",
+            "EffectiveCost": "Kosten: {cost} Seelenenergie",
+            "EffectiveDifficulty": "Schwierigkeit: {difficulty}",
+            "NotEnoughSoulPower": "Nicht genug Seelenenergie für diesen Durchbruch (mindestens {cost} nötig).",
+            "NotAttemptable": "Dieser Durchbruch kann gerade nicht versucht werden.",
+            "NoPathAbilities": "Noch keine Pfadfähigkeiten freigeschaltet.",
+            "BreakthroughAttemptTitle": "{name} - Durchbruchsversuch",
+            "BreakthroughRollLine": "Wurf: {roll} + {excessBonus} (überschüssige Seelenenergie) + {abilityBonus} (Boni) = {total} vs. Schwierigkeit {difficulty}",
+            "BreakthroughCostPaidLine": "Verbrauchte Seelenenergie: {amount}",
+            "BreakthroughSuccess": "Durchbruch geschafft!",
+            "BreakthroughFailure": "Durchbruch nicht geschafft.",
+            "GmSectionTitle": "Seelenpfad",
+            "Create": "Seelenpfad erstellen",
+            "AlreadyHasOne": "Dieser Akteur hat bereits einen gebundenen Seelenpfad - erst entfernen.",
+            "PathAbilityExpired": "{name}: Wirkungsdauer abgelaufen - deaktiviert.",
+            "TurnStartTitle": "Seelenpfad"
         },
         "PrayerDialog": {
             "Title": "Gebet",
@@ -997,6 +1148,9 @@
             "Ice": "Eis",
             "Disease": "Krankheit"
         },
+        "PathElement": {
+            "Mana": "Mana"
+        },
         "Effect": {
             "Source": "Quelle",
             "Toggle": "Effekt Umschalten",
@@ -1309,7 +1463,9 @@
             "species": "Rasse",
             "armor": "Rüstung",
             "weapon": "Waffe",
-            "spell": "Zauber"
+            "spell": "Zauber",
+            "technique": "Technik",
+            "soulPath": "Seelenpfad"
         }
     }
 }

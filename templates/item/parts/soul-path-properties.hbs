@@ -1,0 +1,99 @@
+<section class="tab {{tab.cssClass}}" data-group="primary" data-tab="soulPathProperties">
+
+  <prose-mirror name="system.description" toggled value="{{item.system.description}}" data-document-uuid="{{item.uuid}}" {{#unless editable}}disabled{{/unless}}>
+    {{{descriptionHTML}}}
+  </prose-mirror>
+
+  <div class="grid grid-2col">
+    <div class="grid-span-1">
+      <label class="resource-label" title="{{localize 'SKSK.SoulPath.ElementsHint'}}">{{localize 'SKSK.SoulPath.Elements'}}</label>
+      <div class="flexrow flex-between">
+        <button type="button" data-action="openSoulPathElementsDialog">{{localize 'SKSK.SoulPath.Elements'}}</button>
+        <span class="hint">{{pathElementsPreview}}</span>
+      </div>
+    </div>
+    <div class="grid-span-1">
+      <label class="resource-label">{{localize 'SKSK.SoulPath.PathTypeLabel'}}</label>
+      <select name="system.pathType">
+        {{selectOptions pathTypeChoices selected=system.pathType localize=true}}
+      </select>
+    </div>
+  </div>
+
+  <div class="resource">
+    <label class="resource-label">{{localize 'SKSK.SoulPath.PathAbilitiesSection'}}</label>
+    <ol class="items-list">
+      {{#each system.pathAbilities as |entry index|}}
+      <li class="item flexcol expandable-item">
+        <div class="flexrow flex-between">
+          <input type="text" class="soul-path-wide-field" name="system.pathAbilities.{{index}}.name" value="{{entry.name}}" placeholder="Name" />
+          <a class="item-control item-delete" data-action="removeArrayEntry" data-field="pathAbilities" data-index="{{index}}" title="Remove">
+            <i class="fas fa-trash"></i>
+          </a>
+        </div>
+        <select name="system.pathAbilities.{{index}}.type">
+          {{selectOptions ../pathAbilityTypeChoices selected=entry.type localize=true}}
+        </select>
+        <textarea name="system.pathAbilities.{{index}}.description" rows="2" placeholder="Description">{{entry.description}}</textarea>
+
+        {{#if (eq entry.type "active")}}
+        <div class="grid grid-4col">
+          <div class="grid-span-1">
+            <label class="resource-label">{{localize 'SKSK.SoulPath.ApCost'}}</label>
+            <input type="text" name="system.pathAbilities.{{index}}.apCost" value="{{entry.apCost}}" data-dtype="Number" />
+          </div>
+          <div class="grid-span-1">
+            <label class="resource-label">{{localize 'SKSK.SoulPath.ManaCost'}}</label>
+            <input type="text" name="system.pathAbilities.{{index}}.manaCost" value="{{entry.manaCost}}" data-dtype="Number" />
+          </div>
+          <div class="grid-span-1">
+            <label class="resource-label">{{localize 'SKSK.SoulPath.Duration'}}</label>
+            <input type="text" name="system.pathAbilities.{{index}}.durationRounds" value="{{entry.durationRounds}}" data-dtype="Number" />
+          </div>
+          <div class="grid-span-1">
+            <label class="resource-label">{{localize 'SKSK.SoulPath.Cooldown'}}</label>
+            <input type="text" name="system.pathAbilities.{{index}}.cooldownRounds" value="{{entry.cooldownRounds}}" data-dtype="Number" />
+          </div>
+        </div>
+        {{#if ../item.actor}}
+        <div class="flexrow flex-center action-row-controls">
+          <span class="ap-cost-label">{{lookup ../pathAbilityStatuses index}}</span>
+          <button type="button" data-action="togglePathAbility" data-index="{{index}}">{{localize (lookup ../pathAbilityActionLabels index)}}</button>
+        </div>
+        {{/if}}
+        {{/if}}
+
+        <div class="flexrow flex-center">
+          <label class="checkbox">
+            <input type="checkbox" name="system.pathAbilities.{{index}}.lockedBehindBreakthrough" {{#if entry.lockedBehindBreakthrough}}checked{{/if}} />
+            {{localize 'SKSK.SoulPath.LockedBehindBreakthrough'}}
+          </label>
+        </div>
+        {{#if entry.lockedBehindBreakthrough}}
+        <div class="grid grid-2col">
+          <div class="grid-span-1">
+            <label class="resource-label">{{localize 'SKSK.SoulPath.RequiredStage'}}</label>
+            <select name="system.pathAbilities.{{index}}.requiredStage">
+              <option value=""></option>
+              {{selectOptions ../soulPathStageChoices selected=entry.requiredStage localize=true}}
+            </select>
+          </div>
+          <div class="grid-span-1">
+            <label class="resource-label" title="{{localize 'SKSK.SoulPath.RequiredBreakthroughIndexHint'}}">{{localize 'SKSK.SoulPath.RequiredBreakthroughIndex'}}</label>
+            <input type="text" name="system.pathAbilities.{{index}}.requiredBreakthroughIndex" value="{{entry.requiredBreakthroughIndex}}" data-dtype="Number" />
+          </div>
+        </div>
+        {{/if}}
+
+        {{#if entry.effectId}}
+        <a class="item-control" data-action="openPathAbilityEffect" data-index="{{index}}">{{localize 'SKSK.SoulPath.EditEffect'}}</a>
+        {{/if}}
+      </li>
+      {{/each}}
+    </ol>
+    <a class="item-control item-create" data-action="addPathAbility" title="{{localize 'SKSK.SoulPath.AddPathAbility'}}">
+      <i class="fas fa-plus"></i> {{localize 'SKSK.SoulPath.AddPathAbility'}}
+    </a>
+  </div>
+
+</section>

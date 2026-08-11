@@ -1,0 +1,10 @@
+<div class="sksk-soul-path-elements-dialog">
+  <div class="grid grid-3col model-checkbox-grid">
+    {{#each elements as |el|}}
+    <label class="casting-method-option">
+      <input type="checkbox" class="soul-path-element-checkbox" data-key="{{el.key}}" {{#if el.checked}}checked{{/if}} />
+      {{localize el.label}}
+    </label>
+    {{/each}}
+  </div>
+</div>

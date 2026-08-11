@@ -44,7 +44,9 @@
       "talent": {},
       "class": {},
       "species": {},
-      "spell": {}
+      "spell": {},
+      "technique": {},
+      "soulPath": {}
     }
   },
   "styles": [

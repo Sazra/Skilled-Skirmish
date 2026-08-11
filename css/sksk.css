@@ -1486,3 +1486,43 @@ span.sksk-critical-failure {
   width: 100%;
   min-height: 80px;
 }
+
+/* Every textarea in the system is a multi-line description-style field
+   meant to read comfortably at the sheet's own width - never a narrow
+   default-sized box. A bare <textarea> defaults to display:inline-block,
+   sized off its own cols/rows attributes alone, and plenty of them sit
+   directly inside a plain block container (e.g. .resource) that - unlike
+   a flex row/column, which stretches children across the cross axis by
+   default - does nothing to widen a block-level child on its own. Talent's
+   own "Ability" field (templates/item/parts/talent.hbs) is one concrete
+   example this was fixing; the same reasoning applies to every other
+   textarea in the system, so this is a blanket rule rather than another
+   one-off class. */
+.sksk textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Soul Path (Item sheet's own Properties/stage tabs, templates/item/parts/
+   soul-path-*.hbs) - the Name field for Path Abilities and Durchbrüche
+   shares a .flexrow with the delete icon and stretches to fill it (flex-
+   basis 0, not auto - an <input>'s own content-based auto basis is large
+   enough that, combined with the row's own flex-wrap: wrap, the delete
+   icon gets pushed onto its own line otherwise); the Description field
+   next to it is a <textarea>, already handled by the blanket rule above. */
+.sksk .soul-path-wide-field {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* Soul Path (actor sheet tab, templates/actor/parts/soul-path.hbs) - the
+   bound path's own name, ~3 sizes larger than the resource-label baseline
+   it's otherwise styled like, so it actually reads as a heading. */
+.sksk .soul-path-heading .soul-path-name {
+  font-size: 24px;
+}
+
+.sksk .soul-path-description {
+  margin-bottom: 8px;
+}

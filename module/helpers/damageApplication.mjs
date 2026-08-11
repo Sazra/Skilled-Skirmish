@@ -1,6 +1,7 @@
 import { applyElementalDefense } from './defense.mjs';
 import { applyLifeChange, negativeLifeOverflowHTML, getStatusStacks } from './statusEffects.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
+import { applyTechniqueEffectToTarget } from './technique-rolls.mjs';
 
 /**
  * Resolve the "defender" for an Angriffswurf-related chat-button click
@@ -56,15 +57,29 @@ export function mergeDamageEntries(entries) {
  *   a Kill to, if this ends up being the killing blow - null for sources
  *   with no configured "kill" rate (currently only weapon-category skills
  *   have one - see apps/skill-usage-fp-config.mjs).
+ * @param {{itemUuid: string, effectId: string}|null} [techniqueEffect]   A
+ *   consumed "effect"/"attackTarget" Technique's own payload (see helpers/
+ *   technique-rolls.mjs#getTechniqueEffectPayload) - when given, the button
+ *   still renders (labelled "Apply Effect" instead) even if every damage
+ *   entry is non-positive, so a damage-less target-effect Technique still
+ *   gets a button to hang its own application off of; applyDamageFromChat
+ *   then also copies that Technique's own linked ActiveEffect onto the
+ *   resolved defender.
  * @return {string}
  */
-export function renderApplyDamageButton(attacker, damageEntries, killSkillKey = null) {
+export function renderApplyDamageButton(attacker, damageEntries, killSkillKey = null, techniqueEffect = null) {
   const entries = mergeDamageEntries(damageEntries);
-  if (!entries.length) return '';
+  if (!entries.length && !techniqueEffect) return '';
   const payload = encodeURIComponent(JSON.stringify(entries));
+  const techniqueAttrs = techniqueEffect
+    ? ` data-technique-item-uuid="${techniqueEffect.itemUuid}" data-technique-effect-id="${techniqueEffect.effectId}"`
+    : '';
+  const label = entries.length
+    ? game.i18n.localize('SKSK.AttackRoll.ApplyDamage')
+    : game.i18n.localize('SKSK.Technique.ApplyEffect');
   return `<button type="button" class="sksk-apply-damage" data-action="applyDamage"
-    data-attacker-uuid="${attacker?.uuid ?? ''}" data-damage-entries="${payload}" data-kill-skill="${killSkillKey ?? ''}">
-    ${game.i18n.localize('SKSK.AttackRoll.ApplyDamage')}
+    data-attacker-uuid="${attacker?.uuid ?? ''}" data-damage-entries="${payload}" data-kill-skill="${killSkillKey ?? ''}"${techniqueAttrs}>
+    ${label}
   </button>`;
 }
 
@@ -125,6 +140,10 @@ export async function applyDamageFromChat(button) {
       // healed amount.
       lines.push(formatSkillFpGrantLine(await grantSkillUsageFp(attacker, 'healer', 'healedCreature', adjusted)));
     }
+  }
+
+  if (button.dataset.techniqueEffectId) {
+    lines.push(await applyTechniqueEffectToTarget(button.dataset.techniqueItemUuid, button.dataset.techniqueEffectId, defender));
   }
 
   const wasAlreadyDead = defender.system.life.value === 0 && defender.system.negativeLife.value >= defender.system.negativeLife.max;

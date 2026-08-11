@@ -1,0 +1,91 @@
+<section class="tab {{tab.cssClass}}" data-group="primary" data-tab="soulPath">
+
+  {{#if soulPathItem}}
+  <div class="resource flex-group-center">
+    <label class="resource-label soul-path-heading">
+      {{#if soulPathTypeIcon}}<i class="fas {{soulPathTypeIcon}}"></i>{{/if}}
+      <span class="soul-path-name">{{soulPathItem.name}}</span>
+      {{#each soulPathElementIcons as |icon|}}<i class="fas {{icon}}"></i>{{/each}}
+    </label>
+  </div>
+
+  {{#if soulPathDescriptionHTML}}
+  <div class="resource soul-path-description">
+    {{{soulPathDescriptionHTML}}}
+  </div>
+  {{/if}}
+
+  <div class="resource">
+    <label class="resource-label">{{localize 'SKSK.SoulPath.PathAbilitiesSection'}}</label>
+    <ol class="items-list">
+      {{#each visiblePathAbilities as |ability|}}
+      <li class="item flexrow flex-between">
+        <div class="item-name flexcol">
+          <h4>{{ability.name}}</h4>
+          <p class="hint">{{ability.description}}</p>
+        </div>
+        {{#if (eq ability.type "active")}}
+        <div class="flexrow flex-center action-row-controls">
+          <span class="ap-cost-label">{{ability.statusLabel}}</span>
+          <button type="button" data-action="togglePathAbility" data-index="{{ability.index}}">{{localize ability.actionLabel}}</button>
+        </div>
+        {{/if}}
+      </li>
+      {{else}}
+      <li class="item flexrow">
+        <div class="item-name">{{localize 'SKSK.SoulPath.NoPathAbilities'}}</div>
+      </li>
+      {{/each}}
+    </ol>
+  </div>
+
+  <nav class="sheet-tabs tabs soul-path-stage-tabs" data-group="soulPathStages">
+    {{#each soulPathStageTabs as |t|}}
+    <a class="{{t.cssClass}}" data-action="tab" data-group="soulPathStages" data-tab="{{t.id}}">
+      <label>{{localize t.label}}</label>
+    </a>
+    {{/each}}
+  </nav>
+
+  {{#each soulPathStageTabs as |t|}}
+  <section class="tab" data-group="soulPathStages" data-tab="{{t.id}}">
+    <ol class="items-list">
+      {{#each (lookup ../soulPathStageEntries t.id) as |entry|}}
+      <li class="item flexcol">
+        <div class="flexrow flex-between">
+          <h4>{{entry.name}}</h4>
+          {{#if entry.completedAtLeastOnce}}
+          <span class="ap-cost-label">{{localize 'SKSK.SoulPath.CompletedCount'}}: {{entry.completedCount}}</span>
+          {{/if}}
+        </div>
+        <p class="hint">{{entry.description}}</p>
+        {{#unless entry.completedAtLeastOnce}}
+        <div class="flexrow flex-between">
+          <span class="ap-cost-label">
+            {{localize 'SKSK.SoulPath.EffectiveCost' cost=entry.effectiveCost}}
+            &mdash;
+            {{localize 'SKSK.SoulPath.EffectiveDifficulty' difficulty=entry.effectiveDifficulty}}
+          </span>
+          {{#if entry.attemptable}}
+          <button type="button" data-action="attemptBreakthrough" data-stage="{{t.id}}" data-index="{{entry.index}}">
+            {{localize 'SKSK.SoulPath.AttemptBreakthrough'}}
+          </button>
+          {{/if}}
+        </div>
+        {{/unless}}
+        {{#if entry.effectId}}
+        <a class="item-control" data-action="openBreakthroughEffect" data-stage="{{t.id}}" data-index="{{entry.index}}">{{localize 'SKSK.SoulPath.EditEffect'}}</a>
+        {{/if}}
+      </li>
+      {{/each}}
+    </ol>
+  </section>
+  {{/each}}
+
+  {{else}}
+  <div class="resource">
+    <p class="hint">{{localize 'SKSK.SoulPath.NoPathBound'}}</p>
+  </div>
+  {{/if}}
+
+</section>

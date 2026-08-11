@@ -1,0 +1,106 @@
+<section class="tab {{tab.cssClass}}" data-group="primary" data-tab="attributes">
+
+  <div class="grid grid-2col">
+    <div class="grid-span-1">
+      <label class="resource-label">{{localize 'SKSK.Technique.CategoryLabel'}}</label>
+      <select name="system.category">
+        {{selectOptions techniqueCategoryChoices selected=system.category localize=true}}
+      </select>
+    </div>
+    <div class="grid-span-1">
+      <label class="resource-label">{{localize 'SKSK.Technique.CombatStyle'}}</label>
+      {{#if hasCombatStyles}}
+      <select name="system.combatStyle">
+        <option value=""></option>
+        {{selectOptions combatStyleChoices selected=system.combatStyle}}
+      </select>
+      {{else}}
+      <p class="hint">{{localize 'SKSK.Technique.NoCombatStyles'}}</p>
+      {{/if}}
+    </div>
+  </div>
+
+  <div class="grid grid-2col">
+    <div class="grid-span-1">
+      <label class="resource-label">{{localize 'SKSK.Spell.APCost'}}</label>
+      <input type="text" name="system.apCost" value="{{system.apCost}}" data-dtype="Number" />
+    </div>
+    <div class="grid-span-1">
+      <label class="resource-label">{{localize 'SKSK.Resource.Mana'}}</label>
+      <input type="text" name="system.manaCost" value="{{system.manaCost}}" data-dtype="Number" />
+    </div>
+  </div>
+
+  <div class="grid grid-2col">
+    <div class="grid-span-1">
+      <label class="resource-label" title="{{localize 'SKSK.Technique.CooldownHint'}}">{{localize 'SKSK.Technique.Cooldown'}}</label>
+      <input type="text" name="system.cooldownRounds" value="{{system.cooldownRounds}}" data-dtype="Number" />
+    </div>
+    {{#if showDuration}}
+    <div class="grid-span-1">
+      <label class="resource-label" title="{{localize 'SKSK.Technique.DurationHint'}}">{{localize 'SKSK.Technique.Duration'}}</label>
+      <input type="text" name="system.durationRounds" value="{{system.durationRounds}}" data-dtype="Number" />
+    </div>
+    {{/if}}
+  </div>
+
+  {{#if isBonusDamage}}
+  <div class="grid grid-2col">
+    <div class="grid-span-1">
+      <label class="resource-label">{{localize 'SKSK.Technique.BonusDamageModeLabel'}}</label>
+      <select name="system.bonusDamageMode">
+        {{selectOptions bonusDamageModeChoices selected=system.bonusDamageMode localize=true}}
+      </select>
+    </div>
+    <div class="grid-span-1">
+      <label class="resource-label">{{localize 'SKSK.Technique.BonusDamageAmount'}}</label>
+      <input type="text" name="system.bonusDamageAmount" value="{{system.bonusDamageAmount}}" data-dtype="Number" />
+    </div>
+  </div>
+  {{/if}}
+
+  {{#if isEffect}}
+  <div class="resource">
+    <label class="resource-label" title="{{localize 'SKSK.Technique.EffectTargetHint'}}">{{localize 'SKSK.Technique.EffectTargetLabel'}}</label>
+    <select name="system.effectTarget">
+      {{selectOptions effectTargetChoices selected=system.effectTarget localize=true}}
+    </select>
+  </div>
+  {{/if}}
+
+  {{#if isStand}}
+  <div class="resource">
+    <label class="resource-label" title="{{localize 'SKSK.Technique.StyleBonusHint'}}">{{localize 'SKSK.Technique.StyleBonusSection'}}</label>
+    <div class="grid grid-4col">
+      <div class="grid-span-1">
+        <label class="resource-label">{{localize 'SKSK.Technique.StyleAttackBonus'}}</label>
+        <input type="text" name="system.styleAttackBonus" value="{{system.styleAttackBonus}}" data-dtype="Number" />
+      </div>
+      <div class="grid-span-1">
+        <label class="resource-label">{{localize 'SKSK.Technique.StyleDamageBonus'}}</label>
+        <input type="text" name="system.styleDamageBonus" value="{{system.styleDamageBonus}}" data-dtype="Number" />
+      </div>
+      <div class="grid-span-1">
+        <label class="resource-label">{{localize 'SKSK.Technique.StyleApCostDiscount'}}</label>
+        <input type="text" name="system.styleApCostDiscount" value="{{system.styleApCostDiscount}}" data-dtype="Number" />
+      </div>
+      <div class="grid-span-1">
+        <label class="resource-label">{{localize 'SKSK.Technique.StyleManaCostDiscount'}}</label>
+        <input type="text" name="system.styleManaCostDiscount" value="{{system.styleManaCostDiscount}}" data-dtype="Number" />
+      </div>
+    </div>
+  </div>
+  {{/if}}
+
+  <div class="resource">
+    <label class="resource-label">{{localize 'SKSK.Technique.Status'}}</label>
+    <div class="flexrow flex-center action-row-controls">
+      <span class="ap-cost-label">{{statusLabel}}</span>
+      <button type="button" data-action="activateTechnique">{{localize actionLabel}}</button>
+      {{#if showEffectId}}
+      <button type="button" data-action="openTechniqueEffect">{{localize 'SKSK.Technique.EditEffect'}}</button>
+      {{/if}}
+    </div>
+  </div>
+
+</section>
