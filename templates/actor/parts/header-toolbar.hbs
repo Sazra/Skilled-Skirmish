@@ -1,0 +1,25 @@
+{{!-- Collapsible header icon toolbar - see sheets/actor-sheet.mjs's toggleHeaderToolbar action
+     and the frame arrow button added via _renderFrame. --}}
+<div class="header-toolbar{{#if toolbarCollapsed}} collapsed{{/if}}">
+  <a class="item-control" data-action="openRestDialog" title="{{localize 'SKSK.Rest.Title'}}">
+    <i class="fas fa-clock"></i>
+  </a>
+  <a class="item-control" data-action="openTrainingDialog" title="{{localize 'SKSK.Training.Title'}}">
+    <i class="fas fa-dumbbell"></i>
+  </a>
+  <a class="item-control" data-action="openPrayerDialog" title="{{localize 'SKSK.Prayer.Title'}}">
+    <i class="fas fa-hands-praying"></i>
+  </a>
+  <a class="item-control" data-action="openSummoningDialog" title="{{localize 'SKSK.Summoning.Title'}}">
+    <i class="fas fa-dragon"></i>
+  </a>
+  <a class="item-control" data-action="openTotemDialog" title="{{localize 'SKSK.Totem.Title'}}">
+    <i class="fas fa-monument"></i>
+  </a>
+  <a class="item-control" data-action="openSourceDialog" title="{{localize 'SKSK.Source.Title'}}">
+    <i class="fas fa-water"></i>
+  </a>
+  <a class="item-control" data-action="openProductionFpDialog" title="{{localize 'SKSK.ProductionFp.Title'}}">
+    <i class="fas fa-hammer"></i>
+  </a>
+</div>

@@ -139,6 +139,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       openTotemDialog: SKSKActorSheet.#openTotemDialog,
       openSourceDialog: SKSKActorSheet.#openSourceDialog,
       openProductionFpDialog: SKSKActorSheet.#openProductionFpDialog,
+      toggleHeaderToolbar: SKSKActorSheet.#toggleHeaderToolbar,
       openTechniqueDialog: SKSKActorSheet.#openTechniqueDialog,
       grantPassivePerceptionFp: SKSKActorSheet.#grantPassivePerceptionFp,
       increaseStatusStack: SKSKActorSheet.#increaseStatusStack,
@@ -310,6 +311,9 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     header: {
       template: "systems/sksk/templates/actor/parts/header.hbs",
     },
+    toolbar: {
+      template: "systems/sksk/templates/actor/parts/header-toolbar.hbs",
+    },
     resources: {
       template: "systems/sksk/templates/actor/parts/resources.hbs",
     },
@@ -363,6 +367,10 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     if (actorType === 'npc') {
       parts.header.template = `systems/sksk/templates/actor/parts/header-npc.hbs`;
       parts.resources.template = `systems/sksk/templates/actor/parts/resources-npc.hbs`;
+      // The icon toolbar only exists for Characters (see header.hbs's own
+      // .header-rest, now relocated there) - the NPC header has nothing
+      // worth collapsing into it.
+      delete parts.toolbar;
     } else {
       parts.header.template = `systems/sksk/templates/actor/parts/header.hbs`;
       parts.resources.template = `systems/sksk/templates/actor/parts/resources.hbs`;
@@ -393,6 +401,27 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     return parts;
   }
 
+  /** @override */
+  async _renderFrame(options) {
+    const frame = await super._renderFrame(options);
+    // Header toolbar toggle - Character-only (see _configureRenderParts,
+    // which deletes the "toolbar" PART entirely for NPCs). Foundry's own
+    // window.controls array only ever populates the "..." dropdown, never a
+    // standalone sibling button, so this button is inserted by hand right
+    // before that dropdown's own toggle (this.window.controls - confirmed
+    // live to be that exact button element, not the dropdown's contents).
+    if (this.actor.type === 'character') {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.classList.add('header-control', 'icon', 'fa-solid', this.#toolbarCollapsed ? 'fa-arrow-down' : 'fa-arrow-up');
+      button.dataset.action = 'toggleHeaderToolbar';
+      button.dataset.tooltip = game.i18n.localize('SKSK.General.ToggleToolbar');
+      button.setAttribute('aria-label', game.i18n.localize('SKSK.General.ToggleToolbar'));
+      this.window.controls?.insertAdjacentElement('beforebegin', button);
+    }
+    return frame;
+  }
+
   /**
    * Whether the Soul Path tab (and the Soul Power resource) should be
    * visible - Seelenstärke reaching its own max level (5), or the GM tab's
@@ -421,6 +450,15 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
    * @type {DragDrop[]}
    */
   #dragDrop;
+
+  /**
+   * Whether the header's icon toolbar (the "toolbar" PART, Character-only -
+   * see #openRestDialog et al.) is currently collapsed - purely a runtime
+   * UI preference, not persisted, so every fresh sheet render starts
+   * expanded. Toggled by the frame arrow button added in _renderFrame.
+   * @type {boolean}
+   */
+  #toolbarCollapsed = false;
 
   #createDragDropHandlers() {
     return this.options.dragDrop.map(config => {
@@ -463,6 +501,8 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     // With more than one tab group declared, the base _prepareContext no
     // longer auto-populates context.tabs - prepare both groups ourselves.
     context.tabs = this._prepareTabs('primary');
+    // Header icon toolbar's own collapsed/expanded state - see #toolbarCollapsed.
+    context.toolbarCollapsed = this.#toolbarCollapsed;
     // The GM tab holds background information/switches irrelevant to
     // players - hidden from the tab bar entirely for non-GM users.
     if (!game.user.isGM) delete context.tabs.gm;
@@ -1515,6 +1555,21 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
    */
   static #openProductionFpDialog(event, target) {
     new SKSKProductionFpDialog(this.actor).render(true);
+  }
+
+  /**
+   * Toggle the header icon toolbar's collapsed state (see #toolbarCollapsed)
+   * - triggered either from the toolbar's own frame arrow button (see
+   * _renderFrame) or, in principle, any other element carrying this same
+   * action. Re-renders only the "toolbar" PART (cheap - no need to rebuild
+   * the rest of the sheet) and flips the frame button's own icon in place.
+   */
+  static #toggleHeaderToolbar(event, target) {
+    this.#toolbarCollapsed = !this.#toolbarCollapsed;
+    this.render({ parts: ['toolbar'] });
+    const button = this.window.header?.querySelector('[data-action="toggleHeaderToolbar"]');
+    button?.classList.toggle('fa-arrow-up', !this.#toolbarCollapsed);
+    button?.classList.toggle('fa-arrow-down', this.#toolbarCollapsed);
   }
 
   /**

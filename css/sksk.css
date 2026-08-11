@@ -233,11 +233,18 @@
   min-height: 320px;
 }
 
+/* Two-row grid: portrait (col 1) and Passive Perception (col 3) each span
+   both rows; the middle column holds .header-row-1 (name+level) above
+   .header-row-2 (species/classes/size/inspiration die). The icon toolbar
+   that used to live here (.header-rest) is now its own PART - see
+   .header-toolbar below and templates/actor/parts/header-toolbar.hbs. */
 .sksk .sheet-header {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: flex-start;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 4px;
   flex: 0 0 auto;
   margin: 0;
   padding: 8px;
@@ -246,13 +253,32 @@
 }
 
 .sksk .sheet-header .profile-img {
-  flex: 0 0 100px;
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  width: 100px;
   height: 100px;
-  margin-right: 10px;
 }
 
-.sksk .sheet-header .header-fields {
+.sksk .sheet-header .header-row {
+  grid-column: 2;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.sksk .sheet-header .header-row-1 {
+  grid-row: 1;
+}
+
+.sksk .sheet-header .header-row-2 {
+  grid-row: 2;
+}
+
+.sksk .sheet-header .header-row-1 h1.charname {
   flex: 1;
+  min-width: 0;
 }
 
 .sksk .sheet-header .header-level,
@@ -276,15 +302,11 @@
 .sksk .sheet-header h1.charname {
   height: 50px;
   padding: 0px;
-  margin: 5px 0;
+  margin: 0;
   border-bottom: 0;
 }
 
-.sksk .sheet-header .header-items {
-  gap: 10px;
-}
-
-.sksk .sheet-header .header-item-list {
+.sksk .sheet-header .header-row-2 .header-item-list {
   flex: 1;
   min-width: 0;
 }
@@ -1384,26 +1406,55 @@ span.sksk-critical-failure {
   font-weight: bold;
 }
 
-/* Header clock button opening the "spend time / take a Pause" dialog
-   (apps/rest-dialog.mjs) - reuses .item-control's icon-button look. */
-.sksk .sheet-header .header-rest {
-  flex: 0 0 auto;
-  justify-content: center;
+/* Header icon toolbar (the "toolbar" PART, Character-only) - taken out of
+   flow entirely and docked directly above the sheet, same technique as
+   .side-tab (see below) but anchored to the top edge instead of a side, so
+   toggling it never changes the window's own height. Collapsed via a
+   frame-header arrow button (sheets/actor-sheet.mjs's _renderFrame/
+   toggleHeaderToolbar), not persisted.
+   This PART renders inside .window-content (its own containing block for
+   this absolute positioning), which sits BELOW the window's own title bar -
+   "bottom: 100%" alone would only reach .window-content's own top edge,
+   still overlapping the title bar (and rendering behind it, since the
+   title bar paints on top there). --header-height is Foundry's own custom
+   property for that title bar's height, added on here to clear it
+   entirely. */
+.sksk.actor .header-toolbar {
+  position: absolute;
+  bottom: calc(100% + var(--header-height, 36px) + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  z-index: 2;
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  padding: 6px 4px;
+  background: rgba(11, 10, 19, 0.9);
+  border-radius: 4px;
 }
 
-.sksk .sheet-header .header-rest .item-control {
+.sksk.actor .header-toolbar.collapsed {
+  display: none;
+}
+
+.sksk.actor .header-toolbar .item-control {
   font-size: 20px;
 }
 
 /* Header Passive Perception field (helpers/attributes.mjs#
    computePassivePerception) - clickable to grant Observation's own
-   passiveDetection FP (sheets/actor-sheet.mjs#_grantPassivePerceptionFp). */
+   passiveDetection FP (sheets/actor-sheet.mjs#_grantPassivePerceptionFp).
+   Spans both header rows, same as the portrait on the opposite edge. */
 .sksk .sheet-header .header-passive-perception {
+  grid-column: 3;
+  grid-row: 1 / span 2;
   flex: 0 0 80px;
   display: flex;
   flex-direction: column;
   align-self: center;
   gap: 4px;
+  text-align: center;
 }
 
 .sksk .sheet-header .header-passive-perception .item-control {
