@@ -706,6 +706,11 @@
   text-align: center;
 }
 
+.sksk .carry-weight-value {
+  font-size: 20px;
+  font-weight: bold;
+}
+
 /* Max Life is no longer user-editable (see data/actor-base.mjs#
    prepareDerivedData) - styled to look distinct from the Life value input
    next to it, rather than like an editable field. */
