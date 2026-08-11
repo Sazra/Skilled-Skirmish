@@ -1,121 +1,152 @@
 <section class="tab" data-group="generalSections" data-tab="actions">
 
-  <div class="resource action-row">
-    <label class="resource-label">{{localize 'SKSK.Action.Regeneration'}}</label>
-    <div class="flexrow flex-center action-row-controls">
-      <label class="ap-cost-label" title="{{localize 'SKSK.Spell.APCost'}}">
-        {{localize 'SKSK.Spell.APCost'}}
-        <input type="text" name="system.regenerationApCost" value="{{system.regenerationApCost}}" data-dtype="Number" class="ap-cost-input" />
-      </label>
-      <button type="button" data-action="rollRegeneration">{{localize 'SKSK.Action.Roll'}}</button>
+  <div class="grid grid-2col">
+    <div class="grid-span-1 resource action-row">
+      <label class="resource-label">{{localize 'SKSK.Action.Regeneration'}}</label>
+      <div class="flexrow flex-center action-row-controls">
+        <label class="ap-cost-label" title="{{localize 'SKSK.Spell.APCost'}}">
+          {{localize 'SKSK.Spell.APCost'}}
+          <input type="text" name="system.regenerationApCost" value="{{system.regenerationApCost}}" data-dtype="Number" class="ap-cost-input" />
+        </label>
+        <button type="button" class="action-roll-button" data-action="rollRegeneration" title="{{localize 'SKSK.Action.Roll'}}">
+          <i class="fas fa-dice-d20"></i>
+        </button>
+      </div>
+    </div>
+    <div class="grid-span-1 resource action-row">
+      <label class="resource-label">{{localize 'SKSK.Action.Meditation'}}</label>
+      <div class="flexrow flex-center action-row-controls">
+        <label class="ap-cost-label" title="{{localize 'SKSK.Spell.APCost'}}">
+          {{localize 'SKSK.Spell.APCost'}}
+          <input type="text" name="system.meditationApCost" value="{{system.meditationApCost}}" data-dtype="Number" class="ap-cost-input" />
+        </label>
+        <button type="button" class="action-roll-button" data-action="rollMeditation" title="{{localize 'SKSK.Action.Roll'}}">
+          <i class="fas fa-dice-d20"></i>
+        </button>
+      </div>
     </div>
   </div>
 
-  <div class="resource action-row">
-    <label class="resource-label">{{localize 'SKSK.Action.Meditation'}}</label>
-    <div class="flexrow flex-center action-row-controls">
-      <label class="ap-cost-label" title="{{localize 'SKSK.Spell.APCost'}}">
-        {{localize 'SKSK.Spell.APCost'}}
-        <input type="text" name="system.meditationApCost" value="{{system.meditationApCost}}" data-dtype="Number" class="ap-cost-input" />
-      </label>
-      <button type="button" data-action="rollMeditation">{{localize 'SKSK.Action.Roll'}}</button>
+  <div class="grid grid-2col">
+    <div class="grid-span-1 resource action-row">
+      <label class="resource-label" title="{{localize 'SKSK.Action.MoveHint'}}">{{localize 'SKSK.Action.Move'}}</label>
+      <div class="flexrow flex-center action-row-controls">
+        <select class="move-type-select">
+          {{#each movementTypeChoices as |label key|}}
+          <option value="{{key}}">{{localize label}}</option>
+          {{/each}}
+        </select>
+        <button type="button" class="action-roll-button" data-action="useMove" title="{{localize 'SKSK.Action.Move'}}">
+          <i class="fas fa-dice-d20"></i>
+        </button>
+      </div>
+    </div>
+    <div class="grid-span-1 resource action-row">
+      <label class="resource-label" title="{{localize 'SKSK.Action.DodgeHint'}}">{{localize 'SKSK.Action.Dodge'}}</label>
+      <div class="flexrow flex-center action-row-controls">
+        <button type="button" class="action-roll-button" data-action="useDodge" title="{{localize 'SKSK.Action.Dodge'}}">
+          <i class="fas fa-dice-d20"></i>
+        </button>
+      </div>
     </div>
   </div>
 
-  <div class="resource action-row">
-    <label class="resource-label" title="{{localize 'SKSK.Action.AdrenalinHint'}}">{{localize 'SKSK.Action.Adrenalin'}}</label>
-    <div class="flexrow flex-center action-row-controls">
-      <span class="ap-cost-label">{{system.adrenalinCharges.value}} / {{system.adrenalinCharges.max}}</span>
-      <button type="button" data-action="rollAdrenalin">{{localize 'SKSK.Action.Use'}}</button>
+  <div class="grid grid-2col">
+    <div class="grid-span-1 resource action-row">
+      <label class="resource-label">{{localize 'SKSK.Action.MartialArtsAttack'}}</label>
+      <div class="flexrow flex-center action-row-controls">
+        <select class="martial-arts-attack-select">
+          {{#each system.martialArtsAttacks as |attack index|}}
+          <option value="{{index}}">{{attack.name}}</option>
+          {{else}}
+          <option value="" disabled>{{localize 'SKSK.MartialArtsAttack.None'}}</option>
+          {{/each}}
+        </select>
+        <button type="button" class="action-roll-button" data-action="rollMartialArtsAttack" title="{{localize 'SKSK.Action.Roll'}}">
+          <i class="fas fa-dice-d20"></i>
+        </button>
+      </div>
+    </div>
+    <div class="grid-span-1 resource action-row">
+      <label class="resource-label">{{localize 'SKSK.Technique.SectionTitle'}}</label>
+      <div class="flexrow flex-center action-row-controls">
+        <button type="button" class="action-roll-button" data-action="openTechniqueDialog" title="{{localize 'SKSK.Technique.OpenDialog'}}">
+          <i class="fas fa-fist-raised"></i>
+        </button>
+      </div>
     </div>
   </div>
 
-  <div class="resource action-row">
-    <label class="resource-label" title="{{localize 'SKSK.Action.InspirationHint'}}">{{localize 'SKSK.Action.Inspiration'}}</label>
-    <div class="flexrow flex-center action-row-controls">
-      <label class="ap-cost-label" title="{{localize 'SKSK.Spell.APCost'}}">
-        {{localize 'SKSK.Spell.APCost'}}
-        <input type="text" name="system.inspirationApCost" value="{{system.inspirationApCost}}" data-dtype="Number" class="ap-cost-input" />
-      </label>
-      <span class="ap-cost-label">{{system.inspirationCharges.value}} / {{system.inspirationCharges.max}}</span>
-      <button type="button" data-action="grantInspiration" title="{{localize 'SKSK.Action.InspirationHint'}}">{{localize 'SKSK.Action.Grant'}}</button>
+  {{#if hasAdrenalinOrInspiration}}
+  <div class="grid grid-2col">
+    {{#if hasAdrenalin}}
+    <div class="grid-span-1 resource action-row">
+      <label class="resource-label" title="{{localize 'SKSK.Action.AdrenalinHint'}}">{{localize 'SKSK.Action.Adrenalin'}}</label>
+      <div class="flexrow flex-center action-row-controls">
+        <span class="ap-cost-label">{{system.adrenalinCharges.value}} / {{system.adrenalinCharges.max}}</span>
+        <button type="button" class="action-roll-button" data-action="rollAdrenalin" title="{{localize 'SKSK.Action.Use'}}">
+          <i class="fas fa-dice-d20"></i>
+        </button>
+      </div>
     </div>
-  </div>
-
-  <div class="resource action-row">
-    <label class="resource-label" title="{{localize 'SKSK.Action.MoveHint'}}">{{localize 'SKSK.Action.Move'}}</label>
-    <div class="flexrow flex-center action-row-controls">
-      <select class="move-type-select">
-        {{#each movementTypeChoices as |label key|}}
-        <option value="{{key}}">{{localize label}}</option>
-        {{/each}}
-      </select>
-      <button type="button" data-action="useMove">{{localize 'SKSK.Action.Move'}}</button>
+    {{/if}}
+    {{#if hasInspiration}}
+    <div class="grid-span-1 resource action-row">
+      <label class="resource-label" title="{{localize 'SKSK.Action.InspirationHint'}}">{{localize 'SKSK.Action.Inspiration'}}</label>
+      <div class="flexrow flex-center action-row-controls">
+        <label class="ap-cost-label" title="{{localize 'SKSK.Spell.APCost'}}">
+          {{localize 'SKSK.Spell.APCost'}}
+          <input type="text" name="system.inspirationApCost" value="{{system.inspirationApCost}}" data-dtype="Number" class="ap-cost-input" />
+        </label>
+        <span class="ap-cost-label">{{system.inspirationCharges.value}} / {{system.inspirationCharges.max}}</span>
+        <button type="button" class="action-roll-button" data-action="grantInspiration" title="{{localize 'SKSK.Action.InspirationHint'}}">
+          <i class="fas fa-dice-d20"></i>
+        </button>
+      </div>
     </div>
+    {{/if}}
   </div>
+  {{/if}}
 
-  <div class="resource action-row">
-    <label class="resource-label" title="{{localize 'SKSK.Action.DodgeHint'}}">{{localize 'SKSK.Action.Dodge'}}</label>
-    <div class="flexrow flex-center action-row-controls">
-      <button type="button" data-action="useDodge">{{localize 'SKSK.Action.Dodge'}}</button>
-    </div>
-  </div>
-
-  <div class="resource action-row">
-    <label class="resource-label">{{localize 'SKSK.Action.MartialArtsAttack'}}</label>
-    <div class="flexrow flex-center action-row-controls">
-      <select class="martial-arts-attack-select">
-        {{#each system.martialArtsAttacks as |attack index|}}
-        <option value="{{index}}">{{attack.name}}</option>
+  <div class="grid grid-2col">
+    <div class="grid-span-1 resource">
+      <label class="resource-label">{{localize 'SKSK.Action.Weapons'}}</label>
+      <ol class="items-list items-list-compact">
+        {{#each equippedWeapons as |weapon|}}
+        <li class="item flexrow">
+          <div class="item-name">{{weapon.name}}</div>
+          <div class="item-controls">
+            <button type="button" class="action-roll-button" data-action="useItem" data-item-id="{{weapon.id}}" title="{{localize 'SKSK.Action.Use'}}">
+              <i class="fas fa-dice-d20"></i>
+            </button>
+          </div>
+        </li>
         {{else}}
-        <option value="" disabled>{{localize 'SKSK.MartialArtsAttack.None'}}</option>
+        <li class="item flexrow">
+          <div class="item-name">{{localize 'SKSK.Action.NoWeapons'}}</div>
+        </li>
         {{/each}}
-      </select>
-      <button type="button" data-action="rollMartialArtsAttack">{{localize 'SKSK.Action.Roll'}}</button>
+      </ol>
     </div>
-  </div>
-
-  <div class="resource">
-    <label class="resource-label">{{localize 'SKSK.Action.Weapons'}}</label>
-    <ol class="items-list items-list-compact">
-      {{#each equippedWeapons as |weapon|}}
-      <li class="item flexrow">
-        <div class="item-name">{{weapon.name}}</div>
-        <div class="item-controls">
-          <button type="button" data-action="useItem" data-item-id="{{weapon.id}}">{{localize 'SKSK.Action.Use'}}</button>
-        </div>
-      </li>
-      {{else}}
-      <li class="item flexrow">
-        <div class="item-name">{{localize 'SKSK.Action.NoWeapons'}}</div>
-      </li>
-      {{/each}}
-    </ol>
-  </div>
-
-  <div class="resource action-row">
-    <label class="resource-label">{{localize 'SKSK.Technique.SectionTitle'}}</label>
-    <div class="flexrow flex-center action-row-controls">
-      <button type="button" data-action="openTechniqueDialog">{{localize 'SKSK.Technique.OpenDialog'}}</button>
+    <div class="grid-span-1 resource">
+      <label class="resource-label">{{localize 'SKSK.Action.UsableItems'}}</label>
+      <ol class="items-list items-list-compact">
+        {{#each usableItems as |usableItem|}}
+        <li class="item flexrow">
+          <div class="item-name">{{usableItem.name}}</div>
+          <div class="item-controls">
+            <button type="button" class="action-roll-button" data-action="useItem" data-item-id="{{usableItem.id}}" title="{{localize 'SKSK.Action.Use'}}">
+              <i class="fas fa-dice-d20"></i>
+            </button>
+          </div>
+        </li>
+        {{else}}
+        <li class="item flexrow">
+          <div class="item-name">{{localize 'SKSK.Action.NoUsableItems'}}</div>
+        </li>
+        {{/each}}
+      </ol>
     </div>
-  </div>
-
-  <div class="resource">
-    <label class="resource-label">{{localize 'SKSK.Action.UsableItems'}}</label>
-    <ol class="items-list items-list-compact">
-      {{#each usableItems as |usableItem|}}
-      <li class="item flexrow">
-        <div class="item-name">{{usableItem.name}}</div>
-        <div class="item-controls">
-          <button type="button" data-action="useItem" data-item-id="{{usableItem.id}}">{{localize 'SKSK.Action.Use'}}</button>
-        </div>
-      </li>
-      {{else}}
-      <li class="item flexrow">
-        <div class="item-name">{{localize 'SKSK.Action.NoUsableItems'}}</div>
-      </li>
-      {{/each}}
-    </ol>
   </div>
 
 </section>

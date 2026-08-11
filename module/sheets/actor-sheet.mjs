@@ -991,6 +991,17 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       .flat()
       .filter(row => row.favorite);
 
+    // Actions tab: Adrenalin/Inspiration rows are hidden individually
+    // (each still paired in the same grid row otherwise) until their own
+    // skill reaches level 1 - mirrors computeMaxAdrenalinCharges/
+    // computeMaxInspirationCharges's own level-1 gate (helpers/
+    // generalResources.mjs), checked directly here rather than inferred
+    // from the resulting max charges (a very low attribute modifier could
+    // theoretically zero that out even at level 1).
+    context.hasAdrenalin = getActorSkillLevel(actor, 'adrenalin') >= 1;
+    context.hasInspiration = getActorSkillLevel(actor, 'inspiration') >= 1;
+    context.hasAdrenalinOrInspiration = context.hasAdrenalin || context.hasInspiration;
+
     context.generalResources = GENERAL_RESOURCES
       .filter(r => !r.requiredSkill || getActorSkillLevel(actor, r.requiredSkill) >= 1)
       .map(r => ({ key: r.key, label: r.label, value: actor.system[r.key].value, max: actor.system[r.key].max }));
