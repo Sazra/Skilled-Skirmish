@@ -34,7 +34,7 @@
         <select name="system.pathAbilities.{{index}}.type">
           {{selectOptions ../pathAbilityTypeChoices selected=entry.type localize=true}}
         </select>
-        <textarea class="soul-path-wide-field" name="system.pathAbilities.{{index}}.description" rows="2" placeholder="Description">{{entry.description}}</textarea>
+        <textarea name="system.pathAbilities.{{index}}.description" rows="2" placeholder="Description">{{entry.description}}</textarea>
 
         {{#if (eq entry.type "active")}}
         <div class="grid grid-4col">

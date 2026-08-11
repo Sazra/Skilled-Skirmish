@@ -213,8 +213,16 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       delete parts.description;
       delete parts.attributes;
       delete parts.effects;
-    } else {
-      // Every other item type has no use for Soul Path's own 6 tabs.
+    }
+
+    // Every other item type has no use for Soul Path's own 6 tabs - a
+    // separate, unconditional check (matching _prepareTabs' own shape
+    // below), since every existing type already matches one of the
+    // branches above and would otherwise never reach a trailing "else"
+    // here, leaving these parts undeleted and their templates attempting
+    // to render with none of the soulPath-only context _prepareContext
+    // only ever populates for actual Soul Path items.
+    if (itemType !== 'soulPath') {
       delete parts.soulPathProperties;
       delete parts.sammlung;
       delete parts.staerkung;
