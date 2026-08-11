@@ -60,7 +60,13 @@
             <span class="resource-computed">{{res.max}}</span>
             {{/unless}}
           </div>
-          <div class="item-controls"></div>
+          <div class="item-controls">
+            {{#if res.canTrade}}
+            <a class="item-control" data-action="tradeSoulPower" title="{{localize 'SKSK.Resource.SoulPowerTrade'}}">
+              <i class="fas fa-arrow-right-arrow-left"></i>
+            </a>
+            {{/if}}
+          </div>
         </li>
         {{/each}}
         {{#each system.customResources as |entry index|}}

@@ -435,13 +435,16 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // Seelenstärke's own "Seelenmacht" (Soul Power) resource - a collection
     // pool with no maximum (like barrier above), spent wholesale on a
     // Seelenpfad's own Durchbruch attempts (see helpers/soulPathRolls.mjs#
-    // attemptBreakthrough) and meant to also be fed by SoulPowerTraded's own
-    // trade-in mechanic once that's designed (see soulPowerMechanicEnabled
-    // below). Shown among the Additional Resources (general-overview.hbs)
-    // once Seelenstärke reaches its own max level (5) or
-    // soulPowerResourceEnabled is on - see sheets/actor-sheet.mjs#
-    // _prepareGeneral - the same condition also gates the Soul Path tab's
-    // own visibility (sheets/actor-sheet.mjs#_configureRenderParts).
+    // attemptBreakthrough), fed back by its own trade-in button while below
+    // level 5 (see soulPowerMechanicEnabled below and helpers/skillFp.mjs#
+    // tradeSoulPowerForFp), and - once Seelenstärke IS at level 5 - the
+    // destination every further Seelenstärke FP gain redirects into instead
+    // (see helpers/skillFp.mjs#grantSkillUsageFp). Shown among the
+    // Additional Resources (general-overview.hbs) once Seelenstärke reaches
+    // its own max level (5) or soulPowerResourceEnabled is on - see
+    // sheets/actor-sheet.mjs#_prepareGeneral - the same condition also
+    // gates the Soul Path tab's own visibility (sheets/actor-sheet.mjs#
+    // _configureRenderParts).
     schema.soulPower = new fields.SchemaField({
       value: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
     });
@@ -449,10 +452,12 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // Seelenstärke reaches level 5 - off by default (the resource is shown
     // regardless once that level is reached, so this only matters early).
     schema.soulPowerResourceEnabled = new fields.BooleanField({ initial: false });
-    // GM-tab switch reserved for Soul Power's own trade-in mechanic - not
-    // yet implemented (see helpers/skillFp.mjs's "soulPowerTraded" trigger,
-    // still unwired); to be designed and wired up once every skill-usage FP
-    // trigger is fully implemented. Currently has no effect on its own.
+    // GM-tab switch enabling Soul Power's own trade-in mechanic - its
+    // Additional Resources row then shows a trade button (while
+    // Seelenstärke is still below level 5) converting the actor's entire
+    // current pool into Seelenstärke FP at the GM-configured
+    // "soulPowerTraded" rate (helpers/skillFp.mjs#tradeSoulPowerForFp,
+    // apps/skill-usage-fp-config.mjs). Off by default.
     schema.soulPowerMechanicEnabled = new fields.BooleanField({ initial: false });
     // A Seelenpfad's own Durchbruch (breakthrough) roll bonus pool - a plain
     // field, deliberately never recomputed in prepareDerivedData (unlike

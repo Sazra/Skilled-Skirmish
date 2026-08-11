@@ -51,7 +51,7 @@ import {
   getAdrenalinDamage, setRestrainedConfig, attemptRestrainedEscapeManual,
 } from '../helpers/statusEffects.mjs';
 import { wrapCriticalBlock, chooseGenericRollMode, evaluateD20WithMode, formatD20ModeSummaryLine } from '../helpers/criticalRolls.mjs';
-import { grantSkillUsageFp, formatSkillFpGrantLine } from '../helpers/skillFp.mjs';
+import { grantSkillUsageFp, formatSkillFpGrantLine, tradeSoulPowerForFp } from '../helpers/skillFp.mjs';
 
 /**
  * Schema paths (relative to system.*) whose value input accepts the "+N"/
@@ -154,6 +154,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       createSoulPath: SKSKActorSheet.#createSoulPath,
       editSoulPath: SKSKActorSheet.#editSoulPath,
       deleteSoulPath: SKSKActorSheet.#deleteSoulPath,
+      tradeSoulPower: SKSKActorSheet.#tradeSoulPower,
     },
     // Drop target for assigning existing Items (of any type) to this actor
     // by dragging them from the sidebar, a compendium, or another sheet.
@@ -956,9 +957,17 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     // the Additional Resources (general-overview.hbs) rather than the
     // resources sidebar, since (like Barrier) it's unbounded and has no
     // max - shown under the same condition that gates the Soul Path tab
-    // itself (see #isSoulPathUnlocked).
+    // itself (see #isSoulPathUnlocked). canTrade shows its own row's
+    // trade-in button (helpers/skillFp.mjs#tradeSoulPowerForFp) - a
+    // separate condition from the row's own visibility above: trading
+    // only ever makes sense below Seelenstärke's own max level (5), once
+    // the GM tab's own soulPowerMechanicEnabled switch is on, regardless
+    // of *why* the row itself is currently shown.
     if (this.#isSoulPathUnlocked) {
-      context.generalResources.push({ key: 'soulPower', label: 'SKSK.Resource.SoulPower', value: actor.system.soulPower.value, noMax: true });
+      context.generalResources.push({
+        key: 'soulPower', label: 'SKSK.Resource.SoulPower', value: actor.system.soulPower.value, noMax: true,
+        canTrade: actor.system.soulPowerMechanicEnabled && getActorSkillLevel(actor, 'soulforce') < 5,
+      });
     }
   }
 
@@ -1589,6 +1598,22 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     ].filter(Boolean);
     if (effectIds.length) await this.actor.deleteEmbeddedDocuments('ActiveEffect', effectIds);
     await item.delete();
+  }
+
+  /**
+   * The Additional Resources list's own Soul Power row trade-in button -
+   * see helpers/skillFp.mjs#tradeSoulPowerForFp. Warns instead of posting
+   * a chat card when there's nothing to trade or the GM hasn't configured
+   * a soulPowerTraded rate yet (see apps/skill-usage-fp-config.mjs).
+   */
+  static async #tradeSoulPower(event, target) {
+    const actor = this.actor;
+    if (actor.system.soulPower.value <= 0) {
+      return ui.notifications.warn(game.i18n.localize('SKSK.Resource.SoulPowerTradeEmpty'));
+    }
+    const grant = await tradeSoulPowerForFp(actor);
+    if (!grant) return ui.notifications.warn(game.i18n.localize('SKSK.Resource.SoulPowerTradeNoRate'));
+    await postActionChatCard(actor, game.i18n.localize('SKSK.Resource.SoulPowerTrade'), null, 0, formatSkillFpGrantLine(grant));
   }
 
   /**

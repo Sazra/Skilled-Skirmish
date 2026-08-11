@@ -79,12 +79,60 @@ export async function grantSkillUsageFp(actor, skillKey, trigger, multiplier = 1
   let amount = Math.floor(getSkillFpRate(skillKey, trigger) * multiplier);
   if (amount <= 0) return null;
 
+  // Once Seelenstärke reaches its own max level (5), it has nowhere left
+  // to put further FP - redirected into its own "Seelenmacht" (Soul
+  // Power) pool instead (data/actor-base.mjs#soulPower), at the same
+  // amount, regardless of which trigger granted it (meditationUsedInCombat
+  // today, potentially others later). Never applies to soulPowerTraded
+  // itself (see tradeSoulPowerForFp below) - that trigger is only ever
+  // reachable below level 5 to begin with (the trade button hides once
+  // level 5 is hit), but excluded explicitly rather than relying on that
+  // alone, since redirecting a Seelenmacht->FP trade straight back into
+  // Seelenmacht would be a nonsensical no-op loop.
+  if (skillKey === 'soulforce' && trigger !== 'soulPowerTraded' && getActorSkillLevel(actor, 'soulforce') >= 5) {
+    const currentPower = actor.system.soulPower.value;
+    await actor.update({ 'system.soulPower.value': currentPower + amount });
+    return { label: game.i18n.localize('SKSK.Resource.SoulPower'), amount };
+  }
+
   amount = capResistanceGain(actor, skillKey, amount);
   if (amount <= 0) return null;
 
   const current = actor.system.skills?.[skillKey]?.gain ?? 0;
   await actor.update({ [`system.skills.${skillKey}.gain`]: current + amount });
   return { label: game.i18n.localize(getSkillLabel(skillKey)), amount };
+}
+
+/**
+ * Seelenmacht's own trade-in: while the GM tab's own soulPowerMechanicEnabled
+ * switch is on and Seelenstärke hasn't reached its own max level (5) yet
+ * (data/actor-base.mjs), converts the actor's ENTIRE current Seelenmacht
+ * (Soul Power) pool into Seelenstärke's own pending FP, at the GM-
+ * configured "soulPowerTraded" rate (apps/skill-usage-fp-config.mjs) -
+ * i.e. floor(rate * poolAmount), same "per-unit rate times an amount"
+ * shape grantSkillUsageFp's own multiplier already uses elsewhere (e.g. a
+ * per-spell-level rate times the spell's own level). The pool is only
+ * ever cleared if FP was actually granted - an unconfigured (0) rate
+ * leaves it untouched rather than destroying it for nothing. Once
+ * Seelenstärke is at level 5, its own FP converts INTO Seelenmacht
+ * instead (see grantSkillUsageFp) - trading no longer makes sense there,
+ * so this becomes a no-op (the sheet's own trade button hides too).
+ * @param {Actor} actor
+ * @return {Promise<{label: string, amount: number}|null>}
+ */
+export async function tradeSoulPowerForFp(actor) {
+  if (!actor || actor.type !== 'character') return null;
+  if (!actor.system.soulPowerMechanicEnabled) return null;
+  if (getActorSkillLevel(actor, 'soulforce') >= 5) return null;
+
+  const pool = actor.system.soulPower.value;
+  if (pool <= 0) return null;
+
+  const grant = await grantSkillUsageFp(actor, 'soulforce', 'soulPowerTraded', pool);
+  if (!grant) return null;
+
+  await actor.update({ 'system.soulPower.value': 0 });
+  return grant;
 }
 
 /**

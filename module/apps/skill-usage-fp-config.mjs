@@ -238,7 +238,14 @@ const SKILL_SPECIFIC_TRIGGERS = {
   // granted alongside Meditation's own "meditationUsed" whenever a Combat is
   // active, but only if the GM has also flipped the actor's own GM-tab
   // switch (system.soulforceMeditationCombatFpEnabled, off by default - see
-  // data/actor-base.mjs) on top of this rate being > 0.
+  // data/actor-base.mjs) on top of this rate being > 0. "soulPowerTraded" is
+  // wired too (helpers/skillFp.mjs#tradeSoulPowerForFp) - this rate is
+  // multiplied by however much Seelenmacht the actor's own trade button
+  // spent, not a flat per-use amount like the rest. Once Seelenstärke IS
+  // at level 5, every trigger in this category (not just these two)
+  // redirects its own FP into Seelenmacht instead of skill points
+  // (helpers/skillFp.mjs#grantSkillUsageFp) - these rates keep applying,
+  // just to a different destination.
   soulforce: [
     { key: 'meditationUsedInCombat', label: 'SKSK.SkillFpConfig.MeditationUsedInCombat' },
     { key: 'soulPowerTraded', label: 'SKSK.SkillFpConfig.SoulPowerTraded' },
