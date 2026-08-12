@@ -439,7 +439,10 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       button.dataset.attributeKey = key;
       button.dataset.label = attribute.label;
       button.dataset.tooltip = attribute.label;
-      button.textContent = key;
+      button.setAttribute('aria-label', attribute.label);
+      const icon = document.createElement('i');
+      icon.classList.add('fas', CONFIG.SKSK.attributeIcons[key] ?? 'fa-dice-d20');
+      button.appendChild(icon);
       bar.appendChild(button);
     }
     this.window.header?.insertAdjacentElement('afterend', bar);

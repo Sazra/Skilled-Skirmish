@@ -15,6 +15,20 @@ SKSK.attributes = {
   app: 'SKSK.Attribute.App.long',
 };
 
+// Used by the minimized-state attribute-roll bar (see actor-sheet.mjs#
+// _renderFrame) - the ordinary attributes side-tab shows the full label
+// instead, so this is the only place these matter.
+SKSK.attributeIcons = {
+  str: 'fa-dumbbell',
+  dex: 'fa-person-running',
+  con: 'fa-heart-pulse',
+  per: 'fa-eye',
+  wil: 'fa-brain',
+  aur: 'fa-sun',
+  cha: 'fa-comments',
+  app: 'fa-face-smile',
+};
+
 // Each "Unbegrenzte X" skill (CONFIG.SKSK.skills.attribute) grants a bonus
 // to that one attribute's own roll - not to skill checks that merely use
 // the attribute as one of their modifiers - equal to its own skill level.
