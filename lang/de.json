@@ -376,7 +376,8 @@
             "DamageType": "Schadenstyp",
             "Add": "Angriff hinzufügen",
             "Remove": "Entfernen",
-            "None": "Noch keine Kampfkunstangriffe definiert."
+            "None": "Noch keine Kampfkunstangriffe definiert.",
+            "OpenDialog": "Kampfkunstangriffe öffnen"
         },
         "Action": {
             "Regeneration": "Regeneration",
@@ -485,7 +486,8 @@
             "SectionTitle": "Massentötung",
             "SectionHint": "Gewährt Massakers eigenes Massentötungs-FP für das Töten dieser Anzahl an Personen innerhalb von (etwa) 10 Minuten - eine rein manuelle GM-Entscheidung, das Zeitfenster selbst wird nicht getrackt. Die Höhe hängt von der aktuellen Massaker-Fertigkeitsstufe dieses Akteurs ab (die Rate jeder Stufe/Stufen-Kombination wird in den Fertigkeitsnutzungs-FP-Einstellungen konfiguriert).",
             "Title": "Massentötung ({count})",
-            "NoGain": "Keine FP generiert - für diese Abstufung ist bei der aktuellen Massaker-Stufe des Akteurs keine Rate konfiguriert."
+            "NoGain": "Keine FP generiert - für diese Abstufung ist bei der aktuellen Massaker-Stufe des Akteurs keine Rate konfiguriert.",
+            "OpenDialog": "Massentötung öffnen"
         },
         "Technique": {
             "SectionTitle": "Techniken",

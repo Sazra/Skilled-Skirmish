@@ -1,0 +1,64 @@
+<div class="sksk-martial-arts-attacks-dialog">
+  <ol class="items-list">
+    <li class="item flexrow items-header">
+      <div class="item-name">{{localize 'SKSK.MartialArtsAttack.Name'}}</div>
+      <div class="item-controls">
+        <a class="item-control" data-action="addMartialArtsAttack" title="{{localize 'SKSK.MartialArtsAttack.Add'}}">
+          <i class="fas fa-plus"></i>
+        </a>
+      </div>
+    </li>
+    {{#each system.martialArtsAttacks as |attack index|}}
+    <li class="item flexcol model-entry">
+      <div class="flexrow flex-between">
+        <input type="text" name="martialArtsAttacks.{{index}}.name" value="{{attack.name}}"
+          placeholder="{{localize 'SKSK.MartialArtsAttack.Name'}}" />
+        <a class="item-control item-delete" data-action="removeMartialArtsAttack" data-index="{{index}}"
+          title="{{localize 'SKSK.MartialArtsAttack.Remove'}}">
+          <i class="fas fa-trash"></i>
+        </a>
+      </div>
+
+      <div class="grid grid-4col">
+        <div class="grid-span-1">
+          <label class="resource-label">{{localize 'SKSK.MartialArtsAttack.Formula'}}</label>
+          <input type="text" name="martialArtsAttacks.{{index}}.formula" value="{{attack.formula}}"
+            placeholder="e.g. 1d6" />
+        </div>
+        <div class="grid-span-1">
+          <label class="resource-label">{{localize 'SKSK.MartialArtsAttack.APCost'}}</label>
+          <input type="text" name="martialArtsAttacks.{{index}}.apCost" value="{{attack.apCost}}"
+            data-dtype="Number" />
+        </div>
+        <div class="grid-span-1">
+          <label class="resource-label">{{localize 'SKSK.MartialArtsAttack.AttributeUsage'}}</label>
+          <select name="martialArtsAttacks.{{index}}.attributeUsage">
+            {{selectOptions ../attributeUsageChoices selected=attack.attributeUsage localize=true}}
+          </select>
+        </div>
+        <div class="grid-span-1">
+          <label class="resource-label">{{localize 'SKSK.MartialArtsAttack.DamageType'}}</label>
+          <select name="martialArtsAttacks.{{index}}.damageType">
+            {{selectOptions ../damageTypeChoices selected=attack.damageType localize=true}}
+          </select>
+        </div>
+      </div>
+
+      <label class="resource-label">{{localize 'SKSK.MartialArtsAttack.Attributes'}}</label>
+      <div class="grid grid-4col model-checkbox-grid">
+        {{#each ../attributeChoices as |label key|}}
+        <label class="casting-method-option">
+          <input type="checkbox" name="martialArtsAttacks.{{index}}.attributes.{{key}}"
+            {{checked (lookup attack.attributes key)}} />
+          {{localize label}}
+        </label>
+        {{/each}}
+      </div>
+    </li>
+    {{else}}
+    <li class="item flexrow">
+      <div class="item-name">{{localize 'SKSK.MartialArtsAttack.None'}}</div>
+    </li>
+    {{/each}}
+  </ol>
+</div>

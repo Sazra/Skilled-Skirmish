@@ -39,7 +39,8 @@ import { SKSKProductionFpDialog } from '../apps/production-fp-dialog.mjs';
 import {
   grantInspirationDie, consumeInspirationCharge, rollOwnInspirationDie, rollGrantedInspirationDie,
 } from '../helpers/inspiration.mjs';
-import { grantMassKillFp, MASS_KILL_TIERS } from '../helpers/massacre.mjs';
+import { SKSKMassKillDialog } from '../apps/mass-kill-dialog.mjs';
+import { SKSKMartialArtsAttacksDialog } from '../apps/martial-arts-attacks-dialog.mjs';
 import { SKSKTechniqueDialog } from '../apps/technique-dialog.mjs';
 import {
   getSoulPathItem, isPathAbilityVisible, getPathAbilityStatusLabel, getPathAbilityActionLabel,
@@ -119,8 +120,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       removeResource: SKSKActorSheet.#removeResource,
       addAdditionalData: SKSKActorSheet.#addAdditionalData,
       removeAdditionalData: SKSKActorSheet.#removeAdditionalData,
-      addMartialArtsAttack: SKSKActorSheet.#addMartialArtsAttack,
-      removeMartialArtsAttack: SKSKActorSheet.#removeMartialArtsAttack,
+      openMartialArtsAttacksDialog: SKSKActorSheet.#openMartialArtsAttacksDialog,
       rollMartialArtsAttack: SKSKActorSheet.#rollMartialArtsAttack,
       rollRegeneration: SKSKActorSheet.#rollRegeneration,
       rollMeditation: SKSKActorSheet.#rollMeditation,
@@ -133,7 +133,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       openRestDialog: SKSKActorSheet.#openRestDialog,
       openTrainingDialog: SKSKActorSheet.#openTrainingDialog,
       openKillDialog: SKSKActorSheet.#openKillDialog,
-      grantMassKillFp: SKSKActorSheet.#grantMassKillFp,
+      openMassKillDialog: SKSKActorSheet.#openMassKillDialog,
       openPrayerDialog: SKSKActorSheet.#openPrayerDialog,
       openSummoningDialog: SKSKActorSheet.#openSummoningDialog,
       openTotemDialog: SKSKActorSheet.#openTotemDialog,
@@ -514,17 +514,11 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     context.generalSectionTabs = Object.values(this._prepareTabs('generalSections'));
     context.characterSectionTabs = Object.values(this._prepareTabs('characterSections'));
     context.genderChoices = CONFIG.SKSK.genders;
-    // Actions tab (Move) and GM tab (Martial Arts Attacks) choices - see
-    // helpers/actions.mjs.
+    // Actions tab's Move dropdown - see helpers/actions.mjs.
     context.movementTypeChoices = CONFIG.SKSK.movementTypes;
-    context.attributeChoices = CONFIG.SKSK.attributes;
-    context.attributeUsageChoices = CONFIG.SKSK.attributeUsageTypes;
-    context.damageTypeChoices = CONFIG.SKSK.damageTypes;
     context.genericRollModeChoices = CONFIG.SKSK.genericRollModes;
     // GM tab's attribute-bonus reset list - see helpers/attributeBonuses.mjs.
     context.resolvedAttributeBonuses = getResolvedAttributeBonuses(actor);
-    // GM tab's Mass Kill button row - see helpers/massacre.mjs.
-    context.massKillTiers = MASS_KILL_TIERS;
     // Actions tab's Weapons/Usable Items containers - "usable" Items are
     // Consumable and/or have Charges enabled (see data/item.mjs#charges) -
     // see helpers/actions.mjs#useItem.
@@ -1393,31 +1387,12 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
   }
 
   /**
-   * Append a blank entry to the actor's GM-defined Martial Arts Attacks
-   * list (GM tab) - see data/actor-base.mjs#martialArtsAttacks.
-   * @private
+   * Open the "Kampfkunstangriffe" (Martial Arts Attacks) dialog (apps/
+   * martial-arts-attacks-dialog.mjs) from the GM tab - see data/
+   * actor-base.mjs#martialArtsAttacks.
    */
-  static async #addMartialArtsAttack(event, target) {
-    const current = foundry.utils.deepClone(this.actor.system.martialArtsAttacks ?? []);
-    // Every attribute key must be explicitly present (false) - see the
-    // matching comment on data/actor-base.mjs#martialArtsAttacks' own
-    // default value.
-    const attributes = Object.fromEntries(Object.keys(CONFIG.SKSK.attributes).map(key => [key, false]));
-    current.push({ name: '', formula: '1d4', apCost: 0, attributes, attributeUsage: 'highestMultiple' });
-    await this.actor.update({ 'system.martialArtsAttacks': current });
-  }
-
-  /**
-   * Remove an entry from the actor's Martial Arts Attacks list.
-   * @param {PointerEvent} event   The originating click event.
-   * @param {HTMLElement} target   The capturing HTML element, carrying data-index.
-   * @private
-   */
-  static async #removeMartialArtsAttack(event, target) {
-    const index = Number(target.dataset.index);
-    const current = foundry.utils.deepClone(this.actor.system.martialArtsAttacks ?? []);
-    current.splice(index, 1);
-    await this.actor.update({ 'system.martialArtsAttacks': current });
+  static #openMartialArtsAttacksDialog(event, target) {
+    new SKSKMartialArtsAttacksDialog(this.actor).render(true);
   }
 
   /**
@@ -1529,14 +1504,11 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
   }
 
   /**
-   * GM tab's Mass Kill button row - see helpers/massacre.mjs#
-   * grantMassKillFp.
-   * @param {PointerEvent} event
-   * @param {HTMLElement} target   The clicked tier button (data-tier).
-   * @private
+   * Open the "Mass Kill" dialog (apps/mass-kill-dialog.mjs) from the GM
+   * tab - see helpers/massacre.mjs#grantMassKillFp.
    */
-  static async #grantMassKillFp(event, target) {
-    await grantMassKillFp(this.actor, Number(target.dataset.tier));
+  static #openMassKillDialog(event, target) {
+    new SKSKMassKillDialog(this.actor).render(true);
   }
 
   /**
