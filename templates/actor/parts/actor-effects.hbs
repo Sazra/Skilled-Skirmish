@@ -1,12 +1,8 @@
 <div class="resource sksk-status-effects-section">
   <label class="resource-label">{{localize 'SKSK.StatusEffect.SectionTitle'}}</label>
   <ol class="items-list items-list-compact">
-    <li class="item flexrow items-header">
-      <div class="item-name">{{localize 'SKSK.StatusEffect.Name'}}</div>
-      <div class="item-name">{{localize 'SKSK.StatusEffect.Stacks'}}</div>
-    </li>
     {{#each statusEffectRows as |row|}}
-    <li class="item flexcol status-effect-row" data-status-id="{{row.id}}">
+    <li class="item flexcol status-effect-row{{#if (eq row.kind "restrained")}} status-effect-row-wide{{/if}}{{#if (eq row.kind "multiInstance")}} status-effect-row-wide{{/if}}{{#if (eq row.kind "cauterization")}} status-effect-row-wide{{/if}}" data-status-id="{{row.id}}">
       <div class="flexrow">
         <div class="item-name">
           <img class="item-image" src="{{row.img}}" width="16" height="16" title="{{row.description}}" />
@@ -88,7 +84,7 @@
       {{/if}}
     </li>
     {{else}}
-    <li class="item flexrow">
+    <li class="item flexrow status-effect-row-wide">
       <div class="item-name">{{localize 'SKSK.StatusEffect.None'}}</div>
     </li>
     {{/each}}

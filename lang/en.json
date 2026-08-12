@@ -1181,7 +1181,6 @@
     },
     "StatusEffect": {
       "SectionTitle": "Status Effects",
-      "Stacks": "Stacks",
       "Name": "Name",
       "Icon": "Icon",
       "Description": "Description",

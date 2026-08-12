@@ -1536,7 +1536,65 @@ span.sksk-critical-failure {
 }
 
 /* Effects tab's Status Effects section (see helpers/statusEffects.mjs) -
-   a +/- stack control per registered status effect definition. */
+   a +/- stack control per registered status effect definition. Rendered as
+   a wrapping grid of compact chips instead of one full-width row per
+   effect (most rows only need icon+name+stepper, so a vertical stack left
+   most of the row empty) - see actor-effects.hbs. Rows whose controls need
+   more room (Restrained's DC/timing/AP config, Wound/Max-Life-Damage's
+   instance-count+total+add-value, Cauterization's add-value) opt into
+   status-effect-row-wide to span the full grid width instead. */
+.sksk .sksk-status-effects-section .items-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 6px 10px;
+}
+
+.sksk .sksk-status-effects-section .items-list .item {
+  align-items: flex-start;
+  padding: 4px 6px;
+  border: 1px solid var(--color-border-light-primary);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--color-text-primary) 4%, transparent);
+}
+
+.sksk .sksk-status-effects-section .items-list .item.status-effect-row-wide {
+  grid-column: 1 / -1;
+}
+
+.sksk .sksk-status-effects-section .items-list .item .flexrow {
+  width: 100%;
+}
+
+.sksk .sksk-status-effects-section .item-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.sksk .sksk-status-effects-section .item-name span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* flex: 0 0 auto alone still left this at its flex line's full width -
+   .item-controls is itself a nested flex container (class "flexrow"), and
+   an auto flex-basis on a flex item that's a flex container with
+   flex-grow children apparently resolves to the available space rather
+   than its content size (confirmed live) - explicit max-content forces
+   the intended content-sized behavior. */
+.sksk .sksk-status-effects-section .items-list .item-controls {
+  flex: 0 0 max-content;
+  justify-content: flex-start;
+}
+
+/* .item-controls is itself class "flexrow" (core rule), so its own
+   -/value/+ children default to flex: 1 1 0% and fight each other for
+   equal space - fine at the old full-row width, but forces them far apart
+   at chip width. Content-sized instead, matching the chip layout. */
+.sksk .sksk-status-effects-section .items-list .item-controls>* {
+  flex: 0 0 auto;
+}
+
 .sksk .sksk-status-effects-section .item-name img {
   margin-right: 4px;
 }
