@@ -1592,9 +1592,21 @@ span.sksk-critical-failure {
   display: none;
 }
 
+/* Foundry caps a minimized application's width via an inline
+   "max-width: var(--minimized-width)" (its own default: 200px) - too
+   narrow for all 8 attribute buttons on one line, wrapping to two rows.
+   Custom properties resolve through the normal cascade even when the
+   property that CONSUMES them is set inline, so redeclaring the variable
+   here (system layer, no !important needed) widens that inline max-width
+   instead of fighting it. 268px is the exact content width (8 buttons +
+   7 gaps + the bar's own padding); a little slack on top. */
+.application.sksk.actor.minimized {
+  --minimized-width: 300px;
+}
+
 .application.sksk.actor.minimized .minimized-attribute-bar {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 4px;
   padding: 6px 8px;
   border-top: 1px solid var(--color-border-dark-primary, #191813);
@@ -1609,6 +1621,9 @@ span.sksk-critical-failure {
   justify-content: center;
   font-size: 14px;
   color: var(--color-text-primary);
+  /* Same background as .window-header (the title bar) itself - see core
+     Foundry CSS, no custom property exposed for it to reuse directly. */
+  background: rgba(0, 0, 0, 0.5);
   border: 1px solid var(--color-border-light-primary);
   border-radius: 4px;
   cursor: pointer;
