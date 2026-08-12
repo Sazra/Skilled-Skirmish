@@ -97,7 +97,12 @@
             "AdditionalResources": "Zusätzliche Ressourcen",
             "AddResource": "Ressource hinzufügen",
             "Abbreviation": "Kürzel",
-            "AbbreviationHint": "Maximal 4 Buchstaben. Nutzbar in Würfelformeln als @<Kürzel>, z.B. @rage."
+            "AbbreviationHint": "Maximal 4 Buchstaben. Nutzbar in Würfelformeln als @<Kürzel>, z.B. @rage.",
+            "Type": "Typ",
+            "School": "Schule",
+            "Skill": "Fertigkeit",
+            "Attribute": "Attribut",
+            "Value": "Wert"
         },
         "CharacterSection": {
             "Data": "Daten",
@@ -112,7 +117,7 @@
             "EquippedAbbr": "Ausg.",
             "Enchanted": "Verzaubert",
             "EnchantedAbbr": "Verz.",
-            "Quantity": "Anzahl",
+            "Quantity": "Menge",
             "QuantityAbbr": "Anz.",
             "Consumable": "Verbrauchbar",
             "ConsumableAbbr": "Verbr."

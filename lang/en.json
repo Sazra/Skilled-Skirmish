@@ -97,7 +97,12 @@
       "AdditionalResources": "Additional Resources",
       "AddResource": "Add resource",
       "Abbreviation": "Var.",
-      "AbbreviationHint": "Up to 4 letters. Usable in roll formulas as @<abbreviation>, e.g. @rage."
+      "AbbreviationHint": "Up to 4 letters. Usable in roll formulas as @<abbreviation>, e.g. @rage.",
+      "Type": "Type",
+      "School": "School",
+      "Skill": "Skill",
+      "Attribute": "Attribute",
+      "Value": "Value"
     },
     "CharacterSection": {
       "Data": "Data",
