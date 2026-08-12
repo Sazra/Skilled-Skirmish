@@ -1595,6 +1595,39 @@ span.sksk-critical-failure {
   flex: 0 0 auto;
 }
 
+/* Concentration/Concealed's slide toggle (see actor-effects.hbs's "toggle"
+   row kind) - purely on/off, so a +/- stepper would be misleading. */
+.sksk .sksk-status-effects-section .status-effect-switch {
+  position: relative;
+  display: inline-block;
+  width: 32px;
+  height: 16px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-text-primary) 20%, transparent);
+  border: 1px solid var(--color-border-light-primary);
+  transition: background-color 0.15s ease;
+}
+
+.sksk .sksk-status-effects-section .status-effect-switch.active {
+  background: var(--color-text-hyperlink);
+}
+
+.sksk .sksk-status-effects-section .status-effect-switch-knob {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--color-text-primary);
+  transition: left 0.15s ease;
+}
+
+.sksk .sksk-status-effects-section .status-effect-switch.active .status-effect-switch-knob {
+  left: 17px;
+  background: var(--color-text-light-highlight, #f0f0e0);
+}
+
 .sksk .sksk-status-effects-section .item-name img {
   margin-right: 4px;
 }

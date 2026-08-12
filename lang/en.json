@@ -1198,6 +1198,7 @@
       "RestrainedCheck": "Strength check (DC {dc})",
       "InstanceCount": "Instances",
       "AddInstance": "Add",
+      "Toggle": "Toggle",
       "StatModifiers": "Stat Modifiers (per stack)",
       "StatModifiersHint": "Applied automatically via a real Active Effect while this status is active on an actor, scaled by its stack count.",
       "TurnStartTicks": "Turn Start Effects (per stack)",

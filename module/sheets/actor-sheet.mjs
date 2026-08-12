@@ -49,7 +49,7 @@ import {
 import {
   getStatusEffectDefinitions, getStatusStacks, increaseStatusStacks, decreaseStatusStacks, applyD20Malus,
   getStatusEffect, getStatusInstances, getStatusInstancesTotal, addStatusInstance, applyCauterization,
-  getAdrenalinDamage, setRestrainedConfig, attemptRestrainedEscapeManual,
+  getAdrenalinDamage, setRestrainedConfig, attemptRestrainedEscapeManual, setStatusStacks,
 } from '../helpers/statusEffects.mjs';
 import { wrapCriticalBlock, chooseGenericRollMode, evaluateD20WithMode, formatD20ModeSummaryLine } from '../helpers/criticalRolls.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine, tradeSoulPowerForFp } from '../helpers/skillFp.mjs';
@@ -144,6 +144,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       grantPassivePerceptionFp: SKSKActorSheet.#grantPassivePerceptionFp,
       increaseStatusStack: SKSKActorSheet.#increaseStatusStack,
       decreaseStatusStack: SKSKActorSheet.#decreaseStatusStack,
+      toggleStatusEffect: SKSKActorSheet.#toggleStatusEffect,
       addStatusInstance: SKSKActorSheet.#addStatusInstance,
       applyCauterization: SKSKActorSheet.#applyCauterization,
       attemptRestrainedEscape: SKSKActorSheet.#attemptRestrainedEscape,
@@ -595,7 +596,13 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     // Predefined (Exhaustion/Dazed/the four Poison severities) and any
     // GM-added custom status effects, each backed by (at most) one real
     // ActiveEffect on the actor whose flags.sksk.stacks this +/- control
-    // adjusts - see helpers/statusEffects.mjs.
+    // adjusts - see helpers/statusEffects.mjs. Rendered as a wrapping grid
+    // of chips (see actor-effects.hbs) - rows whose controls need more
+    // room are marked "wide" (span the full grid width) and sorted after
+    // every regular chip-sized row, so the chip grid stays a solid,
+    // unbroken block instead of the wide rows interrupting it wherever
+    // they fall in definition order.
+    const WIDE_STATUS_EFFECT_KINDS = new Set(['multiInstance', 'cauterization', 'restrained']);
     context.statusEffectRows = getStatusEffectDefinitions().map(def => {
       const row = { id: def.id, name: def.name, img: def.img, description: def.description };
       if (['wound', 'maxLifeDamage'].includes(def.id)) {
@@ -618,12 +625,18 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
         row.dc = effect?.getFlag('sksk', 'dc') ?? 10;
         row.timing = effect?.getFlag('sksk', 'timing') ?? 'start';
         row.apCost = effect?.getFlag('sksk', 'apCost') ?? 0;
+      } else if (['concentration', 'concealed'].includes(def.id)) {
+        // Purely on/off (never multiple stacks), so a slide toggle reads
+        // clearer than a +/- stepper - see #toggleStatusEffect.
+        row.kind = 'toggle';
+        row.active = getStatusStacks(actor, def.id) > 0;
       } else {
         row.kind = 'simple';
         row.stacks = getStatusStacks(actor, def.id);
       }
+      row.wide = WIDE_STATUS_EFFECT_KINDS.has(row.kind);
       return row;
-    });
+    }).sort((a, b) => Number(a.wide) - Number(b.wide));
     context.restrainedTimingChoices = CONFIG.SKSK.restrainedTimingChoices;
 
     // Hover tooltips over the Life/Negative Life/Mana/AC/MR labels on the
@@ -1739,6 +1752,16 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
 
   static async #decreaseStatusStack(event, target) {
     await decreaseStatusStacks(this.actor, target.dataset.statusId, 1);
+  }
+
+  /**
+   * Flip a purely on/off status effect (Concentration/Concealed) between
+   * 0 and 1 stack - the Effects tab's slide toggle, in place of the
+   * usual +/- stepper (see actor-effects.hbs's "toggle" row kind).
+   */
+  static async #toggleStatusEffect(event, target) {
+    const id = target.dataset.statusId;
+    await setStatusStacks(this.actor, id, getStatusStacks(this.actor, id) > 0 ? 0 : 1);
   }
 
   /**

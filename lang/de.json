@@ -1198,6 +1198,7 @@
             "RestrainedCheck": "Stärke-Check (SG {dc})",
             "InstanceCount": "Instanzen",
             "AddInstance": "Hinzufügen",
+            "Toggle": "Umschalten",
             "StatModifiers": "Wertmodifikatoren (pro Stapel)",
             "StatModifiersHint": "Wird automatisch über einen echten Active Effect angewendet, solange dieser Status auf einem Akteur aktiv ist, skaliert mit der Stapelanzahl.",
             "TurnStartTicks": "Effekte zu Zugbeginn (pro Stapel)",
