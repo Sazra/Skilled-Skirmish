@@ -418,6 +418,31 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       button.setAttribute('aria-label', game.i18n.localize('SKSK.General.ToggleToolbar'));
       this.window.controls?.insertAdjacentElement('beforebegin', button);
     }
+    // Minimized-state attribute-roll bar (Character and NPC both) - a row
+    // of compact buttons that stays usable while the sheet is minimized
+    // (the ordinary attributes side-tab lives inside .window-content,
+    // which the minimize collapse hides - see .minimized-attribute-bar in
+    // sksk.css). Inserted once here (right after .window-header, i.e. a
+    // sibling of .window-content, never hidden by that collapse) rather
+    // than as a PART, since it must survive outside .window-content
+    // entirely. Uses the exact same roll formula/attributes as attributes.
+    // hbs's own rollable label (see helpers/actions.mjs's generic "roll"
+    // action, #onRoll below), just icon-only.
+    const bar = document.createElement('div');
+    bar.classList.add('minimized-attribute-bar');
+    for (const [key, attribute] of Object.entries(this.actor.system.attributes ?? {})) {
+      const button = document.createElement('a');
+      button.classList.add('minimized-attribute-button');
+      button.dataset.action = 'roll';
+      const bonus = attribute.unlimitedBonus ? `+${attribute.unlimitedBonus}` : '';
+      button.dataset.roll = `d20+@attributes.${key}.mod${bonus}`;
+      button.dataset.attributeKey = key;
+      button.dataset.label = attribute.label;
+      button.dataset.tooltip = attribute.label;
+      button.textContent = key;
+      bar.appendChild(button);
+    }
+    this.window.header?.insertAdjacentElement('afterend', bar);
     return frame;
   }
 

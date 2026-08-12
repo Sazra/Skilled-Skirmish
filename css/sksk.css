@@ -233,6 +233,19 @@
   min-height: 320px;
 }
 
+/* Foundry's own minimize behavior just hides .window-content (core CSS:
+   .application.minimized .window-content { display: none; }), but our own
+   unconditional "display: flex" above outranks that (this file loads in
+   the "system" cascade layer, which always wins over core's "applications"
+   layer regardless of selector specificity - see the .flexrow/.flexcol
+   note further down). Without this override, minimizing left the whole
+   body - including the absolutely-positioned side-tab panels and header
+   toolbar, neither of which .window-content's own collapse would clip -
+   fully visible under the collapsed title bar. */
+.application.sksk.actor.minimized .window-content {
+  display: none;
+}
+
 /* Two-row grid: portrait (col 1) and Passive Perception (col 3) each span
    both rows; the middle column holds .header-row-1 (name+level) above
    .header-row-2 (species/classes/size/inspiration die). The icon toolbar
@@ -662,6 +675,12 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+/* Same minimize fix as .application.sksk.actor.minimized above - our own
+   unconditional "display: flex" otherwise outranks core's minimize CSS. */
+.application.sksk.item.minimized .window-content {
+  display: none;
 }
 
 .sksk.item .window-content>section.tab {
@@ -1409,6 +1428,11 @@ span.sksk-critical-failure {
   overflow: hidden;
 }
 
+/* Same minimize fix as .application.sksk.actor.minimized above. */
+.application.sksk.models-config.minimized .window-content {
+  display: none;
+}
+
 .sksk.models-config .window-content>section.tab {
   flex: 1;
   overflow-y: auto;
@@ -1427,6 +1451,11 @@ span.sksk-critical-failure {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+/* Same minimize fix as .application.sksk.actor.minimized above. */
+.application.sksk.skill-usage-fp-config.minimized .window-content {
+  display: none;
 }
 
 .sksk.skill-usage-fp-config .window-content>section.tab {
@@ -1551,6 +1580,44 @@ span.sksk-critical-failure {
 
 .sksk.actor .header-toolbar .item-control {
   font-size: 20px;
+}
+
+/* Minimized-state attribute-roll bar (see actor-sheet.mjs#_renderFrame) -
+   inserted as a sibling right after .window-header, NOT inside
+   .window-content, so it survives the minimize collapse (which only
+   hides .window-content, see the .minimized fix above) and stays usable
+   while the sheet is minimized. Hidden otherwise - the full attributes
+   side-tab already covers this when the sheet is open. */
+.sksk.actor .minimized-attribute-bar {
+  display: none;
+}
+
+.application.sksk.actor.minimized .minimized-attribute-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px 8px;
+  border-top: 1px solid var(--color-border-dark-primary, #191813);
+}
+
+.sksk.actor .minimized-attribute-button {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: bold;
+  text-transform: uppercase;
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-light-primary);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.sksk.actor .minimized-attribute-button:hover {
+  background: color-mix(in srgb, var(--color-text-hyperlink) 20%, transparent);
 }
 
 /* Header Passive Perception field (helpers/attributes.mjs#
