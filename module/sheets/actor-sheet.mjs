@@ -1237,14 +1237,28 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       }
     }
 
-    // Drag events for macros.
+    // Drag events for macros. A draggable row otherwise hijacks click-drag
+    // gestures that start inside a nested field, breaking native text
+    // selection (e.g. dragging across a skill's points value selects
+    // nothing, it drags the whole row instead). The dragstart event's own
+    // target is always the draggable row itself (not whatever the pointer
+    // was actually over), so the real origin has to be captured separately
+    // on mousedown, before the browser decides to start a native drag.
     if (this.actor.isOwner) {
-      const handler = (ev) => this._onDragStart(ev);
       const itemElements = this.element.querySelectorAll('li.item');
       for (const li of itemElements) {
         if (li.classList.contains('inventory-header')) continue;
         li.setAttribute('draggable', true);
-        li.addEventListener('dragstart', handler, false);
+        li.addEventListener('mousedown', (ev) => {
+          li.dataset.dragBlocked = ev.target.closest('input, textarea, select') ? 'true' : '';
+        });
+        li.addEventListener('dragstart', (ev) => {
+          if (li.dataset.dragBlocked === 'true') {
+            ev.preventDefault();
+            return;
+          }
+          this._onDragStart(ev);
+        }, false);
       }
     }
 

@@ -440,6 +440,16 @@
   width: 90px;
 }
 
+/* Always wide enough for 6 digits so the current point total (or, for
+   NPCs, the formula computing it) never gets clipped as it grows. Stays on
+   the shared border-box sizing (unlike a bare "width: 6ch" would need) so
+   its height still matches the neighbouring .skill-gain-input field - the
+   added 18px covers this input's own horizontal padding/border, which
+   border-box would otherwise eat into the 6ch of digit space. */
+.sksk .skill-category-body .item-controls input[name$=".points"] {
+  width: calc(6ch + 18px);
+}
+
 /* Not-yet-integrated skill points (see helpers/rest.mjs#applyRest) - kept
    narrow since it sits right next to the main points input. */
 .sksk .skill-category-body .skill-gain-input {
