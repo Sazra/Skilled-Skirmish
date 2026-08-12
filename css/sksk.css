@@ -1330,6 +1330,30 @@ span.sksk-critical-failure {
   margin-bottom: 4px;
 }
 
+/* GM tab's collapsible section groups (gm.hbs) - native <details>/
+   <summary> disclosure, same pattern as model-properties-details above.
+   Groups the tab's ~15 previously flat, unrelated .resource/.grid blocks
+   into a handful of bordered, individually collapsible sections so the
+   tab reads as a set of related groups instead of one long scroll. Open
+   state persists across re-renders via data-sync, resets to the "open"
+   default on sheet reopen. */
+.sksk .gm-section {
+  margin-bottom: 10px;
+  padding: 0 8px 8px;
+  border: 1px solid var(--color-border-light-primary);
+  border-radius: 4px;
+}
+
+.sksk .gm-section summary {
+  cursor: pointer;
+  padding: 6px 0;
+  font-size: 14px;
+}
+
+.sksk .gm-section:last-child {
+  margin-bottom: 0;
+}
+
 /* The GM-entered requirement (attribute score) for the Heavy/Demanding/
    Draining properties - narrow, sits right next to that property's own
    checkbox. */
