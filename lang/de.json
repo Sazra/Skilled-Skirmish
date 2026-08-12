@@ -312,8 +312,8 @@
             "IdentitySectionTitle": "Spezies, Klassen & Seelenpfad",
             "CombatValuesSectionTitle": "Kampfwerte",
             "ResourceAccumulatorsSectionTitle": "Ressourcen-Akkumulatoren",
-            "AttacksAndBonusesSectionTitle": "Kampfkunstangriffe & Attributsboni",
             "KillTrackingSectionTitle": "Kill-Tracking",
+            "OpenKillTrackingDialog": "Kill-Tracking öffnen",
             "AttributeBonusesSectionTitle": "Attributsboni (durch Fertigkeits-Schwellen)",
             "AttributeBonusesSkillColumn": "Fertigkeit",
             "AttributeBonusesLevelColumn": "Stufe",
@@ -486,8 +486,7 @@
             "SectionTitle": "Massentötung",
             "SectionHint": "Gewährt Massakers eigenes Massentötungs-FP für das Töten dieser Anzahl an Personen innerhalb von (etwa) 10 Minuten - eine rein manuelle GM-Entscheidung, das Zeitfenster selbst wird nicht getrackt. Die Höhe hängt von der aktuellen Massaker-Fertigkeitsstufe dieses Akteurs ab (die Rate jeder Stufe/Stufen-Kombination wird in den Fertigkeitsnutzungs-FP-Einstellungen konfiguriert).",
             "Title": "Massentötung ({count})",
-            "NoGain": "Keine FP generiert - für diese Abstufung ist bei der aktuellen Massaker-Stufe des Akteurs keine Rate konfiguriert.",
-            "OpenDialog": "Massentötung öffnen"
+            "NoGain": "Keine FP generiert - für diese Abstufung ist bei der aktuellen Massaker-Stufe des Akteurs keine Rate konfiguriert."
         },
         "Technique": {
             "SectionTitle": "Techniken",

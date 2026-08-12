@@ -8,8 +8,8 @@ const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
  * header - grants Faith's "prayer" FP trigger (see apps/skill-usage-fp-
  * config.mjs), scaled by however many hours the player says were spent
  * praying (rate × hours, same multiplier pattern as e.g. spellCastPerLevel
- * - see helpers/skillFp.mjs#grantSkillUsageFp). Like SKSKKillDialog,
- * nothing is written until Confirm is clicked.
+ * - see helpers/skillFp.mjs#grantSkillUsageFp). Like SKSKMassKillDialog's
+ * own Mark Kill section, nothing is written until Confirm is clicked.
  */
 export class SKSKPrayerDialog extends HandlebarsApplicationMixin(ApplicationV2) {
   constructor(actor, options = {}) {

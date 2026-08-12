@@ -312,8 +312,8 @@
       "IdentitySectionTitle": "Species, Classes & Soul Path",
       "CombatValuesSectionTitle": "Combat Values",
       "ResourceAccumulatorsSectionTitle": "Resource Accumulators",
-      "AttacksAndBonusesSectionTitle": "Martial Arts Attacks & Attribute Bonuses",
       "KillTrackingSectionTitle": "Kill Tracking",
+      "OpenKillTrackingDialog": "Open Kill Tracking",
       "AttributeBonusesSectionTitle": "Attribute Bonuses (from Skill Thresholds)",
       "AttributeBonusesSkillColumn": "Skill",
       "AttributeBonusesLevelColumn": "Level",
@@ -486,8 +486,7 @@
       "SectionTitle": "Mass Kill",
       "SectionHint": "Grants Massacre's own Mass Kill FP for killing this many people within (roughly) 10 minutes - a fully manual GM judgment call, the time window itself isn't tracked. The amount depends on this actor's own current Massacre skill level (each tier's own rate is configured in the Skill Usage FP settings).",
       "Title": "Mass Kill ({count})",
-      "NoGain": "No FP generated - no rate configured for this tier at the actor's current Massacre level.",
-      "OpenDialog": "Open Mass Kill"
+      "NoGain": "No FP generated - no rate configured for this tier at the actor's current Massacre level."
     },
     "Technique": {
       "SectionTitle": "Techniques",

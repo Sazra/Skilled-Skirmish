@@ -30,7 +30,6 @@ import { rollMartialArtsAttack, rollRegeneration, rollMeditation, rollAdrenalin,
 import { chooseOverchargeCount } from '../helpers/spell-rolls.mjs';
 import { SKSKRestDialog } from '../apps/rest-dialog.mjs';
 import { SKSKTrainingDialog } from '../apps/training-dialog.mjs';
-import { SKSKKillDialog } from '../apps/kill-dialog.mjs';
 import { SKSKPrayerDialog } from '../apps/prayer-dialog.mjs';
 import { SKSKSummoningDialog } from '../apps/summoning-dialog.mjs';
 import { SKSKTotemDialog } from '../apps/totem-dialog.mjs';
@@ -132,7 +131,6 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       useItem: SKSKActorSheet.#useItem,
       openRestDialog: SKSKActorSheet.#openRestDialog,
       openTrainingDialog: SKSKActorSheet.#openTrainingDialog,
-      openKillDialog: SKSKActorSheet.#openKillDialog,
       openMassKillDialog: SKSKActorSheet.#openMassKillDialog,
       openPrayerDialog: SKSKActorSheet.#openPrayerDialog,
       openSummoningDialog: SKSKActorSheet.#openSummoningDialog,
@@ -1495,17 +1493,11 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
   }
 
   /**
-   * Open the "Kill markieren" dialog (apps/kill-dialog.mjs) from the GM
-   * tab - a fully manual Kill FP grant, independent of the automatic one
-   * wired into helpers/damageApplication.mjs#applyDamageFromChat.
-   */
-  static #openKillDialog(event, target) {
-    new SKSKKillDialog(this.actor).render(true);
-  }
-
-  /**
-   * Open the "Mass Kill" dialog (apps/mass-kill-dialog.mjs) from the GM
-   * tab - see helpers/massacre.mjs#grantMassKillFp.
+   * Open the "Kill Tracking" dialog (apps/mass-kill-dialog.mjs) from the GM
+   * tab - covers both a fully manual single-Kill FP grant (independent of
+   * the automatic one wired into helpers/damageApplication.mjs#
+   * applyDamageFromChat) and Mass Kill FP grants - see helpers/massacre.mjs#
+   * grantMassKillFp.
    */
   static #openMassKillDialog(event, target) {
     new SKSKMassKillDialog(this.actor).render(true);

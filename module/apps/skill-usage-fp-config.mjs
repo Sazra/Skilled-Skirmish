@@ -9,7 +9,7 @@ const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
  * that's true. See MIXED_CATEGORIES below for categories where different
  * skills need different fields. See helpers/skillFp.mjs#grantSkillUsageFp
  * for where each trigger is actually wired up - "kill" (helpers/
- * damageApplication.mjs#applyDamageFromChat + apps/kill-dialog.mjs) and
+ * damageApplication.mjs#applyDamageFromChat + apps/mass-kill-dialog.mjs) and
  * "damageTaken" (helpers/damageApplication.mjs, capped at Resistance level
  * 3 - see helpers/skillFp.mjs#capResistanceGain) are both wired now.
  */

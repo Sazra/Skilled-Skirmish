@@ -1,5 +1,16 @@
 <section class="tab {{tab.cssClass}}" data-group="primary" data-tab="gm">
 
+  <div class="gm-quick-actions">
+    <a class="gm-quick-action-button" data-action="openMartialArtsAttacksDialog" title="{{localize 'SKSK.MartialArtsAttack.OpenDialog'}}">
+      <i class="fas fa-hand-fist"></i>
+      <span>{{localize 'SKSK.MartialArtsAttack.SectionTitle'}}</span>
+    </a>
+    <a class="gm-quick-action-button" data-action="openMassKillDialog" title="{{localize 'SKSK.GM.OpenKillTrackingDialog'}}">
+      <i class="fas fa-skull-crossbones"></i>
+      <span>{{localize 'SKSK.GM.KillTrackingSectionTitle'}}</span>
+    </a>
+  </div>
+
   <details class="gm-section" data-sync="gm-section-switches" open>
     <summary class="resource-label">{{localize 'SKSK.GM.Switches'}}</summary>
     <label class="casting-method-option" title="{{localize 'SKSK.NegativeLife.IncludeToughnessHint'}}">
@@ -201,68 +212,40 @@
     </div>
   </details>
 
-  <details class="gm-section" data-sync="gm-section-attacks-and-bonuses" open>
-    <summary class="resource-label">{{localize 'SKSK.GM.AttacksAndBonusesSectionTitle'}}</summary>
+  <details class="gm-section" data-sync="gm-section-attribute-bonuses" open>
+    <summary class="resource-label">{{localize 'SKSK.GM.AttributeBonusesSectionTitle'}}</summary>
 
-    <div class="resource">
-      <label class="resource-label">{{localize 'SKSK.MartialArtsAttack.SectionTitle'}}</label>
-      <a class="item-control" data-action="openMartialArtsAttacksDialog" title="{{localize 'SKSK.MartialArtsAttack.OpenDialog'}}">
-        <i class="fas fa-hand-fist"></i> {{localize 'SKSK.MartialArtsAttack.OpenDialog'}}
-      </a>
-    </div>
-
-    <div class="resource">
-      <label class="resource-label">{{localize 'SKSK.GM.AttributeBonusesSectionTitle'}}</label>
-      <ol class="items-list items-list-compact">
-        <li class="item flexrow items-header">
-          <div class="item-name">{{localize 'SKSK.GM.AttributeBonusesSkillColumn'}}</div>
-          <div class="item-name">{{localize 'SKSK.GM.AttributeBonusesLevelColumn'}}</div>
-          <div class="item-name">{{localize 'SKSK.GM.AttributeBonusesAttributeColumn'}}</div>
-          <div class="item-controls">
-            {{#if resolvedAttributeBonuses.length}}
-            <a class="item-control" data-action="resetAllAttributeBonuses" title="{{localize 'SKSK.GM.AttributeBonusesResetAll'}}">
-              <i class="fas fa-undo"></i>
-            </a>
-            {{/if}}
-          </div>
-        </li>
-        {{#each resolvedAttributeBonuses as |entry|}}
-        <li class="item flexrow">
-          <div class="item-name">{{localize entry.skillLabel}}</div>
-          <div class="item-name">{{entry.level}}</div>
-          <div class="item-name">{{entry.attributeLabel}}</div>
-          <div class="item-controls">
-            <a class="item-control item-delete" data-action="resetAttributeBonus"
-              data-skill="{{entry.skillKey}}" data-index="{{entry.index}}" title="{{localize 'SKSK.GM.AttributeBonusesReset'}}">
-              <i class="fas fa-undo"></i>
-            </a>
-          </div>
-        </li>
-        {{else}}
-        <li class="item flexrow">
-          <div class="item-name">{{localize 'SKSK.GM.AttributeBonusesNone'}}</div>
-        </li>
-        {{/each}}
-      </ol>
-    </div>
-  </details>
-
-  <details class="gm-section" data-sync="gm-section-kill-tracking" open>
-    <summary class="resource-label">{{localize 'SKSK.GM.KillTrackingSectionTitle'}}</summary>
-
-    <div class="resource">
-      <label class="resource-label">{{localize 'SKSK.KillDialog.Title'}}</label>
-      <a class="item-control" data-action="openKillDialog" title="{{localize 'SKSK.KillDialog.Title'}}">
-        <i class="fas fa-skull"></i> {{localize 'SKSK.KillDialog.Title'}}
-      </a>
-    </div>
-
-    <div class="resource">
-      <label class="resource-label" title="{{localize 'SKSK.MassKill.SectionHint'}}">{{localize 'SKSK.MassKill.SectionTitle'}}</label>
-      <a class="item-control" data-action="openMassKillDialog" title="{{localize 'SKSK.MassKill.OpenDialog'}}">
-        <i class="fas fa-skull-crossbones"></i> {{localize 'SKSK.MassKill.OpenDialog'}}
-      </a>
-    </div>
+    <ol class="items-list items-list-compact">
+      <li class="item flexrow items-header">
+        <div class="item-name">{{localize 'SKSK.GM.AttributeBonusesSkillColumn'}}</div>
+        <div class="item-name">{{localize 'SKSK.GM.AttributeBonusesLevelColumn'}}</div>
+        <div class="item-name">{{localize 'SKSK.GM.AttributeBonusesAttributeColumn'}}</div>
+        <div class="item-controls">
+          {{#if resolvedAttributeBonuses.length}}
+          <a class="item-control" data-action="resetAllAttributeBonuses" title="{{localize 'SKSK.GM.AttributeBonusesResetAll'}}">
+            <i class="fas fa-undo"></i>
+          </a>
+          {{/if}}
+        </div>
+      </li>
+      {{#each resolvedAttributeBonuses as |entry|}}
+      <li class="item flexrow">
+        <div class="item-name">{{localize entry.skillLabel}}</div>
+        <div class="item-name">{{entry.level}}</div>
+        <div class="item-name">{{entry.attributeLabel}}</div>
+        <div class="item-controls">
+          <a class="item-control item-delete" data-action="resetAttributeBonus"
+            data-skill="{{entry.skillKey}}" data-index="{{entry.index}}" title="{{localize 'SKSK.GM.AttributeBonusesReset'}}">
+            <i class="fas fa-undo"></i>
+          </a>
+        </div>
+      </li>
+      {{else}}
+      <li class="item flexrow">
+        <div class="item-name">{{localize 'SKSK.GM.AttributeBonusesNone'}}</div>
+      </li>
+      {{/each}}
+    </ol>
   </details>
 
 </section>

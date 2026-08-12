@@ -1354,6 +1354,41 @@ span.sksk-critical-failure {
   margin-bottom: 0;
 }
 
+/* GM tab's quick-action launchers (gm.hbs) - Martial Arts Attacks and Kill
+   Tracking used to sit inside collapsible .gm-section groups, easy to miss
+   collapsed; pulled out as their own always-visible, prominent buttons
+   instead since they're the two most frequently-clicked GM-tab actions. */
+.sksk .gm-quick-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.sksk .gm-quick-action-button {
+  flex: 1 1 0%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 12px;
+  font-size: 15px;
+  font-weight: bold;
+  text-align: center;
+  color: var(--color-text-light-highlight, #f0f0e0);
+  background: color-mix(in srgb, var(--color-text-hyperlink) 18%, transparent);
+  border: 1px solid var(--color-text-hyperlink);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.sksk .gm-quick-action-button:hover {
+  background: color-mix(in srgb, var(--color-text-hyperlink) 32%, transparent);
+}
+
+.sksk .gm-quick-action-button i {
+  font-size: 18px;
+}
+
 /* The GM-entered requirement (attribute score) for the Heavy/Demanding/
    Draining properties - narrow, sits right next to that property's own
    checkbox. */
