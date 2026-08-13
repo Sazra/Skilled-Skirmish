@@ -478,6 +478,63 @@
   font-weight: bold;
 }
 
+/* Attribute value/modifier display (attributes.hbs) - a value/mod carrying
+   a Spezial-/Modifikator-Bonus shows in the same blue as a skill's own
+   item-bonus suffix (.skill-bonus above). Hovering either box swaps to the
+   Base-only number (no Spezial-Boni) in the normal text color, pure CSS
+   (both numbers are always in the DOM, the non-hovered one just hidden).
+   Fixed widths on both the display and the edit input keep the layout
+   stable when clicking into/out of edit mode. */
+.sksk .attribute-value-wrapper {
+  position: relative;
+  width: 44px;
+}
+
+.sksk .attribute-value-display {
+  width: 44px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.sksk .attribute-value-input {
+  display: none;
+  width: 44px;
+  text-align: center;
+}
+
+.sksk .attribute-value-wrapper.editing .attribute-value-display {
+  display: none;
+}
+
+.sksk .attribute-value-wrapper.editing .attribute-value-input {
+  display: block;
+}
+
+.sksk .attribute-mod-display {
+  display: block;
+  min-width: 36px;
+  text-align: center;
+}
+
+.sksk .attribute-value-base,
+.sksk .attribute-mod-base {
+  display: none;
+}
+
+.sksk .attribute-value-display:hover .attribute-value-full,
+.sksk .attribute-mod-display:hover .attribute-mod-full {
+  display: none;
+}
+
+.sksk .attribute-value-display:hover .attribute-value-base,
+.sksk .attribute-mod-display:hover .attribute-mod-base {
+  display: inline;
+}
+
+.sksk .attribute-bonus-color {
+  color: var(--color-text-hyperlink, #00538d);
+}
+
 .sksk .skill-category-body .skill-toggle {
   flex: 0 0 auto;
   justify-content: center;

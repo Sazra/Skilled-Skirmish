@@ -1,5 +1,8 @@
 import { computeSkillBonusTotals, evaluateSkillFormula, getSkillLevel } from '../helpers/skills.mjs';
-import { computeUnlimitedAttributeBonus, computeAttributeMax, computeItemAttributeBonus } from '../helpers/attributes.mjs';
+import {
+  computeUnlimitedAttributeBonus, computeAttributeMax,
+  computeBaseAttributeBonus, computeSpecialAttributeBonus, computeModifierAttributeBonus,
+} from '../helpers/attributes.mjs';
 import { computeNpcAttributeThresholdBonuses } from '../helpers/attributeBonuses.mjs';
 import { computeMaxLife, computeMaxNegativeLife } from '../helpers/life.mjs';
 import { computeMaxMana } from '../helpers/mana.mjs';
@@ -232,6 +235,27 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // as naturalMaterialBonus.bonus above. See helpers/spells.mjs#
     // computeMaxOverchargeCount.
     schema.overchargeMaxBonus = new fields.NumberField({ ...requiredInteger, initial: 0 });
+
+    // Per-attribute Spezial-/Modifikator-Bonus accumulators - not meant to
+    // be hand-edited, purely Active Effect targets (e.g.
+    // "system.attributeBonuses.str.special"), same convention as
+    // naturalMaterialBonus.bonus above. Item/Armor/Weapon/Technique/Spell
+    // grant these via their own native "Effects" tab (no dedicated schema
+    // field on those item types); "base" is instead written only by custom
+    // Status Effects' own baseAttributeBonuses rows (see
+    // helpers/statusEffects.mjs#buildStatModifierChanges) - Species/Talent's
+    // Base-tier bonus goes through their own attributeBonuses array field
+    // instead (helpers/attributes.mjs#computeBaseAttributeBonus). See
+    // helpers/attributes.mjs#computeSpecialAttributeBonus/
+    // computeModifierAttributeBonus and prepareDerivedData below for how
+    // all three tiers combine into an attribute's baseValue/value/mod.
+    schema.attributeBonuses = new fields.SchemaField(Object.fromEntries(
+      Object.keys(CONFIG.SKSK.attributes).map(key => [key, new fields.SchemaField({
+        base: new fields.NumberField({ ...requiredInteger, initial: 0 }),
+        special: new fields.NumberField({ ...requiredInteger, initial: 0 }),
+        modifier: new fields.NumberField({ ...requiredInteger, initial: 0 }),
+      })])
+    ));
 
     schema.biography = new fields.StringField({ required: true, blank: true });
 
@@ -496,19 +520,44 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     const attributesSchema = {};
     for (const attribute of attributeKeys) {
       attributesSchema[attribute] = new fields.SchemaField({
-        // The true, ever-growing accumulator (direct edits, Species/Class/
-        // Talent bonuses, skill-threshold bonuses) - never itself clamped
-        // to the attribute's max, so excess above a since-lowered max isn't
-        // lost, and "value" self-adjusts the instant the max rises again.
+        // The true, ever-growing accumulator (direct edits, skill-threshold
+        // bonuses) - never itself clamped to the attribute's max, so excess
+        // above a since-lowered max isn't lost, and "value" self-adjusts the
+        // instant the max rises again.
         rawValue: new fields.NumberField({ ...requiredInteger, initial: 10, min: 0 }),
         // Derived every data preparation: min(rawValue [+ an NPC's live
-        // skill-threshold bonus], max). "mod" is computed from THIS, not
-        // rawValue, so capped-out excess never affects the roll modifier.
+        // skill-threshold bonus] + Base-tier bonus (Species/Talent/Status
+        // Effects - see helpers/attributes.mjs#computeBaseAttributeBonus),
+        // max) - never itself clamped by Spezial-/Modifikator-Boni, so
+        // resource-max calculations (Life/Mana/AP/RP/Adrenalin/etc.) that
+        // read baseValue/baseMod stay unaffected by semi-permanent/temporary
+        // sources. See helpers/attributes.mjs#computeSpecialAttributeBonus/
+        // computeModifierAttributeBonus for the other two tiers.
+        baseValue: new fields.NumberField({ ...requiredInteger, initial: 10, min: 0 }),
+        // floor((baseValue-10)/2), no Modifier-tier bonus added - the
+        // "resource-safe" modifier used by every resource-max/rate
+        // computation (Life/Mana/AP/RP/Adrenalin/Inspiration/Regeneration-
+        // Exhaustion charges/passive Mana regen/Summoning slots/carry
+        // weight).
+        baseMod: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+        // baseValue + Spezial-tier bonus, clamped to max - the "full" value
+        // used by AC/MR and anything else that reads .value directly (e.g.
+        // Magic Resistance, Meditation's die size).
         value: new fields.NumberField({ ...requiredInteger, initial: 10, min: 0 }),
         // Derived every data preparation - see helpers/attributes.mjs#
         // computeAttributeMax.
         max: new fields.NumberField({ ...requiredInteger, initial: 20, min: 1 }),
+        // floor((value-10)/2) + Modifikator-tier bonus - the "full" modifier
+        // used by AC, MR, and every general roll (skill checks, attacks,
+        // saves, the attribute's own "reiner Attributswurf").
         mod: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+        // baseMod + Modifikator-tier bonus (Spezial-tier excluded) - answers
+        // every "ignore Spezial-Boni" case with one number: passive values,
+        // a status-effect instance flagged to ignore Spezial on its own
+        // save (flags.sksk.ignoreSpecialBonusOnSave), and a player's
+        // Shift+click on a roll button. See helpers/statusEffects.mjs and
+        // templates/actor/parts/attributes.hbs.
+        modExcludingSpecial: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
         label: new fields.StringField({ required: true, blank: true }),
         // "Unbegrenzte X"/Corpus Immortalis/Umlimitiert bonus to this one
         // attribute's own roll - see prepareDerivedData below.
@@ -590,15 +639,31 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       // Derived every preparation - see helpers/attributes.mjs#computeAttributeMax.
       attribute.max = this.parent ? computeAttributeMax(this.parent, key) : 20;
       // rawValue never itself gets clamped, so a since-lowered max's
-      // excess isn't lost - "value" (and everything derived from it, like
-      // "mod" below) is simply re-capped fresh every preparation.
+      // excess isn't lost - baseValue/value (and everything derived from
+      // them, like baseMod/mod below) are simply re-capped fresh every
+      // preparation.
       const dynamicBonus = npcAttributeBonuses ? (npcAttributeBonuses[key] ?? 0) : 0;
-      // Species/Talent attributeBonuses - see helpers/attributes.mjs#
-      // computeItemAttributeBonus - are a genuine stat increase, so they're
-      // summed in here too rather than kept as a separate roll-only bonus.
-      const itemBonus = this.parent ? computeItemAttributeBonus(this.parent, key) : 0;
-      attribute.value = Math.min(attribute.rawValue + dynamicBonus + itemBonus, attribute.max);
-      attribute.mod = Math.floor((attribute.value - 10) / 2);
+      // Base-tier bonus (Species/Talent's own attributeBonuses array +
+      // custom Status Effects' baseAttributeBonuses rows) - see
+      // helpers/attributes.mjs#computeBaseAttributeBonus - is a genuine,
+      // permanent stat increase, so it folds into baseValue alongside the
+      // NPC's own dynamic threshold bonus, same as rawValue itself would.
+      const baseBonus = this.parent ? computeBaseAttributeBonus(this.parent, key) : 0;
+      // Spezial-tier (Item/Armor/Weapon/Technique/Spell's own "Effects" tab
+      // + custom Status Effects' specialAttributeBonuses rows) folds into
+      // value on top of baseValue, but never into baseValue itself - see
+      // helpers/attributes.mjs#computeSpecialAttributeBonus.
+      const specialBonus = this.parent ? computeSpecialAttributeBonus(this.parent, key) : 0;
+      // Modifikator-tier (same sources as Spezial) never touches
+      // baseValue/value at all, only the two mod fields below - see
+      // helpers/attributes.mjs#computeModifierAttributeBonus.
+      const modifierBonus = this.parent ? computeModifierAttributeBonus(this.parent, key) : 0;
+
+      attribute.baseValue = Math.min(attribute.rawValue + dynamicBonus + baseBonus, attribute.max);
+      attribute.value = Math.min(attribute.baseValue + specialBonus, attribute.max);
+      attribute.baseMod = Math.floor((attribute.baseValue - 10) / 2);
+      attribute.mod = Math.floor((attribute.value - 10) / 2) + modifierBonus;
+      attribute.modExcludingSpecial = attribute.baseMod + modifierBonus;
       attribute.label = game.i18n.localize(CONFIG.SKSK.attributes[key]) ?? key;
       // "Unbegrenzte X"/Corpus Immortalis/Umlimitiert - see
       // helpers/attributes.mjs#computeUnlimitedAttributeBonus. Only ever

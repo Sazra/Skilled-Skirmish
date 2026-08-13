@@ -537,9 +537,14 @@ export async function handlePendingSpellTurnStart(actor) {
  * @param {string} itemUuid
  * @param {number} saveIndex
  * @param {number} [overchargeCount=0]
+ * @param {boolean} [ignoreSpecial=false]   Shift+click on the chat button
+ *   (see sksk.mjs's "rollSavingThrow" delegate) - excludes Spezial-Boni
+ *   from the best applicable attribute modifier for this one roll
+ *   (Modifikator-Boni still apply; skill-based saves are unaffected either
+ *   way).
  * @return {Promise<ChatMessage|void>}
  */
-export async function rollSavingThrowFromChat(itemUuid, saveIndex, overchargeCount = 0) {
+export async function rollSavingThrowFromChat(itemUuid, saveIndex, overchargeCount = 0, ignoreSpecial = false) {
   const item = await fromUuid(itemUuid);
   if (!item) return ui.notifications.warn(game.i18n.localize('SKSK.Spell.Roll.ItemNotFound'));
 
@@ -553,9 +558,10 @@ export async function rollSavingThrowFromChat(itemUuid, saveIndex, overchargeCou
   if (!mode) return;
 
   let best = null;
+  const modField = ignoreSpecial ? 'modExcludingSpecial' : 'mod';
   for (const [attributeKey, enabled] of Object.entries(save.testAttributes ?? {})) {
     if (!enabled) continue;
-    const mod = actor.system.attributes?.[attributeKey]?.mod ?? 0;
+    const mod = actor.system.attributes?.[attributeKey]?.[modField] ?? 0;
     if (!best || mod > best.value) {
       best = { label: game.i18n.localize(CONFIG.SKSK.attributeAbbreviations[attributeKey]).toUpperCase(), value: mod, attributeKey };
     }

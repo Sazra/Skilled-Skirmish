@@ -45,20 +45,23 @@ export function computeUnlimitedAttributeBonus(actor, attributeKey) {
 }
 
 /**
- * The flat bonus a single attribute gets from every Species/Talent item's
- * own attributeBonuses entries (data/species.mjs, data/talent.mjs) - a
- * genuine stat increase, so it's folded straight into "value" (see
- * data/actor-base.mjs#prepareDerivedData), the same as an NPC's dynamic
- * skill-threshold bonus, unlike computeUnlimitedAttributeBonus's roll-only
- * bonus above. Class has no such field. A Talent's own list uses the full
- * attribute choice list (unlike Species, which excludes Aura - it already
- * has its own dedicated "aura" field), so this can affect Aura too.
+ * Base-tier attribute bonus (see data/actor-base.mjs#prepareDerivedData) -
+ * a genuine, permanent stat increase, folded straight into "baseValue" the
+ * same as an NPC's dynamic skill-threshold bonus, unlike
+ * computeUnlimitedAttributeBonus's roll-only bonus above. Two sources:
+ * every Species/Talent item's own attributeBonuses entries (data/species.mjs,
+ * data/talent.mjs - Class has no such field; a Talent's own list uses the
+ * full attribute choice list, unlike Species which excludes Aura - it
+ * already has its own dedicated "aura" field, so this can affect Aura too),
+ * plus system.attributeBonuses.<key>.base - written only by custom Status
+ * Effects' own baseAttributeBonuses rows (see helpers/statusEffects.mjs#
+ * buildStatModifierChanges), a real per-stack Active Effect change.
  * @param {Actor} actor
  * @param {string} attributeKey
  * @return {number}
  */
-export function computeItemAttributeBonus(actor, attributeKey) {
-  let bonus = 0;
+export function computeBaseAttributeBonus(actor, attributeKey) {
+  let bonus = actor.system.attributeBonuses?.[attributeKey]?.base ?? 0;
   for (const item of actor.items) {
     if (!['species', 'talent'].includes(item.type)) continue;
     for (const entry of item.system.attributeBonuses ?? []) {
@@ -69,13 +72,17 @@ export function computeItemAttributeBonus(actor, attributeKey) {
 }
 
 /**
- * Formula breakdown for computeItemAttributeBonus - see helpers/tooltips.mjs
+ * Formula breakdown for computeBaseAttributeBonus - see helpers/tooltips.mjs
  * #renderBreakdownHtml, shown on hover over the attribute in attributes.hbs.
+ * The Status-Effect-sourced portion has no per-source itemization available
+ * (it's a plain Active-Effect-summed number), so it's shown as one
+ * "flatBonus" line, the same convention Life/Mana/AC/MR's own breakdowns
+ * already use for their Effects-tab contributions.
  * @param {Actor} actor
  * @param {string} attributeKey
- * @return {{rows: Array, total: number}}
+ * @return {{rows: Array, flatBonus: number, total: number}}
  */
-export function getAttributeItemBonusBreakdown(actor, attributeKey) {
+export function getAttributeBaseBonusBreakdown(actor, attributeKey) {
   const rows = [];
   for (const item of actor.items) {
     if (!['species', 'talent'].includes(item.type)) continue;
@@ -84,7 +91,65 @@ export function getAttributeItemBonusBreakdown(actor, attributeKey) {
       rows.push({ label: item.name, perLevel: null, value: entry.bonus });
     }
   }
-  return { rows, total: computeItemAttributeBonus(actor, attributeKey) };
+  const flatBonus = actor.system.attributeBonuses?.[attributeKey]?.base ?? 0;
+  return { rows, flatBonus, total: computeBaseAttributeBonus(actor, attributeKey) };
+}
+
+/**
+ * Spezial-tier attribute bonus (see data/actor-base.mjs#prepareDerivedData)
+ * - folds into "value" (so it reaches AC/MR) but never into "baseValue", so
+ * it never inflates a resource max (Life/Mana/AP/RP/Adrenalin/etc, which all
+ * read baseValue/baseMod instead). Delivered entirely via real Active
+ * Effects: Item/Armor/Weapon/Technique/Spell's own native "Effects" tab, or
+ * a custom Status Effect's specialAttributeBonuses rows (see
+ * helpers/statusEffects.mjs#buildStatModifierChanges) - both just add into
+ * system.attributeBonuses.<key>.special, so there's nothing left to sum
+ * here beyond reading that one field.
+ * @param {Actor} actor
+ * @param {string} attributeKey
+ * @return {number}
+ */
+export function computeSpecialAttributeBonus(actor, attributeKey) {
+  return actor.system.attributeBonuses?.[attributeKey]?.special ?? 0;
+}
+
+/**
+ * Formula breakdown for computeSpecialAttributeBonus - see
+ * getAttributeBaseBonusBreakdown above for the "flatBonus, no itemization"
+ * reasoning (identical here, since this tier is purely Active-Effect-driven).
+ * @param {Actor} actor
+ * @param {string} attributeKey
+ * @return {{rows: Array, flatBonus: number, total: number}}
+ */
+export function getAttributeSpecialBonusBreakdown(actor, attributeKey) {
+  const flatBonus = computeSpecialAttributeBonus(actor, attributeKey);
+  return { rows: [], flatBonus, total: flatBonus };
+}
+
+/**
+ * Modifikator-tier attribute bonus (see data/actor-base.mjs#
+ * prepareDerivedData) - never touches baseValue/value at all, only added
+ * directly onto "mod"/"modExcludingSpecial". Same delivery mechanism and
+ * sources as computeSpecialAttributeBonus above, targeting
+ * system.attributeBonuses.<key>.modifier instead.
+ * @param {Actor} actor
+ * @param {string} attributeKey
+ * @return {number}
+ */
+export function computeModifierAttributeBonus(actor, attributeKey) {
+  return actor.system.attributeBonuses?.[attributeKey]?.modifier ?? 0;
+}
+
+/**
+ * Formula breakdown for computeModifierAttributeBonus - see
+ * getAttributeSpecialBonusBreakdown above.
+ * @param {Actor} actor
+ * @param {string} attributeKey
+ * @return {{rows: Array, flatBonus: number, total: number}}
+ */
+export function getAttributeModifierBonusBreakdown(actor, attributeKey) {
+  const flatBonus = computeModifierAttributeBonus(actor, attributeKey);
+  return { rows: [], flatBonus, total: flatBonus };
 }
 
 /**
@@ -210,14 +275,15 @@ export function getAttributeMaxBreakdown(actor, attributeKey) {
 
 /**
  * Passive Perception, shown as a clickable field in the sheet header (see
- * sheets/actor-sheet.mjs#_prepareGeneral) - the raw Perception attribute
- * value plus half the actor's Observation skill level, rounded down.
- * Clicking it grants Observation's own "passiveDetection" FP (see
- * sheets/actor-sheet.mjs#_grantPassivePerceptionFp).
+ * sheets/actor-sheet.mjs#_prepareGeneral) - the raw Perception attribute's
+ * baseValue (Base-tier only - passive values exclude Spezial-Boni, see
+ * data/actor-base.mjs#prepareDerivedData) plus half the actor's Observation
+ * skill level, rounded down. Clicking it grants Observation's own
+ * "passiveDetection" FP (see sheets/actor-sheet.mjs#_grantPassivePerceptionFp).
  * @param {Actor} actor
  * @return {number}
  */
 export function computePassivePerception(actor) {
-  const perceptionValue = actor.system.attributes?.per?.value ?? 0;
+  const perceptionValue = actor.system.attributes?.per?.baseValue ?? 0;
   return perceptionValue + Math.floor(getActorSkillLevel(actor, 'observation') / 2);
 }

@@ -33,14 +33,18 @@ export function registerSettings() {
   // helpers/inventory.mjs#computeMaxCarryWeight). Evaluated as a real Roll
   // formula against the actor's own roll data, so it can reference
   // "@attributes.str.value", "@attributes.str.mod", "@skills.<key>",
-  // "@lvl", etc.
+  // "@lvl", etc. Carry weight is a resource (see data/actor-base.mjs's
+  // attribute schema), so the default deliberately references
+  // "@attributes.str.baseValue" (Base-tier bonus only) rather than
+  // ".value" - a GM authoring a custom formula should do the same unless
+  // they specifically want Spezial-/Modifikator-Boni to affect it too.
   game.settings.register('sksk', 'carryWeightFormula', {
     name: 'SKSK.Settings.CarryWeightFormula.Name',
     hint: 'SKSK.Settings.CarryWeightFormula.Hint',
     scope: 'world',
     config: true,
     type: String,
-    default: '@attributes.str.value * 5',
+    default: '@attributes.str.baseValue * 5',
   });
 
   // GM-configurable list of materials selectable on Item/Armor/Weapon

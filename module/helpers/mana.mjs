@@ -54,7 +54,10 @@ function computeManaComponents(actor) {
     }
   }
 
-  const aura = actor.system.attributes?.aur?.value ?? 0;
+  // baseValue, not value - Mana is a resource, so it only ever grows from
+  // Base-tier bonuses (Species/Talent/Status Effects), never Spezial-/
+  // Modifikator-Boni.
+  const aura = actor.system.attributes?.aur?.baseValue ?? 0;
   rows.push({ label: game.i18n.localize('SKSK.Attribute.Aur.long'), perLevel: aura, value: aura * level });
 
   const manaCapacityLevel = getActorSkillLevel(actor, 'manaCapacity');

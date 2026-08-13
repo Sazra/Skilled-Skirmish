@@ -108,7 +108,11 @@ Hooks.once('ready', async function () {
     const button = event.target.closest('[data-action="rollSavingThrow"]');
     if (!button) return;
     event.preventDefault();
-    rollSavingThrowFromChat(button.dataset.itemUuid, Number(button.dataset.saveIndex), Number(button.dataset.overcharge) || 0);
+    // Shift+click excludes Spezial-Boni from this save's attribute
+    // modifier - see helpers/spell-rolls.mjs#rollSavingThrowFromChat.
+    rollSavingThrowFromChat(
+      button.dataset.itemUuid, Number(button.dataset.saveIndex), Number(button.dataset.overcharge) || 0, event.shiftKey
+    );
   });
 
   // Angriffswurf (attack roll) chat cards' "Evaluate" button - see

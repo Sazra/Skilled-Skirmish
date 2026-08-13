@@ -37,6 +37,21 @@ const CUSTOM_STAT_MODIFIER_FIELDS = {
 };
 
 /**
+ * A custom status effect's optional Base-/Spezial-/Modifikator-tier
+ * attribute bonus row lists (see apps/status-effects-config.mjs,
+ * data/actor-base.mjs's attributeBonuses schema), and which per-attribute
+ * suffix each targets via a real ActiveEffect change - same convention as
+ * CUSTOM_STAT_MODIFIER_FIELDS above, except each field is an array of
+ * { attribute, bonus } rows (one change per non-zero row) rather than a
+ * single flat number.
+ */
+const CUSTOM_ATTRIBUTE_BONUS_FIELDS = {
+  baseAttributeBonuses: 'base',
+  specialAttributeBonuses: 'special',
+  modifierAttributeBonuses: 'modifier',
+};
+
+/**
  * A custom (GM-added) status effect's optional flat-per-stack turn-start
  * tick fields - the "damage/healing, or Mana regeneration/loss, at the
  * start of the turn" requirement for custom status effects (see
@@ -253,6 +268,17 @@ function buildStatModifierChanges(def, stacks) {
     const perStack = Number(def[field]) || 0;
     if (!perStack) continue;
     changes.push({ key, mode: CONST.ACTIVE_EFFECT_MODES.ADD, value: String(perStack * stacks) });
+  }
+  for (const [field, tier] of Object.entries(CUSTOM_ATTRIBUTE_BONUS_FIELDS)) {
+    for (const row of def[field] ?? []) {
+      const perStack = Number(row.bonus) || 0;
+      if (!perStack || !row.attribute) continue;
+      changes.push({
+        key: `system.attributeBonuses.${row.attribute}.${tier}`,
+        mode: CONST.ACTIVE_EFFECT_MODES.ADD,
+        value: String(perStack * stacks),
+      });
+    }
   }
   return changes;
 }
@@ -594,6 +620,24 @@ export function canMove(actor) {
 }
 
 /**
+ * Flag (or unflag) one specific active status instance to bypass Spezial-
+ * Boni on its own automatic save - Poison (per severity), Concentration,
+ * and Restrained are the only predefined statuses with such a save (see
+ * handlePoisonTurnStart/checkConcentration/attemptRestrainedEscape, and the
+ * matching checkbox on their own row in actor-effects.hbs). A no-op if the
+ * status isn't currently active (nothing to flag).
+ * @param {Actor} actor
+ * @param {string} id
+ * @param {boolean} value
+ * @return {Promise<void>}
+ */
+export async function setStatusIgnoreSpecialBonus(actor, id, value) {
+  const effect = getStatusEffect(actor, id);
+  if (!effect) return;
+  await effect.setFlag('sksk', 'ignoreSpecialBonusOnSave', value);
+}
+
+/**
  * Apply Restrained with its own escape-check configuration - unlike a
  * plain stack count, this status carries a difficulty and a timing choice
  * (an AP cost the restrained creature can spend any time to attempt an
@@ -635,15 +679,21 @@ export async function setRestrainedConfig(actor, config) {
  * instead prompts fresh every time - see attemptRestrainedEscapeManual.
  * @param {Actor} actor
  * @param {"neutral"|"advantage"|"disadvantage"} [mode]
+ * @param {boolean} [forceIgnoreSpecial]   Shift+click on the player-
+ *   triggered escape button (see attemptRestrainedEscapeManual) - excludes
+ *   Spezial-Boni for this one roll regardless of the instance's own flag.
  * @return {Promise<void>}
  */
-export async function attemptRestrainedEscape(actor, mode = null) {
+export async function attemptRestrainedEscape(actor, mode = null, forceIgnoreSpecial = false) {
   const effect = getStatusEffect(actor, 'restrained');
   if (!effect) return;
 
   const resolvedMode = mode ?? actor.system.genericCriticalRollMode;
   const dc = effect.getFlag('sksk', 'dc') ?? 0;
-  const strMod = actor.system.attributes?.str?.mod ?? 0;
+  // A GM can flag this Restrained instance to bypass Spezial-Boni on its
+  // own escape check - see setStatusIgnoreSpecialBonus.
+  const ignoreSpecial = forceIgnoreSpecial || effect.getFlag('sksk', 'ignoreSpecialBonusOnSave');
+  const strMod = actor.system.attributes?.str?.[ignoreSpecial ? 'modExcludingSpecial' : 'mod'] ?? 0;
   const formula = applyD20Malus(`1d20 + ${strMod}`, actor, 'str');
   const result = await evaluateD20WithMode(formula, actor.getRollData(), resolvedMode);
   const { roll, criticalType, doubleCritical } = result;
@@ -676,9 +726,11 @@ export async function attemptRestrainedEscape(actor, mode = null) {
  * automatic start/end-of-turn timings, which use the actor's own GM-tab
  * preset instead - see attemptRestrainedEscape).
  * @param {Actor} actor
+ * @param {boolean} [ignoreSpecial=false]   Shift+click on the escape
+ *   button (see sheets/actor-sheet.mjs#attemptRestrainedEscape).
  * @return {Promise<void>}
  */
-export async function attemptRestrainedEscapeManual(actor) {
+export async function attemptRestrainedEscapeManual(actor, ignoreSpecial = false) {
   const effect = getStatusEffect(actor, 'restrained');
   if (!effect) return;
 
@@ -690,7 +742,7 @@ export async function attemptRestrainedEscapeManual(actor) {
   if (!mode) return;
 
   if (apCost > 0) await actor.update({ 'system.actionPoints.value': ap - apCost });
-  await attemptRestrainedEscape(actor, mode);
+  await attemptRestrainedEscape(actor, mode, ignoreSpecial);
 }
 
 /**
@@ -851,7 +903,11 @@ async function handlePoisonTurnStart(actor, round) {
     const lifeChange = await applyLifeChange(actor, -damageRoll.total);
     const { negativeLifeDelta } = lifeChange;
     totalDamage += damageDealtFrom(lifeChange);
-    const conMod = actor.system.attributes?.con?.mod ?? 0;
+    // A GM can flag this specific poison instance to bypass Spezial-Boni on
+    // its own recheck (e.g. a poison meant to ignore temporary buffs) - see
+    // setStatusIgnoreSpecialBonus.
+    const ignoreSpecial = effect.getFlag('sksk', 'ignoreSpecialBonusOnSave');
+    const conMod = actor.system.attributes?.con?.[ignoreSpecial ? 'modExcludingSpecial' : 'mod'] ?? 0;
     const checkFormula = applyD20Malus(`1d20 + ${conMod}`, actor, 'con');
     // Fully automatic (turn-start) check - uses the actor's own GM-tab
     // preset (system.genericCriticalRollMode) rather than a per-check
@@ -1022,7 +1078,10 @@ export async function checkConcentration(actor, damage) {
   if (damage <= 0 || getStatusStacks(actor, 'concentration') <= 0) return;
 
   const dc = Math.max(5, Math.floor(damage / 2));
-  const conMod = actor.system.attributes?.con?.mod ?? 0;
+  // A GM can flag this Concentration instance to bypass Spezial-Boni on its
+  // own check - see setStatusIgnoreSpecialBonus.
+  const ignoreSpecial = getStatusEffect(actor, 'concentration')?.getFlag('sksk', 'ignoreSpecialBonusOnSave');
+  const conMod = actor.system.attributes?.con?.[ignoreSpecial ? 'modExcludingSpecial' : 'mod'] ?? 0;
   const concentrationLevel = getActorSkillLevel(actor, 'concentration');
   const formula = applyD20Malus(`1d20 + ${conMod} + ${concentrationLevel}`, actor, 'con');
   // Fully automatic (damage-triggered) check - uses the actor's own GM-tab

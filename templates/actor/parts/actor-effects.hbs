@@ -90,6 +90,14 @@
       </button>
       {{/if}}
       {{/if}}
+
+      {{#if row.showIgnoreSpecial}}
+      <label class="status-effect-ignore-special">
+        <input type="checkbox" data-action="toggleIgnoreSpecialBonus" data-status-id="{{row.id}}"
+          {{checked row.ignoreSpecialBonusOnSave}} />
+        {{localize 'SKSK.StatusEffect.IgnoreSpecialBonusOnSave'}}
+      </label>
+      {{/if}}
     </li>
     {{else}}
     <li class="item flexrow status-effect-row-wide">

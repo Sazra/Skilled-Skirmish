@@ -12,7 +12,11 @@ import {
   getVisibleAttributeBonusDropdowns, getResolvedAttributeBonuses, chooseAttributeBonus,
   resetAttributeBonusChoice, resetAllAttributeBonusChoices, applyPendingAutoGrants,
 } from '../helpers/attributeBonuses.mjs';
-import { getAttributeMaxBreakdown, getAttributeUnlimitedBonusBreakdown, getAttributeItemBonusBreakdown, computePassivePerception } from '../helpers/attributes.mjs';
+import {
+  getAttributeMaxBreakdown, getAttributeUnlimitedBonusBreakdown, getAttributeBaseBonusBreakdown,
+  getAttributeSpecialBonusBreakdown, getAttributeModifierBonusBreakdown, computePassivePerception,
+  computeSpecialAttributeBonus, computeModifierAttributeBonus,
+} from '../helpers/attributes.mjs';
 import {
   checkCombinedSpellPrerequisite,
   checkSimpleOrAdvancedSpellPrerequisite,
@@ -51,6 +55,7 @@ import {
   getStatusEffectDefinitions, getStatusStacks, increaseStatusStacks, decreaseStatusStacks, applyD20Malus,
   getStatusEffect, getStatusInstances, getStatusInstancesTotal, addStatusInstance, applyCauterization,
   getAdrenalinDamage, setRestrainedConfig, attemptRestrainedEscapeManual, setStatusStacks,
+  setStatusIgnoreSpecialBonus,
 } from '../helpers/statusEffects.mjs';
 import { wrapCriticalBlock, chooseGenericRollMode, evaluateD20WithMode, formatD20ModeSummaryLine } from '../helpers/criticalRolls.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine, tradeSoulPowerForFp } from '../helpers/skillFp.mjs';
@@ -148,6 +153,8 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       addStatusInstance: SKSKActorSheet.#addStatusInstance,
       applyCauterization: SKSKActorSheet.#applyCauterization,
       attemptRestrainedEscape: SKSKActorSheet.#attemptRestrainedEscape,
+      toggleIgnoreSpecialBonus: SKSKActorSheet.#toggleIgnoreSpecialBonus,
+      editAttributeValue: SKSKActorSheet.#editAttributeValue,
       resetAttributeBonus: SKSKActorSheet.#resetAttributeBonus,
       resetAllAttributeBonuses: SKSKActorSheet.#resetAllAttributeBonuses,
       configureToken: SKSKActorSheet.#configureToken,
@@ -438,6 +445,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       button.dataset.action = 'roll';
       const bonus = attribute.unlimitedBonus ? `+${attribute.unlimitedBonus}` : '';
       button.dataset.roll = `d20+@attributes.${key}.mod${bonus}`;
+      button.dataset.rollExcludingSpecial = `d20+@attributes.${key}.modExcludingSpecial${bonus}`;
       button.dataset.attributeKey = key;
       button.dataset.label = attribute.label;
       button.dataset.tooltip = attribute.label;
@@ -625,6 +633,14 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     // unbroken block instead of the wide rows interrupting it wherever
     // they fall in definition order.
     const WIDE_STATUS_EFFECT_KINDS = new Set(['multiInstance', 'cauterization', 'restrained']);
+    // The only predefined statuses with an automatic save of their own -
+    // see helpers/statusEffects.mjs#handlePoisonTurnStart/checkConcentration/
+    // attemptRestrainedEscape - so the only ones a GM can flag to bypass
+    // Spezial-Boni on that specific check (system.attributeBonuses' own
+    // Modifikator-tier still always applies).
+    const IGNORE_SPECIAL_STATUS_IDS = new Set([
+      'poisonMild', 'poisonMedium', 'poisonSevere', 'poisonDeadly', 'concentration', 'restrained',
+    ]);
     context.statusEffectRows = getStatusEffectDefinitions().map(def => {
       const row = { id: def.id, name: def.name, img: def.img, description: def.description };
       if (['wound', 'maxLifeDamage'].includes(def.id)) {
@@ -657,6 +673,13 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
         row.stacks = getStatusStacks(actor, def.id);
       }
       row.wide = WIDE_STATUS_EFFECT_KINDS.has(row.kind);
+      if (IGNORE_SPECIAL_STATUS_IDS.has(def.id)) {
+        const activeEffect = getStatusEffect(actor, def.id);
+        if (activeEffect) {
+          row.showIgnoreSpecial = true;
+          row.ignoreSpecialBonusOnSave = activeEffect.getFlag('sksk', 'ignoreSpecialBonusOnSave') ?? false;
+        }
+      }
       return row;
     }).sort((a, b) => Number(a.wide) - Number(b.wide));
     context.restrainedTimingChoices = CONFIG.SKSK.restrainedTimingChoices;
@@ -674,16 +697,31 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       game.i18n.localize('SKSK.Resource.MR'), getMagicResistanceBreakdown(actor)
     );
 
-    // Hover tooltip per attribute (attributes.hbs) breaking down its Max
-    // and "Verbessert X" skill bonus (see helpers/attributes.mjs) - shown
-    // on hover instead of inline, to keep the attribute bar compact.
+    // Hover tooltip per attribute (attributes.hbs) breaking down its Max,
+    // Base/Spezial/Modifikator-Bonus tiers, and "Verbessert X" skill bonus
+    // (see helpers/attributes.mjs) - shown on hover instead of inline, to
+    // keep the attribute bar compact.
     context.attributeTooltips = {};
+    // Whether an attribute's own value/mod display should render in the
+    // "has a bonus" blue (same var as skills.hbs' own .skill-bonus - see
+    // css/sksk.css) - value only cares about the Spezial tier (the only one
+    // that touches "value"); mod cares about either tier, since both
+    // Spezial and Modifikator ultimately land in "mod". See
+    // attributes.hbs's hover-swap to the Base-only baseValue/
+    // modExcludingSpecial for the "without Spezial-Boni" view.
+    context.attributeBonusFlags = {};
     for (const key of Object.keys(CONFIG.SKSK.attributes)) {
       const label = game.i18n.localize(CONFIG.SKSK.attributes[key]);
       context.attributeTooltips[key] =
         renderBreakdownHtml(`${label} ${game.i18n.localize('SKSK.Breakdown.AttributeMax')}`, getAttributeMaxBreakdown(actor, key))
-        + renderBreakdownHtml(`${label} ${game.i18n.localize('SKSK.Breakdown.AttributeItemBonus')}`, getAttributeItemBonusBreakdown(actor, key))
+        + renderBreakdownHtml(`${label} ${game.i18n.localize('SKSK.Breakdown.AttributeBaseBonus')}`, getAttributeBaseBonusBreakdown(actor, key))
+        + renderBreakdownHtml(`${label} ${game.i18n.localize('SKSK.Breakdown.AttributeSpecialBonus')}`, getAttributeSpecialBonusBreakdown(actor, key))
+        + renderBreakdownHtml(`${label} ${game.i18n.localize('SKSK.Breakdown.AttributeModifierBonus')}`, getAttributeModifierBonusBreakdown(actor, key))
         + renderBreakdownHtml(`${label} ${game.i18n.localize('SKSK.Breakdown.AttributeSkillBonus')}`, getAttributeUnlimitedBonusBreakdown(actor, key));
+
+      const specialBonus = computeSpecialAttributeBonus(actor, key);
+      const modifierBonus = computeModifierAttributeBonus(actor, key);
+      context.attributeBonusFlags[key] = { value: specialBonus !== 0, mod: specialBonus !== 0 || modifierBonus !== 0 };
     }
 
     return context;
@@ -1269,6 +1307,20 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     // onto this sheet from the sidebar, a compendium, or another sheet.
     this.#dragDrop.forEach(d => d.bind(this.element));
 
+    // Attribute value edit-in-place (attributes.hbs) - revert to the
+    // computed display on blur, and treat Enter the same way (plain text
+    // inputs don't blur on Enter by themselves) - see #editAttributeValue.
+    for (const input of this.element.querySelectorAll('.attribute-value-input')) {
+      input.addEventListener('blur', () => {
+        input.closest('.attribute-value-wrapper')?.classList.remove('editing');
+      });
+      input.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        input.blur();
+      });
+    }
+
     // Restrained's DC/timing/AP-cost fields aren't real schema fields (they
     // live as flags on its own ActiveEffect, not system.*), so the sheet's
     // normal submitOnChange form binding can't reach them - read all three
@@ -1772,6 +1824,33 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
   }
 
   /**
+   * Flip whether this specific status instance's own automatic save (Poison
+   * recheck/Concentration check/Restrained escape) bypasses Spezial-Boni -
+   * see helpers/statusEffects.mjs#setStatusIgnoreSpecialBonus.
+   */
+  static async #toggleIgnoreSpecialBonus(event, target) {
+    await setStatusIgnoreSpecialBonus(this.actor, target.dataset.statusId, target.checked);
+  }
+
+  /**
+   * Reveal an attribute's raw editable input in place of its computed
+   * display (attributes.hbs's "attribute-value-display"/"attribute-value-
+   * input" pair) - the input reverts to the display on blur/Enter (see the
+   * listener bound in _onRender), whether or not the value actually
+   * changed (a real change also triggers a full re-render via submitOnChange,
+   * which resets to the display state on its own - this just avoids a
+   * flash of the stale input in the no-change case).
+   */
+  static #editAttributeValue(event, target) {
+    const wrapper = target.closest('.attribute-value-wrapper');
+    if (!wrapper) return;
+    wrapper.classList.add('editing');
+    const input = wrapper.querySelector('.attribute-value-input');
+    input?.focus();
+    input?.select();
+  }
+
+  /**
    * Flip a purely on/off status effect (Concentration/Concealed) between
    * 0 and 1 stack - the Effects tab's slide toggle, in place of the
    * usual +/- stepper (see actor-effects.hbs's "toggle" row kind).
@@ -1801,7 +1880,9 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
   }
 
   static async #attemptRestrainedEscape(event, target) {
-    await attemptRestrainedEscapeManual(this.actor);
+    // Shift+click excludes Spezial-Boni from this escape check - see
+    // helpers/statusEffects.mjs#attemptRestrainedEscapeManual.
+    await attemptRestrainedEscapeManual(this.actor, event.shiftKey);
   }
 
   /**
@@ -1864,7 +1945,11 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       if (!mode) return;
 
       let label = dataset.label ? `[attribute] ${dataset.label}` : '';
-      const formula = applyD20Malus(dataset.roll, this.actor, dataset.attributeKey ?? null);
+      // Shift+click excludes Spezial-Boni for this one roll (see
+      // data-roll-excluding-special in attributes.hbs) - Modifikator-Boni
+      // still apply, only the "value"-inflating tier is skipped.
+      const rollFormula = (event.shiftKey && dataset.rollExcludingSpecial) ? dataset.rollExcludingSpecial : dataset.roll;
+      const formula = applyD20Malus(rollFormula, this.actor, dataset.attributeKey ?? null);
       const result = await evaluateD20WithMode(formula, this.actor.getRollData(), mode);
       const { roll, criticalType, doubleCritical } = result;
 
@@ -1923,12 +2008,16 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     const def = getSkillCheckDefinition(skillKey);
     if (!def) return;
 
+    // Shift+click excludes Spezial-Boni from this roll's attribute
+    // modifier(s) - see helpers/skillRolls.mjs#rollSkillCheck.
+    const ignoreSpecial = event.shiftKey;
+
     const { chosen, variant } = await chooseSkillRollVariant(skillKey, def);
     if (!chosen) return;
 
     const attributes = def.attributes;
     if (attributes.length === 1) {
-      return rollSkillCheck(this.actor, skillKey, attributes, variant);
+      return rollSkillCheck(this.actor, skillKey, attributes, variant, ignoreSpecial);
     }
 
     const isCombine = def.attributeMode === 'combine';
@@ -1947,7 +2036,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       rejectClose: false,
     });
     if (!chosenAttributes?.length) return;
-    return rollSkillCheck(this.actor, skillKey, chosenAttributes, variant);
+    return rollSkillCheck(this.actor, skillKey, chosenAttributes, variant, ignoreSpecial);
   }
 
   /**

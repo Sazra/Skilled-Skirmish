@@ -124,9 +124,13 @@ export async function chooseSkillRollVariant(skillKey, def) {
  * @param {{trigger: string, label: string}|null} [variant]   See
  *   SKILL_ROLL_VARIANTS/chooseSkillRollVariant - null for the skill's own
  *   plain "skillCheck" FP and flavor.
+ * @param {boolean} [ignoreSpecial]   Shift+click on the roll button (see
+ *   sheets/actor-sheet.mjs#rollSkill) - excludes Spezial-Boni from every
+ *   chosen attribute's modifier for this one roll (Modifikator-Boni still
+ *   apply).
  * @return {Promise<ChatMessage|void>}
  */
-export async function rollSkillCheck(actor, skillKey, chosenAttributes, variant = null) {
+export async function rollSkillCheck(actor, skillKey, chosenAttributes, variant = null, ignoreSpecial = false) {
   const def = getSkillCheckDefinition(skillKey);
   if (!def || !chosenAttributes?.length) return;
 
@@ -134,7 +138,8 @@ export async function rollSkillCheck(actor, skillKey, chosenAttributes, variant 
   if (!mode) return;
 
   const level = getActorSkillLevel(actor, skillKey);
-  const modTerms = chosenAttributes.map(a => `@attributes.${a}.mod`).join(' + ');
+  const modField = ignoreSpecial ? 'modExcludingSpecial' : 'mod';
+  const modTerms = chosenAttributes.map(a => `@attributes.${a}.${modField}`).join(' + ');
   const baseFormula = `d20 + ${level} + ${modTerms}`;
   const formula = applyD20Malus(baseFormula, actor, pickMalusAttribute(actor, chosenAttributes));
 

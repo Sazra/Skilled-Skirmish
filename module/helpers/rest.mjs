@@ -40,7 +40,7 @@ export function determineRestTier(segments) {
  * @return {number}
  */
 export function computePassiveManaRegenPerSegment(actor) {
-  const auraMod = actor.system.attributes?.aur?.mod ?? 0;
+  const auraMod = actor.system.attributes?.aur?.baseMod ?? 0;
   return auraMod + getActorSkillLevel(actor, 'manaRegeneration') + getActorSkillLevel(actor, 'sourceBound');
 }
 
@@ -54,7 +54,7 @@ export function computePassiveManaRegenPerSegment(actor) {
  * @return {number}
  */
 function computeExhaustionChargeMax(actor, tier) {
-  if (tier === 'genesung') return Math.max(1, actor.system.attributes?.con?.mod ?? 0);
+  if (tier === 'genesung') return Math.max(1, actor.system.attributes?.con?.baseMod ?? 0);
   if (tier === 'anpassung') return 1;
   return 0;
 }
@@ -78,7 +78,7 @@ export function computeRestPreview(actor, state) {
   const medLevel = getActorSkillLevel(actor, 'meditation');
   const meditationRestore = tier === 'genesung' ? (2 + medLevel * 2) : tier === 'anpassung' ? (medLevel + 1) : 0;
 
-  const conMod = actor.system.attributes?.con?.mod ?? 0;
+  const conMod = actor.system.attributes?.con?.baseMod ?? 0;
   const level = actor.system.resources.level.value;
   const regenerationRestore = tier === 'genesung' ? Math.min(1 + conMod, level) : 0;
 
@@ -221,7 +221,7 @@ export async function applyRest(actor, options) {
     if (segments >= 8 && regenForHealing > 0) {
       const spend = Math.min(regenForHealing, regenerationCharges);
       if (spend > 0) {
-        const conMod = actor.system.attributes?.con?.mod ?? 0;
+        const conMod = actor.system.attributes?.con?.baseMod ?? 0;
         const healthLevel = getActorSkillLevel(actor, 'health');
         const dieSizes = getRegenerationDieSizes(actor);
         const singlePart = [...dieSizes.map(size => `1d${size}`), conMod, healthLevel].join(' + ');
@@ -327,7 +327,7 @@ export async function applyRest(actor, options) {
         lines.push(game.i18n.format('SKSK.Rest.LuckChargesRestored', { amount: luckCharges.max - luckCharges.value }));
       }
 
-      const conMod = actor.system.attributes?.con?.mod ?? 0;
+      const conMod = actor.system.attributes?.con?.baseMod ?? 0;
       const level = actor.system.resources.level.value;
       const adrenalinDamageReduction = tier === 'genesung' ? Math.max(level, conMod) : conMod;
       const adrenalinDamageReduced = await reduceAdrenalinDamage(actor, adrenalinDamageReduction);
@@ -337,7 +337,7 @@ export async function applyRest(actor, options) {
     }
 
     if (tier === 'genesung') {
-      const conMod = actor.system.attributes?.con?.mod ?? 0;
+      const conMod = actor.system.attributes?.con?.baseMod ?? 0;
       const level = actor.system.resources.level.value;
       const regenerationRestore = Math.min(1 + conMod, level);
       const newRegenerationCharges = Math.min(actor.system.regenerationCharges.max, regenerationCharges + regenerationRestore);

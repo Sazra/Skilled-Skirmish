@@ -58,7 +58,7 @@ export function computeMaxRegenerationCharges(actor) {
 export function computeMaxInspirationCharges(actor) {
   const skillLevel = getActorSkillLevel(actor, 'inspiration');
   if (skillLevel < 1) return 0;
-  const chaMod = actor.system.attributes?.cha?.mod ?? 0;
+  const chaMod = actor.system.attributes?.cha?.baseMod ?? 0;
   return Math.max(0, Math.round(skillLevel + chaMod + computeChargeBonusTotal(actor, 'inspiration')));
 }
 
@@ -72,7 +72,7 @@ export function computeMaxInspirationCharges(actor) {
 export function computeMaxAdrenalinCharges(actor) {
   const skillLevel = getActorSkillLevel(actor, 'adrenalin');
   if (skillLevel < 1) return 0;
-  const conMod = actor.system.attributes?.con?.mod ?? 0;
+  const conMod = actor.system.attributes?.con?.baseMod ?? 0;
   return Math.max(0, Math.round(skillLevel + conMod + computeChargeBonusTotal(actor, 'adrenalin')));
 }
 

@@ -17,6 +17,18 @@ const STAT_MODIFIER_FIELDS = ['lifeBonus', 'manaBonus', 'apBonus', 'rpBonus', 'a
 const NUMERIC_FIELDS = [...STAT_MODIFIER_FIELDS, ...CUSTOM_TURN_START_FIELDS];
 
 /**
+ * A custom status effect's optional Base-/Spezial-/Modifikator-tier
+ * attribute bonus row lists (see helpers/statusEffects.mjs#
+ * buildStatModifierChanges), each { attribute, bonus } - also only ever
+ * shown/editable for non-predefined entries. Base feeds
+ * system.attributeBonuses.<attr>.base (Species/Talent's own permanent
+ * stat-increase tier); Special/Modifier feed the same two Active-Effect-
+ * only fields Item/Armor/Weapon/Technique/Spell's own "Effects" tab already
+ * targets.
+ */
+const ATTRIBUTE_BONUS_FIELDS = ['baseAttributeBonuses', 'specialAttributeBonuses', 'modifierAttributeBonuses'];
+
+/**
  * GM-only settings menu app for managing the world's list of status
  * effects (see helpers/statusEffects.mjs). A plain world setting (an
  * untyped Array) has no native config UI, so this provides one, following
@@ -46,6 +58,8 @@ export class SKSKStatusEffectsConfig extends HandlebarsApplicationMixin(Applicat
     actions: {
       addStatusEffect: SKSKStatusEffectsConfig.#addStatusEffect,
       removeStatusEffect: SKSKStatusEffectsConfig.#removeStatusEffect,
+      addStatusAttributeBonus: SKSKStatusEffectsConfig.#addStatusAttributeBonus,
+      removeStatusAttributeBonus: SKSKStatusEffectsConfig.#removeStatusAttributeBonus,
     },
   };
 
@@ -65,6 +79,7 @@ export class SKSKStatusEffectsConfig extends HandlebarsApplicationMixin(Applicat
       ...entry,
       descriptionHTML: await foundry.applications.ux.TextEditor.implementation.enrichHTML(entry.description ?? ''),
     })));
+    context.attributeChoices = CONFIG.SKSK.attributes;
     return context;
   }
 
@@ -98,9 +113,16 @@ export class SKSKStatusEffectsConfig extends HandlebarsApplicationMixin(Applicat
         const def = CONFIG.SKSK.predefinedStatusEffects.find(d => d.id === result.id);
         result.customized = def ? (name !== game.i18n.localize(def.nameKey) || description !== game.i18n.localize(def.descriptionKey)) : true;
       } else {
-        // Flat stat modifiers and turn-start ticks are custom-entry-only -
-        // predefined effects manage their own consequences in code instead.
+        // Flat stat modifiers, turn-start ticks and attribute bonus rows
+        // are custom-entry-only - predefined effects manage their own
+        // consequences in code instead.
         for (const field of NUMERIC_FIELDS) result[field] = Number(entry[field]) || 0;
+        for (const field of ATTRIBUTE_BONUS_FIELDS) {
+          result[field] = Object.values(entry[field] ?? {}).map(row => ({
+            attribute: row.attribute ?? 'str',
+            bonus: Number(row.bonus) || 0,
+          }));
+        }
       }
       return result;
     });
@@ -114,6 +136,7 @@ export class SKSKStatusEffectsConfig extends HandlebarsApplicationMixin(Applicat
       id: foundry.utils.randomID(), predefined: false, name: '', img: 'icons/svg/aura.svg', description: '',
     };
     for (const field of NUMERIC_FIELDS) entry[field] = 0;
+    for (const field of ATTRIBUTE_BONUS_FIELDS) entry[field] = [];
     statusEffects.push(entry);
     await game.settings.set('sksk', 'statusEffects', statusEffects);
     this.render();
@@ -124,6 +147,31 @@ export class SKSKStatusEffectsConfig extends HandlebarsApplicationMixin(Applicat
     const index = Number(target.dataset.index);
     const statusEffects = foundry.utils.deepClone(game.settings.get('sksk', 'statusEffects') ?? []);
     statusEffects.splice(index, 1);
+    await game.settings.set('sksk', 'statusEffects', statusEffects);
+    this.render();
+  }
+
+  /** @private */
+  static async #addStatusAttributeBonus(event, target) {
+    const index = Number(target.dataset.index);
+    const field = target.dataset.field;
+    const statusEffects = foundry.utils.deepClone(game.settings.get('sksk', 'statusEffects') ?? []);
+    const entry = statusEffects[index];
+    if (!entry) return;
+    (entry[field] ??= []).push({ attribute: 'str', bonus: 1 });
+    await game.settings.set('sksk', 'statusEffects', statusEffects);
+    this.render();
+  }
+
+  /** @private */
+  static async #removeStatusAttributeBonus(event, target) {
+    const index = Number(target.dataset.index);
+    const field = target.dataset.field;
+    const bonusIndex = Number(target.dataset.bonusIndex);
+    const statusEffects = foundry.utils.deepClone(game.settings.get('sksk', 'statusEffects') ?? []);
+    const entry = statusEffects[index];
+    if (!entry) return;
+    (entry[field] ?? []).splice(bonusIndex, 1);
     await game.settings.set('sksk', 'statusEffects', statusEffects);
     this.render();
   }

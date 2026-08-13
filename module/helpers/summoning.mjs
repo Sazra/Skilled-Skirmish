@@ -7,7 +7,7 @@
  * @return {number}
  */
 export function computeSummonSlots(actor) {
-  const wilMod = actor.system.attributes?.wil?.mod ?? 0;
+  const wilMod = actor.system.attributes?.wil?.baseMod ?? 0;
   const bonus = actor.system.summonSlotsBonus ?? 0;
   const multiplier = actor.system.summonSlotsMultiplier ?? 1;
   return Math.max(0, Math.floor((wilMod + bonus) * multiplier));

@@ -1,23 +1,36 @@
 <aside class="side-tab side-tab-attributes">
     <div class="side-tab-content flexcol">
         {{#each system.attributes as |attribute key|}}
+        {{#with (lookup ../attributeBonusFlags key) as |bonusFlags|}}
         <div class="attribute flexcol flex-group-center">
             <label for="system.attributes.{{key}}.rawValue" class="resource-label rollable flexlarge align-left"
                 data-action="roll" data-roll="d20+@attributes.{{key}}.mod{{#if attribute.unlimitedBonus}}+{{attribute.unlimitedBonus}}{{/if}}"
+                data-roll-excluding-special="d20+@attributes.{{key}}.modExcludingSpecial{{#if attribute.unlimitedBonus}}+{{attribute.unlimitedBonus}}{{/if}}"
                 data-attribute-key="{{key}}"
                 data-label="{{attribute.label}}"
                 data-tooltip="{{attribute.label}}"
-                data-tooltip-html="{{lookup ../attributeTooltips key}}">{{attribute.label}}</label>
+                data-tooltip-html="{{lookup ../../attributeTooltips key}}">{{attribute.label}}</label>
             <div class="flexrow flex-group-center">
-                <input type="text" name="system.attributes.{{key}}.rawValue" value="{{attribute.rawValue}}"
-                    data-dtype="Number"
-                    class="{{#if (gt attribute.rawValue attribute.max)}}attribute-capped{{/if}}" />
-                <span class="attribute-mod rollable" data-action="roll"
+                <div class="attribute-value-wrapper">
+                    <div class="attribute-value-display" data-action="editAttributeValue" data-attribute-key="{{key}}">
+                        <span class="attribute-value-full{{#if bonusFlags.value}} attribute-bonus-color{{/if}}">{{attribute.value}}</span>
+                        <span class="attribute-value-base">{{attribute.baseValue}}</span>
+                    </div>
+                    <input type="text" name="system.attributes.{{key}}.rawValue" value="{{attribute.rawValue}}"
+                        data-dtype="Number"
+                        class="attribute-value-input {{#if (gt attribute.rawValue attribute.max)}}attribute-capped{{/if}}" />
+                </div>
+                <span class="attribute-mod-display rollable" data-action="roll"
                     data-roll="d20+@attributes.{{key}}.mod{{#if attribute.unlimitedBonus}}+{{attribute.unlimitedBonus}}{{/if}}"
+                    data-roll-excluding-special="d20+@attributes.{{key}}.modExcludingSpecial{{#if attribute.unlimitedBonus}}+{{attribute.unlimitedBonus}}{{/if}}"
                     data-attribute-key="{{key}}"
-                    data-label="{{attribute.label}}">{{numberFormat attribute.mod decimals=0 sign=true}}</span>
+                    data-label="{{attribute.label}}">
+                    <span class="attribute-mod-full{{#if bonusFlags.mod}} attribute-bonus-color{{/if}}">{{numberFormat attribute.mod decimals=0 sign=true}}</span>
+                    <span class="attribute-mod-base">{{numberFormat attribute.modExcludingSpecial decimals=0 sign=true}}</span>
+                </span>
             </div>
         </div>
+        {{/with}}
         {{/each}}
     </div>
 </aside>

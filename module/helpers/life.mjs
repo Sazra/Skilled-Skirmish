@@ -73,7 +73,10 @@ function computeLifeComponents(actor) {
     }
   }
 
-  const conMod = actor.system.attributes?.con?.mod ?? 0;
+  // baseMod, not mod - Life is a resource, so it only ever grows from
+  // Base-tier bonuses (Species/Talent/Status Effects), never Spezial-/
+  // Modifikator-Boni (Item/Armor/Weapon/Technique/Spell/Status Effects).
+  const conMod = actor.system.attributes?.con?.baseMod ?? 0;
   rows.push({ label: game.i18n.localize('SKSK.Attribute.Con.long'), perLevel: conMod, value: conMod * level });
 
   const healthLevel = getActorSkillLevel(actor, 'health');
