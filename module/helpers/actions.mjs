@@ -11,6 +11,7 @@ import { grantSkillUsageFp, formatSkillFpGrantLine, checkReflexActionTrigger } f
 import { renderApplyDamageButton, resolveClickDefender } from "./damageApplication.mjs";
 import { consumePrimedTechnique, applyTechniqueBonusDamage, getTechniqueEffectPayload } from "./technique-rolls.mjs";
 import { checkFlanking } from "./flanking.mjs";
+import { computeLehrenTargetBonus } from "./lehren.mjs";
 
 /**
  * The intended target's flanking result (see helpers/flanking.mjs) for an
@@ -114,7 +115,11 @@ export async function rollWeaponItem(item) {
   }
 
   if (item.system.formula) {
-    const roll = await new Roll(item.system.formula, item.getRollData()).evaluate();
+    const lehrenDamageBonus = actor
+      ? computeLehrenTargetBonus(actor, 'damageBonus', { skillKey: item.system.weaponType, kind: 'weapon' })
+      : 0;
+    const damageFormula = lehrenDamageBonus ? `${item.system.formula} + ${lehrenDamageBonus}` : item.system.formula;
+    const roll = await new Roll(damageFormula, item.getRollData()).evaluate();
     const rendered = await roll.render();
     parts.push(`<div class="sksk-roll-line"><strong>${game.i18n.localize('SKSK.Spell.Roll.Damage')}</strong></div>${rendered}`);
     const { total, line } = applyTechniqueBonusDamage(roll.total, technique);
@@ -220,7 +225,9 @@ export async function rollMartialArtsAttack(actor, index) {
     damageDice, killSkillKey: 'martialArts', flanking: flank.flanking,
   })}${formatFlankingBonusLine(flank, flankBonus)}`;
 
-  const bonus = resolveMartialArtsAttributeBonus(actor, attack.attributes, attack.attributeUsage);
+  const attributeBonus = resolveMartialArtsAttributeBonus(actor, attack.attributes, attack.attributeUsage);
+  const lehrenDamageBonus = computeLehrenTargetBonus(actor, 'damageBonus', { skillKey: 'martialArts', kind: 'weapon' });
+  const bonus = attributeBonus + lehrenDamageBonus;
   const formula = bonus ? `${attack.formula} + ${bonus}` : attack.formula;
   const roll = await new Roll(formula, actor.getRollData()).evaluate();
   const renderedDamage = await roll.render();

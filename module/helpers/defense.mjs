@@ -1,4 +1,5 @@
 import { getActorSkillLevel, isActorSkillUnlocked, getSkillStacks } from "./skills.mjs";
+import { computeLehrenTargetBonus } from "./lehren.mjs";
 
 /**
  * The level-based component of a creature's "natural" material bonus -
@@ -123,6 +124,7 @@ function computeArmorClassComponents(actor) {
   rows.push({ label: game.i18n.localize('SKSK.Breakdown.ShieldBonus'), perLevel: null, value: shieldBonus });
 
   rows.push({ label: game.i18n.localize('SKSK.GM.CustomArmorClassBonus'), perLevel: null, value: system.customArmorClassBonus ?? 0 });
+  rows.push({ label: game.i18n.localize('SKSK.Breakdown.LehrenBonus'), perLevel: null, value: computeLehrenTargetBonus(actor, 'armorClass') });
 
   return { rows, total: Math.round(rows.reduce((sum, row) => sum + row.value, 0)) };
 }
@@ -154,6 +156,7 @@ function computeMagicResistanceComponents(actor) {
   }
 
   rows.push({ label: game.i18n.localize('SKSK.GM.CustomMagicResistanceBonus'), perLevel: null, value: system.customMagicResistanceBonus ?? 0 });
+  rows.push({ label: game.i18n.localize('SKSK.Breakdown.LehrenBonus'), perLevel: null, value: computeLehrenTargetBonus(actor, 'magicResistance') });
 
   return { rows, total: Math.round(rows.reduce((sum, row) => sum + row.value, 0)) };
 }

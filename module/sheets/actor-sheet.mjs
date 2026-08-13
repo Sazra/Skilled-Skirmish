@@ -35,6 +35,7 @@ import { SKSKSummoningDialog } from '../apps/summoning-dialog.mjs';
 import { SKSKTotemDialog } from '../apps/totem-dialog.mjs';
 import { SKSKSourceDialog } from '../apps/source-dialog.mjs';
 import { SKSKProductionFpDialog } from '../apps/production-fp-dialog.mjs';
+import { SKSKLehrenDialog } from '../apps/lehren-dialog.mjs';
 import {
   grantInspirationDie, consumeInspirationCharge, rollOwnInspirationDie, rollGrantedInspirationDie,
 } from '../helpers/inspiration.mjs';
@@ -137,6 +138,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       openTotemDialog: SKSKActorSheet.#openTotemDialog,
       openSourceDialog: SKSKActorSheet.#openSourceDialog,
       openProductionFpDialog: SKSKActorSheet.#openProductionFpDialog,
+      openLehrenDialog: SKSKActorSheet.#openLehrenDialog,
       toggleHeaderToolbar: SKSKActorSheet.#toggleHeaderToolbar,
       openTechniqueDialog: SKSKActorSheet.#openTechniqueDialog,
       grantPassivePerceptionFp: SKSKActorSheet.#grantPassivePerceptionFp,
@@ -1585,6 +1587,14 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
    */
   static #openProductionFpDialog(event, target) {
     new SKSKProductionFpDialog(this.actor).render(true);
+  }
+
+  /**
+   * Open the "Lehren" (Lore) dialog (apps/lehren-dialog.mjs) from the sheet
+   * header - Character-only, same convention as #openProductionFpDialog.
+   */
+  static #openLehrenDialog(event, target) {
+    new SKSKLehrenDialog(this.actor).render(true);
   }
 
   /**

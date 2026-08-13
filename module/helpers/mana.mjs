@@ -1,5 +1,6 @@
 import { getActorSkillLevel, evaluateSkillFormula } from './skills.mjs';
 import { getClassAbilityLevels, actorHasAdvancedClass } from './abilities.mjs';
+import { computeLehrenTargetBonus } from './lehren.mjs';
 
 /**
  * The shared building blocks behind computeMaxMana and getManaBreakdown
@@ -64,6 +65,9 @@ function computeManaComponents(actor) {
 
   const manaCoreLevel = getActorSkillLevel(actor, 'manaCore') * 2;
   rows.push({ label: game.i18n.format('SKSK.Breakdown.Doubled', { name: game.i18n.localize('SKSK.Skill.Magic.ManaCore') }), perLevel: manaCoreLevel, value: manaCoreLevel * level });
+
+  const lehrenBonus = computeLehrenTargetBonus(actor, 'mana');
+  if (lehrenBonus) rows.push({ label: game.i18n.localize('SKSK.Breakdown.LehrenBonus'), perLevel: null, value: lehrenBonus });
 
   const subtotal = rows.reduce((sum, row) => sum + row.value, 0);
 

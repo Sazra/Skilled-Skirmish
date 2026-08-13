@@ -1,5 +1,6 @@
 import { getActorSkillLevel, evaluateSkillFormula } from './skills.mjs';
 import { getClassAbilityLevels, actorHasAdvancedClass } from './abilities.mjs';
+import { computeLehrenTargetBonus } from './lehren.mjs';
 
 /**
  * The shared building blocks behind computeMaxLife, computeMaxNegativeLife
@@ -81,6 +82,9 @@ function computeLifeComponents(actor) {
   if (hasAdvancedClass && level >= 13) {
     rows.push({ label: game.i18n.localize('SKSK.Breakdown.AdvancedClassBonus'), perLevel: 20, value: 20 * level });
   }
+
+  const lehrenBonus = computeLehrenTargetBonus(actor, 'life');
+  if (lehrenBonus) rows.push({ label: game.i18n.localize('SKSK.Breakdown.LehrenBonus'), perLevel: null, value: lehrenBonus });
 
   const subtotal = rows.reduce((sum, row) => sum + row.value, 0);
 

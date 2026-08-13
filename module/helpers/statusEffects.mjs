@@ -7,6 +7,7 @@ import {
   resolveCheckSuccess, wrapCriticalBlock, chooseGenericRollMode, evaluateD20WithMode, formatD20ModeSummaryLine,
 } from './criticalRolls.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
+import { computeLehrenTargetBonus } from './lehren.mjs';
 
 /**
  * Movement types (CONFIG.SKSK.movementTypes) Dazed does NOT reduce.
@@ -721,15 +722,18 @@ export function computeDazedAttributeMalus(actor, attributeKey) {
 }
 
 /**
- * The total flat malus (always <= 0) any D20 roll for this actor should
- * carry - Exhaustion's universal malus, plus Dazed's attribute-specific
- * one when attributeKey is one of Str/Dex/Con/App.
+ * The total flat bonus/malus any D20 roll for this actor should carry -
+ * Exhaustion's universal malus, plus Dazed's attribute-specific one when
+ * attributeKey is one of Str/Dex/Con/App, plus any Lehren bonus targeting
+ * "allRolls" (see helpers/lehren.mjs) - unlike the other two, this last one
+ * can be positive.
  * @param {Actor} actor
  * @param {string|null} [attributeKey]
  * @return {number}
  */
 export function computeD20Malus(actor, attributeKey = null) {
-  return computeExhaustionD20Malus(actor) + (attributeKey ? computeDazedAttributeMalus(actor, attributeKey) : 0);
+  const lehrenBonus = computeLehrenTargetBonus(actor, 'allRolls');
+  return computeExhaustionD20Malus(actor) + (attributeKey ? computeDazedAttributeMalus(actor, attributeKey) : 0) + lehrenBonus;
 }
 
 /**

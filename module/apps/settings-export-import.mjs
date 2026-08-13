@@ -18,6 +18,7 @@ const EXPORTABLE_SETTINGS = [
   'trainingMethods',
   'skillUsageFp',
   'combatStyles',
+  'lehren',
 ];
 
 /**

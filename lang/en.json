@@ -40,7 +40,7 @@
       },
       "ExportImport": {
         "Name": "Export/Import Settings",
-        "Hint": "Export this world's SKSK settings (skill point costs, carry weight formula, Materials, Models, Status Effects, Training Methods, Skill Usage FP, Combat Styles) to a JSON file, or import them from one - e.g. to back up a world's configuration or copy it to another world.",
+        "Hint": "Export this world's SKSK settings (skill point costs, carry weight formula, Materials, Models, Status Effects, Training Methods, Skill Usage FP, Combat Styles, Lehren) to a JSON file, or import them from one - e.g. to back up a world's configuration or copy it to another world.",
         "Label": "Export/Import Settings",
         "Export": "Export Settings",
         "Import": "Import Settings",
@@ -55,6 +55,11 @@
         "Name": "Skill Usage FP",
         "Hint": "How many FP a Character generates for using a skill (skill checks, weapon attacks, spells cast, attribute rolls, ...) - Characters only, per skill category.",
         "Label": "Configure Skill Usage FP"
+      },
+      "Lehren": {
+        "Name": "Lehren",
+        "Hint": "The catalog of Lehren (Lore) available per skill - each Character freely distributes a shared pool of 5 levels across one skill's own Lehren, gated per-Lehre by its own minimum skill level.",
+        "Label": "Configure Lehren"
       }
     },
     "Movement": {
@@ -248,6 +253,41 @@
       "AttackHit": "FP / Attack Landed",
       "AttackDefended": "FP / Attack Defended Against"
     },
+    "LehrenConfig": {
+      "NamePlaceholder": "Name",
+      "DescriptionPlaceholder": "Description",
+      "MinSkillLevel": "Min. Skill Level",
+      "RemoveLehre": "Remove",
+      "Bonuses": "Bonuses",
+      "AddBonus": "Add Bonus",
+      "RemoveBonus": "Remove",
+      "AddLehre": "Add Lehre",
+      "Target": {
+        "AttackBonus": "Attack Bonus",
+        "DamageBonus": "Damage Bonus",
+        "ArmorClass": "AC Bonus",
+        "MagicResistance": "MR Bonus",
+        "Life": "Max Life Bonus",
+        "Mana": "Max Mana Bonus",
+        "ActionPoints": "Max AP Bonus",
+        "ReactionPoints": "Max RP Bonus",
+        "AllRolls": "Bonus to All Rolls"
+      },
+      "Scope": {
+        "ThisSkill": "This Skill Only",
+        "AllWeapons": "All Weapons",
+        "AllSpells": "All Spells",
+        "Everything": "Everything"
+      }
+    },
+    "LehrenDialog": {
+      "Title": "Lehren",
+      "SkillLevel": "Level",
+      "LockedHint": "Requires {skill} level {level}",
+      "NoLehren": "No Lehren defined yet for this category's skills.",
+      "MinLevelNotMet": "{skill} must be at least level {level} to invest in this Lehre.",
+      "PoolExceeded": "Only {pool} Lehre levels can be invested per skill."
+    },
     "Life": {
       "MaxComputed": "Automatically calculated from Classes, Constitution, Health, Tenacity and abilities - not directly editable"
     },
@@ -295,6 +335,7 @@
       "ToughnessMultiplier": "Toughness Multiplier (Tenacity Level {level})",
       "Subtotal": "Subtotal",
       "EffectsBonus": "Bonus (Effects)",
+      "LehrenBonus": "Bonus (Lehren)",
       "Total": "Total",
       "NegativeLifeBaseline": "Baseline (protected buffer)",
       "ActualMaxLife": "Actual Max Life",

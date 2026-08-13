@@ -40,7 +40,7 @@
             },
             "ExportImport": {
                 "Name": "Einstellungen exportieren/importieren",
-                "Hint": "Exportiert die SKSK-Einstellungen dieser Welt (Fertigkeitspunktkosten, Formel für Tragegewicht, Materialien, Modelle, Statuseffekte, Trainingsmethoden, Fertigkeitsnutzungs-FP, Kampfstile) als JSON-Datei, oder importiert sie aus einer solchen - z.B. um die Konfiguration einer Welt zu sichern oder in eine andere Welt zu übertragen.",
+                "Hint": "Exportiert die SKSK-Einstellungen dieser Welt (Fertigkeitspunktkosten, Formel für Tragegewicht, Materialien, Modelle, Statuseffekte, Trainingsmethoden, Fertigkeitsnutzungs-FP, Kampfstile, Lehren) als JSON-Datei, oder importiert sie aus einer solchen - z.B. um die Konfiguration einer Welt zu sichern oder in eine andere Welt zu übertragen.",
                 "Label": "Einstellungen exportieren/importieren",
                 "Export": "Einstellungen exportieren",
                 "Import": "Einstellungen importieren",
@@ -55,6 +55,11 @@
                 "Name": "Fertigkeitsnutzungs-FP",
                 "Hint": "Wie viele FP ein Charakter durch das Nutzen einer Fertigkeit generiert (Fertigkeitswürfe, Waffenangriffe, gewirkte Zauber, Attributswürfe, ...) - nur Charaktere, unterteilt nach Fertigkeiten-Kategorie.",
                 "Label": "Fertigkeitsnutzungs-FP konfigurieren"
+            },
+            "Lehren": {
+                "Name": "Lehren",
+                "Hint": "Der Katalog der pro Fertigkeit verfügbaren Lehren - jeder Charakter verteilt einen gemeinsamen Pool von 5 Stufen frei auf die Lehren einer Fertigkeit, wobei jede Lehre eine eigene Mindest-Fertigkeitsstufe voraussetzt.",
+                "Label": "Lehren konfigurieren"
             }
         },
         "Movement": {
@@ -248,6 +253,41 @@
             "AttackHit": "FP / Gelandeter Angriff",
             "AttackDefended": "FP / Abgewehrter Angriff"
         },
+        "LehrenConfig": {
+            "NamePlaceholder": "Name",
+            "DescriptionPlaceholder": "Beschreibung",
+            "MinSkillLevel": "Mind. Fertigkeitsstufe",
+            "RemoveLehre": "Entfernen",
+            "Bonuses": "Boni",
+            "AddBonus": "Bonus hinzufügen",
+            "RemoveBonus": "Entfernen",
+            "AddLehre": "Lehre hinzufügen",
+            "Target": {
+                "AttackBonus": "Angriffsbonus",
+                "DamageBonus": "Schadensbonus",
+                "ArmorClass": "AC-Bonus",
+                "MagicResistance": "MR-Bonus",
+                "Life": "Bonus auf maximales Leben",
+                "Mana": "Bonus auf maximale Mana",
+                "ActionPoints": "Bonus auf maximale AP",
+                "ReactionPoints": "Bonus auf maximale RP",
+                "AllRolls": "Bonus auf alle Würfe"
+            },
+            "Scope": {
+                "ThisSkill": "Nur diese Fertigkeit",
+                "AllWeapons": "Alle Waffen",
+                "AllSpells": "Alle Zauber",
+                "Everything": "Alles"
+            }
+        },
+        "LehrenDialog": {
+            "Title": "Lehren",
+            "SkillLevel": "Stufe",
+            "LockedHint": "Erfordert {skill} Stufe {level}",
+            "NoLehren": "Für die Fertigkeiten dieser Kategorie sind noch keine Lehren definiert.",
+            "MinLevelNotMet": "{skill} muss mindestens Stufe {level} sein, um in diese Lehre zu investieren.",
+            "PoolExceeded": "Pro Fertigkeit können höchstens {pool} Lehren-Stufen investiert werden."
+        },
         "Life": {
             "MaxComputed": "Automatisch berechnet aus Klassen, Konstitution, Gesundheit, Zähigkeit und Fähigkeiten - nicht direkt bearbeitbar"
         },
@@ -295,6 +335,7 @@
             "ToughnessMultiplier": "Zähigkeits-Multiplikator (Zähigkeit Stufe {level})",
             "Subtotal": "Zwischensumme",
             "EffectsBonus": "Bonus (Effekte)",
+            "LehrenBonus": "Bonus (Lehren)",
             "Total": "Gesamt",
             "NegativeLifeBaseline": "Basiswert (geschützter Puffer)",
             "ActualMaxLife": "Tatsächliches maximales Leben",

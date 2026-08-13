@@ -1,4 +1,5 @@
 import { getActorSkillLevel } from './skills.mjs';
+import { computeLehrenTargetBonus } from './lehren.mjs';
 import { getSpellSchool } from './spells.mjs';
 import { computeNaturalMaterialBonus } from './defense.mjs';
 import { applyD20Malus, getStatusStacks } from './statusEffects.mjs';
@@ -117,16 +118,19 @@ export function computeSpellAttackBonus(spellSystem, actor) {
   if (spellSystem.spellType === 'simple' || spellSystem.spellType === 'advanced') {
     const schoolLevel = getActorSkillLevel(actor, spellSystem.magicSchool);
     const schoolBonus = actor.system.magicSchoolAttackBonus?.[spellSystem.magicSchool] ?? 0;
-    return wilMod + schoolLevel + hitCorrection + schoolBonus;
+    const lehrenBonus = computeLehrenTargetBonus(actor, 'attackBonus', { skillKey: spellSystem.magicSchool, kind: 'spell' });
+    return wilMod + schoolLevel + hitCorrection + schoolBonus + lehrenBonus;
   }
 
   if (spellSystem.spellType === 'combined') {
     const schoolBonus = actor.system.combinedMagicSchoolAttackBonus?.[spellSystem.combinedSchool] ?? 0;
-    return wilMod + hitCorrection + schoolBonus + computeCombinedSkillAttackBonus(spellSystem, actor);
+    const lehrenBonus = computeLehrenTargetBonus(actor, 'attackBonus', { skillKey: null, kind: 'spell' });
+    return wilMod + hitCorrection + schoolBonus + computeCombinedSkillAttackBonus(spellSystem, actor) + lehrenBonus;
   }
 
   // Systemless.
-  return wilMod + hitCorrection + getActorSkillLevel(actor, 'magicControl');
+  const lehrenBonus = computeLehrenTargetBonus(actor, 'attackBonus', { skillKey: null, kind: 'spell' });
+  return wilMod + hitCorrection + getActorSkillLevel(actor, 'magicControl') + lehrenBonus;
 }
 
 /**
@@ -194,7 +198,8 @@ export function computeWeaponAttackBonus(actor, weaponItem) {
   const materialBonus = system.materialAttackBonus ?? 0;
   const modelFlat = system.resolvedModel?.flatBonus ?? 0;
   const attributeBonus = computeWeaponAttributeBonus(actor, system);
-  return skillLevel + materialBonus + modelFlat + attributeBonus;
+  const lehrenBonus = computeLehrenTargetBonus(actor, 'attackBonus', { skillKey: system.weaponType, kind: 'weapon' });
+  return skillLevel + materialBonus + modelFlat + attributeBonus + lehrenBonus;
 }
 
 /**
@@ -225,7 +230,8 @@ export function computeMartialArtsAttackBonus(actor, attack) {
   const skillLevel = getActorSkillLevel(actor, 'martialArts');
   const materialBonus = computeNaturalMaterialBonus(actor);
   const attributeBonus = computeMartialArtsAttributeBonus(actor, attack);
-  return skillLevel + materialBonus + attributeBonus;
+  const lehrenBonus = computeLehrenTargetBonus(actor, 'attackBonus', { skillKey: 'martialArts', kind: 'weapon' });
+  return skillLevel + materialBonus + attributeBonus + lehrenBonus;
 }
 
 /**

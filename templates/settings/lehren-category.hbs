@@ -1,0 +1,61 @@
+<section class="tab {{tab.cssClass}}" data-group="primary" data-tab="{{tab.id}}">
+  {{#each skills as |skill|}}
+  <details class="gm-section lehre-skill-section" data-sync="lehre-skill-{{skill.key}}" {{#if skill.defs.length}}open{{/if}}>
+    <summary class="resource-label">{{localize skill.label}} ({{skill.defs.length}})</summary>
+
+    <ol class="items-list">
+      {{#each skill.defs as |def defIndex|}}
+      <li class="item flexcol lehre-card">
+        <div class="grid grid-3col">
+          <input type="text" name="lehren.{{skill.key}}.{{defIndex}}.name" value="{{def.name}}"
+            placeholder="{{localize 'SKSK.LehrenConfig.NamePlaceholder'}}" />
+          <label class="resource-label">
+            {{localize 'SKSK.LehrenConfig.MinSkillLevel'}}
+            <input type="number" name="lehren.{{skill.key}}.{{defIndex}}.minSkillLevel" value="{{def.minSkillLevel}}"
+              min="0" max="{{skill.maxLevel}}" data-dtype="Number" />
+          </label>
+          <div class="item-controls">
+            <a class="item-control item-delete" data-action="removeLehre" data-skill="{{skill.key}}" data-index="{{defIndex}}"
+              title="{{localize 'SKSK.LehrenConfig.RemoveLehre'}}">
+              <i class="fas fa-trash"></i>
+            </a>
+          </div>
+        </div>
+        <textarea name="lehren.{{skill.key}}.{{defIndex}}.description"
+          placeholder="{{localize 'SKSK.LehrenConfig.DescriptionPlaceholder'}}">{{def.description}}</textarea>
+
+        <div class="bonus-group">
+          <label class="resource-label">{{localize 'SKSK.LehrenConfig.Bonuses'}}</label>
+          <ol class="items-list items-list-compact">
+            {{#each def.bonuses as |row rowIndex|}}
+            <li class="item flexrow lehre-bonus-row">
+              <select class="lehre-bonus-target" name="lehren.{{skill.key}}.{{defIndex}}.bonuses.{{rowIndex}}.target">
+                {{selectOptions ../../../lehrenBonusTargets selected=row.target localize=true}}
+              </select>
+              <select class="lehre-bonus-scope" name="lehren.{{skill.key}}.{{defIndex}}.bonuses.{{rowIndex}}.scope">
+                {{selectOptions ../../../lehrenBonusScopes selected=row.scope localize=true}}
+              </select>
+              <input type="text" name="lehren.{{skill.key}}.{{defIndex}}.bonuses.{{rowIndex}}.formula"
+                value="{{row.formula}}" placeholder="@value" />
+              <div class="item-controls">
+                <a class="item-control item-delete" data-action="removeLehreBonus" data-skill="{{skill.key}}"
+                  data-lehre-index="{{defIndex}}" data-index="{{rowIndex}}" title="{{localize 'SKSK.LehrenConfig.RemoveBonus'}}">
+                  <i class="fas fa-trash"></i>
+                </a>
+              </div>
+            </li>
+            {{/each}}
+          </ol>
+          <a class="item-control item-create" data-action="addLehreBonus" data-skill="{{skill.key}}" data-lehre-index="{{defIndex}}">
+            <i class="fas fa-plus"></i> {{localize 'SKSK.LehrenConfig.AddBonus'}}
+          </a>
+        </div>
+      </li>
+      {{/each}}
+    </ol>
+    <a class="item-control item-create" data-action="addLehre" data-skill="{{skill.key}}">
+      <i class="fas fa-plus"></i> {{localize 'SKSK.LehrenConfig.AddLehre'}}
+    </a>
+  </details>
+  {{/each}}
+</section>

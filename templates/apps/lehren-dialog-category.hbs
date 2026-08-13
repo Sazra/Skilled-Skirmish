@@ -1,0 +1,40 @@
+<section class="tab {{tab.cssClass}}" data-group="primary" data-tab="{{tab.id}}">
+  {{#if skills.length}}
+  {{#each skills as |skill|}}
+  <div class="resource lehre-skill-group">
+    <div class="flexrow flex-between">
+      <label class="resource-label">{{localize skill.label}} ({{localize 'SKSK.LehrenDialog.SkillLevel'}} {{skill.level}})</label>
+      <span class="lehren-pool-counter{{#if skill.poolFull}} pool-full{{/if}}">
+        {{skill.poolTotal}} / {{../lehrenPoolSize}}
+      </span>
+    </div>
+    <ol class="items-list">
+      {{#each skill.defs as |def|}}
+      <li class="lehre-row item flexrow{{#if def.locked}} locked{{/if}}" data-tooltip="{{#if def.description}}{{def.description}}{{/if}}">
+        <div class="item-name">
+          <span>{{def.name}}</span>
+          {{#if def.locked}}
+          <i class="fas fa-lock lehre-lock-icon"
+            data-tooltip="{{localize 'SKSK.LehrenDialog.LockedHint' skill=(localize skill.label) level=def.minSkillLevel}}"></i>
+          {{/if}}
+        </div>
+        <div class="item-controls flexrow flex-center">
+          <a class="item-control" data-action="decreaseLehreLevel" data-skill="{{skill.key}}" data-lehre="{{def.id}}"
+            {{#unless def.invested}}disabled{{/unless}} title="-1">
+            <i class="fas fa-minus"></i>
+          </a>
+          <span class="lehre-invested-level">{{def.invested}}</span>
+          <a class="item-control" data-action="increaseLehreLevel" data-skill="{{skill.key}}" data-lehre="{{def.id}}"
+            {{#unless def.canIncrease}}disabled{{/unless}} title="+1">
+            <i class="fas fa-plus"></i>
+          </a>
+        </div>
+      </li>
+      {{/each}}
+    </ol>
+  </div>
+  {{/each}}
+  {{else}}
+  <p class="hint">{{localize 'SKSK.LehrenDialog.NoLehren'}}</p>
+  {{/if}}
+</section>

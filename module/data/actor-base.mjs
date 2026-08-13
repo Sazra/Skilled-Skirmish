@@ -552,6 +552,12 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
           // - only added into "points" (and reset to 0) once an Anpassungs-
           // or Genesungspause is taken. See helpers/rest.mjs#applyRest.
           gain: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+          // Levels invested in this skill's own Lehren (Lore) - see
+          // helpers/lehren.mjs - { [lehreId]: investedLevel(1-5) }, summing
+          // to at most 5 across every Lehre under this one skill (the
+          // shared per-skill pool). Free-form (GM-defined ids), so a fixed
+          // SchemaField can't model it.
+          lehren: new fields.ObjectField({ initial: {} }),
         });
       }
     }

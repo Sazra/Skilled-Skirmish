@@ -67,10 +67,12 @@ export async function chooseOverchargeCount(actor, item) {
  * @param {object} damage   An entry from SKSKSpell#damages.
  * @param {Actor} actor     The caster, for scaling bonuses.
  * @param {number} [overchargeCount=0]
+ * @param {object|null} [spellSystem]   The casting spell's own system data,
+ *   for a Lehre damage bonus scoped to its magic school.
  * @return {Promise<{html: string, entry: {damageType: string, amount: number}}>}
  */
-async function renderDamageRoll(damage, actor, overchargeCount = 0) {
-  const bonus = computeDamageBonus(damage, actor);
+async function renderDamageRoll(damage, actor, overchargeCount = 0, spellSystem = null) {
+  const bonus = computeDamageBonus(damage, actor, spellSystem);
   const formula = bonus ? `${damage.formula} + ${bonus}` : damage.formula;
   // rollData exposes the actor's custom resources (see actor-base.mjs#
   // getRollData) as "@<abbreviation>", usable directly in the formula.
@@ -189,7 +191,7 @@ async function renderSpellEffectParts(item, overchargeCount = 0) {
   };
 
   const rollDamageWithTechnique = async (damage) => {
-    const { html, entry } = await renderDamageRoll(damage, actor, effectiveOvercharge);
+    const { html, entry } = await renderDamageRoll(damage, actor, effectiveOvercharge, system);
     if (technique && !techniqueDamageApplied) {
       const adjusted = applyTechniqueBonusDamage(entry.amount, technique);
       entry.amount = adjusted.total;

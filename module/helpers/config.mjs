@@ -231,6 +231,31 @@ SKSK.skillCategories = {
   special: 'SKSK.SkillCategory.Special',
 };
 
+// What a Lehre's (Lore's) bonus row actually adjusts - see
+// helpers/lehren.mjs#computeLehrenTargetBonus. attackBonus/damageBonus rows
+// also carry a "scope" (see SKSK.lehrenBonusScopes below); every other
+// target is inherently actor-wide and ignores scope entirely.
+SKSK.lehrenBonusTargets = {
+  attackBonus: 'SKSK.LehrenConfig.Target.AttackBonus',
+  damageBonus: 'SKSK.LehrenConfig.Target.DamageBonus',
+  armorClass: 'SKSK.LehrenConfig.Target.ArmorClass',
+  magicResistance: 'SKSK.LehrenConfig.Target.MagicResistance',
+  life: 'SKSK.LehrenConfig.Target.Life',
+  mana: 'SKSK.LehrenConfig.Target.Mana',
+  actionPoints: 'SKSK.LehrenConfig.Target.ActionPoints',
+  reactionPoints: 'SKSK.LehrenConfig.Target.ReactionPoints',
+  allRolls: 'SKSK.LehrenConfig.Target.AllRolls',
+};
+
+// Which rolls/attacks a Lehre's attackBonus/damageBonus row applies to -
+// only shown/meaningful for those two targets (see SKSK.lehrenBonusTargets).
+SKSK.lehrenBonusScopes = {
+  thisSkill: 'SKSK.LehrenConfig.Scope.ThisSkill',
+  allWeapons: 'SKSK.LehrenConfig.Scope.AllWeapons',
+  allSpells: 'SKSK.LehrenConfig.Scope.AllSpells',
+  everything: 'SKSK.LehrenConfig.Scope.Everything',
+};
+
 // How a Species/Class/Talent's attributeMaxModifiers entry adjusts an
 // attribute's natural maximum - see helpers/attributes.mjs#computeAttributeMax.
 SKSK.attributeMaxOperations = {

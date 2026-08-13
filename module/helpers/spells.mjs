@@ -1,4 +1,5 @@
 import { evaluateBonusFormula, evaluateSkillFormula, getActorSkillLevel, getSkillLabel } from './skills.mjs';
+import { computeLehrenTargetBonus } from './lehren.mjs';
 
 /**
  * Sum a set of attribute- and skill-based bonuses for a given caster, each
@@ -50,10 +51,16 @@ export function computeSavingThrowValue(savingThrow, actor, overchargeCount = 0)
  * rolling is implemented.
  * @param {object} damage   An entry from SKSKSpell#damages.
  * @param {Actor} actor     The actor casting the spell.
+ * @param {object|null} [spellSystem]   The casting spell's own system data,
+ *   for a Lehre damage bonus scoped to its magic school - null skips it
+ *   entirely (only ever passed when actor is also present).
  * @return {number}
  */
-export function computeDamageBonus(damage, actor) {
-  return sumBonuses(damage.attributeBonuses, damage.skillBonuses, actor);
+export function computeDamageBonus(damage, actor, spellSystem = null) {
+  const lehrenBonus = spellSystem
+    ? computeLehrenTargetBonus(actor, 'damageBonus', { skillKey: spellSystem.magicSchool ?? null, kind: 'spell' })
+    : 0;
+  return sumBonuses(damage.attributeBonuses, damage.skillBonuses, actor) + lehrenBonus;
 }
 
 /**

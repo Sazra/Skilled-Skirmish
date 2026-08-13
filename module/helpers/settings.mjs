@@ -5,6 +5,7 @@ import { SKSKTrainingMethodsConfig } from '../apps/training-methods-config.mjs';
 import { SKSKCombatStylesConfig } from '../apps/combat-styles-config.mjs';
 import { SKSKSettingsExportImport } from '../apps/settings-export-import.mjs';
 import { SKSKSkillUsageFpConfig } from '../apps/skill-usage-fp-config.mjs';
+import { SKSKLehrenConfig } from '../apps/lehren-config.mjs';
 
 /**
  * Register world-scoped game settings for the system.
@@ -179,6 +180,27 @@ export function registerSettings() {
     label: 'SKSK.Settings.SkillUsageFp.Label',
     icon: 'fas fa-bolt',
     type: SKSKSkillUsageFpConfig,
+    restricted: true,
+  });
+
+  // GM-configurable catalog of Lehren (Lore), per skill - see apps/lehren-
+  // config.mjs and helpers/lehren.mjs. Each skill has its own list; a
+  // Character freely distributes a shared pool of 5 levels across one
+  // skill's own Lehren (apps/lehren-dialog.mjs), gated per-Lehre by its own
+  // minSkillLevel.
+  game.settings.register('sksk', 'lehren', {
+    scope: 'world',
+    config: false,
+    type: Object,
+    default: {},
+  });
+
+  game.settings.registerMenu('sksk', 'lehrenMenu', {
+    name: 'SKSK.Settings.Lehren.Name',
+    hint: 'SKSK.Settings.Lehren.Hint',
+    label: 'SKSK.Settings.Lehren.Label',
+    icon: 'fas fa-book',
+    type: SKSKLehrenConfig,
     restricted: true,
   });
 }
