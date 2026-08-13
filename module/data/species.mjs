@@ -168,6 +168,21 @@ export default class SKSKSpecies extends SKSKItemBase {
       value: new fields.NumberField({ required: true, nullable: false, initial: 1 }),
     }));
 
+    // Zero or more bonuses adjusting a specific skill's pending FP gain
+    // ("gain" - see actor-base.mjs) whenever it's granted - positive/negative
+    // flat amounts, a multiplicative percentage (multiple multiplicative
+    // entries combine additively before applying), or an unconditional
+    // "forceZero" override. See helpers/skillFp.mjs#applySkillFpGainBonus.
+    schema.fpGainBonuses = new fields.ArrayField(new fields.SchemaField({
+      skill: new fields.StringField({ required: true, blank: true, initial: "" }),
+      bonusType: new fields.StringField({
+        required: true, blank: false, initial: "positive",
+        choices: ["positive", "negative", "multiplicative", "forceZero"]
+      }),
+      amount: new fields.NumberField({ required: true, nullable: false, initial: 0 }),
+      allowZero: new fields.BooleanField({ initial: false }),
+    }));
+
     return schema;
   }
 

@@ -1,4 +1,5 @@
 import { CUSTOM_TURN_START_FIELDS } from '../helpers/statusEffects.mjs';
+import { getSkillBonusChoices } from '../helpers/skills.mjs';
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
@@ -27,6 +28,18 @@ const NUMERIC_FIELDS = [...STAT_MODIFIER_FIELDS, ...CUSTOM_TURN_START_FIELDS];
  * targets.
  */
 const ATTRIBUTE_BONUS_FIELDS = ['baseAttributeBonuses', 'specialAttributeBonuses', 'modifierAttributeBonuses'];
+
+/**
+ * A custom status effect's optional FP Gain Bonuses row list (see
+ * helpers/statusEffects.mjs#setStatusStacks), each { skill, bonusType,
+ * amount, allowZero } - unlike ATTRIBUTE_BONUS_FIELDS above, this can't be
+ * reduced to a flat ADD-mode system.changes key (it needs custom multi-tier
+ * aggregation logic - see helpers/skillFp.mjs#applySkillFpGainBonus), so
+ * it's delivered as a flags.sksk.fpGainBonuses payload on the resulting
+ * ActiveEffect instead - also only ever shown/editable for non-predefined
+ * entries.
+ */
+const FP_GAIN_BONUS_FIELD = 'fpGainBonuses';
 
 /**
  * GM-only settings menu app for managing the world's list of status
@@ -60,6 +73,8 @@ export class SKSKStatusEffectsConfig extends HandlebarsApplicationMixin(Applicat
       removeStatusEffect: SKSKStatusEffectsConfig.#removeStatusEffect,
       addStatusAttributeBonus: SKSKStatusEffectsConfig.#addStatusAttributeBonus,
       removeStatusAttributeBonus: SKSKStatusEffectsConfig.#removeStatusAttributeBonus,
+      addStatusFpGainBonus: SKSKStatusEffectsConfig.#addStatusFpGainBonus,
+      removeStatusFpGainBonus: SKSKStatusEffectsConfig.#removeStatusFpGainBonus,
     },
   };
 
@@ -80,6 +95,8 @@ export class SKSKStatusEffectsConfig extends HandlebarsApplicationMixin(Applicat
       descriptionHTML: await foundry.applications.ux.TextEditor.implementation.enrichHTML(entry.description ?? ''),
     })));
     context.attributeChoices = CONFIG.SKSK.attributes;
+    context.skillBonusChoices = getSkillBonusChoices();
+    context.fpGainBonusTypeChoices = CONFIG.SKSK.fpGainBonusTypes;
     return context;
   }
 
@@ -123,6 +140,12 @@ export class SKSKStatusEffectsConfig extends HandlebarsApplicationMixin(Applicat
             bonus: Number(row.bonus) || 0,
           }));
         }
+        result[FP_GAIN_BONUS_FIELD] = Object.values(entry[FP_GAIN_BONUS_FIELD] ?? {}).map(row => ({
+          skill: row.skill ?? '',
+          bonusType: row.bonusType ?? 'positive',
+          amount: Number(row.amount) || 0,
+          allowZero: !!row.allowZero,
+        }));
       }
       return result;
     });
@@ -137,6 +160,7 @@ export class SKSKStatusEffectsConfig extends HandlebarsApplicationMixin(Applicat
     };
     for (const field of NUMERIC_FIELDS) entry[field] = 0;
     for (const field of ATTRIBUTE_BONUS_FIELDS) entry[field] = [];
+    entry[FP_GAIN_BONUS_FIELD] = [];
     statusEffects.push(entry);
     await game.settings.set('sksk', 'statusEffects', statusEffects);
     this.render();
@@ -172,6 +196,36 @@ export class SKSKStatusEffectsConfig extends HandlebarsApplicationMixin(Applicat
     const entry = statusEffects[index];
     if (!entry) return;
     (entry[field] ?? []).splice(bonusIndex, 1);
+    await game.settings.set('sksk', 'statusEffects', statusEffects);
+    this.render();
+  }
+
+  /**
+   * Same add/remove pair as #addStatusAttributeBonus/#removeStatusAttributeBonus
+   * above, but for FP_GAIN_BONUS_FIELD's differently-shaped row (skill/
+   * bonusType/amount/allowZero rather than attribute/bonus) - kept as its
+   * own action pair rather than a `field`-agnostic default row, since the
+   * default row shape differs.
+   * @private
+   */
+  static async #addStatusFpGainBonus(event, target) {
+    const index = Number(target.dataset.index);
+    const statusEffects = foundry.utils.deepClone(game.settings.get('sksk', 'statusEffects') ?? []);
+    const entry = statusEffects[index];
+    if (!entry) return;
+    (entry[FP_GAIN_BONUS_FIELD] ??= []).push({ skill: 'axe', bonusType: 'positive', amount: 0, allowZero: false });
+    await game.settings.set('sksk', 'statusEffects', statusEffects);
+    this.render();
+  }
+
+  /** @private */
+  static async #removeStatusFpGainBonus(event, target) {
+    const index = Number(target.dataset.index);
+    const bonusIndex = Number(target.dataset.bonusIndex);
+    const statusEffects = foundry.utils.deepClone(game.settings.get('sksk', 'statusEffects') ?? []);
+    const entry = statusEffects[index];
+    if (!entry) return;
+    (entry[FP_GAIN_BONUS_FIELD] ?? []).splice(bonusIndex, 1);
     await game.settings.set('sksk', 'statusEffects', statusEffects);
     this.render();
   }

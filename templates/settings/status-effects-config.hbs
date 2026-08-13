@@ -175,6 +175,47 @@
           </ol>
         </div>
       </div>
+
+      <div class="bonus-group">
+        <label class="resource-label">{{localize 'SKSK.StatusEffect.FpGainBonuses'}}</label>
+        <p class="hint">{{localize 'SKSK.StatusEffect.FpGainBonusesHint'}}</p>
+        <ol class="items-list items-list-compact">
+          {{#each entry.fpGainBonuses as |row rowIndex|}}
+          <li class="item flexrow">
+            <div class="item-name">
+              <select name="statusEffects.{{index}}.fpGainBonuses.{{rowIndex}}.skill">
+                {{selectOptions ../../skillBonusChoices selected=row.skill localize=true}}
+              </select>
+            </div>
+            <div class="item-name">
+              <select name="statusEffects.{{index}}.fpGainBonuses.{{rowIndex}}.bonusType">
+                {{selectOptions ../../fpGainBonusTypeChoices selected=row.bonusType localize=true}}
+              </select>
+            </div>
+            <div class="item-name">
+              <input type="text" name="statusEffects.{{index}}.fpGainBonuses.{{rowIndex}}.amount"
+                value="{{row.amount}}" data-dtype="Number" />
+            </div>
+            <div class="item-name">
+              <input type="checkbox" name="statusEffects.{{index}}.fpGainBonuses.{{rowIndex}}.allowZero"
+                {{checked row.allowZero}} title="{{localize 'SKSK.FpGainBonus.AllowZeroHint'}}" />
+            </div>
+            <div class="item-controls">
+              <a class="item-control item-delete" data-action="removeStatusFpGainBonus" data-index="{{index}}"
+                data-bonus-index="{{rowIndex}}" title="{{localize 'SKSK.StatusEffect.RemoveFpGainBonus'}}">
+                <i class="fas fa-trash"></i>
+              </a>
+            </div>
+          </li>
+          {{/each}}
+          <li class="item flexrow">
+            <a class="item-control item-create" data-action="addStatusFpGainBonus" data-index="{{index}}"
+              title="{{localize 'SKSK.StatusEffect.AddFpGainBonus'}}">
+              <i class="fas fa-plus"></i> {{localize 'SKSK.StatusEffect.AddFpGainBonus'}}
+            </a>
+          </li>
+        </ol>
+      </div>
       {{/unless}}
 
       <label class="resource-label">{{localize 'SKSK.StatusEffect.Description'}}</label>

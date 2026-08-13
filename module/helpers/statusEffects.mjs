@@ -334,13 +334,20 @@ export async function setStatusStacks(actor, id, stacks) {
   const def = getStatusEffectDefinitions().find(d => d.id === id);
   const name = `${def?.name || id} (${clamped})`;
   const changes = buildStatModifierChanges(def, clamped);
+  // fpGainBonuses can't be reduced to an ADD-mode system.changes key (see
+  // buildStatModifierChanges' own doc comment) - baked into a flag instead,
+  // pre-scaled by the current stack count same as changes' own per-stack
+  // amounts. Read back by helpers/skillFp.mjs#collectSkillFpGainBonusEntries.
+  const fpGainBonuses = (def?.fpGainBonuses ?? [])
+    .filter(row => row.skill)
+    .map(row => ({ ...row, amount: (Number(row.amount) || 0) * clamped }));
 
   if (effect) {
-    await effect.update({ name, disabled: false, changes, 'flags.sksk.stacks': clamped });
+    await effect.update({ name, disabled: false, changes, 'flags.sksk.stacks': clamped, 'flags.sksk.fpGainBonuses': fpGainBonuses });
   } else {
     await actor.createEmbeddedDocuments('ActiveEffect', [{
       name, img: def?.img || 'icons/svg/aura.svg', statuses: [id],
-      origin: actor.uuid, flags: { sksk: { stacks: clamped } }, changes,
+      origin: actor.uuid, flags: { sksk: { stacks: clamped, fpGainBonuses } }, changes,
     }]);
   }
 

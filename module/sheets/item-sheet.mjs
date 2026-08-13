@@ -60,6 +60,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       addMovementBonus: SKSKItemSheet.#addMovementBonus,
       addChargeBonus: SKSKItemSheet.#addChargeBonus,
       addAttributeMaxModifier: SKSKItemSheet.#addAttributeMaxModifier,
+      addFpGainBonus: SKSKItemSheet.#addFpGainBonus,
       activateTechnique: SKSKItemSheet.#activateTechnique,
       openTechniqueEffect: SKSKItemSheet.#openTechniqueEffect,
       addPathAbility: SKSKItemSheet.#addPathAbility,
@@ -93,6 +94,11 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
         { id: "kristallisierung", label: "SKSK.SoulPath.Stage.Kristallisierung" },
         { id: "erwachen", label: "SKSK.SoulPath.Stage.Erwachen" },
         { id: "aufstieg", label: "SKSK.SoulPath.Stage.Aufstieg" },
+        // Soul Path's own GM tab - a distinct id from the shared "gm" above
+        // (which stays deleted for soulPath) since it only ever holds the
+        // FP Gain Bonuses list, not the Material/Model/Reduction/Movement/
+        // Charge/MaxAttribute fields the other 6 GM tabs have.
+        { id: "gmSoulPath", label: "SKSK.SheetLabels.GM" },
       ],
       initial: "description",
     },
@@ -162,6 +168,10 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       template: "systems/sksk/templates/item/parts/soul-path-aufstieg.hbs",
       scrollable: [""],
     },
+    gmSoulPath: {
+      template: "systems/sksk/templates/item/parts/soul-path-gm.hbs",
+      scrollable: [""],
+    },
   };
 
   /**
@@ -226,8 +236,9 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       delete parts.gm;
     } else if (itemType === 'soulPath') {
       // Soul Path replaces the shared description/attributes/effects triple
-      // entirely with its own 6 tabs (see static TABS/PARTS above) - none
-      // of the 3 generic parts apply to it, nor does the GM tab.
+      // entirely with its own 6 tabs (see static TABS/PARTS above), nor
+      // does it use the shared GM tab - but it does get its own dedicated
+      // gmSoulPath tab (FP Gain Bonuses only, see PARTS.gmSoulPath above).
       parts.header.template = `systems/sksk/templates/item/parts/header-soul-path.hbs`;
       delete parts.description;
       delete parts.attributes;
@@ -239,15 +250,20 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
     // entirely hidden from players - it only ever holds GM-authoring fields
     // (Material/Model overrides, bonus-list tables), mirroring the Actor
     // sheet's own GM tab (see actor-sheet.mjs's _configureRenderParts).
-    if (!game.user.isGM) delete parts.gm;
+    // Soul Path's own gmSoulPath tab gets the same treatment.
+    if (!game.user.isGM) {
+      delete parts.gm;
+      delete parts.gmSoulPath;
+    }
 
-    // Every other item type has no use for Soul Path's own 6 tabs - a
-    // separate, unconditional check (matching _prepareTabs' own shape
-    // below), since every existing type already matches one of the
-    // branches above and would otherwise never reach a trailing "else"
-    // here, leaving these parts undeleted and their templates attempting
-    // to render with none of the soulPath-only context _prepareContext
-    // only ever populates for actual Soul Path items.
+    // Every other item type has no use for Soul Path's own 6 tabs (or its
+    // gmSoulPath tab) - a separate, unconditional check (matching
+    // _prepareTabs' own shape below), since every existing type already
+    // matches one of the branches above and would otherwise never reach a
+    // trailing "else" here, leaving these parts undeleted and their
+    // templates attempting to render with none of the soulPath-only
+    // context _prepareContext only ever populates for actual Soul Path
+    // items.
     if (itemType !== 'soulPath') {
       delete parts.soulPathProperties;
       delete parts.sammlung;
@@ -255,6 +271,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       delete parts.kristallisierung;
       delete parts.erwachen;
       delete parts.aufstieg;
+      delete parts.gmSoulPath;
     }
 
     return parts;
@@ -288,15 +305,18 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       delete tabs.kristallisierung;
       delete tabs.erwachen;
       delete tabs.aufstieg;
+      delete tabs.gmSoulPath;
     }
-    // No GM-only fields exist on these 3 types, and the tab is hidden from
-    // players entirely - mirrors the parts-level gating in
-    // _configureRenderParts above.
+    // No GM-only fields exist on Spell/Technique, and the shared "gm" tab
+    // is hidden from players entirely - mirrors the parts-level gating in
+    // _configureRenderParts above. Soul Path never uses the shared "gm" tab
+    // either (it has its own gmSoulPath instead, gated separately below).
     if (group === 'primary' && ['spell', 'technique', 'soulPath'].includes(this.item.type)) {
       delete tabs.gm;
     }
     if (group === 'primary' && !game.user.isGM) {
       delete tabs.gm;
+      delete tabs.gmSoulPath;
     }
     return tabs;
   }
@@ -377,6 +397,14 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
 
     if (item.type === 'species' || item.type === 'class' || item.type === 'talent') {
       context.skillBonusChoices = getSkillBonusChoices();
+    }
+
+    // fpGainBonuses (Part of the GM tab on Item/Weapon/Armor/Species/Class/
+    // Talent, and Soul Path's own dedicated GM tab) - see
+    // helpers/skillFp.mjs#applySkillFpGainBonus.
+    if (['item', 'weapon', 'armor', 'species', 'class', 'talent', 'soulPath'].includes(item.type)) {
+      context.skillBonusChoices ??= getSkillBonusChoices();
+      context.fpGainBonusTypeChoices = CONFIG.SKSK.fpGainBonusTypes;
     }
 
     if (item.type === 'talent') {
@@ -746,6 +774,11 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
 
   static async #addAttributeMaxModifier(event, target) {
     await this.#addArrayEntry('attributeMaxModifiers', { attribute: 'str', operation: 'add', value: 1 });
+  }
+
+  /** @private */
+  static async #addFpGainBonus(event, target) {
+    await this.#addArrayEntry('fpGainBonuses', { skill: 'axe', bonusType: 'positive', amount: 0, allowZero: false });
   }
 
   /**

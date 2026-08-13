@@ -468,6 +468,17 @@
         "Divide": "Divide"
       }
     },
+    "FpGainBonus": {
+      "Label": "FP Gain Bonuses",
+      "Type": {
+        "Positive": "Positive",
+        "Negative": "Negative",
+        "Multiplicative": "Multiplicative",
+        "ForceZero": "Force Zero"
+      },
+      "AllowZero": "Allow Zero",
+      "AllowZeroHint": "Only relevant for Negative/Multiplicative: checked lets this entry's reduction bring the FP gain down to 0; unchecked floors it at 1 instead."
+    },
     "Rest": {
       "Title": "Spend Time",
       "Segments": "Segments (30 min each)",
@@ -1280,6 +1291,10 @@
       "ModifierAttributeBonusesHint": "Added straight to the roll modifier without touching the attribute's own value - same resource exclusion as Special.",
       "AddAttributeBonus": "Add",
       "RemoveAttributeBonus": "Remove",
+      "FpGainBonuses": "FP Gain Bonuses (per stack)",
+      "FpGainBonusesHint": "Adjusts a specific skill's pending FP gain while this status is active - same positive/negative/multiplicative/forceZero rules as an item's own FP Gain Bonuses list, scaled by the current stack count.",
+      "AddFpGainBonus": "Add",
+      "RemoveFpGainBonus": "Remove",
       "IgnoreSpecialBonusOnSave": "Ignore Special Bonus on this save",
       "CustomLifeDamage": "{amount} damage",
       "CustomLifeHealing": "{amount} healing",

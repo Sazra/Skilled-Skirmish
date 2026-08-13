@@ -36,6 +36,80 @@ function capResistanceGain(actor, skillKey, amount) {
 }
 
 /**
+ * Every fpGainBonuses entry targeting the given skill, gathered from both
+ * delivery paths: an owned item's own system.fpGainBonuses array (item.mjs/
+ * weapon.mjs/armor.mjs/species.mjs/class.mjs/talent.mjs/soulPath.mjs), and
+ * any active (non-disabled) ActiveEffect on the actor carrying a
+ * flags.sksk.fpGainBonuses array - the latter is how a custom Status Effect
+ * delivers the same bonus shape, pre-scaled by its own stack count at
+ * application time (see helpers/statusEffects.mjs#setStatusStacks).
+ * @param {Actor} actor
+ * @param {string} skillKey
+ * @return {Array<{skill: string, bonusType: string, amount: number, allowZero: boolean}>}
+ */
+function collectSkillFpGainBonusEntries(actor, skillKey) {
+  const entries = [];
+  for (const item of actor.items) {
+    for (const entry of item.system.fpGainBonuses ?? []) {
+      if (entry.skill === skillKey) entries.push(entry);
+    }
+  }
+  for (const effect of actor.effects) {
+    if (effect.disabled) continue;
+    for (const entry of effect.getFlag('sksk', 'fpGainBonuses') ?? []) {
+      if (entry.skill === skillKey) entries.push(entry);
+    }
+  }
+  return entries;
+}
+
+/**
+ * Applies every fpGainBonuses entry targeting skillKey to a base FP amount,
+ * in this order:
+ * 1. forceZero on ANY contributing entry short-circuits everything to 0.
+ * 2. positive entries add flat, summed.
+ * 3. negative entries subtract flat, in two independent groups by their own
+ *    allowZero flag - the allow-zero group is subtracted first (floored at
+ *    0), then the disallow-zero group (floored at 1) - each group's floor
+ *    only applies if that group actually has entries, so an empty
+ *    disallow-zero group never forces a floor of 1 by itself.
+ * 4. multiplicative entries' (signed) percentages sum additively into one
+ *    combined percentage (e.g. +50 and -20 -> +30), applied as
+ *    total * (1 + combined/100), floored - the most restrictive allowZero
+ *    among contributing multiplicative entries governs this step's own
+ *    floor (0 if all allow zero, else 1).
+ * A final Math.max(0, ...) guards against any residual negative value.
+ * @param {Actor} actor
+ * @param {string} skillKey
+ * @param {number} baseAmount
+ * @return {number}
+ */
+function applySkillFpGainBonus(actor, skillKey, baseAmount) {
+  const entries = collectSkillFpGainBonusEntries(actor, skillKey);
+  if (!entries.length) return baseAmount;
+  if (entries.some(e => e.bonusType === 'forceZero')) return 0;
+
+  const sum = (arr) => arr.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  let total = baseAmount;
+
+  total += sum(entries.filter(e => e.bonusType === 'positive'));
+
+  const negAllowZero = entries.filter(e => e.bonusType === 'negative' && e.allowZero);
+  const negDisallowZero = entries.filter(e => e.bonusType === 'negative' && !e.allowZero);
+  if (negAllowZero.length) total = Math.max(0, total - sum(negAllowZero));
+  if (negDisallowZero.length) total = Math.max(1, total - sum(negDisallowZero));
+
+  const mult = entries.filter(e => e.bonusType === 'multiplicative');
+  if (mult.length) {
+    const combinedPercent = sum(mult);
+    const floor = mult.some(e => !e.allowZero) ? 1 : 0;
+    total = Math.max(floor, Math.floor(total * (1 + combinedPercent / 100)));
+  }
+
+  return Math.max(0, total);
+}
+
+/**
  * The GM-configured FP-per-usage rates (world setting, edited via the
  * Skill Usage FP settings menu - see apps/skill-usage-fp-config.mjs), keyed
  * by skill then by trigger (e.g. {axe: {skillCheck: 1, weaponAttack: 2}}).
@@ -77,6 +151,9 @@ export function getSkillFpRate(skillKey, trigger) {
 export async function grantSkillUsageFp(actor, skillKey, trigger, multiplier = 1) {
   if (!actor || actor.type !== 'character') return null;
   let amount = Math.floor(getSkillFpRate(skillKey, trigger) * multiplier);
+  if (amount <= 0) return null;
+
+  amount = applySkillFpGainBonus(actor, skillKey, amount);
   if (amount <= 0) return null;
 
   // Once Seelenstärke reaches its own max level (5), it has nowhere left
@@ -175,7 +252,11 @@ export function formatSkillFpGrantLine(grant) {
  */
 export async function grantFlatSkillFp(actor, skillKey, amount) {
   if (!actor || actor.type !== 'character') return null;
-  const flatAmount = capResistanceGain(actor, skillKey, Math.floor(Number(amount) || 0));
+  let flatAmount = Math.floor(Number(amount) || 0);
+  if (flatAmount <= 0) return null;
+
+  flatAmount = applySkillFpGainBonus(actor, skillKey, flatAmount);
+  flatAmount = capResistanceGain(actor, skillKey, flatAmount);
   if (flatAmount <= 0) return null;
 
   const current = actor.system.skills?.[skillKey]?.gain ?? 0;

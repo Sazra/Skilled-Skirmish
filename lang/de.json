@@ -468,6 +468,17 @@
                 "Divide": "Dividieren"
             }
         },
+        "FpGainBonus": {
+            "Label": "FP-Gewinn-Boni",
+            "Type": {
+                "Positive": "Positiv",
+                "Negative": "Negativ",
+                "Multiplicative": "Multiplikativ",
+                "ForceZero": "Forciere 0"
+            },
+            "AllowZero": "Nullpunkt erlaubt",
+            "AllowZeroHint": "Nur relevant bei Negativ/Multiplikativ: aktiviert erlaubt diesem Eintrag, den FP-Gewinn auf 0 zu senken; deaktiviert begrenzt ihn stattdessen auf mindestens 1."
+        },
         "Rest": {
             "Title": "Zeit verbringen",
             "Segments": "Abschnitte (je 30 Min.)",
@@ -1280,6 +1291,10 @@
             "ModifierAttributeBonusesHint": "Wird direkt auf den Wurfmodifikator addiert, ohne den Attributswert selbst zu verändern - gleicher Ressourcenausschluss wie Spezial.",
             "AddAttributeBonus": "Hinzufügen",
             "RemoveAttributeBonus": "Entfernen",
+            "FpGainBonuses": "FP-Gewinn-Boni (pro Stapel)",
+            "FpGainBonusesHint": "Passt den ausstehenden FP-Gewinn einer bestimmten Fertigkeit an, während dieser Status aktiv ist - dieselben Positiv-/Negativ-/Multiplikativ-/Forciere-0-Regeln wie die FP-Gewinn-Boni-Liste eines Items, skaliert mit der aktuellen Stapelanzahl.",
+            "AddFpGainBonus": "Hinzufügen",
+            "RemoveFpGainBonus": "Entfernen",
             "IgnoreSpecialBonusOnSave": "Spezial-Bonus bei diesem Wurf ignorieren",
             "CustomLifeDamage": "{amount} Schaden",
             "CustomLifeHealing": "{amount} Heilung",

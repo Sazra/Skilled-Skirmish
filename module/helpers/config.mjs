@@ -265,6 +265,15 @@ SKSK.attributeMaxOperations = {
   divide: 'SKSK.AttributeMax.Operation.Divide',
 };
 
+// How a fpGainBonuses entry (item- or status-effect-authored) adjusts a
+// skill's pending FP gain - see helpers/skillFp.mjs#applySkillFpGainBonus.
+SKSK.fpGainBonusTypes = {
+  positive: 'SKSK.FpGainBonus.Type.Positive',
+  negative: 'SKSK.FpGainBonus.Type.Negative',
+  multiplicative: 'SKSK.FpGainBonus.Type.Multiplicative',
+  forceZero: 'SKSK.FpGainBonus.Type.ForceZero',
+};
+
 SKSK.spellTypes = {
   simple: 'SKSK.Spell.Type.Simple',
   advanced: 'SKSK.Spell.Type.Advanced',

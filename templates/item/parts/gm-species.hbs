@@ -357,4 +357,51 @@
       {{/each}}
     </ol>
   </div>
+
+  <div class="resource">
+    <label class="resource-label">{{localize 'SKSK.FpGainBonus.Label'}}</label>
+    <ol class="items-list items-list-compact">
+      <li class="item flexrow items-header">
+        <div class="item-name">{{localize 'SKSK.General.Skill'}}</div>
+        <div class="item-name">Type</div>
+        <div class="item-name">{{localize 'SKSK.General.Value'}}</div>
+        <div class="item-name" title="{{localize 'SKSK.FpGainBonus.AllowZeroHint'}}">
+          {{localize 'SKSK.FpGainBonus.AllowZero'}}
+        </div>
+        <div class="item-controls">
+          <a class="item-control item-create" data-action="addFpGainBonus" title="Add FP gain bonus">
+            <i class="fas fa-plus"></i>
+          </a>
+        </div>
+      </li>
+      {{#each system.fpGainBonuses as |entry index|}}
+      <li class="item flexrow">
+        <div class="item-name">
+          <select name="system.fpGainBonuses.{{index}}.skill">
+            {{selectOptions ../skillBonusChoices selected=entry.skill localize=true}}
+          </select>
+        </div>
+        <div class="item-name">
+          <select name="system.fpGainBonuses.{{index}}.bonusType">
+            {{selectOptions ../fpGainBonusTypeChoices selected=entry.bonusType localize=true}}
+          </select>
+        </div>
+        <div class="item-name">
+          <input type="text" name="system.fpGainBonuses.{{index}}.amount" value="{{entry.amount}}"
+            data-dtype="Number" />
+        </div>
+        <div class="item-name">
+          <input type="checkbox" name="system.fpGainBonuses.{{index}}.allowZero" {{checked entry.allowZero}}
+            title="{{localize 'SKSK.FpGainBonus.AllowZeroHint'}}" />
+        </div>
+        <div class="item-controls">
+          <a class="item-control item-delete" data-action="removeArrayEntry" data-field="fpGainBonuses"
+            data-index="{{index}}" title="Remove">
+            <i class="fas fa-trash"></i>
+          </a>
+        </div>
+      </li>
+      {{/each}}
+    </ol>
+  </div>
 </section>
