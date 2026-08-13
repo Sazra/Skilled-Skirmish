@@ -149,6 +149,7 @@
       "AttackBonus": "Attack Bonus (Material)",
       "DamageBonus": "Damage Bonus (Material)",
       "ArmorBonus": "Armor Bonus (Material)",
+      "RollBonus": "Roll Bonus (Material)",
       "Properties": "Properties"
     },
     "TrainingMethod": {
@@ -347,6 +348,7 @@
       "AntimagicBonus": "Antimagic ({name})",
       "NaturalBase": "Natural Base",
       "AttributeMax": "Max",
+      "AttributeItemBonus": "Species/Talent Bonus",
       "AttributeSkillBonus": "Skill Bonus"
     },
     "GM": {

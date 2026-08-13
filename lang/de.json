@@ -149,6 +149,7 @@
             "AttackBonus": "Angriffsbonus (Material)",
             "DamageBonus": "Schadensbonus (Material)",
             "ArmorBonus": "Rüstungsbonus (Material)",
+            "RollBonus": "Wurfbonus (Material)",
             "Properties": "Eigenschaften"
         },
         "TrainingMethod": {
@@ -347,6 +348,7 @@
             "AntimagicBonus": "Magiestörend ({name})",
             "NaturalBase": "Natürliche Basis",
             "AttributeMax": "Maximum",
+            "AttributeItemBonus": "Spezies-/Talentbonus",
             "AttributeSkillBonus": "Fertigkeitsbonus"
         },
         "GM": {

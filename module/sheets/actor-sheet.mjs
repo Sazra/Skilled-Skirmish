@@ -12,7 +12,7 @@ import {
   getVisibleAttributeBonusDropdowns, getResolvedAttributeBonuses, chooseAttributeBonus,
   resetAttributeBonusChoice, resetAllAttributeBonusChoices, applyPendingAutoGrants,
 } from '../helpers/attributeBonuses.mjs';
-import { getAttributeMaxBreakdown, getAttributeUnlimitedBonusBreakdown, computePassivePerception } from '../helpers/attributes.mjs';
+import { getAttributeMaxBreakdown, getAttributeUnlimitedBonusBreakdown, getAttributeItemBonusBreakdown, computePassivePerception } from '../helpers/attributes.mjs';
 import {
   checkCombinedSpellPrerequisite,
   checkSimpleOrAdvancedSpellPrerequisite,
@@ -682,6 +682,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       const label = game.i18n.localize(CONFIG.SKSK.attributes[key]);
       context.attributeTooltips[key] =
         renderBreakdownHtml(`${label} ${game.i18n.localize('SKSK.Breakdown.AttributeMax')}`, getAttributeMaxBreakdown(actor, key))
+        + renderBreakdownHtml(`${label} ${game.i18n.localize('SKSK.Breakdown.AttributeItemBonus')}`, getAttributeItemBonusBreakdown(actor, key))
         + renderBreakdownHtml(`${label} ${game.i18n.localize('SKSK.Breakdown.AttributeSkillBonus')}`, getAttributeUnlimitedBonusBreakdown(actor, key));
     }
 

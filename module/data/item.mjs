@@ -1,5 +1,5 @@
 import SKSKItemBase from "./item-base.mjs";
-import { computeTotalManaCapacity } from "../helpers/materials.mjs";
+import { computeTotalManaCapacity, resolveMaterialBonus } from "../helpers/materials.mjs";
 
 export default class SKSKItem extends SKSKItemBase {
 
@@ -111,10 +111,12 @@ export default class SKSKItem extends SKSKItemBase {
 
   prepareDerivedData() {
     super.prepareDerivedData();
+    // See helpers/materials.mjs - the material grants an automatic bonus to
+    // this item's own roll (mirrors Weapon's materialAttackBonus), and its
+    // mana capacity for every 0.1kg of this item's own weight.
+    this.materialRollBonus = resolveMaterialBonus(this);
     const roll = this.roll;
-    this.formula = `${roll.diceNum}${roll.diceSize}${roll.diceBonus}`;
-    // See helpers/materials.mjs - the material's mana capacity for every
-    // 0.1kg of this item's own weight.
+    this.formula = `${roll.diceNum}${roll.diceSize}${roll.diceBonus} + ${this.materialRollBonus}`;
     this.totalManaCapacity = computeTotalManaCapacity(this);
   }
 }

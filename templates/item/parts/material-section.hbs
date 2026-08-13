@@ -41,6 +41,12 @@
       <span>{{materialArmorBonus}}</span>
     </div>
     {{/if}}
+    {{#if showRollBonus}}
+    <div class="grid-span-1">
+      <label class="resource-label">{{localize 'SKSK.Materials.RollBonus'}}</label>
+      <span>{{materialRollBonus}}</span>
+    </div>
+    {{/if}}
     <div class="grid-span-1">
       <label class="resource-label">{{localize 'SKSK.Materials.TotalManaCapacity'}}</label>
       <span>{{totalManaCapacity}}</span>

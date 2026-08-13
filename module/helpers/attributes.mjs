@@ -45,6 +45,49 @@ export function computeUnlimitedAttributeBonus(actor, attributeKey) {
 }
 
 /**
+ * The flat bonus a single attribute gets from every Species/Talent item's
+ * own attributeBonuses entries (data/species.mjs, data/talent.mjs) - a
+ * genuine stat increase, so it's folded straight into "value" (see
+ * data/actor-base.mjs#prepareDerivedData), the same as an NPC's dynamic
+ * skill-threshold bonus, unlike computeUnlimitedAttributeBonus's roll-only
+ * bonus above. Class has no such field. A Talent's own list uses the full
+ * attribute choice list (unlike Species, which excludes Aura - it already
+ * has its own dedicated "aura" field), so this can affect Aura too.
+ * @param {Actor} actor
+ * @param {string} attributeKey
+ * @return {number}
+ */
+export function computeItemAttributeBonus(actor, attributeKey) {
+  let bonus = 0;
+  for (const item of actor.items) {
+    if (!['species', 'talent'].includes(item.type)) continue;
+    for (const entry of item.system.attributeBonuses ?? []) {
+      if (entry.attribute === attributeKey) bonus += entry.bonus ?? 0;
+    }
+  }
+  return bonus;
+}
+
+/**
+ * Formula breakdown for computeItemAttributeBonus - see helpers/tooltips.mjs
+ * #renderBreakdownHtml, shown on hover over the attribute in attributes.hbs.
+ * @param {Actor} actor
+ * @param {string} attributeKey
+ * @return {{rows: Array, total: number}}
+ */
+export function getAttributeItemBonusBreakdown(actor, attributeKey) {
+  const rows = [];
+  for (const item of actor.items) {
+    if (!['species', 'talent'].includes(item.type)) continue;
+    for (const entry of item.system.attributeBonuses ?? []) {
+      if (entry.attribute !== attributeKey || !entry.bonus) continue;
+      rows.push({ label: item.name, perLevel: null, value: entry.bonus });
+    }
+  }
+  return { rows, total: computeItemAttributeBonus(actor, attributeKey) };
+}
+
+/**
  * An attribute's natural maximum score, before any Species/Class/Talent
  * adjustment: 20 + 1 per level of its own "Unbegrenzte X" skill + 5 if
  * Umlimitiert is active. Deliberately does NOT include Corpus Immortalis

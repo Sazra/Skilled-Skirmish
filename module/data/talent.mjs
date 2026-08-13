@@ -18,10 +18,13 @@ export default class SKSKTalent extends SKSKItemBase {
       bonus: new fields.NumberField({ ...requiredInteger, initial: 1 })
     }));
 
-    // Starting bonuses to skills. Player-extensible list; free-text skill
-    // name for now since the skill system doesn't exist yet.
+    // Starting bonuses to skills, granted whenever this Talent is owned.
+    // Player-extensible list; "skill" holds a key from CONFIG.SKSK.skills
+    // (multi-level skills only, same as Species/Class). "bonus" is a number
+    // of whole skill LEVELS granted, not skill points - see
+    // helpers/skills.mjs#computeSkillBonusTotals.
     schema.skillBonuses = new fields.ArrayField(new fields.SchemaField({
-      skill: new fields.StringField({ required: true, blank: true }),
+      skill: new fields.StringField({ required: true, blank: false, initial: "axe" }),
       bonus: new fields.NumberField({ ...requiredInteger, initial: 1 })
     }));
 

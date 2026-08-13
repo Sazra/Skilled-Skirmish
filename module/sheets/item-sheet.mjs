@@ -411,6 +411,8 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
         context.materialDamageBonus = item.system.materialDamageBonus;
       } else if (item.type === 'armor') {
         context.materialArmorBonus = item.system.materialArmorBonus;
+      } else if (item.type === 'item') {
+        context.materialRollBonus = item.system.materialRollBonus;
       }
     }
 

@@ -138,20 +138,20 @@ export function getSkillBonusChoices() {
 
 /**
  * Sum starting skill LEVEL bonuses granted to an actor by its equipped
- * Species and (first-only) Class items. Each entry's "bonus" is a number of
- * whole skill levels (e.g. an Axe bonus of 1 grants Axe at level 1), not
- * skill points - it's added on top of the level derived from entered
- * points/formula, not blended into the point total. Species always grant
- * their bonuses; Class items only grant theirs when classType is "first" -
- * second, third and advanced classes instead treat the same list as
- * prerequisites.
+ * Species, Talent and (first-only) Class items. Each entry's "bonus" is a
+ * number of whole skill levels (e.g. an Axe bonus of 1 grants Axe at level
+ * 1), not skill points - it's added on top of the level derived from
+ * entered points/formula, not blended into the point total. Species and
+ * Talent always grant their bonuses; Class items only grant theirs when
+ * classType is "first" - second, third and advanced classes instead treat
+ * the same list as prerequisites.
  * @param {Actor} actor
  * @return {Object<string, number>} Summed level bonus per skill key.
  */
 export function computeSkillBonusTotals(actor) {
   const totals = {};
   for (const item of actor.items) {
-    const grants = item.type === 'species'
+    const grants = item.type === 'species' || item.type === 'talent'
       || (item.type === 'class' && item.system.classType === 'first');
     if (!grants) continue;
     for (const entry of item.system.skillBonuses ?? []) {

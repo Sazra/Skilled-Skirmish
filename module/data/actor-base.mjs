@@ -1,5 +1,5 @@
 import { computeSkillBonusTotals, evaluateSkillFormula, getSkillLevel } from '../helpers/skills.mjs';
-import { computeUnlimitedAttributeBonus, computeAttributeMax } from '../helpers/attributes.mjs';
+import { computeUnlimitedAttributeBonus, computeAttributeMax, computeItemAttributeBonus } from '../helpers/attributes.mjs';
 import { computeNpcAttributeThresholdBonuses } from '../helpers/attributeBonuses.mjs';
 import { computeMaxLife, computeMaxNegativeLife } from '../helpers/life.mjs';
 import { computeMaxMana } from '../helpers/mana.mjs';
@@ -593,7 +593,11 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       // excess isn't lost - "value" (and everything derived from it, like
       // "mod" below) is simply re-capped fresh every preparation.
       const dynamicBonus = npcAttributeBonuses ? (npcAttributeBonuses[key] ?? 0) : 0;
-      attribute.value = Math.min(attribute.rawValue + dynamicBonus, attribute.max);
+      // Species/Talent attributeBonuses - see helpers/attributes.mjs#
+      // computeItemAttributeBonus - are a genuine stat increase, so they're
+      // summed in here too rather than kept as a separate roll-only bonus.
+      const itemBonus = this.parent ? computeItemAttributeBonus(this.parent, key) : 0;
+      attribute.value = Math.min(attribute.rawValue + dynamicBonus + itemBonus, attribute.max);
       attribute.mod = Math.floor((attribute.value - 10) / 2);
       attribute.label = game.i18n.localize(CONFIG.SKSK.attributes[key]) ?? key;
       // "Unbegrenzte X"/Corpus Immortalis/Umlimitiert - see
