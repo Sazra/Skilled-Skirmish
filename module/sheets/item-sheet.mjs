@@ -78,6 +78,11 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
         { id: "description", label: "Description" },
         { id: "attributes", label: "Attributes" },
         { id: "effects", label: "Effects" },
+        // GM-only tab (Item/Weapon/Armor/Species/Class/Talent) - Material/Model
+        // override fields and the 4 expandable bonus-list tables. Stripped
+        // entirely for non-GMs and for types with no GM-only fields - see
+        // _configureRenderParts/_prepareTabs.
+        { id: "gm", label: "SKSK.SheetLabels.GM" },
         // Soul Path only - replaces the 3 tabs above entirely (see
         // _prepareTabs/_configureRenderParts) with its own 6: Properties,
         // then the 5 progression stages in order (see helpers/config.mjs#
@@ -122,6 +127,11 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
     },
     effects: {
       template: "systems/sksk/templates/item/parts/effects.hbs",
+      scrollable: [""],
+    },
+    // Template overridden per-type in _configureRenderParts, same as attributes.
+    gm: {
+      template: "systems/sksk/templates/item/parts/gm-item.hbs",
       scrollable: [""],
     },
     soulPathProperties: {
@@ -173,16 +183,19 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
     if (itemType === 'species') {
       parts.header.template = `systems/sksk/templates/item/parts/header-species.hbs`;
       parts.attributes.template = `systems/sksk/templates/item/parts/species.hbs`;
+      parts.gm.template = `systems/sksk/templates/item/parts/gm-species.hbs`;
       // Species have no item-level effects tab; effects live on abilities instead.
       delete parts.effects;
     } else if (itemType === 'class') {
       parts.header.template = `systems/sksk/templates/item/parts/header-class.hbs`;
       parts.attributes.template = `systems/sksk/templates/item/parts/class.hbs`;
+      parts.gm.template = `systems/sksk/templates/item/parts/gm-class.hbs`;
       // Classes have no item-level effects tab; effects live on abilities instead.
       delete parts.effects;
     } else if (itemType === 'talent') {
       parts.header.template = `systems/sksk/templates/item/parts/header-talent.hbs`;
       parts.attributes.template = `systems/sksk/templates/item/parts/talent.hbs`;
+      parts.gm.template = `systems/sksk/templates/item/parts/gm-talent.hbs`;
       // Talents have a single ability; its Active Effects are shown inline
       // rather than in a separate item-level effects tab.
       delete parts.effects;
@@ -191,29 +204,42 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       parts.attributes.template = `systems/sksk/templates/item/parts/spell.hbs`;
       // Spells have no abilities substructure, so the standard item-level
       // effects tab (kept, unlike species/class/talent) is where any
-      // on-cast Active Effects belong.
+      // on-cast Active Effects belong. No GM-only fields exist on Spell.
+      delete parts.gm;
     } else if (itemType === 'item') {
       parts.attributes.template = `systems/sksk/templates/item/parts/item-gear.hbs`;
+      parts.gm.template = `systems/sksk/templates/item/parts/gm-item.hbs`;
     } else if (itemType === 'armor') {
       // Unlike the generic Item type, Armor has no Quantity field.
       parts.header.template = `systems/sksk/templates/item/parts/header-armor.hbs`;
       parts.attributes.template = `systems/sksk/templates/item/parts/armor.hbs`;
+      parts.gm.template = `systems/sksk/templates/item/parts/gm-armor.hbs`;
     } else if (itemType === 'weapon') {
       // Unlike the generic Item type, Weapon has no Quantity field.
       parts.header.template = `systems/sksk/templates/item/parts/header-weapon.hbs`;
       parts.attributes.template = `systems/sksk/templates/item/parts/weapon.hbs`;
+      parts.gm.template = `systems/sksk/templates/item/parts/gm-weapon.hbs`;
     } else if (itemType === 'technique') {
       parts.header.template = `systems/sksk/templates/item/parts/header-technique.hbs`;
       parts.attributes.template = `systems/sksk/templates/item/parts/technique.hbs`;
+      // No GM-only fields exist on Technique.
+      delete parts.gm;
     } else if (itemType === 'soulPath') {
       // Soul Path replaces the shared description/attributes/effects triple
       // entirely with its own 6 tabs (see static TABS/PARTS above) - none
-      // of the 3 generic parts apply to it.
+      // of the 3 generic parts apply to it, nor does the GM tab.
       parts.header.template = `systems/sksk/templates/item/parts/header-soul-path.hbs`;
       delete parts.description;
       delete parts.attributes;
       delete parts.effects;
+      delete parts.gm;
     }
+
+    // The GM tab (whichever per-type template it ended up with above) is
+    // entirely hidden from players - it only ever holds GM-authoring fields
+    // (Material/Model overrides, bonus-list tables), mirroring the Actor
+    // sheet's own GM tab (see actor-sheet.mjs's _configureRenderParts).
+    if (!game.user.isGM) delete parts.gm;
 
     // Every other item type has no use for Soul Path's own 6 tabs - a
     // separate, unconditional check (matching _prepareTabs' own shape
@@ -262,6 +288,15 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       delete tabs.kristallisierung;
       delete tabs.erwachen;
       delete tabs.aufstieg;
+    }
+    // No GM-only fields exist on these 3 types, and the tab is hidden from
+    // players entirely - mirrors the parts-level gating in
+    // _configureRenderParts above.
+    if (group === 'primary' && ['spell', 'technique', 'soulPath'].includes(this.item.type)) {
+      delete tabs.gm;
+    }
+    if (group === 'primary' && !game.user.isGM) {
+      delete tabs.gm;
     }
     return tabs;
   }
@@ -346,6 +381,9 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
 
     if (item.type === 'talent') {
       context.talentTypeChoices = CONFIG.SKSK.talentTypes;
+      // Talent has only one ability, so unlike Species/Class's abilityEffects
+      // (filtered per ability index), all of the item's effects belong to it.
+      context.talentEffects = Array.from(item.effects);
     }
 
     // Combined-school override entries (Class/Species/Talent granting the

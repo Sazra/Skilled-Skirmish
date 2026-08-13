@@ -7,23 +7,6 @@
     {{/each}}
   </select>
 
-  <div class="grid grid-2col">
-    {{#if materialBonusIsVariable}}
-    <div class="grid-span-1">
-      <label class="resource-label">{{localize 'SKSK.Materials.MaterialBonusOverride'}}</label>
-      <input type="text" name="system.materialBonusOverride" value="{{system.materialBonusOverride}}"
-        data-dtype="Number" />
-    </div>
-    {{/if}}
-    {{#if manaCapacityIsVariable}}
-    <div class="grid-span-1">
-      <label class="resource-label">{{localize 'SKSK.Materials.ManaCapacityOverride'}}</label>
-      <input type="text" name="system.manaCapacityOverride" value="{{system.manaCapacityOverride}}"
-        data-dtype="Number" />
-    </div>
-    {{/if}}
-  </div>
-
   <div class="grid grid-3col">
     {{#if showAttackBonus}}
     <div class="grid-span-1">

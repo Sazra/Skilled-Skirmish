@@ -18,5 +18,6 @@ export const preloadHandlebarsTemplates = async function () {
     // Item partials
     'systems/sksk/templates/item/parts/item-effects.hbs',
     'systems/sksk/templates/item/parts/material-section.hbs',
+    'systems/sksk/templates/item/parts/material-override-section.hbs',
   ]);
 };

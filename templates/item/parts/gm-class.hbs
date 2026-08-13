@@ -1,0 +1,227 @@
+<section class="tab {{tab.cssClass}}" data-group="primary" data-tab="gm">
+  <div class="resource">
+    <label class="resource-label">Mana Cost Reductions</label>
+    <ol class="items-list items-list-compact">
+      <li class="item flexrow items-header">
+        <div class="item-name">{{localize 'SKSK.General.Type'}}</div>
+        <div class="item-name">{{localize 'SKSK.General.School'}}</div>
+        <div class="item-name">%</div>
+        <div class="item-name">Flat</div>
+        <div class="item-name">Below 1?</div>
+        <div class="item-controls">
+          <a class="item-control item-create" data-action="addManaCostReduction" title="Add mana cost reduction">
+            <i class="fas fa-plus"></i>
+          </a>
+        </div>
+      </li>
+      {{#each system.manaCostReductions as |entry index|}}
+      <li class="item flexrow">
+        <div class="item-name">
+          <select name="system.manaCostReductions.{{index}}.spellType">
+            {{selectOptions ../spellTypeChoices selected=entry.spellType localize=true}}
+          </select>
+        </div>
+        <div class="item-name">
+          {{#if (eq entry.spellType "simple")}}
+          <select name="system.manaCostReductions.{{index}}.school">
+            {{selectOptions ../simpleMagicSchoolChoices selected=entry.school localize=true}}
+          </select>
+          {{else if (eq entry.spellType "advanced")}}
+          <select name="system.manaCostReductions.{{index}}.school">
+            {{selectOptions ../advancedMagicSchoolChoices selected=entry.school localize=true}}
+          </select>
+          {{else if (eq entry.spellType "combined")}}
+          <select name="system.manaCostReductions.{{index}}.school">
+            {{selectOptions ../combinedSchoolChoices selected=entry.school localize=true}}
+          </select>
+          {{else}}
+          <select name="system.manaCostReductions.{{index}}.school">
+            {{selectOptions ../systemlessCategoryChoices selected=entry.school localize=true}}
+          </select>
+          {{/if}}
+        </div>
+        <div class="item-name">
+          <input type="text" name="system.manaCostReductions.{{index}}.percent" value="{{entry.percent}}"
+            data-dtype="Number" />
+        </div>
+        <div class="item-name">
+          <input type="text" name="system.manaCostReductions.{{index}}.flatFormula" value="{{entry.flatFormula}}"
+            placeholder="e.g. L" />
+        </div>
+        <div class="item-name">
+          <input type="checkbox" name="system.manaCostReductions.{{index}}.allowBelowOne"
+            {{checked entry.allowBelowOne}} title="This entry's flat reduction can push the cost below 1 (down to 0)" />
+        </div>
+        <div class="item-controls">
+          <a class="item-control item-delete" data-action="removeArrayEntry" data-field="manaCostReductions"
+            data-index="{{index}}" title="Remove">
+            <i class="fas fa-trash"></i>
+          </a>
+        </div>
+      </li>
+      {{/each}}
+    </ol>
+  </div>
+
+  <div class="resource">
+    <label class="resource-label">AP Cost Reductions</label>
+    <ol class="items-list items-list-compact">
+      <li class="item flexrow items-header">
+        <div class="item-name">{{localize 'SKSK.General.Type'}}</div>
+        <div class="item-name">{{localize 'SKSK.General.School'}}</div>
+        <div class="item-name">Flat</div>
+        <div class="item-controls">
+          <a class="item-control item-create" data-action="addApCostReduction" title="Add AP cost reduction">
+            <i class="fas fa-plus"></i>
+          </a>
+        </div>
+      </li>
+      {{#each system.apCostReductions as |entry index|}}
+      <li class="item flexrow">
+        <div class="item-name">
+          <select name="system.apCostReductions.{{index}}.spellType">
+            {{selectOptions ../spellTypeChoices selected=entry.spellType localize=true}}
+          </select>
+        </div>
+        <div class="item-name">
+          {{#if (eq entry.spellType "simple")}}
+          <select name="system.apCostReductions.{{index}}.school">
+            {{selectOptions ../simpleMagicSchoolChoices selected=entry.school localize=true}}
+          </select>
+          {{else if (eq entry.spellType "advanced")}}
+          <select name="system.apCostReductions.{{index}}.school">
+            {{selectOptions ../advancedMagicSchoolChoices selected=entry.school localize=true}}
+          </select>
+          {{else if (eq entry.spellType "combined")}}
+          <select name="system.apCostReductions.{{index}}.school">
+            {{selectOptions ../combinedSchoolChoices selected=entry.school localize=true}}
+          </select>
+          {{else}}
+          <select name="system.apCostReductions.{{index}}.school">
+            {{selectOptions ../systemlessCategoryChoices selected=entry.school localize=true}}
+          </select>
+          {{/if}}
+        </div>
+        <div class="item-name">
+          <input type="text" name="system.apCostReductions.{{index}}.flatFormula" value="{{entry.flatFormula}}"
+            placeholder="e.g. L" />
+        </div>
+        <div class="item-controls">
+          <a class="item-control item-delete" data-action="removeArrayEntry" data-field="apCostReductions"
+            data-index="{{index}}" title="Remove">
+            <i class="fas fa-trash"></i>
+          </a>
+        </div>
+      </li>
+      {{/each}}
+    </ol>
+  </div>
+
+  <div class="resource">
+    <label class="resource-label">Movement Bonuses</label>
+    <ol class="items-list items-list-compact">
+      <li class="item flexrow items-header">
+        <div class="item-name">{{localize 'SKSK.General.Type'}}</div>
+        <div class="item-name">Bonus</div>
+        <div class="item-controls">
+          <a class="item-control item-create" data-action="addMovementBonus" title="Add movement bonus">
+            <i class="fas fa-plus"></i>
+          </a>
+        </div>
+      </li>
+      {{#each system.movementBonuses as |entry index|}}
+      <li class="item flexrow">
+        <div class="item-name">
+          <select name="system.movementBonuses.{{index}}.movementType">
+            {{selectOptions ../movementTypeChoices selected=entry.movementType localize=true}}
+          </select>
+        </div>
+        <div class="item-name">
+          <input type="text" name="system.movementBonuses.{{index}}.bonus" value="{{entry.bonus}}"
+            data-dtype="Number" />
+        </div>
+        <div class="item-controls">
+          <a class="item-control item-delete" data-action="removeArrayEntry" data-field="movementBonuses"
+            data-index="{{index}}" title="Remove">
+            <i class="fas fa-trash"></i>
+          </a>
+        </div>
+      </li>
+      {{/each}}
+    </ol>
+  </div>
+
+  <div class="resource">
+    <label class="resource-label">{{localize 'SKSK.GeneralResource.ChargeBonuses'}}</label>
+    <ol class="items-list items-list-compact">
+      <li class="item flexrow items-header">
+        <div class="item-name">{{localize 'SKSK.GeneralResource.Resource'}}</div>
+        <div class="item-name">Bonus</div>
+        <div class="item-controls">
+          <a class="item-control item-create" data-action="addChargeBonus" title="Add charge bonus">
+            <i class="fas fa-plus"></i>
+          </a>
+        </div>
+      </li>
+      {{#each system.chargeBonuses as |entry index|}}
+      <li class="item flexrow">
+        <div class="item-name">
+          <select name="system.chargeBonuses.{{index}}.resource">
+            {{selectOptions ../chargeResourceChoices selected=entry.resource localize=true}}
+          </select>
+        </div>
+        <div class="item-name">
+          <input type="text" name="system.chargeBonuses.{{index}}.bonus" value="{{entry.bonus}}"
+            data-dtype="Number" />
+        </div>
+        <div class="item-controls">
+          <a class="item-control item-delete" data-action="removeArrayEntry" data-field="chargeBonuses"
+            data-index="{{index}}" title="Remove">
+            <i class="fas fa-trash"></i>
+          </a>
+        </div>
+      </li>
+      {{/each}}
+    </ol>
+  </div>
+
+  <div class="resource">
+    <label class="resource-label">{{localize 'SKSK.AttributeMax.ModifiersLabel'}}</label>
+    <ol class="items-list items-list-compact">
+      <li class="item flexrow items-header">
+        <div class="item-name">{{localize 'SKSK.General.Attribute'}}</div>
+        <div class="item-name">Operation</div>
+        <div class="item-name">{{localize 'SKSK.General.Value'}}</div>
+        <div class="item-controls">
+          <a class="item-control item-create" data-action="addAttributeMaxModifier" title="Add attribute max modifier">
+            <i class="fas fa-plus"></i>
+          </a>
+        </div>
+      </li>
+      {{#each system.attributeMaxModifiers as |entry index|}}
+      <li class="item flexrow">
+        <div class="item-name">
+          <select name="system.attributeMaxModifiers.{{index}}.attribute">
+            {{selectOptions ../attributeChoices selected=entry.attribute localize=true}}
+          </select>
+        </div>
+        <div class="item-name">
+          <select name="system.attributeMaxModifiers.{{index}}.operation">
+            {{selectOptions ../attributeMaxOperationChoices selected=entry.operation localize=true}}
+          </select>
+        </div>
+        <div class="item-name">
+          <input type="text" name="system.attributeMaxModifiers.{{index}}.value" value="{{entry.value}}"
+            data-dtype="Number" />
+        </div>
+        <div class="item-controls">
+          <a class="item-control item-delete" data-action="removeArrayEntry" data-field="attributeMaxModifiers"
+            data-index="{{index}}" title="Remove">
+            <i class="fas fa-trash"></i>
+          </a>
+        </div>
+      </li>
+      {{/each}}
+    </ol>
+  </div>
+</section>
