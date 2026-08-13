@@ -59,11 +59,14 @@ export function getStatusEffectDefinitions() {
 
 /**
  * Seed the "statusEffects" world setting with any of
- * CONFIG.SKSK.predefinedStatusEffects not already present (matched by id) -
- * safe to call every "ready" hook, and safe across future additions to the
- * predefined list (only ever adds missing ones, never touches existing
- * entries - including any the GM has since renamed/re-iconned). Callers
- * must await this before reading the setting again (e.g.
+ * CONFIG.SKSK.predefinedStatusEffects not already present (matched by id),
+ * then re-sync name/description on every predefined entry the GM hasn't
+ * customized (see the "customized" flag below) to the current locale's
+ * translation - keeps a world's predefined names/descriptions correctly
+ * localized as translations are added/changed, without ever overwriting an
+ * intentional GM rename (see status-effects-config.mjs#onSubmit, the only
+ * place "customized" is ever set true). Safe to call every "ready" hook.
+ * Callers must await this before reading the setting again (e.g.
  * registerConfigStatusEffects below) - the write is a real round-trip.
  * @return {Promise<void>}
  */
@@ -71,16 +74,30 @@ export async function ensurePredefinedStatusEffects() {
   const current = game.settings.get('sksk', 'statusEffects') ?? [];
   const existingIds = new Set(current.map(e => e.id));
   const missing = CONFIG.SKSK.predefinedStatusEffects.filter(def => !existingIds.has(def.id));
-  if (!missing.length) return;
 
   const seeded = missing.map(def => ({
     id: def.id,
     predefined: true,
+    customized: false,
     name: game.i18n.localize(def.nameKey),
     img: def.img,
     description: game.i18n.localize(def.descriptionKey),
   }));
-  await game.settings.set('sksk', 'statusEffects', [...current, ...seeded]);
+
+  let changed = seeded.length > 0;
+  const refreshed = current.map(entry => {
+    if (!entry.predefined || entry.customized) return entry;
+    const def = CONFIG.SKSK.predefinedStatusEffects.find(d => d.id === entry.id);
+    if (!def) return entry;
+    const name = game.i18n.localize(def.nameKey);
+    const description = game.i18n.localize(def.descriptionKey);
+    if (name === entry.name && description === entry.description) return entry;
+    changed = true;
+    return { ...entry, name, description };
+  });
+
+  if (!changed) return;
+  await game.settings.set('sksk', 'statusEffects', [...refreshed, ...seeded]);
 }
 
 /**

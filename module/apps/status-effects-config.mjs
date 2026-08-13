@@ -72,6 +72,12 @@ export class SKSKStatusEffectsConfig extends HandlebarsApplicationMixin(Applicat
    * Parse the submitted form's flat "statusEffects.<index>.<field>" keys
    * back into an array and persist it - predefined entries' id/predefined
    * flag are carried over from the existing stored value (not form fields).
+   * A predefined entry is flagged "customized" the moment its name/
+   * description no longer matches the current locale's translation (see
+   * helpers/statusEffects.mjs#ensurePredefinedStatusEffects) - this is what
+   * keeps future locale updates from silently overwriting an intentional
+   * GM rename, while still letting an untouched (or reverted-to-default)
+   * entry keep tracking translation changes automatically.
    * @private
    */
   static async #onSubmit(event, form, formData) {
@@ -79,16 +85,21 @@ export class SKSKStatusEffectsConfig extends HandlebarsApplicationMixin(Applicat
     const existing = game.settings.get('sksk', 'statusEffects') ?? [];
     const statusEffects = Object.entries(expanded.statusEffects ?? {}).map(([index, entry]) => {
       const predefined = existing[index]?.predefined ?? false;
+      const name = entry.name ?? '';
+      const description = entry.description ?? '';
       const result = {
         id: existing[index]?.id ?? foundry.utils.randomID(),
         predefined,
-        name: entry.name ?? '',
+        name,
         img: entry.img ?? 'icons/svg/aura.svg',
-        description: entry.description ?? '',
+        description,
       };
-      // Flat stat modifiers and turn-start ticks are custom-entry-only -
-      // predefined effects manage their own consequences in code instead.
-      if (!predefined) {
+      if (predefined) {
+        const def = CONFIG.SKSK.predefinedStatusEffects.find(d => d.id === result.id);
+        result.customized = def ? (name !== game.i18n.localize(def.nameKey) || description !== game.i18n.localize(def.descriptionKey)) : true;
+      } else {
+        // Flat stat modifiers and turn-start ticks are custom-entry-only -
+        // predefined effects manage their own consequences in code instead.
         for (const field of NUMERIC_FIELDS) result[field] = Number(entry[field]) || 0;
       }
       return result;

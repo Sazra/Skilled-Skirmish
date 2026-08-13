@@ -119,6 +119,7 @@
             "EnchantedAbbr": "Verz.",
             "Quantity": "Menge",
             "QuantityAbbr": "Anz.",
+            "Description": "Beschreibung",
             "Consumable": "Verbrauchbar",
             "ConsumableAbbr": "Verbr."
         },
@@ -805,6 +806,9 @@
             "Species": "Spezies",
             "Class": "Klasse",
             "Skills": "Fertigkeiten",
+            "Abilities": "Fähigkeiten",
+            "Spells": "Zauber",
+            "Effects": "Effekte",
             "General": "Allgemein",
             "Character": "Charakter",
             "Actions": "Aktionen",
@@ -1017,20 +1021,20 @@
             }
         },
         "SkillCategory": {
-            "Weapons": "Waffenfertigkeiten",
-            "Armors": "Rüstungsfertigkeiten",
-            "Production": "Herstellungsfertigkeiten",
-            "Rogue": "Schurkenfertigkeiten",
+            "Weapons": "Waffen",
+            "Armors": "Rüstungen",
+            "Production": "Herstellung",
+            "Rogue": "Schurken",
             "MagicSchools": "Magieschulen",
-            "Magic": "Magiefertigkeiten",
-            "Fighter": "Kämpferfertigkeiten",
-            "Misc": "Nutzungsfertigkeiten",
-            "Attribute": "Attributsfertigkeiten",
-            "Resistances": "Resistenzfertigkeiten",
+            "Magic": "Magie",
+            "Fighter": "Kämpfer",
+            "Misc": "Nutzung",
+            "Attribute": "Attribute",
+            "Resistances": "Resistenzen",
             "Weaknesses": "Schwächen",
             "Immunity": "Immunitäten",
             "Absorb": "Absorbierung",
-            "Special": "Spezielle Fertigkeiten"
+            "Special": "Spezial"
         },
         "Species": {
             "Type": {

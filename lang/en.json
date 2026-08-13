@@ -119,6 +119,7 @@
       "EnchantedAbbr": "Ench.",
       "Quantity": "Quantity",
       "QuantityAbbr": "Qty",
+      "Description": "Description",
       "Consumable": "Consumable",
       "ConsumableAbbr": "Cons."
     },
@@ -1003,20 +1004,20 @@
       }
     },
     "SkillCategory": {
-      "Weapons": "Weapon Skills",
-      "Armors": "Armor Skills",
-      "Production": "Production Skills",
-      "Rogue": "Rogue Skills",
+      "Weapons": "Weapons",
+      "Armors": "Armor",
+      "Production": "Production",
+      "Rogue": "Rogue",
       "MagicSchools": "Magic Schools",
-      "Magic": "Magic Skills",
-      "Fighter": "Fighter Skills",
-      "Misc": "Utility Skills",
-      "Attribute": "Attribute Skills",
-      "Resistances": "Resistance Skills",
+      "Magic": "Magic",
+      "Fighter": "Fighter",
+      "Misc": "Utility",
+      "Attribute": "Attributes",
+      "Resistances": "Resistances",
       "Weaknesses": "Weaknesses",
       "Immunity": "Immunities",
       "Absorb": "Absorption",
-      "Special": "Special Skills"
+      "Special": "Special"
     },
     "SheetLabels": {
       "Actor": "SKSK Actor Sheet",
@@ -1026,6 +1027,9 @@
       "Species": "Species",
       "Class": "Class",
       "Skills": "Skills",
+      "Abilities": "Abilities",
+      "Spells": "Spells",
+      "Effects": "Effects",
       "General": "General",
       "Character": "Character",
       "Actions": "Actions",

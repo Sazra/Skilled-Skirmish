@@ -169,10 +169,10 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       tabs: [
         { id: "general", label: "SKSK.SheetLabels.General" },
         { id: "items", label: "Items" },
-        { id: "abilities", label: "Abilities" },
+        { id: "abilities", label: "SKSK.SheetLabels.Abilities" },
         { id: "skills", label: "SKSK.SheetLabels.Skills" },
-        { id: "spells", label: "Spells" },
-        { id: "effects", label: "Effects" },
+        { id: "spells", label: "SKSK.SheetLabels.Spells" },
+        { id: "effects", label: "SKSK.SheetLabels.Effects" },
         // Only rendered/shown once unlocked - see _configureRenderParts/
         // _prepareContext (same soulforce level 5 / soulPowerResourceEnabled
         // condition already used for the Soul Power resource itself).
