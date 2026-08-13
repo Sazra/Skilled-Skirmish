@@ -478,42 +478,76 @@
   font-weight: bold;
 }
 
-/* Attribute value/modifier display (attributes.hbs) - a value/mod carrying
-   a Spezial-/Modifikator-Bonus shows in the same blue as a skill's own
-   item-bonus suffix (.skill-bonus above). Hovering either box swaps to the
-   Base-only number (no Spezial-Boni) in the normal text color, pure CSS
-   (both numbers are always in the DOM, the non-hovered one just hidden).
-   Fixed widths on both the display and the edit input keep the layout
-   stable when clicking into/out of edit mode. */
-.sksk .attribute-value-wrapper {
+/* Attribute value/modifier display (attributes.hbs) - a square "Wert" box
+   with a circular "Mod" badge semi-overlapping its right edge. A value/mod
+   carrying a Spezial-/Modifikator-Bonus shows in the same blue as a skill's
+   own item-bonus suffix (.skill-bonus above). Hovering either box swaps to
+   the Base-only number (no Spezial-Boni) in the normal text color, pure CSS
+   (both numbers are always in the DOM, the non-hovered one just hidden). */
+.sksk .attribute-box-wrapper {
   position: relative;
-  width: 44px;
+  width: 76px;
+  height: 36px;
+  margin: 0 auto;
+}
+
+.sksk .attribute-value-display,
+.sksk .attribute-value-input {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 60px;
+  height: 36px;
+  box-sizing: border-box;
+  border: 2px solid var(--color-border-dark, #000);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .sksk .attribute-value-display {
-  width: 44px;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
   cursor: pointer;
 }
 
 .sksk .attribute-value-input {
   display: none;
-  width: 44px;
   text-align: center;
+  font-size: 17px;
 }
 
-.sksk .attribute-value-wrapper.editing .attribute-value-display {
+/* While actually being edited, match every other text field's own
+   background (Foundry's own --input-background-color) instead of the
+   value box's translucent-white idle look. */
+.sksk .attribute-value-input:focus {
+  background: var(--input-background-color, #302831);
+}
+
+.sksk .attribute-box-wrapper.editing .attribute-value-display {
   display: none;
 }
 
-.sksk .attribute-value-wrapper.editing .attribute-value-input {
+.sksk .attribute-box-wrapper.editing .attribute-value-input {
   display: block;
 }
 
 .sksk .attribute-mod-display {
-  display: block;
-  min-width: 36px;
-  text-align: center;
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 26px;
+  height: 26px;
+  box-sizing: border-box;
+  border: 2px solid var(--color-border-dark, #000);
+  border-radius: 50%;
+  background: var(--color-cool-4, #37241a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
 }
 
 .sksk .attribute-value-base,
@@ -791,10 +825,6 @@
   cursor: help;
 }
 
-.sksk .side-tab-resources input[type="text"] {
-  text-align: center;
-}
-
 .sksk .carry-weight-value {
   font-size: 20px;
   font-weight: bold;
@@ -808,6 +838,42 @@
   text-align: center;
   color: var(--color-text-dark-secondary, #7a7971);
   font-style: italic;
+}
+
+/* Sidebar resource fields (Life/Neg. Life/Mana/Barrier/AC/MR/AP/RP) - same
+   box height/border/background as the attribute sidebar's own value box
+   (see .attribute-value-display/.attribute-value-input above), just wider
+   so a 6-digit (plus sign) number still fits. Scoped under
+   .side-tab-resources specifically so .resource-computed's OTHER uses
+   (General tab's custom resources, GM tab's Natural Material Bonus) keep
+   their original compact/italic look - only the sidebar copy changes here,
+   at higher specificity than the base .resource-computed rule above. */
+.sksk .side-tab-resources .resource-content input,
+.sksk .side-tab-resources .resource-content .resource-computed {
+  box-sizing: border-box;
+  width: 90px;
+  height: 36px;
+  border: 2px solid var(--color-border-dark, #000);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  text-align: center;
+  font-size: 17px;
+  color: inherit;
+  font-style: normal;
+}
+
+.sksk .side-tab-resources .resource-content .resource-computed {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* While actually being edited, match every other text field's own
+   background (Foundry's own --input-background-color) instead of the
+   idle translucent-white look - same convention as .attribute-value-input:
+   focus above. */
+.sksk .side-tab-resources .resource-content input:focus {
+  background: var(--input-background-color, #302831);
 }
 
 /* Actions tab (General tab's Actions sub-tab) - one row per action, its

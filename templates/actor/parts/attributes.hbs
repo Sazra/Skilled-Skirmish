@@ -10,16 +10,14 @@
                 data-label="{{attribute.label}}"
                 data-tooltip="{{attribute.label}}"
                 data-tooltip-html="{{lookup ../../attributeTooltips key}}">{{attribute.label}}</label>
-            <div class="flexrow flex-group-center">
-                <div class="attribute-value-wrapper">
-                    <div class="attribute-value-display" data-action="editAttributeValue" data-attribute-key="{{key}}">
-                        <span class="attribute-value-full{{#if bonusFlags.value}} attribute-bonus-color{{/if}}">{{attribute.value}}</span>
-                        <span class="attribute-value-base">{{attribute.baseValue}}</span>
-                    </div>
-                    <input type="text" name="system.attributes.{{key}}.rawValue" value="{{attribute.rawValue}}"
-                        data-dtype="Number"
-                        class="attribute-value-input {{#if (gt attribute.rawValue attribute.max)}}attribute-capped{{/if}}" />
+            <div class="attribute-box-wrapper">
+                <div class="attribute-value-display" data-action="editAttributeValue" data-attribute-key="{{key}}">
+                    <span class="attribute-value-full{{#if bonusFlags.value}} attribute-bonus-color{{/if}}">{{attribute.value}}</span>
+                    <span class="attribute-value-base">{{attribute.baseValue}}</span>
                 </div>
+                <input type="text" name="system.attributes.{{key}}.rawValue" value="{{attribute.rawValue}}"
+                    data-dtype="Number"
+                    class="attribute-value-input {{#if (gt attribute.rawValue attribute.max)}}attribute-capped{{/if}}" />
                 <span class="attribute-mod-display rollable" data-action="roll"
                     data-roll="d20+@attributes.{{key}}.mod{{#if attribute.unlimitedBonus}}+{{attribute.unlimitedBonus}}{{/if}}"
                     data-roll-excluding-special="d20+@attributes.{{key}}.modExcludingSpecial{{#if attribute.unlimitedBonus}}+{{attribute.unlimitedBonus}}{{/if}}"

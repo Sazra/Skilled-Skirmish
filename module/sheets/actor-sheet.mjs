@@ -1312,7 +1312,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     // inputs don't blur on Enter by themselves) - see #editAttributeValue.
     for (const input of this.element.querySelectorAll('.attribute-value-input')) {
       input.addEventListener('blur', () => {
-        input.closest('.attribute-value-wrapper')?.classList.remove('editing');
+        input.closest('.attribute-box-wrapper')?.classList.remove('editing');
       });
       input.addEventListener('keydown', (event) => {
         if (event.key !== 'Enter') return;
@@ -1842,7 +1842,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
    * flash of the stale input in the no-change case).
    */
   static #editAttributeValue(event, target) {
-    const wrapper = target.closest('.attribute-value-wrapper');
+    const wrapper = target.closest('.attribute-box-wrapper');
     if (!wrapper) return;
     wrapper.classList.add('editing');
     const input = wrapper.querySelector('.attribute-value-input');
