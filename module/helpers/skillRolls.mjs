@@ -137,7 +137,7 @@ export async function rollSkillCheck(actor, skillKey, chosenAttributes, variant 
   const mode = await chooseGenericRollMode();
   if (!mode) return;
 
-  const level = getActorSkillLevel(actor, skillKey);
+  const level = getActorSkillLevel(actor, skillKey) + (actor.system.skillRollBonus?.[skillKey] ?? 0);
   const modField = ignoreSpecial ? 'modExcludingSpecial' : 'mod';
   const modTerms = chosenAttributes.map(a => `@attributes.${a}.${modField}`).join(' + ');
   const baseFormula = `d20 + ${level} + ${modTerms}`;

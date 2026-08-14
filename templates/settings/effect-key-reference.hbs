@@ -1,0 +1,28 @@
+<div class="sksk-effect-key-reference">
+  <p class="hint">{{localize 'SKSK.EffectKeyReference.Hint'}}</p>
+
+  <input type="search" class="effect-key-search" placeholder="{{localize 'SKSK.EffectKeyReference.SearchPlaceholder'}}" />
+
+  {{#each categories as |category|}}
+  <details class="model-properties-details" open>
+    <summary class="resource-label">{{localize category.title}}</summary>
+    {{#if category.hint}}
+    <p class="hint">{{localize category.hint}}</p>
+    {{/if}}
+    <ol class="items-list items-list-compact effect-key-list">
+      {{#each category.rows as |row|}}
+      <li class="item flexrow" data-search="{{row.label}} {{row.key}}">
+        <div class="item-name">{{row.label}}</div>
+        <div class="item-name"><code>{{row.key}}</code></div>
+        <div class="item-controls">
+          <a class="item-control" data-action="copyEffectKey" data-effect-key="{{row.key}}"
+            title="{{localize 'SKSK.EffectKeyReference.Copy'}}">
+            <i class="fas fa-copy"></i>
+          </a>
+        </div>
+      </li>
+      {{/each}}
+    </ol>
+  </details>
+  {{/each}}
+</div>

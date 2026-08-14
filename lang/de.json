@@ -60,6 +60,11 @@
                 "Name": "Lehren",
                 "Hint": "Der Katalog der pro Fertigkeit verfügbaren Lehren - jeder Charakter verteilt einen gemeinsamen Pool von 5 Stufen frei auf die Lehren einer Fertigkeit, wobei jede Lehre eine eigene Mindest-Fertigkeitsstufe voraussetzt.",
                 "Label": "Lehren konfigurieren"
+            },
+            "EffectKeyReference": {
+                "Name": "Effekt-Schlüssel-Referenz",
+                "Hint": "Eine durchsuchbare Liste aller echten Foundry-Effekt-\"Attribute Key\"-Werte, die dieses System unterstützt.",
+                "Label": "Effekt-Schlüssel durchsuchen"
             }
         },
         "Movement": {
@@ -478,6 +483,24 @@
             },
             "AllowZero": "Nullpunkt erlaubt",
             "AllowZeroHint": "Nur relevant bei Negativ/Multiplikativ: aktiviert erlaubt diesem Eintrag, den FP-Gewinn auf 0 zu senken; deaktiviert begrenzt ihn stattdessen auf mindestens 1."
+        },
+        "EffectKeyReference": {
+            "Hint": "Jeder echte system.*-Pfad, den das \"Attribute Key\"-Feld eines Foundry-Effekts auf einem Akteur ansprechen kann. Klicke das Kopieren-Symbol, oder Strg+Rechtsklick auf ein bereits im Charakterbogen angezeigtes Feld (eine Attribut-Box, eine Ressource, eine Fertigkeitszeile), um dessen eigenen Schlüssel direkt zu kopieren.",
+            "SearchPlaceholder": "Nach Label oder Schlüssel suchen...",
+            "Copy": "Kopieren",
+            "Copied": "Kopiert: {key}",
+            "Category": {
+                "Attributes": "Attribut-Boni",
+                "AttributesHint": "\"Base\" wird üblicherweise nur von benutzerdefinierten Status-Effekten geschrieben, nicht vom eigenen Effekte-Tab eines Items - für die Base-Stufe siehe stattdessen die attributeBonuses-Liste von Spezies/Talent.",
+                "Resources": "Ressourcen-Boni",
+                "Misc": "AC/MR & Sonstiges",
+                "MagicSchoolAttack": "Magieschul-Angriffsboni",
+                "WeaponAttack": "Waffentyp-Angriffsboni",
+                "DamageBonus": "Schadenstyp-Boni",
+                "AttributeRoll": "Attributswurf-Boni",
+                "SkillRoll": "Fertigkeitswurf-Boni",
+                "SkillGain": "Fertigkeiten-FP-Gewinn"
+            }
         },
         "Rest": {
             "Title": "Zeit verbringen",

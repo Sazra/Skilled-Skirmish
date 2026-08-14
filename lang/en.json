@@ -60,6 +60,11 @@
         "Name": "Lehren",
         "Hint": "The catalog of Lehren (Lore) available per skill - each Character freely distributes a shared pool of 5 levels across one skill's own Lehren, gated per-Lehre by its own minimum skill level.",
         "Label": "Configure Lehren"
+      },
+      "EffectKeyReference": {
+        "Name": "Effect Key Reference",
+        "Hint": "A searchable list of every real Foundry Active Effect \"Attribute Key\" this system supports.",
+        "Label": "Browse Effect Keys"
       }
     },
     "Movement": {
@@ -478,6 +483,24 @@
       },
       "AllowZero": "Allow Zero",
       "AllowZeroHint": "Only relevant for Negative/Multiplicative: checked lets this entry's reduction bring the FP gain down to 0; unchecked floors it at 1 instead."
+    },
+    "EffectKeyReference": {
+      "Hint": "Every real system.* path a Foundry Active Effect's own \"Attribute Key\" field can target on an actor. Click the copy icon, or Ctrl+Right-click a field already shown on a Character sheet (an attribute box, a resource, a skill row) to copy its own key directly.",
+      "SearchPlaceholder": "Search by label or key...",
+      "Copy": "Copy",
+      "Copied": "Copied: {key}",
+      "Category": {
+        "Attributes": "Attribute Bonuses",
+        "AttributesHint": "\"Base\" is conventionally written only by custom Status Effects, not by an Item's own Effects tab - see Species/Talent's own attributeBonuses list for the Base tier instead.",
+        "Resources": "Resource Bonuses",
+        "Misc": "AC/MR & Misc",
+        "MagicSchoolAttack": "Magic School Attack Bonuses",
+        "WeaponAttack": "Weapon Type Attack Bonuses",
+        "DamageBonus": "Damage Type Bonuses",
+        "AttributeRoll": "Attribute Roll Bonuses",
+        "SkillRoll": "Skill Roll Bonuses",
+        "SkillGain": "Skill FP Gain"
+      }
     },
     "Rest": {
       "Title": "Spend Time",

@@ -199,7 +199,8 @@ export function computeWeaponAttackBonus(actor, weaponItem) {
   const modelFlat = system.resolvedModel?.flatBonus ?? 0;
   const attributeBonus = computeWeaponAttributeBonus(actor, system);
   const lehrenBonus = computeLehrenTargetBonus(actor, 'attackBonus', { skillKey: system.weaponType, kind: 'weapon' });
-  return skillLevel + materialBonus + modelFlat + attributeBonus + lehrenBonus;
+  const weaponTypeBonus = actor.system.weaponAttackBonus?.[system.weaponType] ?? 0;
+  return skillLevel + materialBonus + modelFlat + attributeBonus + lehrenBonus + weaponTypeBonus;
 }
 
 /**
@@ -231,7 +232,8 @@ export function computeMartialArtsAttackBonus(actor, attack) {
   const materialBonus = computeNaturalMaterialBonus(actor);
   const attributeBonus = computeMartialArtsAttributeBonus(actor, attack);
   const lehrenBonus = computeLehrenTargetBonus(actor, 'attackBonus', { skillKey: 'martialArts', kind: 'weapon' });
-  return skillLevel + materialBonus + attributeBonus + lehrenBonus;
+  const weaponTypeBonus = actor.system.weaponAttackBonus?.martialArts ?? 0;
+  return skillLevel + materialBonus + attributeBonus + lehrenBonus + weaponTypeBonus;
 }
 
 /**

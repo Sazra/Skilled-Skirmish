@@ -6,6 +6,7 @@ import { SKSKCombatStylesConfig } from '../apps/combat-styles-config.mjs';
 import { SKSKSettingsExportImport } from '../apps/settings-export-import.mjs';
 import { SKSKSkillUsageFpConfig } from '../apps/skill-usage-fp-config.mjs';
 import { SKSKLehrenConfig } from '../apps/lehren-config.mjs';
+import { SKSKEffectKeyReference } from '../apps/effect-key-reference.mjs';
 
 /**
  * Register world-scoped game settings for the system.
@@ -205,6 +206,18 @@ export function registerSettings() {
     label: 'SKSK.Settings.Lehren.Label',
     icon: 'fas fa-book',
     type: SKSKLehrenConfig,
+    restricted: true,
+  });
+
+  // GM-only read-only reference: every real system.* path a Foundry Active
+  // Effect can target on an SKSK actor - see apps/effect-key-reference.mjs.
+  // No backing setting - purely derived from CONFIG.SKSK at render time.
+  game.settings.registerMenu('sksk', 'effectKeyReferenceMenu', {
+    name: 'SKSK.Settings.EffectKeyReference.Name',
+    hint: 'SKSK.Settings.EffectKeyReference.Hint',
+    label: 'SKSK.Settings.EffectKeyReference.Label',
+    icon: 'fas fa-key',
+    type: SKSKEffectKeyReference,
     restricted: true,
   });
 }

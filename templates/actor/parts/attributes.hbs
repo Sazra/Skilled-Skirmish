@@ -4,14 +4,15 @@
         {{#with (lookup ../attributeBonusFlags key) as |bonusFlags|}}
         <div class="attribute flexcol flex-group-center">
             <label for="system.attributes.{{key}}.rawValue" class="resource-label rollable flexlarge align-left"
-                data-action="roll" data-roll="d20+@attributes.{{key}}.mod{{#if attribute.unlimitedBonus}}+{{attribute.unlimitedBonus}}{{/if}}"
-                data-roll-excluding-special="d20+@attributes.{{key}}.modExcludingSpecial{{#if attribute.unlimitedBonus}}+{{attribute.unlimitedBonus}}{{/if}}"
+                data-action="roll" data-roll="d20+@attributes.{{key}}.mod{{#if attribute.unlimitedBonus}}+{{attribute.unlimitedBonus}}{{/if}}{{#if bonusFlags.rollBonus}}+{{bonusFlags.rollBonus}}{{/if}}"
+                data-roll-excluding-special="d20+@attributes.{{key}}.modExcludingSpecial{{#if attribute.unlimitedBonus}}+{{attribute.unlimitedBonus}}{{/if}}{{#if bonusFlags.rollBonus}}+{{bonusFlags.rollBonus}}{{/if}}"
                 data-attribute-key="{{key}}"
                 data-label="{{attribute.label}}"
                 data-tooltip="{{attribute.label}}"
                 data-tooltip-html="{{lookup ../../attributeTooltips key}}">{{attribute.label}}</label>
             <div class="attribute-box-wrapper">
-                <div class="attribute-value-display" data-action="editAttributeValue" data-attribute-key="{{key}}">
+                <div class="attribute-value-display" data-action="editAttributeValue" data-attribute-key="{{key}}"
+                    data-effect-key="system.attributeBonuses.{{key}}.special">
                     <span class="attribute-value-full{{#if bonusFlags.value}} attribute-bonus-color{{/if}}">{{attribute.value}}</span>
                     <span class="attribute-value-base">{{attribute.baseValue}}</span>
                 </div>
@@ -19,9 +20,10 @@
                     data-dtype="Number"
                     class="attribute-value-input {{#if (gt attribute.rawValue attribute.max)}}attribute-capped{{/if}}" />
                 <span class="attribute-mod-display rollable" data-action="roll"
-                    data-roll="d20+@attributes.{{key}}.mod{{#if attribute.unlimitedBonus}}+{{attribute.unlimitedBonus}}{{/if}}"
-                    data-roll-excluding-special="d20+@attributes.{{key}}.modExcludingSpecial{{#if attribute.unlimitedBonus}}+{{attribute.unlimitedBonus}}{{/if}}"
+                    data-roll="d20+@attributes.{{key}}.mod{{#if attribute.unlimitedBonus}}+{{attribute.unlimitedBonus}}{{/if}}{{#if bonusFlags.rollBonus}}+{{bonusFlags.rollBonus}}{{/if}}"
+                    data-roll-excluding-special="d20+@attributes.{{key}}.modExcludingSpecial{{#if attribute.unlimitedBonus}}+{{attribute.unlimitedBonus}}{{/if}}{{#if bonusFlags.rollBonus}}+{{bonusFlags.rollBonus}}{{/if}}"
                     data-attribute-key="{{key}}"
+                    data-effect-key="system.attributeBonuses.{{key}}.modifier"
                     data-label="{{attribute.label}}">
                     <span class="attribute-mod-full{{#if bonusFlags.mod}} attribute-bonus-color{{/if}}">{{numberFormat attribute.mod decimals=0 sign=true}}</span>
                     <span class="attribute-mod-base">{{numberFormat attribute.modExcludingSpecial decimals=0 sign=true}}</span>

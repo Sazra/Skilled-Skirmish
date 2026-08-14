@@ -6,7 +6,8 @@
         {{localize 'SKSK.Resource.Life'}}
       </label>
       <div class="resource-content flexrow flex-center flex-between">
-        <input type="text" class="resource-value-input" name="system.life.value" value="{{system.life.value}}" />
+        <input type="text" class="resource-value-input" name="system.life.value" value="{{system.life.value}}"
+          data-effect-key="system.life.bonus" />
       </div>
     </div>
 
@@ -24,7 +25,8 @@
         {{localize 'SKSK.Resource.Mana'}}
       </label>
       <div class="resource-content flexrow flex-center flex-between">
-        <input type="text" class="resource-value-input" name="system.mana.value" value="{{system.mana.value}}" />
+        <input type="text" class="resource-value-input" name="system.mana.value" value="{{system.mana.value}}"
+          data-effect-key="system.mana.bonus" />
       </div>
     </div>
 
@@ -40,7 +42,7 @@
         {{localize 'SKSK.Resource.AC'}}
       </label>
       <div class="resource-content flexrow flex-center flex-between">
-        <span class="resource-computed">{{system.armorClass}}</span>
+        <span class="resource-computed" data-effect-key="system.customArmorClassBonus">{{system.armorClass}}</span>
       </div>
     </div>
 
@@ -49,21 +51,23 @@
         {{localize 'SKSK.Resource.MR'}}
       </label>
       <div class="resource-content flexrow flex-center flex-between">
-        <span class="resource-computed">{{system.magicResistance}}</span>
+        <span class="resource-computed" data-effect-key="system.customMagicResistanceBonus">{{system.magicResistance}}</span>
       </div>
     </div>
 
     <div class="resource flex-group-center">
       <label class="resource-label">{{localize 'SKSK.Resource.AP'}}</label>
       <div class="resource-content flexrow flex-center flex-between">
-        <input type="text" class="resource-value-input" name="system.actionPoints.value" value="{{system.actionPoints.value}}" />
+        <input type="text" class="resource-value-input" name="system.actionPoints.value" value="{{system.actionPoints.value}}"
+          data-effect-key="system.actionPoints.bonus" />
       </div>
     </div>
 
     <div class="resource flex-group-center">
       <label class="resource-label">{{localize 'SKSK.Resource.RP'}}</label>
       <div class="resource-content flexrow flex-center flex-between">
-        <input type="text" class="resource-value-input" name="system.reactionPoints.value" value="{{system.reactionPoints.value}}" />
+        <input type="text" class="resource-value-input" name="system.reactionPoints.value" value="{{system.reactionPoints.value}}"
+          data-effect-key="system.reactionPoints.bonus" />
       </div>
     </div>
 

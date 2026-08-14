@@ -60,7 +60,8 @@ export function computeDamageBonus(damage, actor, spellSystem = null) {
   const lehrenBonus = spellSystem
     ? computeLehrenTargetBonus(actor, 'damageBonus', { skillKey: spellSystem.magicSchool ?? null, kind: 'spell' })
     : 0;
-  return sumBonuses(damage.attributeBonuses, damage.skillBonuses, actor) + lehrenBonus;
+  const damageTypeBonus = actor?.system.damageBonus?.[damage.damageType] ?? 0;
+  return sumBonuses(damage.attributeBonuses, damage.skillBonuses, actor) + lehrenBonus + damageTypeBonus;
 }
 
 /**

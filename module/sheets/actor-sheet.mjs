@@ -43,6 +43,7 @@ import { SKSKLehrenDialog } from '../apps/lehren-dialog.mjs';
 import {
   grantInspirationDie, consumeInspirationCharge, rollOwnInspirationDie, rollGrantedInspirationDie,
 } from '../helpers/inspiration.mjs';
+import { copyEffectKeyToClipboard } from '../helpers/effectKeyReference.mjs';
 import { SKSKMassKillDialog } from '../apps/mass-kill-dialog.mjs';
 import { SKSKMartialArtsAttacksDialog } from '../apps/martial-arts-attacks-dialog.mjs';
 import { SKSKTechniqueDialog } from '../apps/technique-dialog.mjs';
@@ -443,7 +444,8 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       const button = document.createElement('a');
       button.classList.add('minimized-attribute-button');
       button.dataset.action = 'roll';
-      const bonus = attribute.unlimitedBonus ? `+${attribute.unlimitedBonus}` : '';
+      const rollBonus = this.actor.system.attributeRollBonus?.[key] ?? 0;
+      const bonus = `${attribute.unlimitedBonus ? `+${attribute.unlimitedBonus}` : ''}${rollBonus ? `+${rollBonus}` : ''}`;
       button.dataset.roll = `d20+@attributes.${key}.mod${bonus}`;
       button.dataset.rollExcludingSpecial = `d20+@attributes.${key}.modExcludingSpecial${bonus}`;
       button.dataset.attributeKey = key;
@@ -721,7 +723,17 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
 
       const specialBonus = computeSpecialAttributeBonus(actor, key);
       const modifierBonus = computeModifierAttributeBonus(actor, key);
-      context.attributeBonusFlags[key] = { value: specialBonus !== 0, mod: specialBonus !== 0 || modifierBonus !== 0 };
+      // rollBonus is a pure Active-Effect-only bonus to just the attribute's
+      // own standalone roll button (system.attributeRollBonus.<key>) -
+      // deliberately not part of attribute.mod, since mod also feeds skill
+      // checks and weapon/spell attribute contributions. Spliced into
+      // attributes.hbs's own data-roll/data-roll-excluding-special formula
+      // strings, bundled here rather than a separate context map to avoid
+      // an extra {{#with}} nesting level in the template.
+      context.attributeBonusFlags[key] = {
+        value: specialBonus !== 0, mod: specialBonus !== 0 || modifierBonus !== 0,
+        rollBonus: actor.system.attributeRollBonus?.[key] ?? 0,
+      };
     }
 
     return context;
@@ -1351,6 +1363,22 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     this.element.querySelector('[data-action="grantInspiration"]')?.addEventListener('contextmenu', async event => {
       event.preventDefault();
       await rollOwnInspirationDie(this.actor);
+    });
+
+    // Ctrl+Right-click on an attribute value/mod box, a resource field/AC/MR
+    // display, or a skill row copies that field's own Foundry Active Effect
+    // "Attribute Key" (e.g. "system.attributeBonuses.str.special") to the
+    // clipboard - see helpers/effectKeyReference.mjs. Delegated (one
+    // listener for every [data-effect-key] element, rather than one per
+    // element like the attribute-value-input blur/keydown above) since many
+    // elements carry this attribute. A plain right-click still opens
+    // Foundry's own context menu untouched.
+    this.element.addEventListener('contextmenu', async event => {
+      if (!event.ctrlKey) return;
+      const target = event.target.closest('[data-effect-key]');
+      if (!target) return;
+      event.preventDefault();
+      await copyEffectKeyToClipboard(target.dataset.effectKey);
     });
   }
 

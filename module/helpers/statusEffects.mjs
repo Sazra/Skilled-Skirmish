@@ -792,7 +792,8 @@ export function computeDazedAttributeMalus(actor, attributeKey) {
  */
 export function computeD20Malus(actor, attributeKey = null) {
   const lehrenBonus = computeLehrenTargetBonus(actor, 'allRolls');
-  return computeExhaustionD20Malus(actor) + (attributeKey ? computeDazedAttributeMalus(actor, attributeKey) : 0) + lehrenBonus;
+  const allRollsBonus = actor.system.allRollsBonus ?? 0;
+  return computeExhaustionD20Malus(actor) + (attributeKey ? computeDazedAttributeMalus(actor, attributeKey) : 0) + lehrenBonus + allRollsBonus;
 }
 
 /**

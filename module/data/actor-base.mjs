@@ -257,6 +257,45 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       })])
     ));
 
+    // Per-weapon-skill attack bonus - purely an Active Effect target (e.g.
+    // "system.weaponAttackBonus.axe"), same convention as
+    // magicSchoolAttackBonus above but for non-magic weapon attacks. See
+    // helpers/attackRolls.mjs#computeWeaponAttackBonus/
+    // computeMartialArtsAttackBonus.
+    schema.weaponAttackBonus = new fields.SchemaField(Object.fromEntries(
+      Object.keys(CONFIG.SKSK.skills.weapons).map(key => [key, new fields.NumberField({ ...requiredInteger, initial: 0 })])
+    ));
+
+    // Per-damage-type damage bonus - purely an Active Effect target (e.g.
+    // "system.damageBonus.fire"). See helpers/spells.mjs#computeDamageBonus
+    // and helpers/actions.mjs's inline weapon-item/martial-arts damage bonus.
+    schema.damageBonus = new fields.SchemaField(Object.fromEntries(
+      Object.keys(CONFIG.SKSK.damageTypes).map(key => [key, new fields.NumberField({ ...requiredInteger, initial: 0 })])
+    ));
+
+    // Per-attribute bonus to ONLY that attribute's own standalone roll button
+    // - deliberately separate from attributeBonuses.modifier above (which
+    // also leaks into skill checks and weapon/spell attribute-bonus
+    // contributions via @attributes.<key>.mod) - purely an Active Effect
+    // target. See templates/actor/parts/attributes.hbs and
+    // actor-sheet.mjs#_prepareContext (attributeRollBonuses).
+    schema.attributeRollBonus = new fields.SchemaField(Object.fromEntries(
+      Object.keys(CONFIG.SKSK.attributes).map(key => [key, new fields.NumberField({ ...requiredInteger, initial: 0 })])
+    ));
+
+    // Per-skill flat bonus added to that skill's own check roll - purely an
+    // Active Effect target. See helpers/skillRolls.mjs#rollSkillCheck.
+    schema.skillRollBonus = new fields.SchemaField(Object.fromEntries(
+      Object.values(CONFIG.SKSK.skills).flatMap(category => Object.keys(category))
+        .map(key => [key, new fields.NumberField({ ...requiredInteger, initial: 0 })])
+    ));
+
+    // A flat bonus/malus applied to literally every d20 roll - purely an
+    // Active Effect target, folded into the same fan-out Lehren's own
+    // "allRolls" target and Exhaustion/Dazed already use. See
+    // helpers/statusEffects.mjs#computeD20Malus/applyD20Malus.
+    schema.allRollsBonus = new fields.NumberField({ ...requiredInteger, initial: 0 });
+
     schema.biography = new fields.StringField({ required: true, blank: true });
 
     // Character tab's "Data" section - free-flavor fields shown alongside

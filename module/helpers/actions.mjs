@@ -118,7 +118,9 @@ export async function rollWeaponItem(item) {
     const lehrenDamageBonus = actor
       ? computeLehrenTargetBonus(actor, 'damageBonus', { skillKey: item.system.weaponType, kind: 'weapon' })
       : 0;
-    const damageFormula = lehrenDamageBonus ? `${item.system.formula} + ${lehrenDamageBonus}` : item.system.formula;
+    const damageTypeBonus = actor?.system.damageBonus?.[damageType] ?? 0;
+    const totalDamageBonus = lehrenDamageBonus + damageTypeBonus;
+    const damageFormula = totalDamageBonus ? `${item.system.formula} + ${totalDamageBonus}` : item.system.formula;
     const roll = await new Roll(damageFormula, item.getRollData()).evaluate();
     const rendered = await roll.render();
     parts.push(`<div class="sksk-roll-line"><strong>${game.i18n.localize('SKSK.Spell.Roll.Damage')}</strong></div>${rendered}`);
@@ -227,7 +229,8 @@ export async function rollMartialArtsAttack(actor, index) {
 
   const attributeBonus = resolveMartialArtsAttributeBonus(actor, attack.attributes, attack.attributeUsage);
   const lehrenDamageBonus = computeLehrenTargetBonus(actor, 'damageBonus', { skillKey: 'martialArts', kind: 'weapon' });
-  const bonus = attributeBonus + lehrenDamageBonus;
+  const damageTypeBonus = actor.system.damageBonus?.[attack.damageType] ?? 0;
+  const bonus = attributeBonus + lehrenDamageBonus + damageTypeBonus;
   const formula = bonus ? `${attack.formula} + ${bonus}` : attack.formula;
   const roll = await new Roll(formula, actor.getRollData()).evaluate();
   const renderedDamage = await roll.render();
