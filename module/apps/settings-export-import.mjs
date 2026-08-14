@@ -8,17 +8,17 @@ const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
  * Methods/Skill Usage FP lists) without manually re-entering everything.
  */
 const EXPORTABLE_SETTINGS = [
-  'skillPointsLevel5',
   'skillPointsLevel10',
+  'skillPointsLevel5',
   'carryWeightFormula',
   'materials',
   'weaponModels',
   'armorModels',
-  'statusEffects',
-  'trainingMethods',
-  'skillUsageFp',
   'combatStyles',
+  'trainingMethods',
   'lehren',
+  'skillUsageFp',
+  'statusEffects',
 ];
 
 /**

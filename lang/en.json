@@ -13,6 +13,11 @@
         "Name": "Max Carry Weight Formula",
         "Hint": "Base max carry weight, before size-category scaling (Tiny 25%, Small 75%, Medium 100%, Large 150%, Huge 300%, Gigantic 1000%, Titanic unlimited). A real roll formula - reference attributes as @attributes.str.value or @attributes.str.mod, skill levels as @skills.<key> (e.g. @skills.axe), and character level as @lvl."
       },
+      "GeneralSettings": {
+        "Name": "General Settings",
+        "Hint": "Skill point costs for Level 10/Level 5 skills, and the max carry weight formula.",
+        "Label": "Configure General Settings"
+      },
       "Materials": {
         "Name": "Materials",
         "Hint": "Materials selectable on Items/Armor/Weapons. Material Bonus and Mana Capacity may each be a number, or \"?\" to let each item using this material set its own value instead.",

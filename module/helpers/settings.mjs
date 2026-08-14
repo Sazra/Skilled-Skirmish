@@ -7,27 +7,28 @@ import { SKSKSettingsExportImport } from '../apps/settings-export-import.mjs';
 import { SKSKSkillUsageFpConfig } from '../apps/skill-usage-fp-config.mjs';
 import { SKSKLehrenConfig } from '../apps/lehren-config.mjs';
 import { SKSKEffectKeyReference } from '../apps/effect-key-reference.mjs';
+import { SKSKGeneralSettingsConfig } from '../apps/general-settings-config.mjs';
 
 /**
  * Register world-scoped game settings for the system.
  */
 export function registerSettings() {
-  game.settings.register('sksk', 'skillPointsLevel5', {
-    name: 'SKSK.Settings.SkillPointsLevel5.Name',
-    hint: 'SKSK.Settings.SkillPointsLevel5.Hint',
-    scope: 'world',
-    config: true,
-    type: Number,
-    default: 400,
-  });
-
+  // Bundled behind the General Settings menu below (apps/general-settings-
+  // config.mjs) rather than rendered as separate config:true fields by
+  // Foundry's own Settings dialog - config:false hides them from that
+  // native list.
   game.settings.register('sksk', 'skillPointsLevel10', {
-    name: 'SKSK.Settings.SkillPointsLevel10.Name',
-    hint: 'SKSK.Settings.SkillPointsLevel10.Hint',
     scope: 'world',
-    config: true,
+    config: false,
     type: Number,
     default: 200,
+  });
+
+  game.settings.register('sksk', 'skillPointsLevel5', {
+    scope: 'world',
+    config: false,
+    type: Number,
+    default: 400,
   });
 
   // The base max carry weight, before the size-category multiplier (see
@@ -40,12 +41,22 @@ export function registerSettings() {
   // ".value" - a GM authoring a custom formula should do the same unless
   // they specifically want Spezial-/Modifikator-Boni to affect it too.
   game.settings.register('sksk', 'carryWeightFormula', {
-    name: 'SKSK.Settings.CarryWeightFormula.Name',
-    hint: 'SKSK.Settings.CarryWeightFormula.Hint',
     scope: 'world',
-    config: true,
+    config: false,
     type: String,
     default: '@attributes.str.baseValue * 5',
+  });
+
+  // GM-only menu bundling the three plain settings above into one dialog -
+  // see apps/general-settings-config.mjs. Registered first so its button is
+  // the first entry in the Skilled Skirmish settings list.
+  game.settings.registerMenu('sksk', 'generalSettingsMenu', {
+    name: 'SKSK.Settings.GeneralSettings.Name',
+    hint: 'SKSK.Settings.GeneralSettings.Hint',
+    label: 'SKSK.Settings.GeneralSettings.Label',
+    icon: 'fas fa-sliders-h',
+    type: SKSKGeneralSettingsConfig,
+    restricted: true,
   });
 
   // GM-configurable list of materials selectable on Item/Armor/Weapon
@@ -95,24 +106,23 @@ export function registerSettings() {
     restricted: true,
   });
 
-  // GM-configurable list of status effects (each entry {id, predefined,
-  // name, img, description}) - see apps/status-effects-config.mjs and
-  // helpers/statusEffects.mjs. Seeded with the system's predefined,
-  // mechanically-automated effects (CONFIG.SKSK.predefinedStatusEffects) on
-  // "ready" if missing; a GM can also add fully custom, flavor-only ones.
-  game.settings.register('sksk', 'statusEffects', {
+  // GM-configurable list of Kampfstile (each entry {id, name}) - see
+  // apps/combat-styles-config.mjs and data/technique.mjs. A Technique item
+  // stores the chosen style's id and resolves it against this live list at
+  // render/roll time, same convention as Training Methods below.
+  game.settings.register('sksk', 'combatStyles', {
     scope: 'world',
     config: false,
     type: Array,
     default: [],
   });
 
-  game.settings.registerMenu('sksk', 'statusEffectsMenu', {
-    name: 'SKSK.Settings.StatusEffects.Name',
-    hint: 'SKSK.Settings.StatusEffects.Hint',
-    label: 'SKSK.Settings.StatusEffects.Label',
-    icon: 'fas fa-skull-crossbones',
-    type: SKSKStatusEffectsConfig,
+  game.settings.registerMenu('sksk', 'combatStylesMenu', {
+    name: 'SKSK.Settings.CombatStyles.Name',
+    hint: 'SKSK.Settings.CombatStyles.Hint',
+    label: 'SKSK.Settings.CombatStyles.Label',
+    icon: 'fas fa-fist-raised',
+    type: SKSKCombatStylesConfig,
     restricted: true,
   });
 
@@ -137,35 +147,24 @@ export function registerSettings() {
     restricted: true,
   });
 
-  // GM-configurable list of Kampfstile (each entry {id, name}) - see
-  // apps/combat-styles-config.mjs and data/technique.mjs. A Technique item
-  // stores the chosen style's id and resolves it against this live list at
-  // render/roll time, same convention as Training Methods above.
-  game.settings.register('sksk', 'combatStyles', {
+  // GM-configurable catalog of Lehren (Lore), per skill - see apps/lehren-
+  // config.mjs and helpers/lehren.mjs. Each skill has its own list; a
+  // Character freely distributes a shared pool of 5 levels across one
+  // skill's own Lehren (apps/lehren-dialog.mjs), gated per-Lehre by its own
+  // minSkillLevel.
+  game.settings.register('sksk', 'lehren', {
     scope: 'world',
     config: false,
-    type: Array,
-    default: [],
+    type: Object,
+    default: {},
   });
 
-  game.settings.registerMenu('sksk', 'combatStylesMenu', {
-    name: 'SKSK.Settings.CombatStyles.Name',
-    hint: 'SKSK.Settings.CombatStyles.Hint',
-    label: 'SKSK.Settings.CombatStyles.Label',
-    icon: 'fas fa-fist-raised',
-    type: SKSKCombatStylesConfig,
-    restricted: true,
-  });
-
-  // GM-only export/import of every world setting above as one JSON file -
-  // see apps/settings-export-import.mjs. No backing setting of its own,
-  // just a menu opening the export/import app.
-  game.settings.registerMenu('sksk', 'exportImportMenu', {
-    name: 'SKSK.Settings.ExportImport.Name',
-    hint: 'SKSK.Settings.ExportImport.Hint',
-    label: 'SKSK.Settings.ExportImport.Label',
-    icon: 'fas fa-file-export',
-    type: SKSKSettingsExportImport,
+  game.settings.registerMenu('sksk', 'lehrenMenu', {
+    name: 'SKSK.Settings.Lehren.Name',
+    hint: 'SKSK.Settings.Lehren.Hint',
+    label: 'SKSK.Settings.Lehren.Label',
+    icon: 'fas fa-book',
+    type: SKSKLehrenConfig,
     restricted: true,
   });
 
@@ -188,24 +187,36 @@ export function registerSettings() {
     restricted: true,
   });
 
-  // GM-configurable catalog of Lehren (Lore), per skill - see apps/lehren-
-  // config.mjs and helpers/lehren.mjs. Each skill has its own list; a
-  // Character freely distributes a shared pool of 5 levels across one
-  // skill's own Lehren (apps/lehren-dialog.mjs), gated per-Lehre by its own
-  // minSkillLevel.
-  game.settings.register('sksk', 'lehren', {
+  // GM-configurable list of status effects (each entry {id, predefined,
+  // name, img, description}) - see apps/status-effects-config.mjs and
+  // helpers/statusEffects.mjs. Seeded with the system's predefined,
+  // mechanically-automated effects (CONFIG.SKSK.predefinedStatusEffects) on
+  // "ready" if missing; a GM can also add fully custom, flavor-only ones.
+  game.settings.register('sksk', 'statusEffects', {
     scope: 'world',
     config: false,
-    type: Object,
-    default: {},
+    type: Array,
+    default: [],
   });
 
-  game.settings.registerMenu('sksk', 'lehrenMenu', {
-    name: 'SKSK.Settings.Lehren.Name',
-    hint: 'SKSK.Settings.Lehren.Hint',
-    label: 'SKSK.Settings.Lehren.Label',
-    icon: 'fas fa-book',
-    type: SKSKLehrenConfig,
+  game.settings.registerMenu('sksk', 'statusEffectsMenu', {
+    name: 'SKSK.Settings.StatusEffects.Name',
+    hint: 'SKSK.Settings.StatusEffects.Hint',
+    label: 'SKSK.Settings.StatusEffects.Label',
+    icon: 'fas fa-skull-crossbones',
+    type: SKSKStatusEffectsConfig,
+    restricted: true,
+  });
+
+  // GM-only export/import of every world setting above as one JSON file -
+  // see apps/settings-export-import.mjs. No backing setting of its own,
+  // just a menu opening the export/import app.
+  game.settings.registerMenu('sksk', 'exportImportMenu', {
+    name: 'SKSK.Settings.ExportImport.Name',
+    hint: 'SKSK.Settings.ExportImport.Hint',
+    label: 'SKSK.Settings.ExportImport.Label',
+    icon: 'fas fa-file-export',
+    type: SKSKSettingsExportImport,
     restricted: true,
   });
 
