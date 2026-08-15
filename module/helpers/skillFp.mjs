@@ -227,15 +227,20 @@ export function formatSkillFpGrantText(grant) {
 }
 
 /**
- * Render a grantSkillUsageFp result as a chat-card line, matching the style
- * used for Training's own FP grants (helpers/training.mjs). Empty string if
- * nothing was granted.
+ * Render a grantSkillUsageFp result as a chat-card line - a permanent no-op.
+ * FP gains are only ever surfaced in chat for Training (helpers/
+ * training.mjs builds its own lines directly, with its own localization key,
+ * never through this function), everywhere else FP is granted silently (the
+ * underlying grantSkillUsageFp/grantFlatSkillFp call this wraps still runs
+ * and still updates the skill's pending FP - only the chat-card line is
+ * suppressed). Kept as a function (rather than deleting every call site) so
+ * the many callers building "does this grant produce a line?" HTML don't
+ * all need editing individually.
  * @param {{label: string, amount: number}|null} grant
  * @return {string}
  */
 export function formatSkillFpGrantLine(grant) {
-  if (!grant) return '';
-  return `<div class="sksk-roll-line">${formatSkillFpGrantText(grant)}</div>`;
+  return '';
 }
 
 /**

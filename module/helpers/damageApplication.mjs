@@ -1,7 +1,6 @@
 import { applyElementalDefense } from './defense.mjs';
-import { applyLifeChange, negativeLifeOverflowHTML, getStatusStacks } from './statusEffects.mjs';
+import { applyLifeChange, negativeLifeOverflowHTML, getStatusStacks, increaseStatusStacks, getStatusEffectDefinitions } from './statusEffects.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
-import { applyTechniqueEffectToTarget } from './technique-rolls.mjs';
 
 /**
  * Resolve the "defender" for an Angriffswurf-related chat-button click
@@ -40,6 +39,119 @@ export function mergeDamageEntries(entries) {
 }
 
 /**
+ * Copy a consumed "effect"/"attackTarget" Technique's own linked
+ * ActiveEffect (see data/technique.mjs#effectId, created via helpers/
+ * technique-rolls.mjs#ensureLinkedEffect) - which stays on the granting
+ * actor, always disabled, purely as a template - onto the resolved
+ * defender as a fresh, enabled ActiveEffect, leaving that template
+ * untouched for the next time this Technique gets primed. A no-op
+ * (returns "") if the granting Item or its own template effect can no
+ * longer be found.
+ * @param {string} itemUuid
+ * @param {string} effectId
+ * @param {Actor} defender
+ * @return {Promise<string>}
+ */
+async function applyTechniqueEffectToTarget(itemUuid, effectId, defender) {
+  const item = itemUuid ? await fromUuid(itemUuid) : null;
+  const template = item?.actor?.effects.get(effectId);
+  if (!template) return '';
+
+  const effectData = template.toObject();
+  delete effectData._id;
+  effectData.disabled = false;
+  effectData.origin = item.uuid;
+  await defender.createEmbeddedDocuments('ActiveEffect', [effectData]);
+
+  return `<div class="sksk-roll-line">${game.i18n.format('SKSK.Technique.EffectApplied', { name: item.name, target: defender.name })}</div>`;
+}
+
+/**
+ * Apply every effect an "effect"-category Technique carries (see
+ * data/technique.mjs#effectId/effectStatusEffects, both may be set at
+ * once) to a resolved defender - the freeform linked ActiveEffect (if any,
+ * see applyTechniqueEffectToTarget above) and every predefined status
+ * effect entry (via helpers/statusEffects.mjs#increaseStatusStacks). Shared
+ * by both delivery paths: the plain "Apply Damage"/"Apply Effect" button
+ * below (no saving throw configured) and helpers/technique-rolls.mjs#
+ * rollTechniqueEffectSaveFromChat (saving throw configured, only called
+ * here on a failed save). A no-op (returns "") if the Item can no longer
+ * be found.
+ * @param {string} itemUuid
+ * @param {Actor} defender
+ * @return {Promise<string>}
+ */
+export async function applyTechniqueEffectBundle(itemUuid, defender) {
+  const item = itemUuid ? await fromUuid(itemUuid) : null;
+  if (!item) return '';
+
+  const lines = [];
+  if (item.system.effectId) {
+    const line = await applyTechniqueEffectToTarget(itemUuid, item.system.effectId, defender);
+    if (line) lines.push(line);
+  }
+  for (const entry of item.system.effectStatusEffects ?? []) {
+    if (!entry.statusId) continue;
+    await increaseStatusStacks(defender, entry.statusId, entry.stacks ?? 1);
+    const def = getStatusEffectDefinitions().find(d => d.id === entry.statusId);
+    lines.push(`<div class="sksk-roll-line sksk-roll-status-effect">${game.i18n.format('SKSK.Technique.StatusEffectApplied', { name: def?.name ?? entry.statusId, target: defender.name })}</div>`);
+  }
+  return lines.join('');
+}
+
+/**
+ * Apply every "attack"/"save"/"unconditional"-triggered status/Foundry
+ * effect entry a Spell carries (see data/spell.mjs#statusEffects/
+ * foundryEffects) that matches the given group to a resolved defender -
+ * predefined status effects via helpers/statusEffects.mjs#
+ * increaseStatusStacks, freeform Active Effects by copying each entry's own
+ * linked template (see helpers/spell-rolls.mjs#ensureLinkedSpellEffect,
+ * same bind-then-copy pattern as applyTechniqueEffectToTarget above) onto
+ * the defender. Shared by helpers/spell-rolls.mjs#applySpellEffectFromChat
+ * (group "attack"/"unconditional", its own dedicated "Effekt anwenden"
+ * button) and #rollSpellEffectSaveFromChat (group "save", keyed additionally
+ * by savingThrowIndex - only called there on a failed save). A no-op
+ * (returns "") if the Item can no longer be found.
+ * @param {string} itemUuid
+ * @param {"attack"|"save"|"unconditional"} group
+ * @param {number|null} savingThrowIndex   Only meaningful for group "save" -
+ *   which specific saving throw's own effect entries to apply (entries for
+ *   any OTHER saving throw index are left alone).
+ * @param {Actor} defender
+ * @return {Promise<string>}
+ */
+export async function applySpellEffectGroup(itemUuid, group, savingThrowIndex, defender) {
+  const item = itemUuid ? await fromUuid(itemUuid) : null;
+  if (!item) return '';
+
+  // A blank/null savingThrowIndex on the entry itself defaults to 0 - see
+  // helpers/spell-rolls.mjs#renderSpellEffectParts's own identical fallback
+  // (and its comment) for why: a <select> with only one saving throw shows
+  // it pre-selected via plain browser default, which never fires a "change"
+  // event on its own, so the field can stay unset in storage.
+  const matches = (entry) => entry.trigger === group && (group !== 'save' || (entry.savingThrowIndex ?? 0) === savingThrowIndex);
+  const lines = [];
+  for (const entry of item.system.statusEffects ?? []) {
+    if (!matches(entry) || !entry.statusId) continue;
+    await increaseStatusStacks(defender, entry.statusId, entry.stacks ?? 1);
+    const def = getStatusEffectDefinitions().find(d => d.id === entry.statusId);
+    lines.push(`<div class="sksk-roll-line sksk-roll-status-effect">${game.i18n.format('SKSK.Spell.StatusEffectApplied', { name: def?.name ?? entry.statusId, target: defender.name })}</div>`);
+  }
+  for (const entry of item.system.foundryEffects ?? []) {
+    if (!matches(entry) || !entry.effectId) continue;
+    const template = item.actor?.effects.get(entry.effectId);
+    if (!template) continue;
+    const effectData = template.toObject();
+    delete effectData._id;
+    effectData.disabled = false;
+    effectData.origin = item.uuid;
+    await defender.createEmbeddedDocuments('ActiveEffect', [effectData]);
+    lines.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.EffectApplied', { name: entry.name || item.name, target: defender.name })}</div>`);
+  }
+  return lines.join('');
+}
+
+/**
  * Render a "Schaden anwenden" (Apply Damage) button for one or more
  * already-rolled damage amounts (see rollWeaponItem/rollMartialArtsAttack/
  * renderDamageRoll/rollCriticalBonusDamage) - clicking it (see
@@ -57,23 +169,23 @@ export function mergeDamageEntries(entries) {
  *   a Kill to, if this ends up being the killing blow - null for sources
  *   with no configured "kill" rate (currently only weapon-category skills
  *   have one - see apps/skill-usage-fp-config.mjs).
- * @param {{itemUuid: string, effectId: string}|null} [techniqueEffect]   A
- *   consumed "effect"/"attackTarget" Technique's own payload (see helpers/
- *   technique-rolls.mjs#getTechniqueEffectPayload) - when given, the button
- *   still renders (labelled "Apply Effect" instead) even if every damage
- *   entry is non-positive, so a damage-less target-effect Technique still
- *   gets a button to hang its own application off of; applyDamageFromChat
- *   then also copies that Technique's own linked ActiveEffect onto the
- *   resolved defender.
+ * @param {{itemUuid: string}|null} [techniqueEffect]   A consumed "effect"/
+ *   "attackTarget" Technique's own payload (see helpers/technique-rolls.mjs#
+ *   getTechniqueEffectPayload) - null whenever that Technique's own saving
+ *   throw is enabled instead (see helpers/technique-rolls.mjs#
+ *   renderTechniqueSavingThrowHTML, rendered as its own separate button in
+ *   that case). When given, this button still renders (labelled "Apply
+ *   Effect" instead) even if every damage entry is non-positive, so a
+ *   damage-less target-effect Technique still gets a button to hang its own
+ *   application off of; applyDamageFromChat then applies that Technique's
+ *   own effect(s) unconditionally via applyTechniqueEffectBundle above.
  * @return {string}
  */
 export function renderApplyDamageButton(attacker, damageEntries, killSkillKey = null, techniqueEffect = null) {
   const entries = mergeDamageEntries(damageEntries);
   if (!entries.length && !techniqueEffect) return '';
   const payload = encodeURIComponent(JSON.stringify(entries));
-  const techniqueAttrs = techniqueEffect
-    ? ` data-technique-item-uuid="${techniqueEffect.itemUuid}" data-technique-effect-id="${techniqueEffect.effectId}"`
-    : '';
+  const techniqueAttrs = techniqueEffect ? ` data-technique-item-uuid="${techniqueEffect.itemUuid}"` : '';
   const label = entries.length
     ? game.i18n.localize('SKSK.AttackRoll.ApplyDamage')
     : game.i18n.localize('SKSK.Technique.ApplyEffect');
@@ -142,8 +254,8 @@ export async function applyDamageFromChat(button) {
     }
   }
 
-  if (button.dataset.techniqueEffectId) {
-    lines.push(await applyTechniqueEffectToTarget(button.dataset.techniqueItemUuid, button.dataset.techniqueEffectId, defender));
+  if (button.dataset.techniqueItemUuid) {
+    lines.push(await applyTechniqueEffectBundle(button.dataset.techniqueItemUuid, defender));
   }
 
   const wasAlreadyDead = defender.system.life.value === 0 && defender.system.negativeLife.value >= defender.system.negativeLife.max;

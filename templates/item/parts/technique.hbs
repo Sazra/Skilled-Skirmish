@@ -44,17 +44,69 @@
     {{/if}}
   </div>
 
-  {{#if isBonusDamage}}
-  <div class="grid grid-2col">
-    <div class="grid-span-1">
-      <label class="resource-label">{{localize 'SKSK.Technique.BonusDamageModeLabel'}}</label>
-      <select name="system.bonusDamageMode">
-        {{selectOptions bonusDamageModeChoices selected=system.bonusDamageMode localize=true}}
-      </select>
+  {{#if isAttackBonus}}
+  <div class="resource">
+    <label class="resource-label" title="{{localize 'SKSK.Technique.BonusDamageHint'}}">{{localize 'SKSK.Technique.BonusDamageSection'}}</label>
+    <div class="grid grid-2col">
+      <div class="grid-span-1">
+        <label class="resource-label">{{localize 'SKSK.Technique.BonusDamageModeLabel'}}</label>
+        <select name="system.bonusDamageMode">
+          {{selectOptions bonusDamageModeChoices selected=system.bonusDamageMode localize=true}}
+        </select>
+      </div>
+      <div class="grid-span-1">
+        {{#if bonusDamageModeIsFormula}}
+        <label class="resource-label">{{localize 'SKSK.Technique.BonusDamageFormula'}}</label>
+        <input type="text" name="system.bonusDamageFormula" value="{{system.bonusDamageFormula}}" placeholder="2d6" />
+        {{else}}
+        <label class="resource-label">{{localize 'SKSK.Technique.BonusDamageAmount'}}</label>
+        <input type="text" name="system.bonusDamageAmount" value="{{system.bonusDamageAmount}}" data-dtype="Number" />
+        {{/if}}
+      </div>
     </div>
-    <div class="grid-span-1">
-      <label class="resource-label">{{localize 'SKSK.Technique.BonusDamageAmount'}}</label>
-      <input type="text" name="system.bonusDamageAmount" value="{{system.bonusDamageAmount}}" data-dtype="Number" />
+  </div>
+
+  <div class="resource">
+    <label class="resource-label" title="{{localize 'SKSK.Technique.DiceIncreaseHint'}}">{{localize 'SKSK.Technique.DiceIncreaseSection'}}</label>
+    <div class="grid grid-2col">
+      <div class="grid-span-1">
+        <label class="resource-label">{{localize 'SKSK.Technique.DiceIncreaseModeLabel'}}</label>
+        <select name="system.diceIncreaseMode">
+          {{selectOptions diceIncreaseModeChoices selected=system.diceIncreaseMode localize=true}}
+        </select>
+      </div>
+      <div class="grid-span-1">
+        <label class="resource-label">{{localize 'SKSK.Technique.DiceIncreaseAmount'}}</label>
+        <input type="text" name="system.diceIncreaseAmount" value="{{system.diceIncreaseAmount}}" data-dtype="Number" />
+      </div>
+    </div>
+  </div>
+
+  <div class="resource">
+    <label class="resource-label" title="{{localize 'SKSK.Technique.HitBonusHint'}}">{{localize 'SKSK.Technique.HitBonusSection'}}</label>
+    <div class="grid grid-2col">
+      <div class="grid-span-1">
+        <label class="resource-label">{{localize 'SKSK.Technique.HitBonusAmount'}}</label>
+        <input type="text" name="system.hitBonusAmount" value="{{system.hitBonusAmount}}" data-dtype="Number" />
+      </div>
+    </div>
+  </div>
+
+  <div class="resource">
+    <label class="resource-label" title="{{localize 'SKSK.Technique.ApplicableToHint'}}">{{localize 'SKSK.Technique.ApplicableToSection'}}</label>
+    <div class="casting-methods">
+      <label class="casting-method-option">
+        <input type="checkbox" name="system.applicableToWeapon" {{checked system.applicableToWeapon}} />
+        {{localize 'SKSK.Technique.ApplicableToWeapon'}}
+      </label>
+      <label class="casting-method-option">
+        <input type="checkbox" name="system.applicableToMartialArts" {{checked system.applicableToMartialArts}} />
+        {{localize 'SKSK.Technique.ApplicableToMartialArts'}}
+      </label>
+      <label class="casting-method-option">
+        <input type="checkbox" name="system.applicableToSpell" {{checked system.applicableToSpell}} />
+        {{localize 'SKSK.Technique.ApplicableToSpell'}}
+      </label>
     </div>
   </div>
   {{/if}}
@@ -66,6 +118,125 @@
       {{selectOptions effectTargetChoices selected=system.effectTarget localize=true}}
     </select>
   </div>
+
+  <div class="resource">
+    <label class="resource-label" title="{{localize 'SKSK.Technique.EffectStatusEffectsHint'}}">{{localize 'SKSK.Technique.EffectStatusEffectsLabel'}}</label>
+    <ol class="items-list items-list-compact">
+      <li class="item flexrow items-header">
+        <div class="item-name">Status Effect</div>
+        <div class="item-name">{{localize 'SKSK.General.Value'}}</div>
+        <div class="item-controls">
+          <a class="item-control item-create" data-action="addTechniqueStatusEffect" title="{{localize 'SKSK.Technique.AddStatusEffect'}}">
+            <i class="fas fa-plus"></i>
+          </a>
+        </div>
+      </li>
+      {{#each system.effectStatusEffects as |entry index|}}
+      <li class="item flexrow">
+        <div class="item-name">
+          <select name="system.effectStatusEffects.{{index}}.statusId">
+            <option value=""></option>
+            {{selectOptions ../statusEffectChoices selected=entry.statusId}}
+          </select>
+        </div>
+        <div class="item-name">
+          <input type="text" name="system.effectStatusEffects.{{index}}.stacks" value="{{entry.stacks}}" data-dtype="Number" />
+        </div>
+        <div class="item-controls">
+          <a class="item-control item-delete" data-action="removeArrayEntry" data-field="effectStatusEffects"
+            data-index="{{index}}" title="{{localize 'SKSK.Technique.RemoveStatusEffect'}}">
+            <i class="fas fa-trash"></i>
+          </a>
+        </div>
+      </li>
+      {{/each}}
+    </ol>
+  </div>
+
+  {{#if showEffectSavingThrow}}
+  <div class="resource">
+    <label class="checkbox">
+      <input type="checkbox" name="system.effectSavingThrowEnabled" {{checked system.effectSavingThrowEnabled}} />
+      {{localize 'SKSK.Technique.EffectSavingThrowEnabled'}}
+    </label>
+    {{#if system.effectSavingThrowEnabled}}
+    <div class="grid grid-2col">
+      <div class="grid-span-1">
+        <label class="resource-label">{{localize 'SKSK.Technique.EffectSavingThrowBaseValue'}}</label>
+        <input type="text" name="system.effectSavingThrowBaseValue" value="{{system.effectSavingThrowBaseValue}}" data-dtype="Number" />
+      </div>
+    </div>
+
+    <div class="bonus-groups tested-by-groups">
+      <div class="bonus-group">
+        <label class="resource-label">Tested Attribute</label>
+        <div class="casting-methods">
+          <label class="casting-method-option">
+            <input type="checkbox" name="system.effectSavingThrowTestAttributes.str" {{checked system.effectSavingThrowTestAttributes.str}} />
+            {{localize "SKSK.Attribute.Str.abbr"}}
+          </label>
+          <label class="casting-method-option">
+            <input type="checkbox" name="system.effectSavingThrowTestAttributes.dex" {{checked system.effectSavingThrowTestAttributes.dex}} />
+            {{localize "SKSK.Attribute.Dex.abbr"}}
+          </label>
+          <label class="casting-method-option">
+            <input type="checkbox" name="system.effectSavingThrowTestAttributes.con" {{checked system.effectSavingThrowTestAttributes.con}} />
+            {{localize "SKSK.Attribute.Con.abbr"}}
+          </label>
+          <label class="casting-method-option">
+            <input type="checkbox" name="system.effectSavingThrowTestAttributes.per" {{checked system.effectSavingThrowTestAttributes.per}} />
+            {{localize "SKSK.Attribute.Per.abbr"}}
+          </label>
+          <label class="casting-method-option">
+            <input type="checkbox" name="system.effectSavingThrowTestAttributes.wil" {{checked system.effectSavingThrowTestAttributes.wil}} />
+            {{localize "SKSK.Attribute.Wil.abbr"}}
+          </label>
+          <label class="casting-method-option">
+            <input type="checkbox" name="system.effectSavingThrowTestAttributes.aur" {{checked system.effectSavingThrowTestAttributes.aur}} />
+            {{localize "SKSK.Attribute.Aur.abbr"}}
+          </label>
+          <label class="casting-method-option">
+            <input type="checkbox" name="system.effectSavingThrowTestAttributes.cha" {{checked system.effectSavingThrowTestAttributes.cha}} />
+            {{localize "SKSK.Attribute.Cha.abbr"}}
+          </label>
+          <label class="casting-method-option">
+            <input type="checkbox" name="system.effectSavingThrowTestAttributes.app" {{checked system.effectSavingThrowTestAttributes.app}} />
+            {{localize "SKSK.Attribute.App.abbr"}}
+          </label>
+        </div>
+      </div>
+
+      <div class="bonus-group">
+        <label class="resource-label">Tested Skill</label>
+        <ol class="items-list items-list-compact">
+          {{#each system.effectSavingThrowTestSkills as |skill index|}}
+          <li class="item flexrow">
+            <div class="item-name">
+              <select name="system.effectSavingThrowTestSkills.{{index}}">
+                {{selectOptions ../combinedSkillChoices selected=skill localize=true}}
+              </select>
+            </div>
+            <div class="item-controls">
+              <a class="item-control item-delete" data-action="removeArrayEntry" data-field="effectSavingThrowTestSkills"
+                data-index="{{index}}" title="Remove">
+                <i class="fas fa-trash"></i>
+              </a>
+            </div>
+          </li>
+          {{/each}}
+          <li class="item flexrow">
+            <div class="item-controls">
+              <a class="item-control item-create" data-action="addTechniqueTestSkill" title="Add tested skill">
+                <i class="fas fa-plus"></i> {{localize 'SKSK.Technique.AddTestSkill'}}
+              </a>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </div>
+    {{/if}}
+  </div>
+  {{/if}}
   {{/if}}
 
   {{#if isStand}}

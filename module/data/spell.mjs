@@ -177,12 +177,36 @@ export default class SKSKSpell extends SKSKItemBase {
       })),
     }));
 
-    // Zero or more status effects. Placeholder until the status-effect
-    // system itself exists (a later step) - only the same trigger coupling
-    // as Damage above (attack roll / a specific saving throw /
-    // unconditional) plus a freeform description of the intended effect.
+    // Zero or more predefined status effects (from the world's Status
+    // Effects list) this spell applies - each independently tied to the
+    // attack roll, a specific saving throw (by index into savingThrows
+    // above), or unconditional, same trigger coupling as Damage above. See
+    // helpers/damageApplication.mjs#applySpellEffectGroup - entries sharing
+    // the same trigger+savingThrowIndex are applied together via one
+    // button (see helpers/spell-rolls.mjs#renderSpellEffectSaveButtonHTML
+    // for "save", renderSpellEffectApplyButtonHTML for "attack"/
+    // "unconditional").
     schema.statusEffects = new fields.ArrayField(new fields.SchemaField({
-      description: new fields.StringField({ required: true, blank: true }),
+      statusId: new fields.StringField({ required: true, blank: true, initial: "" }),
+      stacks: new fields.NumberField({ ...requiredInteger, initial: 1, min: 1 }),
+      trigger: new fields.StringField({
+        required: true, blank: false, initial: "unconditional",
+        choices: ["attack", "save", "unconditional"]
+      }),
+      savingThrowIndex: new fields.NumberField({ required: false, nullable: true, integer: true, initial: null }),
+    }));
+
+    // Zero or more freeform Active Effects this spell applies - each its
+    // own linked ActiveEffect (effectId, bind-then-toggle pattern like
+    // Technique's own effectId - see helpers/spell-rolls.mjs#
+    // ensureLinkedSpellEffect), living as a disabled template on the
+    // CASTER's own actor until copied onto whoever it lands on. Same
+    // trigger coupling as statusEffects above; "name" is just a friendly
+    // label for the GM's own list (also the copied effect's default name
+    // until renamed in Foundry's own effect editor).
+    schema.foundryEffects = new fields.ArrayField(new fields.SchemaField({
+      name: new fields.StringField({ required: true, blank: true, initial: "" }),
+      effectId: new fields.StringField({ required: true, blank: true, initial: "" }),
       trigger: new fields.StringField({
         required: true, blank: false, initial: "unconditional",
         choices: ["attack", "save", "unconditional"]

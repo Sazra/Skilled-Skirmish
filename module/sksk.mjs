@@ -5,10 +5,11 @@ import { SKSKItemSheet } from './sheets/item-sheet.mjs';
 import { preloadHandlebarsTemplates } from './helpers/templates.mjs';
 import { SKSK } from './helpers/config.mjs';
 import { registerSettings } from './helpers/settings.mjs';
-import { rollSavingThrowFromChat } from './helpers/spell-rolls.mjs';
+import { rollSavingThrowFromChat, rollSpellEffectSaveFromChat, applySpellEffectFromChat } from './helpers/spell-rolls.mjs';
 import { resolveHitEvaluationFromChat } from './helpers/attackRolls.mjs';
 import { applyDamageFromChat } from './helpers/damageApplication.mjs';
 import { claimInspirationDie } from './helpers/inspiration.mjs';
+import { rollTechniqueEffectSaveFromChat } from './helpers/technique-rolls.mjs';
 import { computeSpeciesAura } from './helpers/attributes.mjs';
 import {
   ensurePredefinedStatusEffects, registerConfigStatusEffects, handleCombatTurnStart, handleCombatTurnEnd,
@@ -140,6 +141,37 @@ Hooks.once('ready', async function () {
     if (!button) return;
     event.preventDefault();
     claimInspirationDie(button);
+  });
+
+  // An "effect" Technique's own saving-throw-gated apply button - see
+  // helpers/technique-rolls.mjs#rollTechniqueEffectSaveFromChat.
+  document.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-action="rollTechniqueEffectSave"]');
+    if (!button) return;
+    event.preventDefault();
+    rollTechniqueEffectSaveFromChat(button.dataset.itemUuid);
+  });
+
+  // A Spell's own status/Foundry-effect saving-throw-gated apply button
+  // (merged per savingThrowIndex) - see helpers/spell-rolls.mjs#
+  // rollSpellEffectSaveFromChat.
+  document.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-action="rollSpellEffectSave"]');
+    if (!button) return;
+    event.preventDefault();
+    rollSpellEffectSaveFromChat(
+      button.dataset.itemUuid, Number(button.dataset.saveIndex), Number(button.dataset.overcharge) || 0, event.shiftKey
+    );
+  });
+
+  // A Spell's own "Effekt anwenden" button for its attack/unconditional
+  // status/Foundry effect entries - see helpers/spell-rolls.mjs#
+  // applySpellEffectFromChat.
+  document.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-action="applySpellEffect"]');
+    if (!button) return;
+    event.preventDefault();
+    applySpellEffectFromChat(button.dataset.itemUuid, button.dataset.group);
   });
 
   // A weapon's attributeOverride enforces the same single-attribute rule

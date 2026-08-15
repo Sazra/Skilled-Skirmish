@@ -44,6 +44,7 @@ import {
   grantInspirationDie, consumeInspirationCharge, rollOwnInspirationDie, rollGrantedInspirationDie,
 } from '../helpers/inspiration.mjs';
 import { copyEffectKeyToClipboard } from '../helpers/effectKeyReference.mjs';
+import { formatRollCardHeading } from '../helpers/rollCard.mjs';
 import { SKSKMassKillDialog } from '../apps/mass-kill-dialog.mjs';
 import { SKSKMartialArtsAttacksDialog } from '../apps/martial-arts-attacks-dialog.mjs';
 import { SKSKTechniqueDialog } from '../apps/technique-dialog.mjs';
@@ -557,13 +558,12 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     context.genericRollModeChoices = CONFIG.SKSK.genericRollModes;
     // GM tab's attribute-bonus reset list - see helpers/attributeBonuses.mjs.
     context.resolvedAttributeBonuses = getResolvedAttributeBonuses(actor);
-    // Actions tab's Weapons/Usable Items containers - "usable" Items are
-    // Consumable and/or have Charges enabled (see data/item.mjs#charges) -
-    // see helpers/actions.mjs#useItem.
+    // Actions tab's Weapons/Usable Items containers - a "usable" Item is
+    // one that's either Consumable, or Equippable+Equipped+Enchanted (see
+    // data/item.mjs#prepareDerivedData's own isUsable) - see helpers/
+    // actions.mjs#rollItemUsage.
     context.equippedWeapons = actor.items.filter(i => i.type === 'weapon' && i.system.equipped);
-    context.usableItems = actor.items.filter(i =>
-      i.type === 'item' && (i.system.consumable || i.system.charges?.enabled)
-    );
+    context.usableItems = actor.items.filter(i => i.type === 'item' && i.system.isUsable);
     context.skillTabs = Object.values(this._prepareTabs('skillCategories'));
     context.spellTypeTabs = Object.values(this._prepareTabs('spellTypes'));
     context.spellSimpleSchoolTabs = Object.values(this._prepareTabs('spellSimpleSchools'));
@@ -2003,7 +2003,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       const messageData = {
         speaker: ChatMessage.getSpeaker({ actor: this.actor }),
         flavor: label,
-        content: wrapCriticalBlock(await roll.render(), criticalType) + fpHTML,
+        content: `<div class="sksk-chat-card sksk-action-card">${formatRollCardHeading(dataset.label ?? label)}${wrapCriticalBlock(await roll.render(), criticalType)}${fpHTML}</div>`,
         rolls: [roll],
       };
       ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));

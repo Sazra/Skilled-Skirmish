@@ -369,20 +369,32 @@ SKSK.apCostUnits = {
 // A Technique's own category - see data/technique.mjs#category.
 SKSK.techniqueCategories = {
   stand: 'SKSK.Technique.Category.Stand',
-  bonusDamage: 'SKSK.Technique.Category.BonusDamage',
+  attackBonus: 'SKSK.Technique.Category.AttackBonus',
   effect: 'SKSK.Technique.Category.Effect',
 };
 
-// A "bonusDamage" Technique's own mode - see data/technique.mjs#bonusDamageMode.
+// An "attackBonus" Technique's own Bonusschaden mode - see data/
+// technique.mjs#bonusDamageMode.
 SKSK.bonusDamageModes = {
+  none: 'SKSK.Technique.BonusDamageMode.None',
   flat: 'SKSK.Technique.BonusDamageMode.Flat',
   multiply: 'SKSK.Technique.BonusDamageMode.Multiply',
+  formula: 'SKSK.Technique.BonusDamageMode.Formula',
+};
+
+// An "attackBonus" Technique's own Schadenswürfelerhöhung mode - see
+// data/technique.mjs#diceIncreaseMode.
+SKSK.diceIncreaseModes = {
+  none: 'SKSK.Technique.DiceIncreaseMode.None',
+  additive: 'SKSK.Technique.DiceIncreaseMode.Additive',
+  multiplicative: 'SKSK.Technique.DiceIncreaseMode.Multiplicative',
 };
 
 // An "effect" Technique's own target - see data/technique.mjs#effectTarget.
 SKSK.techniqueEffectTargets = {
   self: 'SKSK.Technique.EffectTarget.Self',
   attackTarget: 'SKSK.Technique.EffectTarget.AttackTarget',
+  direct: 'SKSK.Technique.EffectTarget.Direct',
 };
 
 // The elements a spell's Damage entries can deal - the same 20 elements

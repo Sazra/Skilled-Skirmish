@@ -13,9 +13,11 @@ import { getCombatStyles } from '../helpers/combatStyles.mjs';
 import {
   techniqueHasDuration, techniqueShowsEffectButton, getTechniqueStatusLabel, getTechniqueActionLabel, activateTechnique,
 } from '../helpers/technique-rolls.mjs';
+import { getStatusEffectDefinitions } from '../helpers/statusEffects.mjs';
 import {
   togglePathAbility, getPathAbilityStatusLabel, getPathAbilityActionLabel,
 } from '../helpers/soulPathRolls.mjs';
+import { ensureLinkedSpellEffect } from '../helpers/spell-rolls.mjs';
 import { SKSKSoulPathElementsDialog } from '../apps/soul-path-elements-dialog.mjs';
 
 /**
@@ -52,6 +54,9 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       addDamageAttributeBonus: SKSKItemSheet.#addDamageAttributeBonus,
       addDamageSkillBonus: SKSKItemSheet.#addDamageSkillBonus,
       addStatusEffect: SKSKItemSheet.#addStatusEffect,
+      addFoundryEffect: SKSKItemSheet.#addFoundryEffect,
+      removeFoundryEffect: SKSKItemSheet.#removeFoundryEffect,
+      openSpellFoundryEffect: SKSKItemSheet.#openSpellFoundryEffect,
       addCombinedSchoolOverride: SKSKItemSheet.#addCombinedSchoolOverride,
       addCombinedSchoolOverrideAttributeBonus: SKSKItemSheet.#addCombinedSchoolOverrideAttributeBonus,
       addCombinedSchoolOverrideSkillBonus: SKSKItemSheet.#addCombinedSchoolOverrideSkillBonus,
@@ -63,6 +68,8 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       addFpGainBonus: SKSKItemSheet.#addFpGainBonus,
       activateTechnique: SKSKItemSheet.#activateTechnique,
       openTechniqueEffect: SKSKItemSheet.#openTechniqueEffect,
+      addTechniqueStatusEffect: SKSKItemSheet.#addTechniqueStatusEffect,
+      addTechniqueTestSkill: SKSKItemSheet.#addTechniqueTestSkill,
       addPathAbility: SKSKItemSheet.#addPathAbility,
       addBreakthrough: SKSKItemSheet.#addBreakthrough,
       togglePathAbility: SKSKItemSheet.#togglePathAbility,
@@ -76,9 +83,15 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
   static TABS = {
     primary: {
       tabs: [
-        { id: "description", label: "Description" },
-        { id: "attributes", label: "Attributes" },
-        { id: "effects", label: "Effects" },
+        { id: "description", label: "SKSK.SheetLabels.Description" },
+        { id: "attributes", label: "SKSK.SheetLabels.Attributes" },
+        // Item only - a freeform enchantment description, shown only once
+        // system.enchanted is checked (see _configureRenderParts/
+        // _prepareTabs, which delete it both for every other item type AND
+        // dynamically whenever the current item isn't enchanted). Sits
+        // between Info and Effects.
+        { id: "enchantment", label: "SKSK.ItemSheet.EnchantmentTab" },
+        { id: "effects", label: "SKSK.SheetLabels.Effects" },
         // GM-only tab (Item/Weapon/Armor/Species/Class/Talent) - Material/Model
         // override fields and the 4 expandable bonus-list tables. Stripped
         // entirely for non-GMs and for types with no GM-only fields - see
@@ -138,6 +151,10 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
     // Template overridden per-type in _configureRenderParts, same as attributes.
     gm: {
       template: "systems/sksk/templates/item/parts/gm-item.hbs",
+      scrollable: [""],
+    },
+    enchantment: {
+      template: "systems/sksk/templates/item/parts/enchantment.hbs",
       scrollable: [""],
     },
     soulPathProperties: {
@@ -212,10 +229,14 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
     } else if (itemType === 'spell') {
       parts.header.template = `systems/sksk/templates/item/parts/header-spell.hbs`;
       parts.attributes.template = `systems/sksk/templates/item/parts/spell.hbs`;
-      // Spells have no abilities substructure, so the standard item-level
-      // effects tab (kept, unlike species/class/talent) is where any
-      // on-cast Active Effects belong. No GM-only fields exist on Spell.
-      delete parts.gm;
+      parts.gm.template = `systems/sksk/templates/item/parts/gm-spell.hbs`;
+      // Spells make no passive changes to their owner - every Active
+      // Effect they carry is one of their own statusEffects/foundryEffects
+      // entries' own linked template (see helpers/spell-rolls.mjs#
+      // ensureLinkedSpellEffect), edited via that entry's own "Edit
+      // Effect" button on the statusEffects sub-tab, never the generic
+      // item-level Effects tab.
+      delete parts.effects;
     } else if (itemType === 'item') {
       parts.attributes.template = `systems/sksk/templates/item/parts/item-gear.hbs`;
       parts.gm.template = `systems/sksk/templates/item/parts/gm-item.hbs`;
@@ -256,6 +277,13 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       delete parts.gmSoulPath;
     }
 
+    // The Verzauberung (enchantment) tab only exists on Item, and only once
+    // that particular item is actually marked Enchanted - a Consumable-only
+    // Usable item, or a not-yet-enchanted one, has nothing to put there.
+    if (itemType !== 'item' || !this.item.system.enchanted) {
+      delete parts.enchantment;
+    }
+
     // Every other item type has no use for Soul Path's own 6 tabs (or its
     // gmSoulPath tab) - a separate, unconditional check (matching
     // _prepareTabs' own shape below), since every existing type already
@@ -291,12 +319,20 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       delete tabs.effects;
     } else if (group === 'primary' && this.item.type === 'spell') {
       tabs.attributes.label = 'TYPES.Item.spell';
+      delete tabs.effects;
     } else if (group === 'primary' && this.item.type === 'technique') {
       tabs.attributes.label = 'TYPES.Item.technique';
+    } else if (group === 'primary' && this.item.type === 'item') {
+      tabs.attributes.label = 'SKSK.ItemSheet.InfoTab';
     } else if (group === 'primary' && this.item.type === 'soulPath') {
       delete tabs.description;
       delete tabs.attributes;
       delete tabs.effects;
+    }
+    // Mirrors _configureRenderParts' own identical condition for the
+    // enchantment PART above.
+    if (group === 'primary' && (this.item.type !== 'item' || !this.item.system.enchanted)) {
+      delete tabs.enchantment;
     }
     if (group === 'primary' && this.item.type !== 'soulPath') {
       delete tabs.soulPathProperties;
@@ -307,11 +343,11 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       delete tabs.aufstieg;
       delete tabs.gmSoulPath;
     }
-    // No GM-only fields exist on Spell/Technique, and the shared "gm" tab
-    // is hidden from players entirely - mirrors the parts-level gating in
+    // No GM-only fields exist on Technique, and the shared "gm" tab is
+    // hidden from players entirely - mirrors the parts-level gating in
     // _configureRenderParts above. Soul Path never uses the shared "gm" tab
     // either (it has its own gmSoulPath instead, gated separately below).
-    if (group === 'primary' && ['spell', 'technique', 'soulPath'].includes(this.item.type)) {
+    if (group === 'primary' && ['technique', 'soulPath'].includes(this.item.type)) {
       delete tabs.gm;
     }
     if (group === 'primary' && !game.user.isGM) {
@@ -391,8 +427,18 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
 
     // Equipped/Enchanted only matter (and are only shown) once an Item is
     // marked equippable at all - unlike Armor/Weapon, which always are.
+    // isUsable (see data/item.mjs#prepareDerivedData) gates AP cost/
+    // Charges/the optional roll, both here on the sheet and on the
+    // Roll-Card (see helpers/actions.mjs#rollItemUsage).
     if (item.type === 'item') {
       context.isEquippable = item.system.equippable;
+      context.isUsable = item.system.isUsable;
+      if (item.system.enchanted) {
+        context.enchantmentHTML = await foundry.applications.ux.TextEditor.implementation.enrichHTML(
+          item.system.enchantmentDescription ?? "",
+          { relativeTo: item, secrets: item.isOwner, rollData: context.rollData }
+        );
+      }
     }
 
     if (item.type === 'species' || item.type === 'class' || item.type === 'talent') {
@@ -550,6 +596,12 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
         value: index,
         label: entry.label || game.i18n.format('SKSK.Spell.SavingThrow.Numbered', { number: index + 1 }),
       }));
+      // The statusEffects sub-tab's own predefined-status-effect picker -
+      // see apps/status-effects-config.mjs's own identical pattern (also
+      // reused by Technique's own effectStatusEffects list).
+      context.statusEffectChoices = Object.fromEntries(
+        getStatusEffectDefinitions().map(def => [def.id, def.name])
+      );
       // Only meaningful when the spell is owned by an actor - otherwise
       // there's no caster to derive attribute/skill values from.
       if (item.actor) {
@@ -566,19 +618,31 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       context.techniqueCategoryChoices = CONFIG.SKSK.techniqueCategories;
       context.combatStyleChoices = Object.fromEntries(getCombatStyles().map(s => [s.id, s.name]));
       context.bonusDamageModeChoices = CONFIG.SKSK.bonusDamageModes;
+      context.diceIncreaseModeChoices = CONFIG.SKSK.diceIncreaseModes;
       context.effectTargetChoices = CONFIG.SKSK.techniqueEffectTargets;
       context.hasCombatStyles = getCombatStyles().length > 0;
       context.isStand = item.system.category === 'stand';
-      context.isBonusDamage = item.system.category === 'bonusDamage';
+      context.isAttackBonus = item.system.category === 'attackBonus';
       context.isEffect = item.system.category === 'effect';
+      context.bonusDamageModeIsFormula = item.system.bonusDamageMode === 'formula';
+      // The saving-throw sub-section applies to both effectTarget values
+      // that actually resolve a defender (attackTarget and direct) - "self"
+      // never gates on a saving throw at all.
+      context.showEffectSavingThrow = item.system.effectTarget === 'attackTarget' || item.system.effectTarget === 'direct';
       // Only stand, and effect targeting the wielder itself, are genuine
-      // duration-ticking buffs - bonusDamage/effect-attackTarget are primed
-      // instead, consumed by the next weapon/Martial Arts attack (see
-      // helpers/technique-rolls.mjs).
+      // duration-ticking buffs - attackBonus/effect-attackTarget are primed
+      // instead, consumed by the next weapon/Martial Arts attack or spell
+      // cast (see helpers/technique-rolls.mjs).
       context.showDuration = techniqueHasDuration(item);
       context.showEffectId = techniqueShowsEffectButton(item);
       context.statusLabel = getTechniqueStatusLabel(item);
       context.actionLabel = getTechniqueActionLabel(item);
+      // The Effekte category's own predefined-status-effect picker - see
+      // apps/status-effects-config.mjs's own identical pattern.
+      context.statusEffectChoices = Object.fromEntries(
+        getStatusEffectDefinitions().map(def => [def.id, def.name])
+      );
+      context.combinedSkillChoices = getSkillBonusChoices();
     }
 
     if (item.type === 'soulPath') {
@@ -736,8 +800,45 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
 
   static async #addStatusEffect(event, target) {
     await this.#addArrayEntry('statusEffects', {
-      description: '', trigger: 'unconditional', savingThrowIndex: null,
+      statusId: '', stacks: 1, trigger: 'unconditional', savingThrowIndex: null,
     });
+  }
+
+  static async #addFoundryEffect(event, target) {
+    await this.#addArrayEntry('foundryEffects', {
+      name: '', effectId: '', trigger: 'unconditional', savingThrowIndex: null,
+    });
+  }
+
+  /**
+   * Remove one of a Spell's own foundryEffects entries - unlike the generic
+   * #removeArrayEntry, this also deletes that entry's own linked
+   * ActiveEffect (if any was ever bound - see helpers/spell-rolls.mjs#
+   * ensureLinkedSpellEffect) from the caster's actor, so removing the entry
+   * doesn't leave an orphaned template effect behind.
+   */
+  static async #removeFoundryEffect(event, target) {
+    const index = Number(target.dataset.index);
+    const entries = foundry.utils.deepClone(this.item.system.foundryEffects ?? []);
+    const [removed] = entries.splice(index, 1);
+    if (removed?.effectId) {
+      const effect = this.item.actor?.effects.get(removed.effectId);
+      if (effect) await effect.delete();
+    }
+    await this.item.update({ 'system.foundryEffects': entries });
+  }
+
+  /**
+   * Open (lazily binding first, if needed) one of a Spell's own
+   * foundryEffects entries' linked ActiveEffect in Foundry's native effect
+   * config sheet - see helpers/spell-rolls.mjs#ensureLinkedSpellEffect.
+   */
+  static async #openSpellFoundryEffect(event, target) {
+    if (!this.item.actor) return ui.notifications.warn(game.i18n.localize('SKSK.Spell.EffectNotOwned'));
+    const index = Number(target.dataset.index);
+    const effectId = await ensureLinkedSpellEffect(this.item, index);
+    const effect = effectId ? this.item.actor.effects.get(effectId) : null;
+    effect?.sheet.render(true);
   }
 
   static async #addCombinedSchoolOverride(event, target) {
@@ -800,6 +901,16 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
     const effect = this.item.system.effectId ? this.item.actor?.effects.get(this.item.system.effectId) : null;
     if (!effect) return ui.notifications.warn(game.i18n.localize('SKSK.Technique.NoEffectYet'));
     effect.sheet.render(true);
+  }
+
+  /** @private */
+  static async #addTechniqueStatusEffect(event, target) {
+    await this.#addArrayEntry('effectStatusEffects', { statusId: '', stacks: 1 });
+  }
+
+  /** @private */
+  static async #addTechniqueTestSkill(event, target) {
+    await this.#addArrayEntry('effectSavingThrowTestSkills', 'axe');
   }
 
   /**

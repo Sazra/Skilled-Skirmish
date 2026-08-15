@@ -222,7 +222,7 @@ export async function attemptBreakthrough(actor, item, stageKey, index) {
       roll: roll.total, excessBonus, abilityBonus, total, difficulty: effectiveDifficulty,
     })}</div>`,
     `<div class="sksk-roll-line">${game.i18n.format('SKSK.SoulPath.BreakthroughCostPaidLine', { amount: spentAmount })}</div>`,
-    `<div class="sksk-roll-line"><strong>${game.i18n.localize(resultKey)}</strong></div>`,
+    `<div class="sksk-roll-description"><strong>${game.i18n.localize(resultKey)}</strong></div>`,
   ].join('');
 
   await postActionChatCard(actor, game.i18n.format('SKSK.SoulPath.BreakthroughAttemptTitle', { name: entry.name }), roll, 0, lines);

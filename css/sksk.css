@@ -1343,8 +1343,70 @@
   font-size: 12px;
 }
 
+/* Every sksk roll/action card carries its own in-card heading (see
+   .sksk-roll-card-heading below) - Foundry's own small flavor-text line in
+   the message header would otherwise duplicate that same title in plain
+   text right above it, so it's hidden whenever a message contains one of
+   our cards. */
+li.chat-message:has(.sksk-chat-card) .flavor-text {
+  display: none;
+}
+
+/* The card's own title (attribute/skill/item name) - styled like the Soul
+   Path item's own name field, i.e. Foundry core's --font-h1 ("Modesto
+   Condensed"), so it actually reads as a heading rather than the small
+   flavor-text line Foundry renders in the message header. */
+.sksk-chat-card .sksk-roll-card-heading {
+  font-family: var(--font-h1, "Modesto Condensed", serif);
+  font-size: 28px;
+  font-weight: normal;
+  line-height: 1.2;
+  text-align: center;
+  color: #800020;
+  margin: 0 0 4px;
+}
+
+/* Costs (AP/Mana/...) and a Spell's own magic-school line - larger than
+   the card's own 12px base. */
+.sksk-chat-card .sksk-roll-ap-cost,
+.sksk-chat-card .sksk-roll-mana-cost,
+.sksk-chat-card .sksk-roll-magic-school {
+  font-size: 16px;
+}
+
 .sksk-chat-card .sksk-roll-description {
+  font-size: 14px;
   margin-bottom: 6px;
+}
+
+/* A Technique's own action card (see helpers/technique-rolls.mjs#
+   postTechniqueActionCard) - the Kampfstil's own name above the heading,
+   and a status line ("Vorbereitet"/"Aktiviert"/...) plus its resolved
+   target's name below it - both at the card's own 12px base size, but
+   broken out into their own classes for centering/styling. */
+.sksk-chat-card .sksk-technique-style-line {
+  font-size: 12px;
+  text-align: center;
+  font-style: italic;
+  opacity: 0.8;
+  margin-bottom: 2px;
+}
+
+.sksk-chat-card .sksk-technique-status-line,
+.sksk-chat-card .sksk-item-use-status-line {
+  font-size: 12px;
+  text-align: center;
+  margin: 0 0 4px;
+}
+
+/* Status effects a spell inflicts (see helpers/spell-rolls.mjs#
+   renderStatusEffect) and FP grants (only ever shown for Training - see
+   helpers/training.mjs, every other source's FP line is suppressed, see
+   helpers/skillFp.mjs#formatSkillFpGrantLine) - both larger than the
+   card's own 12px base, like the cost/description lines above. */
+.sksk-chat-card .sksk-roll-status-effect,
+.sksk-chat-card .sksk-roll-fp-gain {
+  font-size: 14px;
 }
 
 /* A Simple/Advanced spell cast below its magic school's required skill
@@ -1358,6 +1420,15 @@
 .sksk-chat-card .sksk-roll-attack,
 .sksk-chat-card .sksk-roll-line {
   margin: 6px 0 2px;
+}
+
+/* "Angriff"/"Schaden" sub-headings within a weapon-attack card - bigger and
+   centered, distinct from the plain .sksk-roll-line text they're otherwise
+   styled like. */
+.sksk-chat-card .sksk-roll-attack,
+.sksk-chat-card .sksk-roll-damage {
+  font-size: 16px;
+  text-align: center;
 }
 
 .sksk-chat-card .sksk-roll-saves {
@@ -1387,17 +1458,19 @@
 }
 
 .sksk-chat-card .sksk-roll-hit-eval {
+  display: table;
   width: auto;
   line-height: normal;
-  margin: 2px 0 6px;
+  margin: 2px auto 6px;
 }
 
 /* "Schaden anwenden" (Apply Damage - see helpers/damageApplication.mjs) -
    kept visually distinct from Evaluate Hit above it. */
 .sksk-chat-card .sksk-apply-damage {
+  display: table;
   width: auto;
   line-height: normal;
-  margin: 2px 0 6px;
+  margin: 2px auto 6px;
   border-color: var(--color-level-error, #ff6060);
 }
 

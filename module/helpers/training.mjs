@@ -85,6 +85,6 @@ export async function applyTraining(actor, options) {
 
   const title = `${game.i18n.localize('SKSK.Training.Title')}: ${method?.name ?? ''}`;
   const extraHTML = (lines.length ? lines : [game.i18n.localize('SKSK.Training.NoGain')])
-    .map(line => `<div class="sksk-roll-line">${line}</div>`).join('');
+    .map(line => `<div class="sksk-roll-line sksk-roll-fp-gain">${line}</div>`).join('');
   return postActionChatCard(actor, title, null, 0, extraHTML);
 }

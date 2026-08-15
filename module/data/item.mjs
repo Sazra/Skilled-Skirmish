@@ -38,13 +38,26 @@ export default class SKSKItem extends SKSKItemBase {
     // helpers/actions.mjs#useItem.
     schema.useApCost = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
 
+    // Whether Using this item includes a roll at all - optional (see
+    // helpers/actions.mjs#rollItemUsage), independent of whether the item
+    // is Usable in the first place (Consumable, or Equippable+Equipped+
+    // Enchanted - see prepareDerivedData#isUsable below); diceNum/diceSize/
+    // diceBonus are only meaningful (and only shown on the sheet) once
+    // this is on.
     schema.roll = new fields.SchemaField({
+      enabled: new fields.BooleanField({ initial: false }),
       diceNum: new fields.NumberField({ ...requiredInteger, initial: 1, min: 1 }),
       diceSize: new fields.StringField({ initial: "d20" }),
       diceBonus: new fields.StringField({ initial: "+@abilities.str.mod+ceil(@lvl / 2)" })
     });
 
     schema.formula = new fields.StringField({ blank: true });
+
+    // A freeform description of this item's own enchantment - only shown
+    // (its own tab, and on the Roll-Card) once system.enchanted is on. See
+    // templates/item/parts/enchantment.hbs, same rich-text pattern as the
+    // base description field (data/item-base.mjs#description).
+    schema.enchantmentDescription = new fields.StringField({ required: true, blank: true });
 
     // Manakern's own flat FP grant (to the "manaCore" skill) whenever this
     // item is used - a designer-set value on the item itself, not a GM-
@@ -131,7 +144,16 @@ export default class SKSKItem extends SKSKItemBase {
     // mana capacity for every 0.1kg of this item's own weight.
     this.materialRollBonus = resolveMaterialBonus(this);
     const roll = this.roll;
-    this.formula = `${roll.diceNum}${roll.diceSize}${roll.diceBonus} + ${this.materialRollBonus}`;
+    this.formula = roll.enabled ? `${roll.diceNum}${roll.diceSize}${roll.diceBonus} + ${this.materialRollBonus}` : '';
     this.totalManaCapacity = computeTotalManaCapacity(this);
+
+    // A Usable item is one that either can be Consumed, or is Equippable,
+    // Equipped, AND Enchanted - an equipped item with no enchantment has no
+    // active-use effect of its own, only whatever passive Active Effects it
+    // grants (see templates/item/parts/effects.hbs). AP cost, Charges, and
+    // the optional roll above are all only meaningful (and only shown, both
+    // on the sheet and on its own Roll-Card) for a Usable item - see
+    // helpers/actions.mjs#rollItemUsage.
+    this.isUsable = this.consumable || (this.equippable && this.equipped && this.enchanted);
   }
 }

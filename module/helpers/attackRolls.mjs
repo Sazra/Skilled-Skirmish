@@ -4,6 +4,7 @@ import { getSpellSchool } from './spells.mjs';
 import { computeNaturalMaterialBonus } from './defense.mjs';
 import { applyD20Malus, getStatusStacks } from './statusEffects.mjs';
 import { getAttackCriticalType, resolveCheckSuccess, wrapCriticalBlock, wrapCriticalInline, rollQuality } from './criticalRolls.mjs';
+import { formatRollCardHeading } from './rollCard.mjs';
 import { getEquippedArmorSkillKeys } from './defense.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
 import { resolveClickDefender, renderApplyDamageButton } from './damageApplication.mjs';
@@ -393,11 +394,9 @@ export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor
   return `
     <div class="sksk-attack-roll-pair">
       <div class="sksk-attack-roll-single">
-        <div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.RollA')}</div>
         ${renderedA}
       </div>
       <div class="sksk-attack-roll-single">
-        <div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.RollB')}</div>
         ${renderedB}
       </div>
     </div>
@@ -568,13 +567,14 @@ export async function resolveHitEvaluationFromChat(button) {
     fpHTML += formatSkillFpGrantLine(await grantSkillUsageFp(attacker, 'precision', 'doubleCriticalHit'));
   }
 
+  const title = game.i18n.format('SKSK.AttackRoll.EvaluationTitle', { defender: defender.name });
   const content = `<div class="sksk-chat-card sksk-action-card">`
-    + line + fpHTML
+    + formatRollCardHeading(title) + line + fpHTML
     + `</div>`;
 
   const messageData = {
     speaker: ChatMessage.getSpeaker({ actor: defender }),
-    flavor: game.i18n.format('SKSK.AttackRoll.EvaluationTitle', { defender: defender.name }),
+    flavor: title,
     content,
   };
   ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));

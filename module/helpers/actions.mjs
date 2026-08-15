@@ -7,9 +7,13 @@ import {
   getDamageDieSizes, getWeaponDamageType,
 } from "./attackRolls.mjs";
 import { wrapCriticalBlock } from "./criticalRolls.mjs";
-import { grantSkillUsageFp, formatSkillFpGrantLine, checkReflexActionTrigger } from "./skillFp.mjs";
+import { formatRollCardHeading } from "./rollCard.mjs";
+import { grantSkillUsageFp, formatSkillFpGrantLine, checkReflexActionTrigger, grantFlatSkillFp } from "./skillFp.mjs";
 import { renderApplyDamageButton, resolveClickDefender } from "./damageApplication.mjs";
-import { consumePrimedTechnique, applyTechniqueBonusDamage, getTechniqueEffectPayload } from "./technique-rolls.mjs";
+import {
+  consumePrimedTechnique, applyTechniqueBonusDamage, applyTechniqueDiceIncrease,
+  getTechniqueEffectPayload, renderTechniqueSavingThrowHTML,
+} from "./technique-rolls.mjs";
 import { checkFlanking } from "./flanking.mjs";
 import { computeLehrenTargetBonus } from "./lehren.mjs";
 
@@ -57,11 +61,11 @@ function formatFlankingBonusLine(flank, bonus) {
  * @return {Promise<ChatMessage>}
  */
 export async function postActionChatCard(actor, title, roll, apCost, extraHTML = '', criticalType = null) {
-  const parts = [];
-  if (roll) parts.push(wrapCriticalBlock(await roll.render(), criticalType));
+  const parts = [formatRollCardHeading(title)];
   if (apCost) {
     parts.push(`<div class="sksk-roll-ap-cost"><strong>${game.i18n.localize('SKSK.Spell.APCost')}:</strong> ${apCost}</div>`);
   }
+  if (roll) parts.push(wrapCriticalBlock(await roll.render(), criticalType));
   if (extraHTML) parts.push(extraHTML);
 
   const messageData = {
@@ -86,7 +90,7 @@ export async function postActionChatCard(actor, title, roll, apCost, extraHTML =
  */
 export async function rollWeaponItem(item) {
   const actor = item.actor;
-  const parts = [];
+  const parts = [formatRollCardHeading(item.name)];
   const damageType = getWeaponDamageType(item.system);
   const damageDice = [{ damageType, dieSizes: getDamageDieSizes(item.system.formula) }];
   const damageEntries = [];
@@ -94,14 +98,14 @@ export async function rollWeaponItem(item) {
   // A primed Technique (helpers/technique-rolls.mjs) is consumed by this
   // actor's own very next weapon/Martial Arts attack, whichever comes
   // first - its styleAttackBonus (from any active same-Kampfstil stand)
-  // applies to the attack roll below; its own bonusDamage payload (if
+  // applies to the attack roll below; its own attackBonus payload (if
   // any) applies to the damage roll further down.
-  const technique = actor ? await consumePrimedTechnique(actor) : null;
+  const technique = actor ? await consumePrimedTechnique(actor, 'weapon') : null;
 
   if (actor) {
     const flank = resolveAttackFlanking(actor);
     const flankBonus = flank.flanking ? getActorSkillLevel(actor, 'tactic') : 0;
-    const attackBonus = computeWeaponAttackBonus(actor, item) + (technique?.styleAttackBonus ?? 0) + flankBonus;
+    const attackBonus = computeWeaponAttackBonus(actor, item) + (technique?.styleAttackBonus ?? 0) + (technique?.hitBonusAmount ?? 0) + flankBonus;
     const rolls = await rollAttackPair(attackBonus, actor);
     const rendered = await renderAttackPairHTML(rolls, 'armorClass', actor, {
       damageDice, killSkillKey: item.system.weaponType, flanking: flank.flanking,
@@ -120,20 +124,23 @@ export async function rollWeaponItem(item) {
       : 0;
     const damageTypeBonus = actor?.system.damageBonus?.[damageType] ?? 0;
     const totalDamageBonus = lehrenDamageBonus + damageTypeBonus;
-    const damageFormula = totalDamageBonus ? `${item.system.formula} + ${totalDamageBonus}` : item.system.formula;
+    const damageFormulaBase = totalDamageBonus ? `${item.system.formula} + ${totalDamageBonus}` : item.system.formula;
+    const damageFormula = applyTechniqueDiceIncrease(damageFormulaBase, technique);
     const roll = await new Roll(damageFormula, item.getRollData()).evaluate();
     const rendered = await roll.render();
-    parts.push(`<div class="sksk-roll-line"><strong>${game.i18n.localize('SKSK.Spell.Roll.Damage')}</strong></div>${rendered}`);
-    const { total, line } = applyTechniqueBonusDamage(roll.total, technique);
+    parts.push(`<div class="sksk-roll-damage"><strong>${game.i18n.localize('SKSK.Spell.Roll.Damage')}</strong></div>${rendered}`);
+    const { total, line } = await applyTechniqueBonusDamage(roll.total, technique, item.getRollData());
     parts.push(line);
     damageEntries.push({ damageType, amount: total });
     parts.push(renderApplyDamageButton(actor, damageEntries, item.system.weaponType, getTechniqueEffectPayload(technique)));
+    parts.push(renderTechniqueSavingThrowHTML(technique));
   } else if (item.system.description) {
     const descriptionHTML = await foundry.applications.ux.TextEditor.implementation.enrichHTML(
       item.system.description ?? '', { relativeTo: item, secrets: item.isOwner }
     );
     parts.push(`<div class="sksk-roll-description">${descriptionHTML}</div>`);
     parts.push(renderApplyDamageButton(actor, [], item.system.weaponType, getTechniqueEffectPayload(technique)));
+    parts.push(renderTechniqueSavingThrowHTML(technique));
   }
 
   const messageData = {
@@ -218,10 +225,10 @@ export async function rollMartialArtsAttack(actor, index) {
   if (!hasEnoughActionPoints(actor, attack.apCost)) return;
 
   const damageDice = [{ damageType: attack.damageType, dieSizes: getDamageDieSizes(attack.formula) }];
-  const technique = await consumePrimedTechnique(actor);
+  const technique = await consumePrimedTechnique(actor, 'martialArts');
   const flank = resolveAttackFlanking(actor);
   const flankBonus = flank.flanking ? getActorSkillLevel(actor, 'tactic') : 0;
-  const attackBonus = computeMartialArtsAttackBonus(actor, attack) + (technique?.styleAttackBonus ?? 0) + flankBonus;
+  const attackBonus = computeMartialArtsAttackBonus(actor, attack) + (technique?.styleAttackBonus ?? 0) + (technique?.hitBonusAmount ?? 0) + flankBonus;
   const rolls = await rollAttackPair(attackBonus, actor);
   const attackHTML = `<div class="sksk-roll-attack"><strong>${game.i18n.localize('SKSK.AttackRoll.Attack')}</strong></div>${await renderAttackPairHTML(rolls, 'armorClass', actor, {
     damageDice, killSkillKey: 'martialArts', flanking: flank.flanking,
@@ -231,12 +238,14 @@ export async function rollMartialArtsAttack(actor, index) {
   const lehrenDamageBonus = computeLehrenTargetBonus(actor, 'damageBonus', { skillKey: 'martialArts', kind: 'weapon' });
   const damageTypeBonus = actor.system.damageBonus?.[attack.damageType] ?? 0;
   const bonus = attributeBonus + lehrenDamageBonus + damageTypeBonus;
-  const formula = bonus ? `${attack.formula} + ${bonus}` : attack.formula;
+  const formulaBase = bonus ? `${attack.formula} + ${bonus}` : attack.formula;
+  const formula = applyTechniqueDiceIncrease(formulaBase, technique);
   const roll = await new Roll(formula, actor.getRollData()).evaluate();
   const renderedDamage = await roll.render();
-  const { total: damageTotal, line: techniqueLine } = applyTechniqueBonusDamage(roll.total, technique);
+  const { total: damageTotal, line: techniqueLine } = await applyTechniqueBonusDamage(roll.total, technique, actor.getRollData());
   const damageEntries = [{ damageType: attack.damageType, amount: damageTotal }];
-  const applyDamageHTML = renderApplyDamageButton(actor, damageEntries, 'martialArts', getTechniqueEffectPayload(technique));
+  const applyDamageHTML = renderApplyDamageButton(actor, damageEntries, 'martialArts', getTechniqueEffectPayload(technique))
+    + renderTechniqueSavingThrowHTML(technique);
 
   await actor.update(spendActionPoints(actor, attack.apCost));
   let fpHTML = formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'martialArts', 'weaponAttack'));
@@ -252,10 +261,11 @@ export async function rollMartialArtsAttack(actor, index) {
   const apCostHTML = attack.apCost
     ? `<div class="sksk-roll-ap-cost"><strong>${game.i18n.localize('SKSK.Spell.APCost')}:</strong> ${attack.apCost}</div>`
     : '';
+  const title = attack.name || game.i18n.localize('SKSK.Action.MartialArtsAttack');
   const messageData = {
     speaker: ChatMessage.getSpeaker({ actor }),
-    flavor: attack.name || game.i18n.localize('SKSK.Action.MartialArtsAttack'),
-    content: `<div class="sksk-chat-card sksk-action-card">${attackHTML}${renderedDamage}${techniqueLine}${applyDamageHTML}${fpHTML}${apCostHTML}</div>`,
+    flavor: title,
+    content: `<div class="sksk-chat-card sksk-action-card">${formatRollCardHeading(title)}${apCostHTML}${attackHTML}${renderedDamage}${techniqueLine}${applyDamageHTML}${fpHTML}</div>`,
     rolls: [roll],
   };
   ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));
@@ -308,8 +318,9 @@ export async function rollRegeneration(actor) {
   const newValue = Math.min(life.max, life.value + roll.total);
   await actor.update({ ...spendActionPoints(actor, apCost), 'system.life.value': newValue });
   const fpGrant = await grantSkillUsageFp(actor, 'health', 'regenerationUsed');
-  const fpHTML = formatSkillFpGrantLine(fpGrant) + formatSkillFpGrantLine(await checkReflexActionTrigger(actor));
-  return postActionChatCard(actor, game.i18n.localize('SKSK.Action.Regeneration'), roll, apCost, fpHTML);
+  const descriptionHTML = `<div class="sksk-roll-description">${game.i18n.format('SKSK.Action.RegenerateLifeDescription', { name: actor.name })}</div>`;
+  const extraHTML = descriptionHTML + formatSkillFpGrantLine(fpGrant) + formatSkillFpGrantLine(await checkReflexActionTrigger(actor));
+  return postActionChatCard(actor, game.i18n.localize('SKSK.Action.Regeneration'), roll, apCost, extraHTML);
 }
 
 /**
@@ -349,9 +360,10 @@ export async function rollMeditation(actor) {
   const soulforceGrant = (game.combat && actor.system.soulforceMeditationCombatFpEnabled)
     ? await grantSkillUsageFp(actor, 'soulforce', 'meditationUsedInCombat')
     : null;
-  const fpHTML = formatSkillFpGrantLine(fpGrant) + formatSkillFpGrantLine(soulforceGrant)
+  const descriptionHTML = `<div class="sksk-roll-description">${game.i18n.format('SKSK.Action.RegenerateManaDescription', { name: actor.name })}</div>`;
+  const extraHTML = descriptionHTML + formatSkillFpGrantLine(fpGrant) + formatSkillFpGrantLine(soulforceGrant)
     + formatSkillFpGrantLine(await checkReflexActionTrigger(actor));
-  return postActionChatCard(actor, game.i18n.localize('SKSK.Action.Meditation'), roll, apCost, fpHTML);
+  return postActionChatCard(actor, game.i18n.localize('SKSK.Action.Meditation'), roll, apCost, extraHTML);
 }
 
 /**
@@ -421,26 +433,27 @@ export async function useMove(actor, movementType) {
     : null;
 
   const label = game.i18n.localize(CONFIG.SKSK.movementTypes[movementType] ?? movementType);
-  const extraHTML = `<div class="sksk-roll-line">${game.i18n.format('SKSK.Action.MoveDistance', { label, speed })}</div>`
+  const extraHTML = `<div class="sksk-roll-description">${game.i18n.format('SKSK.Action.MoveDistance', { label, speed })}</div>`
     + formatSkillFpGrantLine(fpGrant) + formatSkillFpGrantLine(await checkReflexActionTrigger(actor));
   return postActionChatCard(actor, game.i18n.localize('SKSK.Action.Move'), null, apCost, extraHTML);
 }
 
 /**
- * "Use" an equipped Weapon or a usable Item from the Actions tab: rolls it
- * (SKSKItem#roll's own behavior - a formula roll for a generic Item that
- * has one set, its description otherwise; Weapons have neither, so this
- * just posts their description if any), deducting its own configured AP
- * cost (system.useApCost). A used Item additionally consumes itself - one
- * charge if it has charges enabled (which may itself deplete the item's
- * quantity, via the updateItem hook in sksk.mjs - see data/item.mjs#
- * charges), or one unit of quantity directly if it's Consumable without
- * charges enabled.
+ * "Use" an equipped Weapon from the Actions tab: rolls it (posts its own
+ * description, if any - Weapons carry no formula of their own), deducting
+ * its own configured AP cost (system.useApCost). A generic Item's own
+ * "Use" button calls this too, but item.type 'item' just delegates
+ * straight to item.roll() - see rollItemUsage below, which now handles
+ * everything (AP cost, Charges/quantity consumption, Reflexe's own FP
+ * trigger, and the Roll-Card itself) in one self-contained place, the same
+ * way rollWeaponItem/rollSpellItem already do for their own types.
  * @param {Actor} actor
  * @param {Item} item   A Weapon or Item, owned by actor.
  * @return {Promise<void>}
  */
 export async function useItem(actor, item) {
+  if (item.type === 'item') return item.roll();
+
   if (item.type === 'weapon' && !canUseWeaponAttack(actor)) {
     return ui.notifications.warn(game.i18n.localize('SKSK.StatusEffect.AttackBlocked'));
   }
@@ -451,20 +464,155 @@ export async function useItem(actor, item) {
   await item.roll();
   await actor.update(spendActionPoints(actor, apCost));
 
-  if (item.type === 'item') {
-    if (item.system.charges?.enabled) {
-      await item.update({ 'system.charges.value': Math.max(0, item.system.charges.value - 1) });
-    } else if (item.system.consumable) {
-      await item.update({ 'system.quantity': Math.max(0, item.system.quantity - 1) });
-    }
-  }
-
   // item.roll() (above) already posted its own chat card before AP was
   // spent, so Reflexe's own FP trigger (which can only be checked once AP
   // is actually deducted) gets a small chat card of its own instead, only
   // when it actually fires.
   const reflexGrant = await checkReflexActionTrigger(actor);
   if (reflexGrant) await postActionChatCard(actor, game.i18n.localize('SKSK.Action.Use'), null, 0, formatSkillFpGrantLine(reflexGrant));
+}
+
+/**
+ * Roll a generic Item's own "Use" action - see documents/item.mjs#roll,
+ * which routes every item.type "item" roll here (whether triggered via
+ * the Actions tab's "Use" button - see useItem above - or by clicking the
+ * item directly, e.g. in the Items tab).
+ *
+ * A non-Usable item (see data/item.mjs#prepareDerivedData's own isUsable -
+ * Consumable, or Equippable+Equipped+Enchanted; an equipped item with no
+ * enchantment has only passive Active Effects, nothing to actively Use)
+ * just posts its own description (plus its own enchantment description,
+ * if enchanted) with no further consequence - AP cost, Charges, Manakern's
+ * own FP grant, and the optional roll below are all Usable-only.
+ *
+ * A Usable item pays its own useApCost (if any); consumes one charge if
+ * Charges are enabled (computed together with the Consumable quantity
+ * consequence in ONE combined update - a Consumable item's charges
+ * reaching 0 also consumes one unit of its own quantity and resets charges
+ * back to max, mirroring the separate updateItem hook in sksk.mjs, but
+ * computed eagerly here instead of relying on that hook's own subsequent,
+ * un-awaitable update, so the Roll-Card below can correctly report the
+ * resulting quantity/charges without racing it) or, without Charges
+ * enabled, consumes one unit of quantity directly if Consumable; then
+ * rolls its own optional dice roll, if enabled.
+ * @param {Item} item
+ * @return {Promise<ChatMessage>}
+ */
+export async function rollItemUsage(item) {
+  const actor = item.actor;
+  const system = item.system;
+  const parts = [formatRollCardHeading(item.name)];
+
+  const descriptionHTML = await foundry.applications.ux.TextEditor.implementation.enrichHTML(
+    system.description ?? '', { relativeTo: item, secrets: item.isOwner }
+  );
+  const enchantmentHTML = system.enchanted
+    ? await foundry.applications.ux.TextEditor.implementation.enrichHTML(
+        system.enchantmentDescription ?? '', { relativeTo: item, secrets: item.isOwner }
+      )
+    : '';
+
+  if (!system.isUsable) {
+    parts.push(`<div class="sksk-roll-description">${descriptionHTML}</div>`);
+    if (enchantmentHTML) parts.push(`<div class="sksk-roll-description">${enchantmentHTML}</div>`);
+    return postItemUsageCard(actor, item, parts);
+  }
+
+  const apCost = system.useApCost ?? 0;
+  if (actor && !hasEnoughActionPoints(actor, apCost)) return;
+
+  const usesCharges = system.charges?.enabled;
+  const updates = {};
+  let chargesAfterUse = null;
+  let quantityDecreased = false;
+  let remainingQuantity = system.quantity;
+
+  if (usesCharges) {
+    chargesAfterUse = Math.max(0, system.charges.value - 1);
+    updates['system.charges.value'] = chargesAfterUse;
+    if (chargesAfterUse === 0 && system.consumable) {
+      remainingQuantity = Math.max(0, system.quantity - 1);
+      updates['system.quantity'] = remainingQuantity;
+      updates['system.charges.value'] = remainingQuantity > 0 ? system.charges.max : 0;
+      quantityDecreased = true;
+    }
+  } else if (system.consumable) {
+    remainingQuantity = Math.max(0, system.quantity - 1);
+    updates['system.quantity'] = remainingQuantity;
+    quantityDecreased = true;
+  }
+  if (Object.keys(updates).length) await item.update(updates);
+
+  if (actor && apCost) await actor.update(spendActionPoints(actor, apCost));
+
+  // 2. Status line - what's happening to the item itself.
+  let statusText;
+  if (system.consumable) {
+    if (quantityDecreased) {
+      statusText = remainingQuantity > 0
+        ? game.i18n.format('SKSK.ItemSheet.UseStatusConsumedWithRemaining', { quantity: remainingQuantity })
+        : game.i18n.localize('SKSK.ItemSheet.UseStatusConsumed');
+    } else {
+      statusText = game.i18n.localize('SKSK.ItemSheet.UseStatusUsed');
+    }
+  } else {
+    statusText = game.i18n.localize('SKSK.ItemSheet.UseStatusEnchantmentActivated');
+  }
+  parts.push(`<div class="sksk-item-use-status-line">${statusText}</div>`);
+
+  // 3. AP cost, only when non-zero.
+  if (apCost > 0) {
+    parts.push(`<div class="sksk-roll-ap-cost"><strong>${game.i18n.localize('SKSK.Spell.APCost')}:</strong> ${apCost}</div>`);
+  }
+
+  // 4. Charges, only when enabled.
+  if (usesCharges && actor) {
+    const key = chargesAfterUse > 0 ? 'SKSK.ItemSheet.ChargesRemaining' : 'SKSK.ItemSheet.ChargesDepleted';
+    parts.push(`<div class="sksk-item-use-status-line">${game.i18n.format(key, { actor: actor.name, value: chargesAfterUse })}</div>`);
+  }
+
+  if (actor) {
+    // Manakern's own flat FP grant (system.manaCoreFpGrant) - only for an
+    // actual Use, matching its own hint text ("granted on each use").
+    parts.push(formatSkillFpGrantLine(await grantFlatSkillFp(actor, 'manaCore', system.manaCoreFpGrant)));
+    parts.push(formatSkillFpGrantLine(await checkReflexActionTrigger(actor)));
+  }
+
+  // 5-6. Description, then the enchantment's own description (if any).
+  parts.push(`<div class="sksk-roll-description">${descriptionHTML}</div>`);
+  if (enchantmentHTML) parts.push(`<div class="sksk-roll-description">${enchantmentHTML}</div>`);
+
+  // 7. The optional roll.
+  let roll = null;
+  if (system.roll.enabled && system.formula) {
+    const rollData = item.getRollData();
+    roll = await new Roll(rollData.formula, rollData).evaluate();
+    parts.push(await roll.render());
+  }
+
+  return postItemUsageCard(actor, item, parts, roll);
+}
+
+/**
+ * Post a generic Item's own Roll-Card - own helper (rather than
+ * postActionChatCard, which always builds its own heading from a plain
+ * title string) since rollItemUsage already builds its full parts array,
+ * heading included, itself.
+ * @param {Actor|null} actor
+ * @param {Item} item
+ * @param {string[]} parts
+ * @param {Roll|null} [roll]
+ * @return {Promise<ChatMessage>}
+ */
+async function postItemUsageCard(actor, item, parts, roll = null) {
+  const messageData = {
+    speaker: ChatMessage.getSpeaker({ actor }),
+    flavor: item.name,
+    content: `<div class="sksk-chat-card sksk-action-card">${parts.join('')}</div>`,
+    rolls: roll ? [roll] : [],
+  };
+  ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));
+  return ChatMessage.create(messageData);
 }
 
 /**
@@ -483,7 +631,7 @@ export async function useDodge(actor) {
   await actor.update(spendActionPoints(actor, apCost));
   const fpGrant = await grantSkillUsageFp(actor, 'reflexes', 'dodgeUsed');
 
-  const extraHTML = `<div class="sksk-roll-line">${game.i18n.format('SKSK.Action.DodgeCount', { count })}</div>`
+  const extraHTML = `<div class="sksk-roll-description">${game.i18n.format('SKSK.Action.DodgeCount', { count })}</div>`
     + formatSkillFpGrantLine(fpGrant) + formatSkillFpGrantLine(await checkReflexActionTrigger(actor));
   return postActionChatCard(actor, game.i18n.localize('SKSK.Action.Dodge'), null, apCost, extraHTML);
 }

@@ -1218,7 +1218,7 @@ async function handleTotemTurnStart(actor) {
  * Whether a Technique's own "active" flag represents a genuine duration-
  * ticking buff (stand, or an "effect" targeting its own wielder) rather
  * than a "primed, awaiting the next weapon/Martial Arts attack" marker
- * (bonusDamage, or an "effect" targeting the attack's own target) - see
+ * (attackBonus, or an "effect" targeting the attack's own target) - see
  * data/technique.mjs.
  * @param {Item} item
  * @return {boolean}
@@ -1235,7 +1235,7 @@ function techniqueHasDuration(item) {
  * toggleStandTechnique for the player-triggered equivalent. Every Technique
  * currently on cooldown (inactive, roundsRemaining > 0) also counts down by
  * 1, granting Technique's own "techniqueCooldownRound" FP for each round
- * elapsed. Primed-but-not-duration-based Techniques (bonusDamage, or an
+ * elapsed. Primed-but-not-duration-based Techniques (attackBonus, or an
  * "effect" targeting the attack's own target) aren't touched here at all -
  * they stay primed until consumed by this actor's next weapon/Martial Arts
  * attack (helpers/actions.mjs) or manually cancelled.

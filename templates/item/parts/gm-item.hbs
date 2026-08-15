@@ -2,16 +2,23 @@
   {{> "systems/sksk/templates/item/parts/material-override-section.hbs"}}
 
   <div class="resource">
-    <label class="resource-label">Mana Cost Reductions</label>
+    <label class="resource-label" title="{{localize 'SKSK.ItemSheet.ManaCoreFpGrantHint'}}">
+      {{localize 'SKSK.ItemSheet.ManaCoreFpGrant'}}
+    </label>
+    <input type="text" name="system.manaCoreFpGrant" value="{{system.manaCoreFpGrant}}" data-dtype="Number" />
+  </div>
+
+  <div class="resource">
+    <label class="resource-label">{{localize 'SKSK.ItemSheet.ManaCostReductions'}}</label>
     <ol class="items-list items-list-compact">
       <li class="item flexrow items-header">
         <div class="item-name">{{localize 'SKSK.General.Type'}}</div>
         <div class="item-name">{{localize 'SKSK.General.School'}}</div>
         <div class="item-name">%</div>
-        <div class="item-name">Flat</div>
-        <div class="item-name">Below 1?</div>
+        <div class="item-name">{{localize 'SKSK.ItemSheet.Flat'}}</div>
+        <div class="item-name">{{localize 'SKSK.ItemSheet.AllowBelowOne'}}</div>
         <div class="item-controls">
-          <a class="item-control item-create" data-action="addManaCostReduction" title="Add mana cost reduction">
+          <a class="item-control item-create" data-action="addManaCostReduction" title="{{localize 'SKSK.ItemSheet.AddManaCostReduction'}}">
             <i class="fas fa-plus"></i>
           </a>
         </div>
@@ -52,11 +59,11 @@
         </div>
         <div class="item-name">
           <input type="checkbox" name="system.manaCostReductions.{{index}}.allowBelowOne"
-            {{checked entry.allowBelowOne}} title="This entry's flat reduction can push the cost below 1 (down to 0)" />
+            {{checked entry.allowBelowOne}} title="{{localize 'SKSK.ItemSheet.AllowBelowOneHint'}}" />
         </div>
         <div class="item-controls">
           <a class="item-control item-delete" data-action="removeArrayEntry" data-field="manaCostReductions"
-            data-index="{{index}}" title="Remove">
+            data-index="{{index}}" title="{{localize 'SKSK.General.Remove'}}">
             <i class="fas fa-trash"></i>
           </a>
         </div>
@@ -66,14 +73,14 @@
   </div>
 
   <div class="resource">
-    <label class="resource-label">AP Cost Reductions</label>
+    <label class="resource-label">{{localize 'SKSK.ItemSheet.ApCostReductions'}}</label>
     <ol class="items-list items-list-compact">
       <li class="item flexrow items-header">
         <div class="item-name">{{localize 'SKSK.General.Type'}}</div>
         <div class="item-name">{{localize 'SKSK.General.School'}}</div>
-        <div class="item-name">Flat</div>
+        <div class="item-name">{{localize 'SKSK.ItemSheet.Flat'}}</div>
         <div class="item-controls">
-          <a class="item-control item-create" data-action="addApCostReduction" title="Add AP cost reduction">
+          <a class="item-control item-create" data-action="addApCostReduction" title="{{localize 'SKSK.ItemSheet.AddApCostReduction'}}">
             <i class="fas fa-plus"></i>
           </a>
         </div>
@@ -110,7 +117,7 @@
         </div>
         <div class="item-controls">
           <a class="item-control item-delete" data-action="removeArrayEntry" data-field="apCostReductions"
-            data-index="{{index}}" title="Remove">
+            data-index="{{index}}" title="{{localize 'SKSK.General.Remove'}}">
             <i class="fas fa-trash"></i>
           </a>
         </div>
@@ -120,13 +127,13 @@
   </div>
 
   <div class="resource">
-    <label class="resource-label">Movement Bonuses</label>
+    <label class="resource-label">{{localize 'SKSK.ItemSheet.MovementBonuses'}}</label>
     <ol class="items-list items-list-compact">
       <li class="item flexrow items-header">
         <div class="item-name">{{localize 'SKSK.General.Type'}}</div>
-        <div class="item-name">Bonus</div>
+        <div class="item-name">{{localize 'SKSK.General.Value'}}</div>
         <div class="item-controls">
-          <a class="item-control item-create" data-action="addMovementBonus" title="Add movement bonus">
+          <a class="item-control item-create" data-action="addMovementBonus" title="{{localize 'SKSK.ItemSheet.AddMovementBonus'}}">
             <i class="fas fa-plus"></i>
           </a>
         </div>
@@ -144,7 +151,7 @@
         </div>
         <div class="item-controls">
           <a class="item-control item-delete" data-action="removeArrayEntry" data-field="movementBonuses"
-            data-index="{{index}}" title="Remove">
+            data-index="{{index}}" title="{{localize 'SKSK.General.Remove'}}">
             <i class="fas fa-trash"></i>
           </a>
         </div>
@@ -158,13 +165,13 @@
     <ol class="items-list items-list-compact">
       <li class="item flexrow items-header">
         <div class="item-name">{{localize 'SKSK.General.Skill'}}</div>
-        <div class="item-name">Type</div>
+        <div class="item-name">{{localize 'SKSK.General.Type'}}</div>
         <div class="item-name">{{localize 'SKSK.General.Value'}}</div>
         <div class="item-name" title="{{localize 'SKSK.FpGainBonus.AllowZeroHint'}}">
           {{localize 'SKSK.FpGainBonus.AllowZero'}}
         </div>
         <div class="item-controls">
-          <a class="item-control item-create" data-action="addFpGainBonus" title="Add FP gain bonus">
+          <a class="item-control item-create" data-action="addFpGainBonus" title="{{localize 'SKSK.ItemSheet.AddFpGainBonus'}}">
             <i class="fas fa-plus"></i>
           </a>
         </div>
@@ -191,7 +198,7 @@
         </div>
         <div class="item-controls">
           <a class="item-control item-delete" data-action="removeArrayEntry" data-field="fpGainBonuses"
-            data-index="{{index}}" title="Remove">
+            data-index="{{index}}" title="{{localize 'SKSK.General.Remove'}}">
             <i class="fas fa-trash"></i>
           </a>
         </div>
