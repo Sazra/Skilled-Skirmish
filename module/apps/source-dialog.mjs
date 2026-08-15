@@ -1,4 +1,4 @@
-import { grantSkillUsageFp, formatSkillFpGrantLine } from '../helpers/skillFp.mjs';
+import { grantSkillUsageFp, formatSkillFpGrantText } from '../helpers/skillFp.mjs';
 import { postActionChatCard } from '../helpers/actions.mjs';
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
@@ -89,7 +89,8 @@ export class SKSKSourceDialog extends HandlebarsApplicationMixin(ApplicationV2) 
 
     const grant = await grantSkillUsageFp(this.actor, 'sourceBound', 'sourceAbilityUsed');
     const costLine = `<div class="sksk-roll-line">${game.i18n.format('SKSK.SourceDialog.ActionCost', { ap: apCost, mana: manaCost })}</div>`;
-    const gainLine = formatSkillFpGrantLine(grant) || `<div class="sksk-roll-line">${game.i18n.localize('SKSK.SourceDialog.NoGain')}</div>`;
+    const grantText = formatSkillFpGrantText(grant);
+    const gainLine = `<div class="sksk-roll-line">${grantText || game.i18n.localize('SKSK.SourceDialog.NoGain')}</div>`;
     await postActionChatCard(this.actor, game.i18n.localize('SKSK.SourceDialog.ActivateSource'), null, 0, costLine + gainLine);
     this.render();
   }
@@ -101,7 +102,8 @@ export class SKSKSourceDialog extends HandlebarsApplicationMixin(ApplicationV2) 
 
     const grant = await grantSkillUsageFp(this.actor, 'etherBound', 'sourceOpened');
     const costLine = `<div class="sksk-roll-line">${game.i18n.format('SKSK.SourceDialog.ActionCost', { ap: apCost, mana: manaCost })}</div>`;
-    const gainLine = formatSkillFpGrantLine(grant) || `<div class="sksk-roll-line">${game.i18n.localize('SKSK.SourceDialog.NoGain')}</div>`;
+    const grantText = formatSkillFpGrantText(grant);
+    const gainLine = `<div class="sksk-roll-line">${grantText || game.i18n.localize('SKSK.SourceDialog.NoGain')}</div>`;
     await postActionChatCard(this.actor, game.i18n.localize('SKSK.SourceDialog.OpenEtherSource'), null, 0, costLine + gainLine);
     this.render();
   }

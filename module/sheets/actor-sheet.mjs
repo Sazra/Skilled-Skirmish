@@ -1208,19 +1208,30 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
   }
 
   /**
-   * Life/Negative Life/Mana/AP/RP's value inputs (resources.hbs/
+   * Barrier/Life/Negative Life/Mana/AP/RP's value inputs (resources.hbs/
    * resources-npc.hbs) accept "+N"/"-N" to adjust the CURRENT value by
-   * that amount, in addition to a plain absolute number - and always
-   * clamp to [0, the field's own computed max]. Rewrites the input's own
-   * value in place before the pending submitOnChange form submission
-   * fires, so the corrected number is what actually gets saved - mirrors
-   * #enforceElementExclusivity below.
+   * that amount, in addition to a plain absolute number - CLAMPED_RESOURCE_
+   * KEYS members always clamp to [0, the field's own computed max], while
+   * Barrier (no max of its own - see #normalizeBarrierInput) only floors at
+   * 0. Rewrites the input's own value in place before the pending
+   * submitOnChange form submission fires, so the corrected number is what
+   * actually gets saved - mirrors #enforceElementExclusivity below.
+   * Barrier, Life and Mana additionally cascade their own overflow into a
+   * sibling resource's input rather than just discarding it at the 0 floor
+   * - see #spillBarrierOverflow/#spillLifeOverflow/#spillManaOverflow,
+   * mirroring helpers/statusEffects.mjs#applyLifeChange/#payManaCost's own
+   * cascade for non-manual damage/Mana-cost sources (turn-start effects,
+   * Spell casts, ...) - Barrier itself has no such non-manual source today,
+   * this input is the only place its own overflow can occur.
    * @param {HTMLElement} target
    */
   #normalizeResourceInput(target) {
     const match = target?.name?.match(/^system\.(\w+)\.value$/);
-    if (!match || !CLAMPED_RESOURCE_KEYS.includes(match[1])) return;
+    if (!match) return;
     const [, key] = match;
+    if (key === 'barrier') return this.#normalizeBarrierInput(target);
+    if (!CLAMPED_RESOURCE_KEYS.includes(key)) return;
+
     const resource = this.actor.system[key];
     const raw = target.value.trim();
 
@@ -1230,7 +1241,100 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       const parsed = Number(raw);
       next = Number.isFinite(parsed) ? parsed : resource.value;
     }
+
+    if (key === 'life' && next < 0) return this.#spillLifeOverflow(target, -next);
+    if (key === 'mana' && next < 0) return this.#spillManaOverflow(target, -next);
+
     target.value = String(Math.max(0, Math.min(next, resource.max)));
+  }
+
+  /**
+   * Barrier's own value input - unlike CLAMPED_RESOURCE_KEYS, it has no max
+   * of its own (theoretically unbounded), but still accepts "+N"/"-N" the
+   * same way, and dropping it below 0 spills the leftover onto Life instead
+   * of discarding it - see #spillBarrierOverflow.
+   * @param {HTMLElement} target
+   */
+  #normalizeBarrierInput(target) {
+    const barrier = this.actor.system.barrier;
+    const raw = target.value.trim();
+
+    let next;
+    if (/^[+-]\d+$/.test(raw)) next = barrier.value + Number(raw);
+    else {
+      const parsed = Number(raw);
+      next = Number.isFinite(parsed) ? parsed : barrier.value;
+    }
+
+    if (next < 0) return this.#spillBarrierOverflow(target, -next);
+    target.value = String(Math.max(0, next));
+  }
+
+  /**
+   * Drains `overflow` from Life (looked up on the same pending form),
+   * cascading further into Negative Life via #spillLifeOverflow if Life
+   * itself can't fully absorb it - shared by #spillManaOverflow and
+   * #spillBarrierOverflow, the two resources that drain into Life once
+   * they're spent.
+   * @param {HTMLFormElement|null|undefined} form
+   * @param {number} overflow   Positive magnitude the caller's own resource
+   *   couldn't absorb.
+   */
+  #spillIntoLife(form, overflow) {
+    const lifeInput = form?.querySelector('[name="system.life.value"]');
+    if (!lifeInput) return;
+    const newLife = this.actor.system.life.value - overflow;
+    if (newLife < 0) this.#spillLifeOverflow(lifeInput, -newLife);
+    else lifeInput.value = String(newLife);
+  }
+
+  /**
+   * Life dropping below 0 via its own value input drains the leftover from
+   * Negative Life instead of discarding it - mirrors helpers/
+   * statusEffects.mjs#applyLifeChange's own overflow handling (entering
+   * Negative Life fresh - Life was still above 0 before this change -
+   * starts that buffer at its own max; a further drop while already at 0
+   * Life continues draining whatever's left, see the same function).
+   * Rewrites Negative Life's own sibling input in place (rather than a
+   * separate actor.update() call) so both land in the one pending form
+   * submission this change event already triggers.
+   * @param {HTMLElement} lifeInput
+   * @param {number} overflow   Positive magnitude Life itself couldn't absorb.
+   */
+  #spillLifeOverflow(lifeInput, overflow) {
+    lifeInput.value = '0';
+    const negLifeInput = lifeInput.form?.querySelector('[name="system.negativeLife.value"]');
+    if (!negLifeInput) return;
+    const negativeLife = this.actor.system.negativeLife;
+    const startingValue = this.actor.system.life.value > 0 ? negativeLife.max : negativeLife.value;
+    negLifeInput.value = String(Math.max(0, startingValue - overflow));
+  }
+
+  /**
+   * Mana dropping below 0 via its own value input drains the leftover from
+   * Life instead - mirrors helpers/statusEffects.mjs#payManaCost's own
+   * deficit-from-Life cascade for non-manual Mana costs (e.g. casting a
+   * Spell); further overflow past 0 Life continues on into Negative Life
+   * via #spillLifeOverflow, same as any other source of Life damage.
+   * @param {HTMLElement} manaInput
+   * @param {number} overflow   Positive magnitude Mana itself couldn't absorb.
+   */
+  #spillManaOverflow(manaInput, overflow) {
+    manaInput.value = '0';
+    this.#spillIntoLife(manaInput.form, overflow);
+  }
+
+  /**
+   * Barrier dropping below 0 via its own value input drains the leftover
+   * from Life instead - same #spillIntoLife cascade #spillManaOverflow
+   * uses, continuing on into Negative Life via #spillLifeOverflow if Life
+   * itself also overflows.
+   * @param {HTMLElement} barrierInput
+   * @param {number} overflow   Positive magnitude Barrier itself couldn't absorb.
+   */
+  #spillBarrierOverflow(barrierInput, overflow) {
+    barrierInput.value = '0';
+    this.#spillIntoLife(barrierInput.form, overflow);
   }
 
   /**

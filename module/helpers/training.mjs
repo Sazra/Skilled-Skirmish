@@ -84,7 +84,8 @@ export async function applyTraining(actor, options) {
   if (Object.keys(updates).length) await actor.update(updates);
 
   const title = `${game.i18n.localize('SKSK.Training.Title')}: ${method?.name ?? ''}`;
-  const extraHTML = (lines.length ? lines : [game.i18n.localize('SKSK.Training.NoGain')])
+  const descriptionHTML = `<div class="sksk-roll-description">${game.i18n.format('SKSK.Training.Description', { name: actor.name, hours })}</div>`;
+  const extraHTML = descriptionHTML + (lines.length ? lines : [game.i18n.localize('SKSK.Training.NoGain')])
     .map(line => `<div class="sksk-roll-line sksk-roll-fp-gain">${line}</div>`).join('');
   return postActionChatCard(actor, title, null, 0, extraHTML);
 }

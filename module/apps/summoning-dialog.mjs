@@ -1,4 +1,5 @@
-import { grantSkillUsageFp, formatSkillFpGrantLine } from '../helpers/skillFp.mjs';
+import { grantSkillUsageFp } from '../helpers/skillFp.mjs';
+import { getSkillLabel } from '../helpers/skills.mjs';
 import { postActionChatCard } from '../helpers/actions.mjs';
 import { getResizedSummons } from '../helpers/summoning.mjs';
 
@@ -67,9 +68,11 @@ export class SKSKSummoningDialog extends HandlebarsApplicationMixin(ApplicationV
     await this.actor.update({ 'system.summons': summons });
 
     const grant = await grantSkillUsageFp(this.actor, 'summoning', 'summonLevel', level);
-    const summaryLine = `<div class="sksk-roll-line"><strong>${name || '?'}</strong> (${game.i18n.format('SKSK.SummoningDialog.LevelValue', { level })})</div>`;
-    const gainLine = formatSkillFpGrantLine(grant) || `<div class="sksk-roll-line">${game.i18n.localize('SKSK.SummoningDialog.NoGain')}</div>`;
-    await postActionChatCard(this.actor, game.i18n.localize('SKSK.SummoningDialog.Title'), null, 0, summaryLine + gainLine);
+    const skillLabel = game.i18n.localize(getSkillLabel('summoning'));
+    const descriptionHTML = `<div class="sksk-roll-description">${game.i18n.format('SKSK.SummoningDialog.Description', {
+      name: this.actor.name, summonName: name || '?', level, amount: grant?.amount ?? 0, skill: skillLabel,
+    })}</div>`;
+    await postActionChatCard(this.actor, game.i18n.localize('SKSK.SummoningDialog.Title'), null, 0, descriptionHTML);
 
     this.render();
   }

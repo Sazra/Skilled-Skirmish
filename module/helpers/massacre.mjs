@@ -1,5 +1,5 @@
 import { getActorSkillLevel } from './skills.mjs';
-import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
+import { grantSkillUsageFp, formatSkillFpGrantText } from './skillFp.mjs';
 import { postActionChatCard } from './actions.mjs';
 
 /**
@@ -48,6 +48,7 @@ export async function grantMassKillFp(actor, tier) {
   const level = getActorSkillLevel(actor, 'massacre');
   const trigger = getMassKillTrigger(tier, level);
   const grant = await grantSkillUsageFp(actor, 'massacre', trigger);
-  const extraHTML = formatSkillFpGrantLine(grant) || `<div class="sksk-roll-line">${game.i18n.localize('SKSK.MassKill.NoGain')}</div>`;
+  const grantText = formatSkillFpGrantText(grant);
+  const extraHTML = `<div class="sksk-roll-line">${grantText || game.i18n.localize('SKSK.MassKill.NoGain')}</div>`;
   return postActionChatCard(actor, game.i18n.format('SKSK.MassKill.Title', { count: tier }), null, 0, extraHTML);
 }

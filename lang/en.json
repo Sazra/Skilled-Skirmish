@@ -542,7 +542,7 @@
       "Confirm": "Apply",
       "ManaGained": "Mana +{amount}",
       "LifeGained": "Life +{amount}",
-      "NegativeLifeHealed": "Negative Life -{amount}",
+      "NegativeLifeHealed": "Negative Life +{amount}",
       "SkillsIntegrated": "{count} skill(s) had their pending points integrated.",
       "ExhaustionHealed": "Exhaustion -{amount}",
       "MeditationRestored": "Meditation Charges +{amount}",
@@ -551,7 +551,9 @@
       "InspirationChargesRestored": "Inspiration Charges +{amount}",
       "LuckChargesRestored": "Luck Charges +{amount}",
       "AdrenalinUsedCountReset": "Used Adrenalin reset to 0 (was {amount})",
-      "AdrenalinDamageReduced": "Adrenalin Damage -{amount}"
+      "AdrenalinDamageReduced": "Adrenalin Damage -{amount}",
+      "DescriptionTier": "{name} rests for {hours} hours ({tier}).",
+      "DescriptionPlain": "{name} spends {hours} hours."
     },
     "Training": {
       "Title": "Training",
@@ -560,7 +562,8 @@
       "Confirm": "Train",
       "NoMethods": "No Training methods have been configured yet - ask your GM to add some in the Training Methods settings.",
       "NoGain": "No FP generated - too little time spent for any skill's rate.",
-      "SkillGained": "{skill}: pending FP +{amount}"
+      "SkillGained": "{skill}: pending FP +{amount}",
+      "Description": "{name} trains for {hours} hours."
     },
     "SkillFp": {
       "Gained": "{skill}: pending FP +{amount}"
@@ -758,7 +761,8 @@
       "Title": "Prayer",
       "Hours": "Hours",
       "Confirm": "Grant Prayer FP",
-      "NoGain": "No FP generated - no Prayer rate configured for Faith."
+      "NoGain": "No FP generated - no Prayer rate configured for Faith.",
+      "Description": "{name} prays for {hours} hours."
     },
     "Prayer": {
       "Title": "Pray"
@@ -772,7 +776,8 @@
       "Summon": "Summon",
       "Clear": "Clear",
       "NoGain": "No FP generated - no Summoning rate configured for that trigger.",
-      "NoSlots": "No summon slots available - check the Willpower modifier and the GM tab's Summon Slots settings."
+      "NoSlots": "No summon slots available - check the Willpower modifier and the GM tab's Summon Slots settings.",
+      "Description": "{name} summons {summonName} at Level {level}, generating {amount} FP in {skill}."
     },
     "Summoning": {
       "Title": "Summon"
@@ -791,7 +796,9 @@
       "NoGain": "No FP generated - no Totem rate configured for that trigger.",
       "NoSlots": "No totem slots available - check the Totem skill's level and the GM tab's Totem Slots settings.",
       "NotEnoughMana": "Not enough Mana.",
-      "AutoDeactivated": "{name}: automatically deactivated - not enough Mana to pay its upkeep."
+      "AutoDeactivated": "{name}: automatically deactivated - not enough Mana to pay its upkeep.",
+      "BindDescription": "{name} binds {totemName}, generating {amount} FP in {skill}.",
+      "ActivateDescription": "{name} activates {totemName}, generating {amount} FP in {skill}."
     },
     "Totem": {
       "Title": "Totem"

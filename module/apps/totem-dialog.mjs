@@ -1,4 +1,5 @@
-import { grantSkillUsageFp, formatSkillFpGrantLine } from '../helpers/skillFp.mjs';
+import { grantSkillUsageFp } from '../helpers/skillFp.mjs';
+import { getSkillLabel } from '../helpers/skills.mjs';
 import { postActionChatCard } from '../helpers/actions.mjs';
 import { getResizedTotems } from '../helpers/totem.mjs';
 
@@ -91,9 +92,11 @@ export class SKSKTotemDialog extends HandlebarsApplicationMixin(ApplicationV2) {
     await this.actor.update({ 'system.totems': totems });
 
     const grant = await grantSkillUsageFp(this.actor, 'totem', 'totemBond');
-    const summaryLine = `<div class="sksk-roll-line"><strong>${name || '?'}</strong></div>`;
-    const gainLine = formatSkillFpGrantLine(grant) || `<div class="sksk-roll-line">${game.i18n.localize('SKSK.TotemDialog.NoGain')}</div>`;
-    await postActionChatCard(this.actor, game.i18n.localize('SKSK.TotemDialog.Bind'), null, 0, summaryLine + gainLine);
+    const skillLabel = game.i18n.localize(getSkillLabel('totem'));
+    const descriptionHTML = `<div class="sksk-roll-description">${game.i18n.format('SKSK.TotemDialog.BindDescription', {
+      name: this.actor.name, totemName: name || '?', amount: grant?.amount ?? 0, skill: skillLabel,
+    })}</div>`;
+    await postActionChatCard(this.actor, game.i18n.localize('SKSK.TotemDialog.Bind'), null, 0, descriptionHTML);
 
     this.render();
   }
@@ -157,9 +160,11 @@ export class SKSKTotemDialog extends HandlebarsApplicationMixin(ApplicationV2) {
     });
 
     const grant = await grantSkillUsageFp(this.actor, 'totem', 'totemUsed');
-    const summaryLine = `<div class="sksk-roll-line"><strong>${entry.name || '?'}</strong> (${game.i18n.format('SKSK.TotemDialog.ActivationCost', { mana: entry.manaCostPerRound })})</div>`;
-    const gainLine = formatSkillFpGrantLine(grant) || `<div class="sksk-roll-line">${game.i18n.localize('SKSK.TotemDialog.NoGain')}</div>`;
-    await postActionChatCard(this.actor, game.i18n.localize('SKSK.TotemDialog.Activate'), null, 0, summaryLine + gainLine);
+    const skillLabel = game.i18n.localize(getSkillLabel('totem'));
+    const descriptionHTML = `<div class="sksk-roll-description">${game.i18n.format('SKSK.TotemDialog.ActivateDescription', {
+      name: this.actor.name, totemName: entry.name || '?', amount: grant?.amount ?? 0, skill: skillLabel,
+    })}</div>`;
+    await postActionChatCard(this.actor, game.i18n.localize('SKSK.TotemDialog.Activate'), null, 0, descriptionHTML);
 
     this.render();
   }

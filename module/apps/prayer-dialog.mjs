@@ -1,4 +1,4 @@
-import { grantSkillUsageFp, formatSkillFpGrantLine } from '../helpers/skillFp.mjs';
+import { grantSkillUsageFp, formatSkillFpGrantText } from '../helpers/skillFp.mjs';
 import { postActionChatCard } from '../helpers/actions.mjs';
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
@@ -56,7 +56,9 @@ export class SKSKPrayerDialog extends HandlebarsApplicationMixin(ApplicationV2) 
   static async #onConfirm(event, target) {
     if (!(this.hours > 0)) return;
     const grant = await grantSkillUsageFp(this.actor, 'faith', 'prayer', this.hours);
-    const extraHTML = formatSkillFpGrantLine(grant) || `<div class="sksk-roll-line">${game.i18n.localize('SKSK.PrayerDialog.NoGain')}</div>`;
+    const grantText = formatSkillFpGrantText(grant) || game.i18n.localize('SKSK.PrayerDialog.NoGain');
+    const description = `${game.i18n.format('SKSK.PrayerDialog.Description', { name: this.actor.name, hours: this.hours })} ${grantText}`;
+    const extraHTML = `<div class="sksk-roll-description">${description}</div>`;
     await postActionChatCard(this.actor, game.i18n.localize('SKSK.PrayerDialog.Title'), null, 0, extraHTML);
     this.close();
   }

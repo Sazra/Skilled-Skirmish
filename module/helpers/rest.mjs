@@ -234,12 +234,17 @@ export async function applyRest(actor, options) {
         updates['system.life.value'] = newLife;
         lines.push(game.i18n.format('SKSK.Rest.LifeGained', { amount: newLife - life.value }));
 
-        if (tier === 'genesung') {
+        // Negative Life is a remaining buffer (full = safely clinging on, 0 =
+        // truly dead - see helpers/statusEffects.mjs#applyLifeChange), only
+        // ever refilled here - only relevant while the actor is actually
+        // down at 0 Life (a healthy actor's own buffer sits untouched at 0
+        // until the moment it's first needed).
+        if (tier === 'genesung' && life.value === 0) {
           const negativeLife = actor.system.negativeLife;
-          const newNegativeLife = Math.max(0, negativeLife.value - healingRoll.total);
+          const newNegativeLife = Math.min(negativeLife.max, negativeLife.value + healingRoll.total);
           if (newNegativeLife !== negativeLife.value) {
             updates['system.negativeLife.value'] = newNegativeLife;
-            lines.push(game.i18n.format('SKSK.Rest.NegativeLifeHealed', { amount: negativeLife.value - newNegativeLife }));
+            lines.push(game.i18n.format('SKSK.Rest.NegativeLifeHealed', { amount: newNegativeLife - negativeLife.value }));
           }
         }
       }
@@ -354,6 +359,10 @@ export async function applyRest(actor, options) {
   await actor.update(updates);
 
   const title = tier ? game.i18n.localize(`SKSK.Rest.Tier.${tier}`) : game.i18n.localize('SKSK.Rest.PlainTime');
-  const extraHTML = lines.map(line => `<div class="sksk-roll-line">${line}</div>`).join('');
+  const hours = segments * SEGMENT_MINUTES / 60;
+  const opening = tier
+    ? game.i18n.format('SKSK.Rest.DescriptionTier', { name: actor.name, hours, tier: game.i18n.localize(`SKSK.Rest.Tier.${tier}`) })
+    : game.i18n.format('SKSK.Rest.DescriptionPlain', { name: actor.name, hours });
+  const extraHTML = `<div class="sksk-roll-description">${[opening, ...lines].join(' ')}</div>`;
   return postActionChatCard(actor, title, healingRoll, 0, extraHTML);
 }

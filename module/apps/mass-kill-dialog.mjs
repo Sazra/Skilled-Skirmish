@@ -1,4 +1,4 @@
-import { grantSkillUsageFp, formatSkillFpGrantLine } from '../helpers/skillFp.mjs';
+import { grantSkillUsageFp, formatSkillFpGrantText } from '../helpers/skillFp.mjs';
 import { postActionChatCard } from '../helpers/actions.mjs';
 import { grantMassKillFp, MASS_KILL_TIERS } from '../helpers/massacre.mjs';
 
@@ -70,7 +70,8 @@ export class SKSKMassKillDialog extends HandlebarsApplicationMixin(ApplicationV2
   static async #onConfirmKill(event, target) {
     if (!this.skillKey) return;
     const grant = await grantSkillUsageFp(this.actor, this.skillKey, 'kill');
-    const extraHTML = formatSkillFpGrantLine(grant) || `<div class="sksk-roll-line">${game.i18n.localize('SKSK.KillDialog.NoGain')}</div>`;
+    const grantText = formatSkillFpGrantText(grant);
+    const extraHTML = `<div class="sksk-roll-line">${grantText || game.i18n.localize('SKSK.KillDialog.NoGain')}</div>`;
     await postActionChatCard(this.actor, game.i18n.localize('SKSK.KillDialog.Title'), null, 0, extraHTML);
   }
 

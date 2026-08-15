@@ -1474,6 +1474,16 @@ li.chat-message:has(.sksk-chat-card) .flavor-text {
   border-color: var(--color-level-error, #ff6060);
 }
 
+/* Inspiration's own "Würfel beanspruchen" claim button (see
+   helpers/inspiration.mjs#renderClaimButton) - centered like the buttons
+   above rather than left-aligned. */
+.sksk-chat-card .sksk-claim-inspiration {
+  display: table;
+  width: auto;
+  line-height: normal;
+  margin: 2px auto 6px;
+}
+
 /* Critical successes/failures (see helpers/criticalRolls.mjs): green/red on
    the die's own rendered total, and on any inline outcome label wrapped the
    same way. Not scoped to .sksk-chat-card - the plain attribute-check

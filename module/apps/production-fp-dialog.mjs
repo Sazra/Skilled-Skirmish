@@ -1,5 +1,5 @@
 import { grantAlchemyFp, grantCraftingFp, grantCookingFp, grantEnchantingFp } from '../helpers/productionFp.mjs';
-import { formatSkillFpGrantLine } from '../helpers/skillFp.mjs';
+import { formatSkillFpGrantText } from '../helpers/skillFp.mjs';
 import { postActionChatCard } from '../helpers/actions.mjs';
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
@@ -46,21 +46,24 @@ export class SKSKProductionFpDialog extends HandlebarsApplicationMixin(Applicati
     const essences = Number(this.element.querySelector('[name="essences"]').value) || 0;
     const quality = Number(this.element.querySelector('[name="alchemyQuality"]').value) || 0;
     const grant = await grantAlchemyFp(this.actor, essences, quality);
-    const line = formatSkillFpGrantLine(grant) || `<div class="sksk-roll-line">${game.i18n.localize('SKSK.ProductionFp.NoGain')}</div>`;
+    const grantText = formatSkillFpGrantText(grant);
+    const line = `<div class="sksk-roll-line">${grantText || game.i18n.localize('SKSK.ProductionFp.NoGain')}</div>`;
     await postActionChatCard(this.actor, game.i18n.localize('SKSK.ProductionFp.Alchemy'), null, 0, line);
   }
 
   static async #onGrantCrafting() {
     const quality = Number(this.element.querySelector('[name="craftingQuality"]').value) || 0;
     const grant = await grantCraftingFp(this.actor, quality);
-    const line = formatSkillFpGrantLine(grant) || `<div class="sksk-roll-line">${game.i18n.localize('SKSK.ProductionFp.NoGain')}</div>`;
+    const grantText = formatSkillFpGrantText(grant);
+    const line = `<div class="sksk-roll-line">${grantText || game.i18n.localize('SKSK.ProductionFp.NoGain')}</div>`;
     await postActionChatCard(this.actor, game.i18n.localize('SKSK.ProductionFp.Crafting'), null, 0, line);
   }
 
   static async #onGrantCooking() {
     const quality = Number(this.element.querySelector('[name="cookingQuality"]').value) || 0;
     const grant = await grantCookingFp(this.actor, quality);
-    const line = formatSkillFpGrantLine(grant) || `<div class="sksk-roll-line">${game.i18n.localize('SKSK.ProductionFp.NoGain')}</div>`;
+    const grantText = formatSkillFpGrantText(grant);
+    const line = `<div class="sksk-roll-line">${grantText || game.i18n.localize('SKSK.ProductionFp.NoGain')}</div>`;
     await postActionChatCard(this.actor, game.i18n.localize('SKSK.ProductionFp.Cooking'), null, 0, line);
   }
 
@@ -68,7 +71,8 @@ export class SKSKProductionFpDialog extends HandlebarsApplicationMixin(Applicati
     const quality = Number(this.element.querySelector('[name="enchantingQuality"]').value) || 0;
     const hours = Number(this.element.querySelector('[name="enchantingHours"]').value) || 0;
     const { enchanting, ritualism } = await grantEnchantingFp(this.actor, quality, hours);
-    const line = formatSkillFpGrantLine(enchanting) + formatSkillFpGrantLine(ritualism);
+    const line = [formatSkillFpGrantText(enchanting), formatSkillFpGrantText(ritualism)]
+      .filter(Boolean).map(text => `<div class="sksk-roll-line">${text}</div>`).join('');
     await postActionChatCard(this.actor, game.i18n.localize('SKSK.ProductionFp.Enchanting'), null, 0,
       line || `<div class="sksk-roll-line">${game.i18n.localize('SKSK.ProductionFp.NoGain')}</div>`);
   }

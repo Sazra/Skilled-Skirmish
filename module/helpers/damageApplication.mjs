@@ -201,9 +201,9 @@ export function renderApplyDamageButton(attacker, damageEntries, killSkillKey = 
  * runs each carried {damageType, amount} entry through
  * helpers/defense.mjs#applyElementalDefense, nets the results (damage
  * negative, healing positive) into one applyLifeChange call, and - if that
- * leaves the defender's Life AND Negative Life both at their max-depleted
- * floor (Life 0, Negative Life at its own max - "true death", see
- * data/actor-base.mjs#negativeLife) and it wasn't ALREADY true beforehand
+ * leaves the defender's Life AND Negative Life both at their own floor
+ * (Life 0, Negative Life 0 - its buffer fully drained, "true death", see
+ * helpers/statusEffects.mjs#applyLifeChange) and it wasn't ALREADY true beforehand
  * (so re-applying damage to an already-dead target, e.g. overkill, never
  * grants Kill FP a second time) - grants the attacker a Kill FP for
  * killSkillKey, plus (if the attacker is currently Concealed - Attentat/
@@ -258,11 +258,11 @@ export async function applyDamageFromChat(button) {
     lines.push(await applyTechniqueEffectBundle(button.dataset.techniqueItemUuid, defender));
   }
 
-  const wasAlreadyDead = defender.system.life.value === 0 && defender.system.negativeLife.value >= defender.system.negativeLife.max;
+  const wasAlreadyDead = defender.system.life.value === 0 && defender.system.negativeLife.value <= 0;
   const { negativeLifeDelta } = await applyLifeChange(defender, netDelta);
   lines.push(negativeLifeOverflowHTML(negativeLifeDelta));
 
-  const isDead = defender.system.life.value === 0 && defender.system.negativeLife.value >= defender.system.negativeLife.max;
+  const isDead = defender.system.life.value === 0 && defender.system.negativeLife.value <= 0;
   if (isDead && !wasAlreadyDead && attacker && killSkillKey) {
     lines.push(formatSkillFpGrantLine(await grantSkillUsageFp(attacker, killSkillKey, 'kill')));
     lines.push(`<div class="sksk-roll-line"><strong>${game.i18n.format('SKSK.AttackRoll.KillConfirmed', { defender: defender.name })}</strong></div>`);

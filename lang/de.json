@@ -542,7 +542,7 @@
             "Confirm": "Anwenden",
             "ManaGained": "Mana +{amount}",
             "LifeGained": "Leben +{amount}",
-            "NegativeLifeHealed": "Negatives Leben -{amount}",
+            "NegativeLifeHealed": "Negatives Leben +{amount}",
             "SkillsIntegrated": "Bei {count} Fertigkeit(en) wurde der Gewinn integriert.",
             "ExhaustionHealed": "Erschöpfung -{amount}",
             "MeditationRestored": "Meditationsladungen +{amount}",
@@ -551,7 +551,9 @@
             "InspirationChargesRestored": "Inspirationsladungen +{amount}",
             "LuckChargesRestored": "Glücksladungen +{amount}",
             "AdrenalinUsedCountReset": "Benutztes Adrenalin auf 0 zurückgesetzt (war {amount})",
-            "AdrenalinDamageReduced": "Adrenalinschaden -{amount}"
+            "AdrenalinDamageReduced": "Adrenalinschaden -{amount}",
+            "DescriptionTier": "{name} ruht sich {hours} Stunden lang aus ({tier}).",
+            "DescriptionPlain": "{name} verbringt {hours} Stunden."
         },
         "Training": {
             "Title": "Training",
@@ -560,7 +562,8 @@
             "Confirm": "Trainieren",
             "NoMethods": "Es wurden noch keine Trainingsmethoden konfiguriert - bitte den GM bitten, welche in den Trainingsmethoden-Einstellungen anzulegen.",
             "NoGain": "Keine FP generiert - zu wenig Zeit für die Rate jeder Fertigkeit aufgewendet.",
-            "SkillGained": "{skill}: nicht integrierte FP +{amount}"
+            "SkillGained": "{skill}: nicht integrierte FP +{amount}",
+            "Description": "{name} trainiert {hours} Stunden."
         },
         "SkillFp": {
             "Gained": "{skill}: nicht integrierte FP +{amount}"
@@ -758,7 +761,8 @@
             "Title": "Gebet",
             "Hours": "Stunden",
             "Confirm": "Gebets-FP vergeben",
-            "NoGain": "Keine FP generiert - für Glaube ist keine Gebets-Rate konfiguriert."
+            "NoGain": "Keine FP generiert - für Glaube ist keine Gebets-Rate konfiguriert.",
+            "Description": "{name} betet {hours} Stunden."
         },
         "Prayer": {
             "Title": "Beten"
@@ -772,7 +776,8 @@
             "Summon": "Beschwören",
             "Clear": "Löschen",
             "NoGain": "Keine FP generiert - für diesen Auslöser ist keine Beschwörungs-Rate konfiguriert.",
-            "NoSlots": "Keine Beschwörungsplätze verfügbar - prüfe den Willenskraft-Modifikator und die Beschwörungsplätze-Einstellungen im GM-Tab."
+            "NoSlots": "Keine Beschwörungsplätze verfügbar - prüfe den Willenskraft-Modifikator und die Beschwörungsplätze-Einstellungen im GM-Tab.",
+            "Description": "{name} beschwört {summonName} auf Level {level} und generiert dabei {amount} FP in {skill}."
         },
         "Summoning": {
             "Title": "Beschwören"
@@ -791,7 +796,9 @@
             "NoGain": "Keine FP generiert - für diesen Auslöser ist keine Totem-Rate konfiguriert.",
             "NoSlots": "Keine Totemplätze verfügbar - prüfe die Stufe der Fertigkeit Totem und die Totemplätze-Einstellungen im GM-Tab.",
             "NotEnoughMana": "Nicht genug Mana.",
-            "AutoDeactivated": "{name}: automatisch deaktiviert - nicht genug Mana, um den Unterhalt zu bezahlen."
+            "AutoDeactivated": "{name}: automatisch deaktiviert - nicht genug Mana, um den Unterhalt zu bezahlen.",
+            "BindDescription": "{name} bindet {totemName} und generiert dabei {amount} FP in {skill}.",
+            "ActivateDescription": "{name} aktiviert {totemName} und generiert dabei {amount} FP in {skill}."
         },
         "Totem": {
             "Title": "Totem"

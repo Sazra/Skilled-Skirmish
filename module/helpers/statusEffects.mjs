@@ -167,19 +167,33 @@ function clampResourceChange(value, max, delta) {
  * this rather than only narrating the amount in chat, as does the
  * Angriffswurf "Apply Damage" button (see helpers/damageApplication.mjs).
  * Damage that would take Life below 0 doesn't just get floored away -
- * whatever's left over once Life hits 0 carries through onto
- * system.negativeLife.value instead (clamped at its own max), regardless
- * of which of the above dealt it. Healing never interacts with Negative
- * Life here (Rest already handles healing it directly, on its own tiers).
+ * whatever's left over once Life hits 0 is drained from
+ * system.negativeLife.value instead, regardless of which of the above dealt
+ * it. system.negativeLife.value is a REMAINING buffer (like a second Life
+ * pool that only kicks in once Life itself is empty) - full (its own max)
+ * means still safely clinging on, 0 means truly dead (see
+ * helpers/statusEffects.mjs#handleTenacityTurnStart, which reads it the same
+ * way, and helpers/damageApplication.mjs#applyDamageFromChat's own death
+ * check). The very first hit that pushes Life below 0 (Life was still above
+ * 0 immediately before this call) starts that buffer fresh at its own max,
+ * rather than continuing to drain whatever stale value was left over from a
+ * PRIOR trip into Negative Life that Life has since recovered from - see
+ * helpers/rest.mjs#applyRest, the only place that ever refills it. Healing
+ * never interacts with Negative Life here (Rest already handles healing it
+ * directly, on its own tiers).
  * @param {Actor} actor
  * @param {number} delta   Positive to heal, negative to damage.
  * @return {Promise<{lifeDelta: number, negativeLifeDelta: number}>} The
  *   amounts actually applied to each (may differ from delta once clamped);
- *   negativeLifeDelta is positive when Negative Life worsens.
+ *   negativeLifeDelta is the (always non-negative) magnitude of NEW damage
+ *   absorbed into the Negative Life buffer this call, i.e. positive when
+ *   Negative Life worsens - not the raw signed change to its stored value,
+ *   which can look like an increase on a fresh entry (0 -> max - overflow).
  */
 export async function applyLifeChange(actor, delta) {
   if (!delta) return { lifeDelta: 0, negativeLifeDelta: 0 };
   const life = actor.system.life;
+  const wasAboveZero = life.value > 0;
   const newLifeValue = clampResourceChange(life.value, life.max, delta);
   const lifeDelta = newLifeValue - life.value;
 
@@ -191,9 +205,10 @@ export async function applyLifeChange(actor, delta) {
     const overflow = -delta + lifeDelta; // damage magnitude Life itself couldn't absorb
     if (overflow > 0) {
       const negativeLife = actor.system.negativeLife;
-      const newNegativeLifeValue = Math.min(negativeLife.max, negativeLife.value + overflow);
-      negativeLifeDelta = newNegativeLifeValue - negativeLife.value;
-      if (negativeLifeDelta) updates['system.negativeLife.value'] = newNegativeLifeValue;
+      const startingValue = wasAboveZero ? negativeLife.max : negativeLife.value;
+      const newNegativeLifeValue = Math.max(0, startingValue - overflow);
+      negativeLifeDelta = startingValue - newNegativeLifeValue;
+      if (newNegativeLifeValue !== negativeLife.value) updates['system.negativeLife.value'] = newNegativeLifeValue;
     }
   }
 
