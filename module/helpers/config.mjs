@@ -399,7 +399,21 @@ SKSK.techniqueEffectTargets = {
 
 // The elements a spell's Damage entries can deal - the same 20 elements
 // used by the Resistance/Weakness/Immunity/Absorb skill categories, so a
-// spell's damage type always lines up with an actor's defenses.
+// spell's damage type always lines up with an actor's defenses, PLUS
+// "aether" - this system's own "true damage" equivalent, deliberately NOT
+// paired with an aetherResistance/aetherWeakness/aetherImmunity/
+// aetherAbsorption skill entry in any of the four skill categories below,
+// so it can never be mitigated: helpers/defense.mjs#applyElementalDefense
+// looks up "aetherResistance" etc. via helpers/skills.mjs#
+// findSkillDefinition, which returns null for a skill key that doesn't
+// exist in CONFIG.SKSK.skills at all - every one of
+// getActorSkillLevel/isActorSkillUnlocked/getSkillStacks already handles
+// that by returning 0/false, so Aether damage always passes through
+// applyElementalDefense completely unmodified, with no dedicated code path
+// needed here. Every damage-type dropdown in the system (weapon/armor
+// property overrides, Spell Damage entries, Martial Arts Attacks,
+// technique-rolls.mjs, Models config) reads this same object directly, so
+// adding it here alone makes it selectable everywhere at once.
 SKSK.damageTypes = {
   fire: 'SKSK.DamageType.Fire',
   water: 'SKSK.DamageType.Water',
@@ -421,6 +435,7 @@ SKSK.damageTypes = {
   electricity: 'SKSK.DamageType.Electricity',
   ice: 'SKSK.DamageType.Ice',
   disease: 'SKSK.DamageType.Disease',
+  aether: 'SKSK.DamageType.Aether',
 };
 
 // What a spell's Damage/Status Effect entries can be coupled to: the

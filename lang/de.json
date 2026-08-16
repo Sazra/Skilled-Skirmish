@@ -907,7 +907,7 @@
                 "abbr": "str"
             },
             "Con": {
-                "long": "Widerstand",
+                "long": "Konstitution",
                 "abbr": "con"
             },
             "Dex": {
@@ -976,7 +976,7 @@
                 "Enchanting": "Verzauberung"
             },
             "Rogue": {
-                "Assassination": "Meucheln",
+                "Assassination": "Attentat",
                 "Traps": "Fallen",
                 "Stealth": "Heimlichkeit",
                 "SleightOfHand": "Taschenspielerei"
@@ -1007,7 +1007,7 @@
                 "ManaRegeneration": "Manaregeneration",
                 "ManaCore": "Manakern",
                 "Ritualism": "Ritualismus",
-                "ChantShortening": "Formelverkürzung",
+                "ChantShortening": "Spruchkürzung",
                 "Overcharge": "Überladung",
                 "SourceBound": "Quellengebunden",
                 "EtherBound": "Äthergebunden",
@@ -1040,7 +1040,7 @@
             "Attribute": {
                 "UnlimitedStrength": "Unbegrenzte Stärke",
                 "UnlimitedDexterity": "Unbegrenzte Geschicklichkeit",
-                "UnlimitedConstitution": "Unbegrenzter Widerstand",
+                "UnlimitedConstitution": "Unbegrenzte Konstitution",
                 "UnlimitedPerception": "Unbegrenzte Wahrnehmung",
                 "UnlimitedWillpower": "Unbegrenzte Willenskraft",
                 "UnlimitedAura": "Unbegrenzte Aura",
@@ -1061,7 +1061,7 @@
                 "NatureResistance": "Naturresistenz",
                 "ColdResistance": "Kälteresistenz",
                 "HeatResistance": "Hitzeresistenz",
-                "BluntResistance": "Wuchtresistenz",
+                "BluntResistance": "Schlagresistenz",
                 "SharpResistance": "Klingenresistenz",
                 "PiercingResistance": "Stichresistenz",
                 "PoisonResistance": "Giftresistenz",
@@ -1083,7 +1083,7 @@
                 "NatureWeakness": "Naturschwäche",
                 "ColdWeakness": "Kälteschwäche",
                 "HeatWeakness": "Hitzeschwäche",
-                "BluntWeakness": "Wuchtschwäche",
+                "BluntWeakness": "Schlagschwäche",
                 "SharpWeakness": "Klingenschwäche",
                 "PiercingWeakness": "Stichschwäche",
                 "PoisonWeakness": "Giftschwäche",
@@ -1105,7 +1105,7 @@
                 "NatureImmunity": "Naturimmunität",
                 "ColdImmunity": "Kälteimmunität",
                 "HeatImmunity": "Hitzeimmunität",
-                "BluntImmunity": "Wuchtimmunität",
+                "BluntImmunity": "Schlagimmunität",
                 "SharpImmunity": "Klingenimmunität",
                 "PiercingImmunity": "Stichimmunität",
                 "PoisonImmunity": "Giftimmunität",
@@ -1127,7 +1127,7 @@
                 "NatureAbsorption": "Naturabsorption",
                 "ColdAbsorption": "Kälteabsorption",
                 "HeatAbsorption": "Hitzeabsorption",
-                "BluntAbsorption": "Wuchtabsorption",
+                "BluntAbsorption": "Schlagabsorption",
                 "SharpAbsorption": "Klingenabsorption",
                 "PiercingAbsorption": "Stichabsorption",
                 "PoisonAbsorption": "Giftabsorption",
@@ -1339,14 +1339,15 @@
             "Nature": "Natur",
             "Cold": "Kälte",
             "Heat": "Hitze",
-            "Blunt": "Wucht",
+            "Blunt": "Schlag",
             "Sharp": "Klinge",
             "Piercing": "Stich",
             "Poison": "Gift",
             "Acid": "Säure",
             "Electricity": "Elektrizität",
             "Ice": "Eis",
-            "Disease": "Krankheit"
+            "Disease": "Krankheit",
+            "Aether": "Äther"
         },
         "PathElement": {
             "Mana": "Mana"
@@ -1474,11 +1475,11 @@
             },
             "Petrified": {
                 "Name": "Versteinert",
-                "Description": "Diese Kreatur wurde versteinert. Solange dieser Statuseffekt gilt, wird diese Kreatur und alles was sie an sich trägt zu magischem Stein. Während sie versteinert ist, erhöht sich das Gewicht dieser Kreatur um das Zehnfache und sie hört auf zu altern. Sie ist komplett unbeweglich, kann nicht sprechen und bekommt nichts von ihrer Umgebung mit. Sie ist immun gegen Giftschaden und Vergiftungen; sollte sie vor dem Inkrafttreten dieses Statuseffekts vergiftet worden sein, wird die Vergiftung nicht aufgehoben, sondern lediglich pausiert. Sollte diese Kreatur gezwungen sein, Stärke-, Geschicklichkeits-, auf Sicht basierende Weisheits- oder Charismawürfe zu machen, schlagen diese automatisch fehl (dies gilt jedoch nicht als kritischer Fehler). Diese Kreatur nimmt während der Versteinerung halbierten Schaden aus allen Quellen außer Äther-, Erd- und Schlagschaden, und Angriffe gegen diese Kreatur werden immer mit Vorteil gemacht."
+                "Description": "Diese Kreatur wurde versteinert. Solange dieser Statuseffekt gilt, wird diese Kreatur und alles was sie an sich trägt zu magischem Stein. Während sie versteinert ist, erhöht sich das Gewicht dieser Kreatur um das Zehnfache und sie hört auf zu altern. Sie ist komplett unbeweglich, kann nicht sprechen und bekommt nichts von ihrer Umgebung mit. Sie ist immun gegen Giftschaden und Vergiftungen; sollte sie vor dem Inkrafttreten dieses Statuseffekts vergiftet worden sein, wird die Vergiftung nicht aufgehoben, sondern lediglich pausiert. Sollte diese Kreatur gezwungen sein, Stärke-, Geschicklichkeits-, auf Sicht basierende Wahrnehmungs- oder Charismawürfe zu machen, schlagen diese automatisch fehl (dies gilt jedoch nicht als kritischer Fehler). Diese Kreatur nimmt während der Versteinerung halbierten Schaden aus allen Quellen außer Äther-, Erd- und Schlagschaden, und Angriffe gegen diese Kreatur werden immer mit Vorteil gemacht."
             },
             "Blind": {
                 "Name": "Blind",
-                "Description": "Diese Kreatur ist blind auf mindestens einem Auge. Ist sie nur auf einem Auge blind, erhält sie Nachteil auf Weisheitswürfe und Angriffswürfe. Ist sie komplett blind, schlagen auf Sicht basierende Weisheitswürfe und Fernkampfangriffe automatisch fehl; Nahkampfangriffe besitzen weiterhin nur Nachteil."
+                "Description": "Diese Kreatur ist blind auf mindestens einem Auge. Ist sie nur auf einem Auge blind, erhält sie Nachteil auf Wahrnehmungswürfe und Angriffswürfe. Ist sie komplett blind, schlagen auf Sicht basierende Wahrnehmungswürfe und Fernkampfangriffe automatisch fehl; Nahkampfangriffe besitzen weiterhin nur Nachteil."
             },
             "Concentration": {
                 "Name": "Konzentration",
@@ -1656,7 +1657,7 @@
             },
             "Spiky": {
                 "Name": "Stachlig",
-                "Hint": "Kreaturen, die den Träger eines solchen Gegenstands mit einem Nahkampfwaffenangriff angreifen, erleiden 1d6 Spitzschaden."
+                "Hint": "Kreaturen, die den Träger eines solchen Gegenstands mit einem Nahkampfwaffenangriff angreifen, erleiden 1d6 Stichschaden."
             }
         },
         "ItemSheet": {

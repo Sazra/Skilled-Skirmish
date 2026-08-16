@@ -347,7 +347,7 @@
       "ClassLife": "{name} (Life)",
       "Ability": "Ability: {name}",
       "AdvancedClassBonus": "Advanced Class Bonus",
-      "ToughnessMultiplier": "Toughness Multiplier (Tenacity Level {level})",
+      "ToughnessMultiplier": "Tenacity Multiplier (Tenacity Level {level})",
       "Subtotal": "Subtotal",
       "EffectsBonus": "Bonus (Effects)",
       "LehrenBonus": "Bonus (Lehren)",
@@ -1120,7 +1120,7 @@
       "Special": {
         "Luck": "Luck",
         "Massacre": "Massacre",
-        "SoulForce": "Soul Force",
+        "SoulForce": "Soulforce",
         "HitCorrection": "Hit Correction",
         "DefenseCorrection": "Defense Correction",
         "CorpusImmortalis": "Corpus Immortalis",
@@ -1346,7 +1346,8 @@
       "Acid": "Acid",
       "Electricity": "Electricity",
       "Ice": "Ice",
-      "Disease": "Disease"
+      "Disease": "Disease",
+      "Aether": "Aether"
     },
     "PathElement": {
       "Mana": "Mana"
@@ -1474,11 +1475,11 @@
       },
       "Petrified": {
         "Name": "Petrified",
-        "Description": "This creature has been petrified. While this status effect applies, this creature and everything it's carrying turns to magical stone. While petrified, its weight increases tenfold and it stops aging. It is completely immobile, can't speak, and perceives nothing of its surroundings. It is immune to Poison damage and Poisoning; if it was already poisoned before this status effect took effect, the poisoning isn't cured, only paused. Should this creature be forced to make Strength, Dexterity, sight-based Wisdom, or Charisma checks, they automatically fail (this doesn't count as a critical failure). This creature takes halved damage from all sources except Aether, Earth, and Blunt damage while petrified, and attacks against it are always made with advantage."
+        "Description": "This creature has been petrified. While this status effect applies, this creature and everything it's carrying turns to magical stone. While petrified, its weight increases tenfold and it stops aging. It is completely immobile, can't speak, and perceives nothing of its surroundings. It is immune to Poison damage and Poisoning; if it was already poisoned before this status effect took effect, the poisoning isn't cured, only paused. Should this creature be forced to make Strength, Dexterity, sight-based Perception, or Charisma checks, they automatically fail (this doesn't count as a critical failure). This creature takes halved damage from all sources except Aether, Earth, and Blunt damage while petrified, and attacks against it are always made with advantage."
       },
       "Blind": {
         "Name": "Blind",
-        "Description": "This creature is blind in at least one eye. If blind in only one eye, it has disadvantage on Wisdom checks and attack rolls. If completely blind, sight-based Wisdom checks and ranged attacks automatically fail; melee attacks still only have disadvantage."
+        "Description": "This creature is blind in at least one eye. If blind in only one eye, it has disadvantage on Perception checks and attack rolls. If completely blind, sight-based Perception checks and ranged attacks automatically fail; melee attacks still only have disadvantage."
       },
       "Concentration": {
         "Name": "Concentration",
