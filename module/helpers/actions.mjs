@@ -123,7 +123,8 @@ export async function rollWeaponItem(item) {
       ? computeLehrenTargetBonus(actor, 'damageBonus', { skillKey: item.system.weaponType, kind: 'weapon' })
       : 0;
     const damageTypeBonus = actor?.system.damageBonus?.[damageType] ?? 0;
-    const totalDamageBonus = lehrenDamageBonus + damageTypeBonus;
+    const allWeaponsDamageBonus = actor?.system.damageBonusAll ?? 0;
+    const totalDamageBonus = lehrenDamageBonus + damageTypeBonus + allWeaponsDamageBonus;
     const damageFormulaBase = totalDamageBonus ? `${item.system.formula} + ${totalDamageBonus}` : item.system.formula;
     const damageFormula = applyTechniqueDiceIncrease(damageFormulaBase, technique);
     const roll = await new Roll(damageFormula, item.getRollData()).evaluate();
@@ -237,7 +238,8 @@ export async function rollMartialArtsAttack(actor, index) {
   const attributeBonus = resolveMartialArtsAttributeBonus(actor, attack.attributes, attack.attributeUsage);
   const lehrenDamageBonus = computeLehrenTargetBonus(actor, 'damageBonus', { skillKey: 'martialArts', kind: 'weapon' });
   const damageTypeBonus = actor.system.damageBonus?.[attack.damageType] ?? 0;
-  const bonus = attributeBonus + lehrenDamageBonus + damageTypeBonus;
+  const allWeaponsDamageBonus = actor.system.damageBonusAll ?? 0;
+  const bonus = attributeBonus + lehrenDamageBonus + damageTypeBonus + allWeaponsDamageBonus;
   const formulaBase = bonus ? `${attack.formula} + ${bonus}` : attack.formula;
   const formula = applyTechniqueDiceIncrease(formulaBase, technique);
   const roll = await new Roll(formula, actor.getRollData()).evaluate();

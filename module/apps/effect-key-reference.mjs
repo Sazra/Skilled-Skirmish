@@ -97,6 +97,10 @@ export class SKSKEffectKeyReference extends HandlebarsApplicationMixin(Applicati
           { label: 'Summon Slots Bonus', key: 'system.summonSlotsBonus' },
           { label: 'Totem Slots Bonus', key: 'system.totemSlotsBonus' },
           { label: 'Genereller Wurfbonus (alle Würfe)', key: 'system.allRollsBonus' },
+          { label: 'Trefferbonus: alle Waffen (inkl. Kampfkunst)', key: 'system.weaponAttackBonusAll' },
+          { label: 'Schadensbonus: alle Waffen (inkl. Kampfkunst)', key: 'system.damageBonusAll' },
+          { label: 'Trefferbonus: alle Zauber', key: 'system.spellAttackBonusAll' },
+          { label: 'Schadensbonus: alle Zauber', key: 'system.spellDamageBonusAll' },
         ],
       },
       {

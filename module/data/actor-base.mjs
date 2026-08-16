@@ -296,6 +296,21 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // helpers/statusEffects.mjs#computeD20Malus/applyD20Malus.
     schema.allRollsBonus = new fields.NumberField({ ...requiredInteger, initial: 0 });
 
+    // Four flat "everything of this kind" accumulators - purely Active
+    // Effect targets, each summed in ALONGSIDE the existing per-type/per-
+    // school fields above (weaponAttackBonus.<type>, damageBonus.<type>,
+    // magicSchoolAttackBonus.<school>/combinedMagicSchoolAttackBonus.
+    // <school>) rather than replacing them, so a GM can buff either one
+    // specific type/school or every weapon/spell at once. See
+    // helpers/attackRolls.mjs#computeWeaponAttackBonus/
+    // computeMartialArtsAttackBonus/computeSpellAttackBonus and
+    // helpers/actions.mjs's inline weapon-item/martial-arts damage bonus and
+    // helpers/spells.mjs#computeDamageBonus.
+    schema.weaponAttackBonusAll = new fields.NumberField({ ...requiredInteger, initial: 0 });
+    schema.damageBonusAll = new fields.NumberField({ ...requiredInteger, initial: 0 });
+    schema.spellAttackBonusAll = new fields.NumberField({ ...requiredInteger, initial: 0 });
+    schema.spellDamageBonusAll = new fields.NumberField({ ...requiredInteger, initial: 0 });
+
     schema.biography = new fields.StringField({ required: true, blank: true });
 
     // Character tab's "Data" section - free-flavor fields shown alongside

@@ -61,7 +61,13 @@ export function computeDamageBonus(damage, actor, spellSystem = null) {
     ? computeLehrenTargetBonus(actor, 'damageBonus', { skillKey: spellSystem.magicSchool ?? null, kind: 'spell' })
     : 0;
   const damageTypeBonus = actor?.system.damageBonus?.[damage.damageType] ?? 0;
-  return sumBonuses(damage.attributeBonuses, damage.skillBonuses, actor) + lehrenBonus + damageTypeBonus;
+  // Unlike lehrenBonus (which needs spellSystem's own magicSchool to scope
+  // against), this function is only ever called for a Spell's own damages
+  // array (see the @param doc above), so the "all spells" accumulator
+  // applies unconditionally whenever an actor is present - no spellSystem
+  // needed.
+  const allSpellsDamageBonus = actor?.system.spellDamageBonusAll ?? 0;
+  return sumBonuses(damage.attributeBonuses, damage.skillBonuses, actor) + lehrenBonus + damageTypeBonus + allSpellsDamageBonus;
 }
 
 /**
