@@ -398,7 +398,9 @@ export async function rollAdrenalin(actor) {
   if (roll.total > 0) await applyAdrenalinDamage(actor, roll.total);
 
   const fpGrant = await grantSkillUsageFp(actor, 'adrenalin', 'adrenalinUsed');
-  return postActionChatCard(actor, game.i18n.localize('SKSK.Action.Adrenalin'), roll, 0, formatSkillFpGrantLine(fpGrant));
+  const descriptionHTML = `<div class="sksk-roll-description">${game.i18n.format('SKSK.Action.AdrenalinDescription', { name: actor.name })}</div>`;
+  const extraHTML = descriptionHTML + formatSkillFpGrantLine(fpGrant);
+  return postActionChatCard(actor, game.i18n.localize('SKSK.Action.Adrenalin'), roll, 0, extraHTML);
 }
 
 /**

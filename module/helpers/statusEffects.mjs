@@ -1,4 +1,5 @@
 import { postActionChatCard } from './actions.mjs';
+import { formatRollCardHeading } from './rollCard.mjs';
 import { getClassAbilityLevels, actorHasAdvancedClass } from './abilities.mjs';
 import { getActorSkillLevel, getSkillLabel } from './skills.mjs';
 import { handlePendingSpellTurnStart } from './spell-rolls.mjs';
@@ -483,6 +484,12 @@ export async function applyCauterization(actor, value) {
  * exhausted - see helpers/life.mjs). Cauterization and Adrenalin Damage
  * are kept as two separate status ids specifically so either can be
  * healed/cleared independently of the other (see clearAdrenalinDamage).
+ * Once the effect's own update/creation resolves, Life and Negative Life
+ * have already been re-derived against the newly-reduced max (see data/
+ * actor-base.mjs#prepareDerivedData) - if either's current value now
+ * exceeds its own max, it's clamped straight down to it, same as any other
+ * source of max-Life reduction would need to (Foundry never does this on
+ * its own for an Active-Effect-driven max change).
  * @param {Actor} actor
  * @param {string} id
  * @param {number} value
@@ -506,6 +513,13 @@ async function applyMergedLifeDamage(actor, id, value) {
       origin: actor.uuid, flags: { sksk: { value: newTotal } }, changes,
     }]);
   }
+
+  const clampUpdates = {};
+  if (actor.system.life.value > actor.system.life.max) clampUpdates['system.life.value'] = actor.system.life.max;
+  if (actor.system.negativeLife.value > actor.system.negativeLife.max) {
+    clampUpdates['system.negativeLife.value'] = actor.system.negativeLife.max;
+  }
+  if (Object.keys(clampUpdates).length) await actor.update(clampUpdates);
 }
 
 /**
@@ -899,6 +913,15 @@ async function handleActionPointsTurnStart(actor) {
 }
 
 /**
+ * An empty "nothing happened" result shape shared by every turn-start
+ * Life/Mana tick handler below (Poison/Frostbite/Wound/Custom) - each
+ * returns this same shape so handleCombatTurnStart can fold all four into
+ * one combined chat card instead of each posting its own (see
+ * postCombatTurnStartCard).
+ * @typedef {{damage: number, descriptionLines: string[], extraSections: string[]}} TurnStartTickResult
+ */
+
+/**
  * Poison's own combat-turn-start handling: for every Poison severity
  * currently active on the actor, roll its damage die and apply it directly
  * to system.life.value (clamped to [0, max]), then run an automatic
@@ -906,14 +929,17 @@ async function handleActionPointsTurnStart(actor) {
  * (every round for Mild; every 3/5/10 rounds, first triggering that many
  * rounds after being poisoned, for Medium/Severe/Deadly). A passed check
  * cures that severity entirely; a failed one just reschedules the next
- * recheck (Mild has none to reschedule - it always triggers).
+ * recheck (Mild has none to reschedule - it always triggers). Returns its
+ * findings rather than posting its own chat card - see
+ * postCombatTurnStartCard, the sole caller (via handleCombatTurnStart).
  * @param {Actor} actor
  * @param {number} round
- * @return {Promise<number>} Total damage dealt across every severity this
- *   call, for Concentration's check (see checkConcentration).
+ * @return {Promise<TurnStartTickResult>}
  */
 async function handlePoisonTurnStart(actor, round) {
   let totalDamage = 0;
+  const descriptionLines = [];
+  const extraSections = [];
   for (const [severityId, def] of Object.entries(CONFIG.SKSK.poisonSeverities)) {
     const effect = getStatusEffect(actor, severityId);
     if (!effect) continue;
@@ -922,10 +948,14 @@ async function handlePoisonTurnStart(actor, round) {
     const triggers = def.intervalRounds <= 1 || round >= nextCheckRound;
     if (!triggers) continue;
 
+    const statusName = getStatusEffectName(severityId);
     const damageRoll = await new Roll(`1d${def.damageDie}`, actor.getRollData()).evaluate();
     const lifeChange = await applyLifeChange(actor, -damageRoll.total);
     const { negativeLifeDelta } = lifeChange;
     totalDamage += damageDealtFrom(lifeChange);
+    descriptionLines.push(game.i18n.format('SKSK.StatusEffect.TurnStartDamage', { amount: damageRoll.total, status: statusName }));
+    if (negativeLifeDelta) descriptionLines.push(game.i18n.format('SKSK.StatusEffect.NegativeLifeOverflow', { amount: negativeLifeDelta }));
+
     // A GM can flag this specific poison instance to bypass Spezial-Boni on
     // its own recheck (e.g. a poison meant to ignore temporary buffs) - see
     // setStatusIgnoreSpecialBonus.
@@ -960,56 +990,53 @@ async function handlePoisonTurnStart(actor, round) {
       luckHTML += formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'luck', 'doubleCriticalRoll'));
     }
     luckHTML += formatD20ModeSummaryLine(checkResult, actor.system.genericCriticalRollMode);
-    const extraHTML = `
-      ${negativeLifeOverflowHTML(negativeLifeDelta)}
-      <div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.PoisonCheck', { dc: def.dc })}: ${outcome}</div>
+    extraSections.push(`
+      <div class="sksk-roll-line"><strong>${statusName}</strong> - ${game.i18n.format('SKSK.StatusEffect.PoisonCheck', { dc: def.dc })}: ${outcome}</div>
       ${checkRendered}
       ${luckHTML}
-    `;
-    await postActionChatCard(actor, getStatusEffectName(severityId), damageRoll, 0, extraHTML);
+    `);
   }
-  return totalDamage;
+  return { damage: totalDamage, descriptionLines, extraSections };
 }
 
 /**
  * Frostbite's own combat-turn-start handling: a flat Cold damage tick,
  * applied directly to system.life.value (clamped to [0, max]), regardless
- * of its own stack count - see computeFrostbiteDamage.
+ * of its own stack count - see computeFrostbiteDamage. Returns its findings
+ * rather than posting its own chat card - see postCombatTurnStartCard.
  * @param {Actor} actor
- * @return {Promise<number>} Damage dealt, for Concentration's check (see
- *   checkConcentration).
+ * @return {Promise<TurnStartTickResult>}
  */
 async function handleFrostbiteTurnStart(actor) {
-  if (getStatusStacks(actor, 'frostbite') <= 0) return 0;
+  if (getStatusStacks(actor, 'frostbite') <= 0) return { damage: 0, descriptionLines: [], extraSections: [] };
   const damage = computeFrostbiteDamage(actor);
   const lifeChange = await applyLifeChange(actor, -damage);
   const typeLabel = game.i18n.localize(CONFIG.SKSK.damageTypes.cold);
-  const extraHTML = `
-    <div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.FrostbiteDamage', { amount: damage, type: typeLabel })}</div>
-    ${negativeLifeOverflowHTML(lifeChange.negativeLifeDelta)}
-  `;
-  await postActionChatCard(actor, getStatusEffectName('frostbite'), null, 0, extraHTML);
-  return damageDealtFrom(lifeChange);
+  const statusName = getStatusEffectName('frostbite');
+  const descriptionLines = [game.i18n.format('SKSK.StatusEffect.TurnStartDamage', { amount: damage, status: `${statusName} (${typeLabel})` })];
+  if (lifeChange.negativeLifeDelta) {
+    descriptionLines.push(game.i18n.format('SKSK.StatusEffect.NegativeLifeOverflow', { amount: lifeChange.negativeLifeDelta }));
+  }
+  return { damage: damageDealtFrom(lifeChange), descriptionLines, extraSections: [] };
 }
 
 /**
  * Wound's own combat-turn-start handling: the summed damage value of
  * every Wound instance currently on the actor, applied directly to
- * system.life.value (clamped to [0, max]).
+ * system.life.value (clamped to [0, max]). Returns its findings rather than
+ * posting its own chat card - see postCombatTurnStartCard.
  * @param {Actor} actor
- * @return {Promise<number>} Damage dealt, for Concentration's check (see
- *   checkConcentration).
+ * @return {Promise<TurnStartTickResult>}
  */
 async function handleWoundTurnStart(actor) {
   const total = getStatusInstancesTotal(actor, 'wound');
-  if (!total) return 0;
+  if (!total) return { damage: 0, descriptionLines: [], extraSections: [] };
   const lifeChange = await applyLifeChange(actor, -total);
-  const extraHTML = `
-    <div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.WoundDamage', { amount: total })}</div>
-    ${negativeLifeOverflowHTML(lifeChange.negativeLifeDelta)}
-  `;
-  await postActionChatCard(actor, getStatusEffectName('wound'), null, 0, extraHTML);
-  return damageDealtFrom(lifeChange);
+  const descriptionLines = [game.i18n.format('SKSK.StatusEffect.TurnStartDamage', { amount: total, status: getStatusEffectName('wound') })];
+  if (lifeChange.negativeLifeDelta) {
+    descriptionLines.push(game.i18n.format('SKSK.StatusEffect.NegativeLifeOverflow', { amount: lifeChange.negativeLifeDelta }));
+  }
+  return { damage: damageDealtFrom(lifeChange), descriptionLines, extraSections: [] };
 }
 
 /**
@@ -1019,20 +1046,25 @@ async function handleWoundTurnStart(actor) {
  * status (see CUSTOM_TURN_START_FIELDS). Life change is applied directly
  * to system.life.value (clamped to [0, max]) via applyLifeChange, matching
  * every other Life-affecting status effect in this system (Wound,
- * Frostbite, Poison). Mana change is likewise applied directly to
- * system.mana.value (clamped to [0, max]), matching Mana's other automatic
- * regeneration paths (Meditation, Rest).
+ * Frostbite, Poison). Mana LOSS cascades into Life (and Negative Life, once
+ * Life bottoms out) via payManaCost, matching every other way Mana can be
+ * spent/drained in this system (spell casting, manual sheet edits - see
+ * sheets/actor-sheet.mjs#spillManaOverflow) rather than simply discarding
+ * whatever Mana couldn't absorb, as an earlier version of this function did.
+ * Mana GAIN is simply clamped to max (no cascade needed for a gain).
+ * Returns its findings rather than posting its own chat card - see
+ * postCombatTurnStartCard.
  * @param {Actor} actor
- * @return {Promise<number>} Total Life damage dealt across every custom
- *   definition this call (healing doesn't count), for Concentration's
- *   check (see checkConcentration).
+ * @return {Promise<TurnStartTickResult>}
  */
 async function handleCustomTurnStart(actor) {
   let totalDamage = 0;
+  const descriptionLines = [];
   for (const def of getStatusEffectDefinitions()) {
     if (def.predefined) continue;
     const stacks = getStatusStacks(actor, def.id);
     if (stacks <= 0) continue;
+    const statusName = getStatusEffectName(def.id);
 
     const requestedLifeChange = (Number(def.lifeChangePerStack) || 0) * stacks;
     if (requestedLifeChange) {
@@ -1040,30 +1072,33 @@ async function handleCustomTurnStart(actor) {
       const { lifeDelta, negativeLifeDelta } = lifeChange;
       const total = lifeDelta - negativeLifeDelta;
       if (total) {
-        const key = total > 0 ? 'SKSK.StatusEffect.CustomLifeHealing' : 'SKSK.StatusEffect.CustomLifeDamage';
-        const extraHTML = `
-          <div class="sksk-roll-line">${game.i18n.format(key, { amount: Math.abs(total) })}</div>
-          ${negativeLifeOverflowHTML(negativeLifeDelta)}
-        `;
-        await postActionChatCard(actor, getStatusEffectName(def.id), null, 0, extraHTML);
+        const key = total > 0 ? 'SKSK.StatusEffect.TurnStartHealing' : 'SKSK.StatusEffect.TurnStartDamage';
+        descriptionLines.push(game.i18n.format(key, { amount: Math.abs(total), status: statusName }));
+        if (negativeLifeDelta) descriptionLines.push(game.i18n.format('SKSK.StatusEffect.NegativeLifeOverflow', { amount: negativeLifeDelta }));
       }
       totalDamage += damageDealtFrom(lifeChange);
     }
 
     const manaChange = (Number(def.manaChangePerStack) || 0) * stacks;
-    if (manaChange) {
+    if (manaChange > 0) {
       const mana = actor.system.mana;
       const newValue = clampResourceChange(mana.value, mana.max, manaChange);
       const applied = newValue - mana.value;
       if (applied) {
         await actor.update({ 'system.mana.value': newValue });
-        const key = manaChange > 0 ? 'SKSK.StatusEffect.CustomManaGain' : 'SKSK.StatusEffect.CustomManaLoss';
-        const extraHTML = `<div class="sksk-roll-line">${game.i18n.format(key, { amount: Math.abs(applied) })}</div>`;
-        await postActionChatCard(actor, getStatusEffectName(def.id), null, 0, extraHTML);
+        descriptionLines.push(game.i18n.format('SKSK.StatusEffect.TurnStartManaGain', { amount: applied, status: statusName }));
+      }
+    } else if (manaChange < 0) {
+      const { manaPaid, lifeDelta, negativeLifeDelta } = await payManaCost(actor, -manaChange);
+      if (manaPaid) descriptionLines.push(game.i18n.format('SKSK.StatusEffect.TurnStartManaLoss', { amount: manaPaid, status: statusName }));
+      if (lifeDelta) {
+        totalDamage += damageDealtFrom({ lifeDelta, negativeLifeDelta });
+        descriptionLines.push(game.i18n.format('SKSK.StatusEffect.TurnStartDamage', { amount: -lifeDelta, status: statusName }));
+        if (negativeLifeDelta) descriptionLines.push(game.i18n.format('SKSK.StatusEffect.NegativeLifeOverflow', { amount: negativeLifeDelta }));
       }
     }
   }
-  return totalDamage;
+  return { damage: totalDamage, descriptionLines, extraSections: [] };
 }
 
 /**
@@ -1289,34 +1324,100 @@ async function handleTechniqueTurnStart(actor) {
 }
 
 /**
+ * Which of "SKSK.StatusEffect.TurnStartBeginsMale"/"...Female" an actor's
+ * own system.gender (see data/actor-base.mjs, Character tab's Data section)
+ * resolves to - male/genderless use the male form, female/hermaphrodite use
+ * the female form, per the design's own pairing (there's no third/neutral
+ * form for this particular line).
+ * @param {Actor} actor
+ * @return {string}
+ */
+function turnStartBeginsKeyFor(actor) {
+  return actor.system.gender === 'female' || actor.system.gender === 'hermaphrodite'
+    ? 'SKSK.StatusEffect.TurnStartBeginsFemale'
+    : 'SKSK.StatusEffect.TurnStartBeginsMale';
+}
+
+/**
+ * Post the ONE combined turn-start chat card announcing whichever actor's
+ * Combat turn is beginning (see handleCombatTurnStart) - headed with the
+ * actor's own name (not a status effect's; the description below never
+ * repeats it), always posted so a GM always sees whose turn started, even
+ * on a turn where nothing at all ticked (the plain, gendered "begins their
+ * turn" line below - see turnStartBeginsKeyFor). Whenever Poison/Frostbite/
+ * Wound/custom status effects actually had something to report this turn,
+ * that plain line is replaced by a single joined description sentence
+ * covering every damage/healing/Mana tick instead, followed by each Poison
+ * severity's own passive save roll block, if any triggered this round.
+ * @param {Actor} actor
+ * @param {string[]} descriptionLines
+ * @param {string[]} extraSections
+ * @return {Promise<ChatMessage>}
+ */
+async function postCombatTurnStartCard(actor, descriptionLines, extraSections) {
+  const description = descriptionLines.length
+    ? descriptionLines.join(' ')
+    : game.i18n.localize(turnStartBeginsKeyFor(actor));
+
+  const parts = [formatRollCardHeading(actor.name), `<div class="sksk-roll-description">${description}</div>`];
+  parts.push(...extraSections);
+
+  const messageData = {
+    speaker: ChatMessage.getSpeaker({ actor }),
+    flavor: actor.name,
+    content: `<div class="sksk-chat-card sksk-action-card">${parts.join('')}</div>`,
+    rolls: [],
+  };
+  ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));
+  return ChatMessage.create(messageData);
+}
+
+/**
  * Called once for whichever actor's Combat turn is beginning (see the
  * "combatTurnChange" hook in sksk.mjs) - refills AP/RP, runs Dazed's AP
  * drain, and pays down any pending spell's AP debt (see
- * handleActionPointsTurnStart, in that fixed order), every active Poison
- * severity's damage/check cycle, Frostbite's damage tick, Wound's summed
- * damage, custom status effects' own Life/Mana turn-start ticks,
- * Concentration's check against however much of that combined damage
- * actually landed (checked once for the round's total, not once per
- * source), Restrained's automatic escape check (if timed to "start"),
- * Schleichen's Concealed-status FP trigger, Zähigkeit's 0-Life FP trigger,
- * Totem's per-round Mana upkeep (auto-deactivating any totem it can't
- * afford), Technique's own duration/cooldown ticking (auto-deactivating any
- * expired stand/self-effect, granting cooldown-round FP), and a bound Soul
- * Path's own active Path Abilities' duration/cooldown ticking (helpers/
- * soulPathRolls.mjs#handlePathAbilityTurnStart, same shape as Technique's
- * own stand ticking, minus the cooldown-round FP grant - no such trigger
- * exists for Path Abilities).
+ * handleActionPointsTurnStart, in that fixed order), then every active
+ * Poison severity's damage/check cycle, Frostbite's damage tick, Wound's
+ * summed damage, and custom status effects' own Life/Mana turn-start ticks
+ * (see handlePoisonTurnStart/handleFrostbiteTurnStart/handleWoundTurnStart/
+ * handleCustomTurnStart), all folded into ONE combined chat card (see
+ * postCombatTurnStartCard) instead of each posting its own - a single
+ * heading with the actor's own name, one joined description sentence
+ * covering every damage/healing/Mana change, and every Poison severity's
+ * own passive save roll block. Concentration's check runs against however
+ * much of that combined damage actually landed (checked once for the
+ * round's total, not once per source), followed by Restrained's automatic
+ * escape check (if timed to "start"), Schleichen's Concealed-status FP
+ * trigger, Zähigkeit's 0-Life FP trigger, Totem's per-round Mana upkeep
+ * (auto-deactivating any totem it can't afford), Technique's own duration/
+ * cooldown ticking (auto-deactivating any expired stand/self-effect,
+ * granting cooldown-round FP), and a bound Soul Path's own active Path
+ * Abilities' duration/cooldown ticking (helpers/soulPathRolls.mjs#
+ * handlePathAbilityTurnStart, same shape as Technique's own stand ticking,
+ * minus the cooldown-round FP grant - no such trigger exists for Path
+ * Abilities) - these all keep posting their own separate cards, since
+ * they're distinct mechanics from the Life/Mana ticks above.
  * @param {Actor} actor
  * @param {number} round
  * @return {Promise<void>}
  */
 export async function handleCombatTurnStart(actor, round) {
   await handleActionPointsTurnStart(actor);
-  let totalDamage = 0;
-  totalDamage += await handlePoisonTurnStart(actor, round);
-  totalDamage += await handleFrostbiteTurnStart(actor);
-  totalDamage += await handleWoundTurnStart(actor);
-  totalDamage += await handleCustomTurnStart(actor);
+
+  const poison = await handlePoisonTurnStart(actor, round);
+  const frostbite = await handleFrostbiteTurnStart(actor);
+  const wound = await handleWoundTurnStart(actor);
+  const custom = await handleCustomTurnStart(actor);
+
+  const totalDamage = poison.damage + frostbite.damage + wound.damage + custom.damage;
+  const descriptionLines = [
+    ...poison.descriptionLines, ...frostbite.descriptionLines, ...wound.descriptionLines, ...custom.descriptionLines,
+  ];
+  const extraSections = [
+    ...poison.extraSections, ...frostbite.extraSections, ...wound.extraSections, ...custom.extraSections,
+  ];
+  await postCombatTurnStartCard(actor, descriptionLines, extraSections);
+
   await checkConcentration(actor, totalDamage);
   await handleRestrainedTurnStart(actor);
   await handleStealthTurnStart(actor);
