@@ -151,6 +151,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       grantPassivePerceptionFp: SKSKActorSheet.#grantPassivePerceptionFp,
       increaseStatusStack: SKSKActorSheet.#increaseStatusStack,
       decreaseStatusStack: SKSKActorSheet.#decreaseStatusStack,
+      applyRestrained: SKSKActorSheet.#applyRestrained,
       toggleStatusEffect: SKSKActorSheet.#toggleStatusEffect,
       addStatusInstance: SKSKActorSheet.#addStatusInstance,
       applyCauterization: SKSKActorSheet.#applyCauterization,
@@ -1955,6 +1956,33 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
 
   static async #decreaseStatusStack(event, target) {
     await decreaseStatusStacks(this.actor, target.dataset.statusId, 1);
+  }
+
+  /**
+   * Restrained's own "+1" control, in place of the generic +/- stepper
+   * every other simple status effect uses (see actor-effects.hbs's
+   * "restrained" row kind) - Restrained is genuinely binary (present or
+   * not, never multiple stacks), and its own config (Befreiungs-SG/
+   * Check-Zeitpunkt/AP-Kosten) must be saved together with activation via
+   * helpers/statusEffects.mjs#setRestrainedConfig (which this shares with
+   * the change-listener wired in _onRender, for editing an ALREADY-active
+   * instance's own config afterward), reading whatever this row's own
+   * config inputs currently show (defaults, if untouched). Using the
+   * generic increaseStatusStacks here (as this row's own "-1" button
+   * still correctly does, for removal - see #decreaseStatusStack) would
+   * create the effect with only a stacks flag - no dc/timing/apCost -
+   * silently breaking every one of its own automatic checks, since they
+   * all read those flags directly and treat a missing "timing" as never
+   * matching "start"/"end".
+   */
+  static async #applyRestrained(event, target) {
+    const row = target.closest('.status-effect-row');
+    if (!row) return;
+    await setRestrainedConfig(this.actor, {
+      dc: row.querySelector('.restrained-dc-input')?.value,
+      timing: row.querySelector('.restrained-timing-select')?.value,
+      apCost: row.querySelector('.restrained-apcost-input')?.value,
+    });
   }
 
   /**
