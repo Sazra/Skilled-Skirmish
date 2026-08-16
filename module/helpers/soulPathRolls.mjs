@@ -160,9 +160,9 @@ async function unlockGatedPathAbilities(actor, item, stageKey, index) {
 
 /**
  * The full Durchbruch (breakthrough) attempt flow: the actor's ENTIRE
- * current Seelenenergie pool is consumed (not just the cost), then a 1d100
+ * current Seelenmacht pool is consumed (not just the cost), then a 1d100
  * roll is made. Success requires roll + bonuses to exceed the effective
- * difficulty - bonuses come from (a) how much Seelenenergie was paid beyond
+ * difficulty - bonuses come from (a) how much Seelenmacht was paid beyond
  * the effective cost (+1 per 5% of cost paid in excess), and (b) the
  * actor's own system.soulPathBreakthroughBonus (data/actor-base.mjs),
  * summed automatically by Foundry's own Active Effect pipeline from Path

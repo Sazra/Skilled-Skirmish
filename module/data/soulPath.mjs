@@ -13,7 +13,7 @@ import SKSKItemBase from "./item-base.mjs";
  * - 5 ordered progression stages (sammlung/staerkung/kristallisierung/
  *   erwachen/aufstieg - see helpers/config.mjs#soulPathStages), each a list
  *   of Durchbrüche the actor attempts, in order, spending their own
- *   Seelenenergie (soulPower) pool on a d100 check - see helpers/
+ *   Seelenmacht (soulPower) pool on a d100 check - see helpers/
  *   soulPathRolls.mjs#attemptBreakthrough for the full mechanic (entire
  *   pool consumed, roll + bonuses vs difficulty).
  */

@@ -1899,12 +1899,14 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
    */
   static async #tradeSoulPower(event, target) {
     const actor = this.actor;
-    if (actor.system.soulPower.value <= 0) {
+    const spent = actor.system.soulPower.value;
+    if (spent <= 0) {
       return ui.notifications.warn(game.i18n.localize('SKSK.Resource.SoulPowerTradeEmpty'));
     }
     const grant = await tradeSoulPowerForFp(actor);
     if (!grant) return ui.notifications.warn(game.i18n.localize('SKSK.Resource.SoulPowerTradeNoRate'));
-    await postActionChatCard(actor, game.i18n.localize('SKSK.Resource.SoulPowerTrade'), null, 0, formatSkillFpGrantLine(grant));
+    const description = game.i18n.format('SKSK.Resource.SoulPowerTradeDescription', { name: actor.name, amount: spent });
+    await postActionChatCard(actor, game.i18n.localize('SKSK.Resource.SoulPowerTradeCardTitle'), null, 0, `<div class="sksk-roll-description">${description}</div>`);
   }
 
   /**
