@@ -81,6 +81,22 @@ const SKILL_ROLL_VARIANTS = {
 };
 
 /**
+ * A chosen variant's own "what's actually being done" chat-card
+ * description key (SKSK.Skill.Variant.*Description, interpolating
+ * {name}) - only the variants with an obvious in-fiction action get one
+ * (Fallen's own two, Fingerfertigkeit's lock-picking/pickpocketing);
+ * Fingerfertigkeit's own plain base check has no narrative action to
+ * describe, so it's omitted here (falls through to no description line at
+ * all, same as any skill with no variants).
+ */
+const SKILL_ROLL_VARIANT_DESCRIPTIONS = {
+  trapSet: 'SKSK.Skill.Variant.TrapSetDescription',
+  trapDisarmed: 'SKSK.Skill.Variant.TrapDisarmedDescription',
+  lockPicked: 'SKSK.Skill.Variant.LockPickedDescription',
+  pickpocket: 'SKSK.Skill.Variant.PickpocketDescription',
+};
+
+/**
  * Prompt for which variant of a skill's roll is being made, if that skill
  * has any defined (see SKILL_ROLL_VARIANTS) - one button per variant,
  * clicking one both makes the choice and resolves the promise with it,
@@ -145,10 +161,18 @@ export async function rollSkillCheck(actor, skillKey, chosenAttributes, variant 
 
   const result = await evaluateD20WithMode(formula, actor.getRollData(), mode);
   const { roll, criticalType, doubleCritical } = result;
-  const label = variant ? `${game.i18n.localize(def.label)} (${game.i18n.localize(variant.label)})` : game.i18n.localize(def.label);
+  // The heading is always just the skill's own name (see rollCard.mjs#
+  // formatRollCardHeading) - a chosen variant's own "what's being done"
+  // sentence goes in the description instead, see below, rather than
+  // parenthesized onto the heading.
+  const label = game.i18n.localize(def.label);
 
   const fpGrant = await grantSkillUsageFp(actor, skillKey, variant?.trigger ?? 'skillCheck');
-  let extraHTML = formatSkillFpGrantLine(fpGrant) + formatD20ModeSummaryLine(result, mode);
+  const descriptionKey = variant ? SKILL_ROLL_VARIANT_DESCRIPTIONS[variant.trigger] : null;
+  const descriptionHTML = descriptionKey
+    ? `<div class="sksk-roll-description">${game.i18n.format(descriptionKey, { name: actor.name })}</div>`
+    : '';
+  let extraHTML = descriptionHTML + formatSkillFpGrantLine(fpGrant) + formatD20ModeSummaryLine(result, mode);
   // Luck's own "criticalRoll"/"doubleCriticalRoll" FP - any generic (non-
   // Angriffswurf) D20 roll's critical success/double critical, see
   // helpers/criticalRolls.mjs#evaluateD20WithMode.

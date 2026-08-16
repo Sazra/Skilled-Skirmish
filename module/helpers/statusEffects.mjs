@@ -776,7 +776,8 @@ export async function attemptRestrainedEscape(actor, mode = null, forceIgnoreSpe
   const result = await resolveRestrainedEscapeCheck(actor, mode, forceIgnoreSpecial);
   if (!result) return;
   const { roll, criticalType, dc, outcome, luckHTML } = result;
-  const extraHTML = `<div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.RestrainedCheck', { dc })}: ${outcome}</div>${luckHTML}`;
+  const descriptionHTML = `<div class="sksk-roll-description">${game.i18n.format('SKSK.StatusEffect.RestrainedEscapeDescription', { name: actor.name })}</div>`;
+  const extraHTML = `${descriptionHTML}<div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.RestrainedCheck', { dc })}: ${outcome}</div>${luckHTML}`;
   await postActionChatCard(actor, getStatusEffectName('restrained'), roll, 0, extraHTML, criticalType);
 }
 

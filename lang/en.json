@@ -1137,7 +1137,11 @@
         "TrapDisarmed": "Disarm a Trap",
         "SleightOfHandBase": "Base Check",
         "LockPicked": "Pick a Lock",
-        "Pickpocket": "Pickpocket"
+        "Pickpocket": "Pickpocket",
+        "TrapSetDescription": "{name} tries to set a trap.",
+        "TrapDisarmedDescription": "{name} tries to disarm a trap.",
+        "LockPickedDescription": "{name} tries to pick a lock.",
+        "PickpocketDescription": "{name} attempts a pickpocket."
       }
     },
     "SkillCategory": {
@@ -1371,6 +1375,7 @@
       "NegativeLifeOverflow": "{amount} of that overflows into Negative Life",
       "ConcentrationCheck": "Concentration check (DC {dc})",
       "RestrainedCheck": "Strength check (DC {dc})",
+      "RestrainedEscapeDescription": "{name} tries to break free.",
       "InstanceCount": "Instances",
       "AddInstance": "Add",
       "Toggle": "Toggle",

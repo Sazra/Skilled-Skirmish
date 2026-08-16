@@ -1155,7 +1155,11 @@
                 "TrapDisarmed": "Falle entschärfen",
                 "SleightOfHandBase": "Basis-Fertigkeitswurf",
                 "LockPicked": "Schloss knacken",
-                "Pickpocket": "Taschendiebstahl"
+                "Pickpocket": "Taschendiebstahl",
+                "TrapSetDescription": "{name} versucht eine Falle zu stellen.",
+                "TrapDisarmedDescription": "{name} versucht eine Falle zu entschärfen.",
+                "LockPickedDescription": "{name} versucht ein Schloss zu knacken.",
+                "PickpocketDescription": "{name} versucht einen Taschendiebstahl."
             }
         },
         "SkillCategory": {
@@ -1371,6 +1375,7 @@
             "NegativeLifeOverflow": "{amount} davon geht in das negative Leben über",
             "ConcentrationCheck": "Konzentrations-Check (SG {dc})",
             "RestrainedCheck": "Stärke-Check (SG {dc})",
+            "RestrainedEscapeDescription": "{name} versucht sich zu befreien.",
             "InstanceCount": "Instanzen",
             "AddInstance": "Hinzufügen",
             "Toggle": "Umschalten",
