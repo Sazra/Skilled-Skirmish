@@ -9,6 +9,7 @@ import {
 } from './criticalRolls.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
 import { computeLehrenTargetBonus } from './lehren.mjs';
+import { applyElementalDefense } from './defense.mjs';
 
 /**
  * Movement types (CONFIG.SKSK.movementTypes) Dazed does NOT reduce.
@@ -948,15 +949,21 @@ async function handleActionPointsTurnStart(actor) {
 
 /**
  * Poison's own combat-turn-start handling: for every Poison severity
- * currently active on the actor, roll its damage die and apply it directly
- * to system.life.value (clamped to [0, max]), then run an automatic
- * Constitution check against its DC once its own recheck timer allows
- * (every round for Mild; every 3/5/10 rounds, first triggering that many
- * rounds after being poisoned, for Medium/Severe/Deadly). A passed check
- * cures that severity entirely; a failed one just reschedules the next
- * recheck (Mild has none to reschedule - it always triggers). Returns its
- * findings rather than posting its own chat card - see
- * postCombatTurnStartCard, the sole caller (via handleCombatTurnStart).
+ * currently active on the actor, roll its damage die and apply it EVERY
+ * round (through helpers/defense.mjs#applyElementalDefense's own "poison"
+ * damage type, same as any other typed damage - Giftresistenz/-schwäche/
+ * -immunität/-absorption all apply, and a landed hit grants Poison
+ * Resistance its own "damageTaken" FP, mirroring helpers/
+ * damageApplication.mjs#applyDamageFromChat), independent of the automatic
+ * Constitution check against its DC, which only runs once its own recheck
+ * timer allows (every round for Mild; every 3/5/10 rounds, first
+ * triggering that many rounds after being poisoned, for Medium/Severe/
+ * Deadly - damage still applies on every round in between, only the check
+ * itself waits). A passed check cures that severity entirely; a failed one
+ * just reschedules the next recheck (Mild has none to reschedule - it
+ * always triggers). Returns its findings rather than posting its own chat
+ * card - see postCombatTurnStartCard, the sole caller (via
+ * handleCombatTurnStart).
  * @param {Actor} actor
  * @param {number} round
  * @return {Promise<TurnStartTickResult>}
@@ -968,18 +975,23 @@ async function handlePoisonTurnStart(actor, round) {
   for (const [severityId, def] of Object.entries(CONFIG.SKSK.poisonSeverities)) {
     const effect = getStatusEffect(actor, severityId);
     if (!effect) continue;
+    const statusName = getStatusEffectName(severityId);
+
+    const damageRoll = await new Roll(`1d${def.damageDie}`, actor.getRollData()).evaluate();
+    const { amount: adjustedAmount, healing } = applyElementalDefense(actor, 'poison', damageRoll.total);
+    if (adjustedAmount > 0) {
+      const lifeChange = await applyLifeChange(actor, healing ? adjustedAmount : -adjustedAmount);
+      const { negativeLifeDelta } = lifeChange;
+      totalDamage += damageDealtFrom(lifeChange);
+      const descriptionKey = healing ? 'SKSK.StatusEffect.TurnStartHealing' : 'SKSK.StatusEffect.TurnStartDamage';
+      descriptionLines.push(game.i18n.format(descriptionKey, { amount: adjustedAmount, status: statusName }));
+      if (negativeLifeDelta) descriptionLines.push(game.i18n.format('SKSK.StatusEffect.NegativeLifeOverflow', { amount: negativeLifeDelta }));
+      if (!healing) await grantSkillUsageFp(actor, 'poisonResistance', 'damageTaken', adjustedAmount);
+    }
 
     const nextCheckRound = effect.getFlag('sksk', 'nextCheckRound') ?? round;
     const triggers = def.intervalRounds <= 1 || round >= nextCheckRound;
     if (!triggers) continue;
-
-    const statusName = getStatusEffectName(severityId);
-    const damageRoll = await new Roll(`1d${def.damageDie}`, actor.getRollData()).evaluate();
-    const lifeChange = await applyLifeChange(actor, -damageRoll.total);
-    const { negativeLifeDelta } = lifeChange;
-    totalDamage += damageDealtFrom(lifeChange);
-    descriptionLines.push(game.i18n.format('SKSK.StatusEffect.TurnStartDamage', { amount: damageRoll.total, status: statusName }));
-    if (negativeLifeDelta) descriptionLines.push(game.i18n.format('SKSK.StatusEffect.NegativeLifeOverflow', { amount: negativeLifeDelta }));
 
     // A GM can flag this specific poison instance to bypass Spezial-Boni on
     // its own recheck (e.g. a poison meant to ignore temporary buffs) - see
