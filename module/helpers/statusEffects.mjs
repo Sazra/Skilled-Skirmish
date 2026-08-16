@@ -260,13 +260,15 @@ export function negativeLifeOverflowHTML(negativeLifeDelta) {
  * How much actual damage a single applyLifeChange call dealt (Life
  * consumed plus any Negative Life overflow, combined into one positive
  * magnitude) - 0 for a pure heal. Used to accumulate a Combat turn's total
- * damage for Concentration's check (see checkConcentration), which sums
- * every turn-start Life-damage source together rather than checking once
- * per source.
+ * damage for Concentration's check (see checkConcentration) - every
+ * turn-start caller sums every Life-damage source together rather than
+ * checking once per source; helpers/damageApplication.mjs#
+ * applyDamageFromChat instead calls it once per Apply-Damage click, on
+ * that click's own net Life change.
  * @param {{lifeDelta: number, negativeLifeDelta: number}} change
  * @return {number}
  */
-function damageDealtFrom({ lifeDelta, negativeLifeDelta }) {
+export function damageDealtFrom({ lifeDelta, negativeLifeDelta }) {
   return Math.max(0, -lifeDelta) + negativeLifeDelta;
 }
 

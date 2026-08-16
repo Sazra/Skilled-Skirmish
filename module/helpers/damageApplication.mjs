@@ -1,5 +1,8 @@
 import { applyElementalDefense } from './defense.mjs';
-import { applyLifeChange, negativeLifeOverflowHTML, getStatusStacks, increaseStatusStacks, getStatusEffectDefinitions } from './statusEffects.mjs';
+import {
+  applyLifeChange, negativeLifeOverflowHTML, getStatusStacks, increaseStatusStacks, getStatusEffectDefinitions,
+  checkConcentration, damageDealtFrom,
+} from './statusEffects.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
 
 /**
@@ -259,8 +262,17 @@ export async function applyDamageFromChat(button) {
   }
 
   const wasAlreadyDead = defender.system.life.value === 0 && defender.system.negativeLife.value <= 0;
-  const { negativeLifeDelta } = await applyLifeChange(defender, netDelta);
+  const { lifeDelta, negativeLifeDelta } = await applyLifeChange(defender, netDelta);
   lines.push(negativeLifeOverflowHTML(negativeLifeDelta));
+  // Concentration's own damage-response check (see helpers/statusEffects.mjs#
+  // checkConcentration) - a no-op unless the defender is actually
+  // Concentrating and this click's own net Life change was real damage
+  // (not a pure heal). Posts its own separate chat card. Deliberately NOT
+  // wired into Adrenalinschaden/Kauterisierung (helpers/statusEffects.mjs#
+  // applyAdrenalinDamage/applyCauterization) - those reduce max Life via a
+  // standing ActiveEffect rather than ever landing here as a damageEntries
+  // click, so they're naturally excluded without any extra guard.
+  await checkConcentration(defender, damageDealtFrom({ lifeDelta, negativeLifeDelta }));
 
   const isDead = defender.system.life.value === 0 && defender.system.negativeLife.value <= 0;
   if (isDead && !wasAlreadyDead && attacker && killSkillKey) {
