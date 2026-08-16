@@ -1,7 +1,7 @@
 import { postActionChatCard } from './actions.mjs';
 import { formatRollCardHeading } from './rollCard.mjs';
 import { getClassAbilityLevels, actorHasAdvancedClass } from './abilities.mjs';
-import { getActorSkillLevel, getSkillLabel } from './skills.mjs';
+import { getActorSkillLevel } from './skills.mjs';
 import { handlePendingSpellTurnStart } from './spell-rolls.mjs';
 import { handlePathAbilityTurnStart } from './soulPathRolls.mjs';
 import {
@@ -706,23 +706,27 @@ export async function setRestrainedConfig(actor, config) {
 }
 
 /**
- * Roll Restrained's escape check (Strength) against its own configured
- * DC - success removes the status entirely (matching Poison's "a passed
- * check cures it" convention); failure leaves it in place. Used both by
- * the automatic start/end-of-turn timings (mode omitted - falls back to
- * the actor's own GM-tab preset, system.genericCriticalRollMode, with no
- * dialog) and (with an AP cost gate first) the player-triggered one, which
- * instead prompts fresh every time - see attemptRestrainedEscapeManual.
+ * The shared logic behind Restrained's escape check (Strength) against its
+ * own configured DC - success removes the status entirely (matching
+ * Poison's "a passed check cures it" convention); failure leaves it in
+ * place. Used by every timing (automatic start/end-of-turn, with mode
+ * omitted - falls back to the actor's own GM-tab preset, system.
+ * genericCriticalRollMode; and the player-triggered "apCost" one, which
+ * instead prompts fresh every time - see attemptRestrainedEscapeManual).
+ * Only rolls/resolves the check - never posts a chat card itself, since the
+ * turn-start timing folds its result into the combined turn-start card
+ * (see handleRestrainedTurnStart/postCombatTurnStartCard) while every other
+ * timing still posts its own (see attemptRestrainedEscape).
  * @param {Actor} actor
  * @param {"neutral"|"advantage"|"disadvantage"} [mode]
  * @param {boolean} [forceIgnoreSpecial]   Shift+click on the player-
  *   triggered escape button (see attemptRestrainedEscapeManual) - excludes
  *   Spezial-Boni for this one roll regardless of the instance's own flag.
- * @return {Promise<void>}
+ * @return {Promise<{roll: Roll, criticalType: string|null, dc: number, outcome: string, luckHTML: string}|null>}
  */
-export async function attemptRestrainedEscape(actor, mode = null, forceIgnoreSpecial = false) {
+async function resolveRestrainedEscapeCheck(actor, mode = null, forceIgnoreSpecial = false) {
   const effect = getStatusEffect(actor, 'restrained');
-  if (!effect) return;
+  if (!effect) return null;
 
   const resolvedMode = mode ?? actor.system.genericCriticalRollMode;
   const dc = effect.getFlag('sksk', 'dc') ?? 0;
@@ -751,6 +755,24 @@ export async function attemptRestrainedEscape(actor, mode = null, forceIgnoreSpe
     luckHTML += formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'luck', 'doubleCriticalRoll'));
   }
   luckHTML += formatD20ModeSummaryLine(result, resolvedMode);
+  return { roll, criticalType, dc, outcome, luckHTML };
+}
+
+/**
+ * Attempt Restrained's escape check and post its own chat card - used by
+ * the player-triggered "apCost" timing (see attemptRestrainedEscapeManual)
+ * and the "end" turn timing (see handleRestrainedTurnEnd). The "start" turn
+ * timing instead folds the same check into the combined turn-start card -
+ * see handleRestrainedTurnStart.
+ * @param {Actor} actor
+ * @param {"neutral"|"advantage"|"disadvantage"} [mode]
+ * @param {boolean} [forceIgnoreSpecial]
+ * @return {Promise<void>}
+ */
+export async function attemptRestrainedEscape(actor, mode = null, forceIgnoreSpecial = false) {
+  const result = await resolveRestrainedEscapeCheck(actor, mode, forceIgnoreSpecial);
+  if (!result) return;
+  const { roll, criticalType, dc, outcome, luckHTML } = result;
   const extraHTML = `<div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.RestrainedCheck', { dc })}: ${outcome}</div>${luckHTML}`;
   await postActionChatCard(actor, getStatusEffectName('restrained'), roll, 0, extraHTML, criticalType);
 }
@@ -864,23 +886,24 @@ export function applyDazedMovementReduction(actor, speeds) {
  * Dazed's own combat-turn-start handling: deduct AP equal to its stacks
  * (at most however much keeps at least 2 AP left), removing that many
  * stacks - repeating on however many of the creature's later turns it
- * takes to work off entirely.
+ * takes to work off entirely. Returns its finding rather than posting its
+ * own chat card - folded into the combined turn-start card instead, see
+ * postCombatTurnStartCard (via handleActionPointsTurnStart).
  * @param {Actor} actor
- * @return {Promise<void>}
+ * @return {Promise<string[]>} descriptionLines
  */
 async function handleDazedTurnStart(actor) {
   const stacks = getStatusStacks(actor, 'dazed');
-  if (stacks <= 0) return;
+  if (stacks <= 0) return [];
 
   const ap = actor.system.actionPoints.value;
   const deduct = Math.min(stacks, Math.max(0, ap - 2));
-  if (deduct <= 0) return;
+  if (deduct <= 0) return [];
 
   await actor.update({ 'system.actionPoints.value': ap - deduct });
   await setStatusStacks(actor, 'dazed', stacks - deduct);
 
-  const extraHTML = `<div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.DazedApDrained', { amount: deduct })}</div>`;
-  await postActionChatCard(actor, getStatusEffectName('dazed'), null, 0, extraHTML);
+  return [game.i18n.format('SKSK.StatusEffect.DazedApDrained', { amount: deduct })];
 }
 
 /**
@@ -889,12 +912,13 @@ async function handleDazedTurnStart(actor) {
  * are refilled to their max, 2) Dazed's own drain applies against that
  * fresh AP (see handleDazedTurnStart), 3) any pending spell's AP debt is
  * paid down against whatever AP steps 1-2 left behind (see
- * handlePendingSpellTurnStart) - a Concentration break from this same
- * turn's damage (checked afterwards, in handleCombatTurnStart) already
- * zeroes that debt itself if it occurs, so paying it down first here
- * doesn't conflict with that.
+ * handlePendingSpellTurnStart, which still posts its own separate card -
+ * paying down spell debt is a distinct action, not a passive tick) - a
+ * Concentration break from this same turn's damage (checked afterwards, in
+ * handleCombatTurnStart) already zeroes that debt itself if it occurs, so
+ * paying it down first here doesn't conflict with that.
  * @param {Actor} actor
- * @return {Promise<void>}
+ * @return {Promise<string[]>} descriptionLines (Dazed's own, if any)
  */
 async function handleActionPointsTurnStart(actor) {
   const ap = actor.system.actionPoints;
@@ -908,8 +932,9 @@ async function handleActionPointsTurnStart(actor) {
   if (actor.system.reflexActionGranted) updates['system.reflexActionGranted'] = false;
   if (Object.keys(updates).length) await actor.update(updates);
 
-  await handleDazedTurnStart(actor);
+  const descriptionLines = await handleDazedTurnStart(actor);
   await handlePendingSpellTurnStart(actor);
+  return descriptionLines;
 }
 
 /**
@@ -1102,15 +1127,27 @@ async function handleCustomTurnStart(actor) {
 }
 
 /**
- * Restrained's own combat-turn-start/end handling: an automatic escape
- * check, only when its own configured timing matches.
+ * Restrained's own combat-turn-start handling: an automatic escape check,
+ * only when its own configured timing is "start" - folded into the
+ * combined turn-start card rather than posting its own (see
+ * postCombatTurnStartCard), same treatment as Poison's own passive save.
+ * The "end" timing (handleRestrainedTurnEnd below) still posts its own
+ * separate card - not yet folded in.
  * @param {Actor} actor
- * @return {Promise<void>}
+ * @return {Promise<string[]>} extraSections
  */
 async function handleRestrainedTurnStart(actor) {
   const effect = getStatusEffect(actor, 'restrained');
-  if (!effect || effect.getFlag('sksk', 'timing') !== 'start') return;
-  await attemptRestrainedEscape(actor);
+  if (!effect || effect.getFlag('sksk', 'timing') !== 'start') return [];
+  const result = await resolveRestrainedEscapeCheck(actor);
+  if (!result) return [];
+  const { roll, criticalType, dc, outcome, luckHTML } = result;
+  const statusName = getStatusEffectName('restrained');
+  return [`
+    <div class="sksk-roll-line"><strong>${statusName}</strong> - ${game.i18n.format('SKSK.StatusEffect.RestrainedCheck', { dc })}: ${outcome}</div>
+    ${wrapCriticalBlock(await roll.render(), criticalType)}
+    ${luckHTML}
+  `];
 }
 
 async function handleRestrainedTurnEnd(actor) {
@@ -1191,32 +1228,29 @@ export async function checkConcentration(actor, damage) {
  * Schleichen's own "im Kampf getarnt" FP trigger: while the Concealed
  * status (see CONFIG.SKSK.predefinedStatusEffects) is active, grant
  * Stealth's "stealthRound" FP every time this actor's own Combat turn
- * begins. A no-op (posts nothing) if the GM hasn't configured a rate for
- * it - keeps this silent by default rather than spamming a 0 FP line.
+ * begins - always silent (no chat card at all, not even folded into the
+ * combined turn-start card), same as every other skill-usage FP grant
+ * outside of Training (see helpers/skillFp.mjs#formatSkillFpGrantLine).
  * @param {Actor} actor
  * @return {Promise<void>}
  */
 async function handleStealthTurnStart(actor) {
   if (getStatusStacks(actor, 'concealed') <= 0) return;
-  const fpGrant = await grantSkillUsageFp(actor, 'stealth', 'stealthRound');
-  if (!fpGrant) return;
-  await postActionChatCard(actor, getStatusEffectName('concealed'), null, 0, formatSkillFpGrantLine(fpGrant));
+  await grantSkillUsageFp(actor, 'stealth', 'stealthRound');
 }
 
 /**
  * Zähigkeit's own "0 Leben, aber noch negatives Leben" FP trigger: grants
  * Tenacity's "zeroLifeRound" FP at the start of this actor's own Combat
  * turn whenever it's at 0 Life but still has Negative Life left (i.e.
- * still clinging on, not yet truly downed/dead). A no-op (posts nothing)
- * if the GM hasn't configured a rate for it.
+ * still clinging on, not yet truly downed/dead) - always silent, same as
+ * handleStealthTurnStart above.
  * @param {Actor} actor
  * @return {Promise<void>}
  */
 async function handleTenacityTurnStart(actor) {
   if (actor.system.life.value > 0 || actor.system.negativeLife.value <= 0) return;
-  const fpGrant = await grantSkillUsageFp(actor, 'tenacity', 'zeroLifeRound');
-  if (!fpGrant) return;
-  await postActionChatCard(actor, game.i18n.localize(getSkillLabel('tenacity')), null, 0, formatSkillFpGrantLine(fpGrant));
+  await grantSkillUsageFp(actor, 'tenacity', 'zeroLifeRound');
 }
 
 /**
@@ -1224,16 +1258,17 @@ async function handleTenacityTurnStart(actor) {
  * drains every still-active totem's own manaCostPerRound from system.mana
  * (processed in list order, sharing the one Mana pool) - a totem that can't
  * be paid for is auto-deactivated (its linked ActiveEffect's disabled flag
- * flips back to true) instead of ever pushing Mana negative. Silent unless
- * at least one totem is active; auto-deactivations get their own chat line.
- * See apps/totem-dialog.mjs#toggleTotemActive for the player-triggered
- * activate/deactivate flow this mirrors.
+ * flips back to true) instead of ever pushing Mana negative. Returns its
+ * findings rather than posting its own chat card - folded into the
+ * combined turn-start card instead, see postCombatTurnStartCard. See apps/
+ * totem-dialog.mjs#toggleTotemActive for the player-triggered activate/
+ * deactivate flow this mirrors.
  * @param {Actor} actor
- * @return {Promise<void>}
+ * @return {Promise<string[]>} descriptionLines
  */
 async function handleTotemTurnStart(actor) {
   const totems = actor.system.totems ?? [];
-  if (!totems.some(entry => entry.active)) return;
+  if (!totems.some(entry => entry.active)) return [];
 
   let mana = actor.system.mana.value;
   const updated = [];
@@ -1256,12 +1291,7 @@ async function handleTotemTurnStart(actor) {
   if (mana !== actor.system.mana.value) updates['system.mana.value'] = mana;
   await actor.update(updates);
 
-  if (deactivatedNames.length) {
-    const lines = deactivatedNames
-      .map(name => `<div class="sksk-roll-line">${game.i18n.format('SKSK.TotemDialog.AutoDeactivated', { name })}</div>`)
-      .join('');
-    await postActionChatCard(actor, game.i18n.localize('SKSK.TotemDialog.Title'), null, 0, lines);
-  }
+  return deactivatedNames.map(name => game.i18n.format('SKSK.TotemDialog.AutoDeactivated', { name }));
 }
 
 /**
@@ -1278,25 +1308,49 @@ function techniqueHasDuration(item) {
 }
 
 /**
+ * Duplicated from helpers/technique-rolls.mjs#computeTechniqueCooldownStart
+ * (see that copy's own doc comment for the full "+1 grace round" rationale
+ * and worked examples) rather than imported, mirrors the existing
+ * techniqueHasDuration duplication between these two files - kept in sync.
+ * @param {number} cooldownRounds
+ * @return {number}
+ */
+function computeTechniqueCooldownStart(cooldownRounds) {
+  return cooldownRounds > 0 ? cooldownRounds + 1 : 0;
+}
+
+/**
  * Technique's own per-round ticking, at this actor's own Combat turn start:
  * every still-active stand/self-effect Technique's own duration counts down
  * by 1, auto-deactivating (disabling its own linked ActiveEffect, starting
- * its own cooldown) once it hits 0 - see helpers/technique-rolls.mjs#
- * toggleStandTechnique for the player-triggered equivalent. Every Technique
- * currently on cooldown (inactive, roundsRemaining > 0) also counts down by
- * 1, granting Technique's own "techniqueCooldownRound" FP for each round
- * elapsed. Primed-but-not-duration-based Techniques (attackBonus, or an
- * "effect" targeting the attack's own target) aren't touched here at all -
- * they stay primed until consumed by this actor's next weapon/Martial Arts
- * attack (helpers/actions.mjs) or manually cancelled.
+ * its own cooldown, per computeTechniqueCooldownStart's "+1 grace round"
+ * rule) once it hits 0 - see helpers/technique-rolls.mjs#
+ * toggleStandTechnique for the player-triggered equivalent (which starts
+ * the same cooldown, but posts its own separate "Deaktiviert" card instead
+ * of announcing it here - the cooldown announcement below is specific to
+ * natural expiry, the only cooldown-starting event that happens silently
+ * during turn-start processing). Every Technique currently on cooldown
+ * (inactive, roundsRemaining > 0) also counts down by 1 - regardless of
+ * which of the four ways it went on cooldown (expiry here, manual
+ * deactivation, consumption, or direct-effect activation - see
+ * technique-rolls.mjs) - granting Technique's own "techniqueCooldownRound"
+ * FP for each round elapsed, always silent (see handleStealthTurnStart
+ * above), but now reporting how many rounds remain (or that it's ready
+ * again) as a description line either way. Primed-but-not-duration-based
+ * Techniques (attackBonus, or an "effect" targeting the attack's own
+ * target) aren't touched here at all - they stay primed until consumed by
+ * this actor's next weapon/Martial Arts attack (helpers/actions.mjs) or
+ * manually cancelled. Returns its findings rather than posting its own
+ * chat card - folded into the combined turn-start card instead, see
+ * postCombatTurnStartCard.
  * @param {Actor} actor
- * @return {Promise<void>}
+ * @return {Promise<string[]>} descriptionLines
  */
 async function handleTechniqueTurnStart(actor) {
   const techniques = actor.items.filter(i => i.type === 'technique');
-  if (!techniques.length) return;
+  if (!techniques.length) return [];
 
-  const lines = [];
+  const descriptionLines = [];
   for (const item of techniques) {
     if (item.system.active && techniqueHasDuration(item)) {
       const remaining = (item.system.roundsRemaining ?? 0) - 1;
@@ -1305,22 +1359,27 @@ async function handleTechniqueTurnStart(actor) {
       } else {
         const effect = item.system.effectId ? actor.effects.get(item.system.effectId) : null;
         if (effect) await effect.update({ disabled: true });
-        await item.update({ 'system.active': false, 'system.roundsRemaining': item.system.cooldownRounds });
-        lines.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Technique.Expired', { name: item.name })}</div>`);
+        const cooldownStart = computeTechniqueCooldownStart(item.system.cooldownRounds);
+        await item.update({ 'system.active': false, 'system.roundsRemaining': cooldownStart });
+        descriptionLines.push(game.i18n.format('SKSK.Technique.Expired', { name: item.name }));
+        if (cooldownStart > 0) {
+          descriptionLines.push(game.i18n.format('SKSK.Technique.CooldownStarted', { name: item.name, rounds: item.system.cooldownRounds }));
+        }
       }
       continue;
     }
 
     if (!item.system.active && (item.system.roundsRemaining ?? 0) > 0) {
-      const fpGrant = await grantSkillUsageFp(actor, 'technique', 'techniqueCooldownRound');
-      if (fpGrant) lines.push(`<div class="sksk-roll-line"><strong>${item.name}</strong></div>${formatSkillFpGrantLine(fpGrant)}`);
-      await item.update({ 'system.roundsRemaining': Math.max(0, item.system.roundsRemaining - 1) });
+      await grantSkillUsageFp(actor, 'technique', 'techniqueCooldownRound');
+      const remaining = Math.max(0, item.system.roundsRemaining - 1);
+      await item.update({ 'system.roundsRemaining': remaining });
+      descriptionLines.push(remaining > 0
+        ? game.i18n.format('SKSK.Technique.CooldownRemaining', { name: item.name, rounds: remaining })
+        : game.i18n.format('SKSK.Technique.CooldownComplete', { name: item.name }));
     }
   }
 
-  if (lines.length) {
-    await postActionChatCard(actor, game.i18n.localize('SKSK.Technique.TurnStartTitle'), null, 0, lines.join(''));
-  }
+  return descriptionLines;
 }
 
 /**
@@ -1374,56 +1433,63 @@ async function postCombatTurnStartCard(actor, descriptionLines, extraSections) {
 
 /**
  * Called once for whichever actor's Combat turn is beginning (see the
- * "combatTurnChange" hook in sksk.mjs) - refills AP/RP, runs Dazed's AP
- * drain, and pays down any pending spell's AP debt (see
- * handleActionPointsTurnStart, in that fixed order), then every active
- * Poison severity's damage/check cycle, Frostbite's damage tick, Wound's
- * summed damage, and custom status effects' own Life/Mana turn-start ticks
- * (see handlePoisonTurnStart/handleFrostbiteTurnStart/handleWoundTurnStart/
- * handleCustomTurnStart), all folded into ONE combined chat card (see
- * postCombatTurnStartCard) instead of each posting its own - a single
+ * "combatTurnChange" hook in sksk.mjs) - refills AP/RP and pays down any
+ * pending spell's AP debt (see handleActionPointsTurnStart, which also
+ * returns Dazed's own AP-drain line), then every active Poison severity's
+ * damage/check cycle, Frostbite's damage tick, Wound's summed damage,
+ * custom status effects' own Life/Mana turn-start ticks (see
+ * handlePoisonTurnStart/handleFrostbiteTurnStart/handleWoundTurnStart/
+ * handleCustomTurnStart), Restrained's automatic escape check (only if
+ * timed to "start" - see handleRestrainedTurnStart), Totem's per-round Mana
+ * upkeep (auto-deactivating any totem it can't afford), and Technique's own
+ * duration/cooldown ticking (auto-deactivating any expired stand/self-
+ * effect; its own cooldown-round FP grant is silent, see
+ * handleTechniqueTurnStart) - all folded into ONE combined chat card (see
+ * postCombatTurnStartCard) instead of each posting its own: a single
  * heading with the actor's own name, one joined description sentence
- * covering every damage/healing/Mana change, and every Poison severity's
- * own passive save roll block. Concentration's check runs against however
- * much of that combined damage actually landed (checked once for the
- * round's total, not once per source), followed by Restrained's automatic
- * escape check (if timed to "start"), Schleichen's Concealed-status FP
- * trigger, Zähigkeit's 0-Life FP trigger, Totem's per-round Mana upkeep
- * (auto-deactivating any totem it can't afford), Technique's own duration/
- * cooldown ticking (auto-deactivating any expired stand/self-effect,
- * granting cooldown-round FP), and a bound Soul Path's own active Path
+ * covering every damage/healing/Mana/Dazed/Totem/Technique-expiry line, and
+ * every Poison/Restrained passive save roll block. Concentration's check
+ * runs against however much of the Poison/Frostbite/Wound/custom damage
+ * actually landed (checked once for the round's total, not once per
+ * source - Dazed/Restrained/Totem/Technique don't deal Life damage, so they
+ * don't factor in here). Schleichen's Concealed-status FP trigger and
+ * Zähigkeit's 0-Life FP trigger are always silent (no chat card at all, see
+ * handleStealthTurnStart/handleTenacityTurnStart) - not folded into the
+ * card since there's nothing to show. A bound Soul Path's own active Path
  * Abilities' duration/cooldown ticking (helpers/soulPathRolls.mjs#
  * handlePathAbilityTurnStart, same shape as Technique's own stand ticking,
  * minus the cooldown-round FP grant - no such trigger exists for Path
- * Abilities) - these all keep posting their own separate cards, since
- * they're distinct mechanics from the Life/Mana ticks above.
+ * Abilities) still posts its own separate card - not yet folded in.
  * @param {Actor} actor
  * @param {number} round
  * @return {Promise<void>}
  */
 export async function handleCombatTurnStart(actor, round) {
-  await handleActionPointsTurnStart(actor);
+  const dazedLines = await handleActionPointsTurnStart(actor);
 
   const poison = await handlePoisonTurnStart(actor, round);
   const frostbite = await handleFrostbiteTurnStart(actor);
   const wound = await handleWoundTurnStart(actor);
   const custom = await handleCustomTurnStart(actor);
+  const restrainedSections = await handleRestrainedTurnStart(actor);
+  const totemLines = await handleTotemTurnStart(actor);
+  const techniqueLines = await handleTechniqueTurnStart(actor);
 
   const totalDamage = poison.damage + frostbite.damage + wound.damage + custom.damage;
   const descriptionLines = [
+    ...dazedLines,
     ...poison.descriptionLines, ...frostbite.descriptionLines, ...wound.descriptionLines, ...custom.descriptionLines,
+    ...totemLines, ...techniqueLines,
   ];
   const extraSections = [
     ...poison.extraSections, ...frostbite.extraSections, ...wound.extraSections, ...custom.extraSections,
+    ...restrainedSections,
   ];
   await postCombatTurnStartCard(actor, descriptionLines, extraSections);
 
   await checkConcentration(actor, totalDamage);
-  await handleRestrainedTurnStart(actor);
   await handleStealthTurnStart(actor);
   await handleTenacityTurnStart(actor);
-  await handleTotemTurnStart(actor);
-  await handleTechniqueTurnStart(actor);
   await handlePathAbilityTurnStart(actor);
 }
 

@@ -677,7 +677,9 @@
       "ApplyEffect": "Apply Effect",
       "EffectApplied": "{name}: effect applied to {target}.",
       "Expired": "{name}: duration expired - deactivated.",
-      "TurnStartTitle": "Techniques"
+      "CooldownStarted": "{name}: cooldown of {rounds} rounds started.",
+      "CooldownRemaining": "{name}: {rounds} more rounds of cooldown.",
+      "CooldownComplete": "{name} can be used again."
     },
     "SoulPath": {
       "SectionTitle": "Soul Path",

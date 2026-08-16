@@ -677,7 +677,9 @@
             "ApplyEffect": "Effekt anwenden",
             "EffectApplied": "{name}: Effekt auf {target} angewendet.",
             "Expired": "{name}: Wirkungsdauer abgelaufen - deaktiviert.",
-            "TurnStartTitle": "Techniken"
+            "CooldownStarted": "{name}: Cooldown von {rounds} Runden begonnen.",
+            "CooldownRemaining": "{name}: noch {rounds} Runden Cooldown.",
+            "CooldownComplete": "{name} kann wieder genutzt werden."
         },
         "SoulPath": {
             "SectionTitle": "Seelenpfad",

@@ -9,6 +9,27 @@ import { getActorSkillLevel, getSkillLabel } from './skills.mjs';
 import { formatRollCardHeading } from './rollCard.mjs';
 
 /**
+ * The roundsRemaining value to store the moment a Technique goes on
+ * cooldown (deactivation, expiry, consumption, or direct-effect
+ * activation) - its own configured cooldownRounds, plus one extra "grace"
+ * round, since the round it goes on cooldown never itself counts as a
+ * tick (see helpers/statusEffects.mjs#handleTechniqueTurnStart, which only
+ * starts decrementing at this actor's own NEXT Combat turn) - a
+ * cooldownRounds of 0 (no cooldown at all) stays 0, unaffected. Per the
+ * design's own worked examples: a 1-round-cooldown Technique used in round
+ * 2 isn't ready again until round 4 (not round 3); a 3-round-cooldown one
+ * used in round 1 isn't ready until round 5 (not round 4). Duplicated (not
+ * imported) in statusEffects.mjs - see that copy's own doc comment,
+ * mirrors the existing techniqueHasDuration duplication between these two
+ * files - kept in sync.
+ * @param {number} cooldownRounds
+ * @return {number}
+ */
+export function computeTechniqueCooldownStart(cooldownRounds) {
+  return cooldownRounds > 0 ? cooldownRounds + 1 : 0;
+}
+
+/**
  * Any OTHER Technique on this actor that currently occupies the shared
  * "next weapon/Martial Arts attack or spell cast" slot - only "attackBonus"
  * and "effect"/"attackTarget" ever do (both are consumed by that next
@@ -182,7 +203,7 @@ async function toggleDurationTechnique(actor, item) {
   if (item.system.active) {
     const effect = item.system.effectId ? actor.effects.get(item.system.effectId) : null;
     if (effect) await effect.update({ disabled: true });
-    await item.update({ 'system.active': false, 'system.roundsRemaining': item.system.cooldownRounds });
+    await item.update({ 'system.active': false, 'system.roundsRemaining': computeTechniqueCooldownStart(item.system.cooldownRounds) });
     return postTechniqueActionCard(actor, item, game.i18n.localize('SKSK.Technique.StatusLine.Deactivated'));
   }
 
@@ -301,7 +322,7 @@ export async function activateDirectEffectTechnique(actor, item) {
   if (!(await payTechniqueCost(actor, item))) return;
 
   await ensureLinkedEffect(item);
-  await item.update({ 'system.roundsRemaining': item.system.cooldownRounds });
+  await item.update({ 'system.roundsRemaining': computeTechniqueCooldownStart(item.system.cooldownRounds) });
 
   const statusText = game.i18n.localize('SKSK.Technique.StatusLine.Activated');
   if (item.system.effectSavingThrowEnabled) {
@@ -416,7 +437,7 @@ export async function consumePrimedTechnique(actor, contextType = null) {
   const bonuses = getActiveStyleBonuses(actor, item.system.combatStyle);
   const isAttackBonus = item.system.category === 'attackBonus';
   const isEffect = item.system.category === 'effect';
-  await item.update({ 'system.active': false, 'system.roundsRemaining': item.system.cooldownRounds });
+  await item.update({ 'system.active': false, 'system.roundsRemaining': computeTechniqueCooldownStart(item.system.cooldownRounds) });
 
   return {
     item,
