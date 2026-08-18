@@ -823,6 +823,7 @@ body.theme-light .application.sksk.actor {
   margin: 6px 0;
   padding: 6px 4px;
   background: var(--sksk-sheet-bg);
+  border: 2px solid var(--color-border-dark, #000);
   border-radius: 4px;
 }
 
@@ -1952,6 +1953,7 @@ span.sksk-critical-failure {
   gap: 10px;
   padding: 6px 4px;
   background: var(--sksk-sheet-bg);
+  border: 2px solid var(--color-border-dark, #000);
   border-radius: 4px;
 }
 

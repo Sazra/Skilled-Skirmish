@@ -710,8 +710,9 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     // css/sksk.css) - value only cares about the Spezial tier (the only one
     // that touches "value"); mod cares about either tier, since both
     // Spezial and Modifikator ultimately land in "mod". See
-    // attributes.hbs's hover-swap to the Base-only baseValue/
-    // modExcludingSpecial for the "without Spezial-Boni" view.
+    // attributes.hbs's hover-swap to the Base-only baseValue/baseMod for
+    // the "as if only the raw attribute value counted" view (deliberately
+    // NOT modExcludingSpecial, which still carries the Modifikator tier).
     context.attributeBonusFlags = {};
     for (const key of Object.keys(CONFIG.SKSK.attributes)) {
       const label = game.i18n.localize(CONFIG.SKSK.attributes[key]);
