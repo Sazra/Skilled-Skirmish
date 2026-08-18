@@ -220,6 +220,54 @@
 
 .application.sksk.actor {
   overflow: visible;
+  /* Theme-aware colors shared by the side-tab panels, header toolbar, and
+     their "boxed" fields below (attribute Mod badge included), so they
+     always match the sheet's own background/fields instead of a hardcoded
+     dark tone that turned unreadable together with light-theme text colors.
+     --sksk-sheet-bg deliberately does NOT read Foundry's own --background
+     var: that variable's value is authored in core's own stylesheet as a
+     relative url() (the parchment texture, light theme only), and a
+     relative url() inside a custom property resolves against the
+     stylesheet that WRITES var(--background), not the one that defined it -
+     consuming it here from our own sksk.css re-resolved the path against
+     our css file's own folder instead of core's, 404ing the image and
+     leaving the panels fully transparent. Repeating the same light-theme
+     background here instead, with a path relative to *this* file, sidesteps
+     that entirely.
+
+     --sksk-field-idle-bg/--sksk-field-focus-bg read as "between"/"exactly
+     matching" the sheet's own background and the input fields' own
+     background, but are NOT plain translucent colors - each is a plain
+     tint layered (via linear-gradient, so it counts as a <bg-image> and is
+     allowed as a non-final background layer) on top of --sksk-sheet-bg as
+     a second, opaque layer, baked into the variable itself. A field using
+     one of these always looks fully opaque no matter what actually sits
+     underneath it in the DOM: the Mod badge (attribute-mod-display)
+     overlaps the Wert box's own border, and a plain translucent color
+     there let that border bleed through wherever the badge's circle
+     covered it. Compositing against --sksk-sheet-bg up front - the same
+     background every one of these fields actually sits on in practice -
+     sidesteps that: the tint is still visibly translucent-over-sheet, but
+     the result behind it is always opaque, so nothing underneath can ever
+     show through regardless of stacking. Both tints use light-dark() -
+     Foundry sets the real CSS
+     color-scheme property per theme, so the browser resolves the matching
+     branch on its own; note light-dark() only accepts <color> values,
+     which is exactly why the parchment texture below is applied via a
+     separate body.theme-light override rather than as one of
+     light-dark()'s own branches. */
+  --sksk-sheet-bg: rgba(11, 10, 19, 0.9);
+  --sksk-field-idle-bg: linear-gradient(light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.1)), light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.1))), var(--sksk-sheet-bg);
+  --sksk-field-focus-bg: linear-gradient(light-dark(rgba(0, 0, 0, 0.1), #302831), light-dark(rgba(0, 0, 0, 0.1), #302831)), var(--sksk-sheet-bg);
+}
+
+/* Light theme only: swap the side panels' solid fallback for the same
+   parchment texture the sheet itself uses (core sets this via --background,
+   but see the comment above for why we can't just read that variable here).
+   Path is relative to THIS file (systems/sksk/css/sksk.css), three levels
+   up to the Foundry root, then into its core ui/ folder. */
+body.theme-light .application.sksk.actor {
+  --sksk-sheet-bg: url("../../../ui/parchment.jpg") repeat;
 }
 
 .application.sksk.actor .window-content {
@@ -501,7 +549,7 @@
   box-sizing: border-box;
   border: 2px solid var(--color-border-dark, #000);
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--sksk-field-idle-bg);
 }
 
 .sksk .attribute-value-display {
@@ -519,10 +567,11 @@
 }
 
 /* While actually being edited, match every other text field's own
-   background (Foundry's own --input-background-color) instead of the
-   value box's translucent-white idle look. */
+   background (--sksk-field-focus-bg, see above - opaque for the same
+   reason --sksk-field-idle-bg is) instead of the value box's
+   --sksk-field-idle-bg look. */
 .sksk .attribute-value-input:focus {
-  background: var(--input-background-color, #302831);
+  background: var(--sksk-field-focus-bg);
 }
 
 .sksk .attribute-box-wrapper.editing .attribute-value-display {
@@ -543,7 +592,17 @@
   box-sizing: border-box;
   border: 2px solid var(--color-border-dark, #000);
   border-radius: 50%;
-  background: var(--color-cool-4, #37241a);
+  /* Same idle field color as the Wert box right next to it (see
+     --sksk-field-idle-bg above) - was previously Foundry's own
+     --color-cool-4, a fixed dark tone that never adapted to the light
+     theme. Now opaque (see --sksk-field-idle-bg above) so the Wert box's
+     own border can't bleed through wherever the badge's circle actually
+     covers it. It's shorter (26px) than the Wert box (36px) though, so a
+     couple of px of that border are still technically uncovered directly
+     above/below the badge, outside the circle's own footprint entirely -
+     accepted as negligible at real UI scale rather than adding another
+     element/rule just to paint over it too. */
+  background: var(--sksk-field-idle-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -763,7 +822,7 @@
      height of the sheet. */
   margin: 6px 0;
   padding: 6px 4px;
-  background: rgba(11, 10, 19, 0.9);
+  background: var(--sksk-sheet-bg);
   border-radius: 4px;
 }
 
@@ -855,7 +914,7 @@
   height: 36px;
   border: 2px solid var(--color-border-dark, #000);
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--sksk-field-idle-bg);
   text-align: center;
   font-size: 17px;
   color: inherit;
@@ -869,11 +928,11 @@
 }
 
 /* While actually being edited, match every other text field's own
-   background (Foundry's own --input-background-color) instead of the
-   idle translucent-white look - same convention as .attribute-value-input:
+   background (--sksk-field-focus-bg, see above) instead of the idle
+   --sksk-field-idle-bg look - same convention as .attribute-value-input:
    focus above. */
 .sksk .side-tab-resources .resource-content input:focus {
-  background: var(--input-background-color, #302831);
+  background: var(--sksk-field-focus-bg);
 }
 
 /* Actions tab (General tab's Actions sub-tab) - one row per action, its
@@ -1892,7 +1951,7 @@ span.sksk-critical-failure {
   flex-direction: row;
   gap: 10px;
   padding: 6px 4px;
-  background: rgba(11, 10, 19, 0.9);
+  background: var(--sksk-sheet-bg);
   border-radius: 4px;
 }
 
