@@ -43,6 +43,10 @@ export class SKSKLehrenConfig extends HandlebarsApplicationMixin(ApplicationV2) 
       title: 'SKSK.Settings.Lehren.Name',
       icon: 'fas fa-book',
     },
+    // Same width as materials-config.mjs/models-config.mjs/
+    // training-methods-config.mjs - all four settings list apps deliberately
+    // share one width, per design request, rather than each sizing to its
+    // own content.
     position: { width: 820, height: 680 },
     form: {
       handler: SKSKLehrenConfig.#onSubmit,

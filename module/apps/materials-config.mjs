@@ -46,7 +46,10 @@ export class SKSKMaterialsConfig extends HandlebarsApplicationMixin(ApplicationV
       title: 'SKSK.Settings.Materials.Name',
       icon: 'fas fa-gem',
     },
-    position: { width: 500, height: 'auto' },
+    // Same width as models-config.mjs/training-methods-config.mjs/
+    // lehren-config.mjs - all four settings list apps deliberately share one
+    // width, per design request, rather than each sizing to its own content.
+    position: { width: 820, height: 'auto' },
     form: {
       handler: SKSKMaterialsConfig.#onSubmit,
       submitOnChange: true,

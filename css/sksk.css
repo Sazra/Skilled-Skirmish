@@ -1212,6 +1212,16 @@ body.theme-light .application.sksk.actor {
   font-size: 11px;
 }
 
+/* "Boni" (Lehren settings app's own bonus-row list header) should always
+   read centered, whether the row list below it is empty or populated -
+   the label is inline, so text-align goes on this block-level wrapper
+   rather than the label itself. Scoped to lehren-config specifically,
+   not status-effects-config's own (differently-purposed) attribute-/
+   FP-gain-bonus .bonus-group sections. */
+.sksk.lehren-config .bonus-group {
+  text-align: center;
+}
+
 /* Separates "what the target rolls to resist this" (above) from "what
    scales the caster's DC" (below) within the same Saving Throw row - two
    visually similar bonus-groups rows would otherwise blur together. */
@@ -1587,13 +1597,100 @@ span.sksk-critical-failure {
   width: 100%;
 }
 
-/* Weapon/Armor Model rows (Configure Models settings app) - each is a
-   flexcol card (name+delete, then type/bonus fields, then attribute and
-   property checkbox grids), unlike the flexrow default .items-list .item
-   assumes. */
-.sksk .model-entry {
-  align-items: stretch;
+/* Weapon/Armor Model rows (Configure Models settings app, and the same
+   card shape reused by Materials/Training Methods/Status Effects/Lehren) -
+   this <li> itself just wraps a single .settings-entry-details now (see
+   below); margin-bottom is the only thing it still needs (spacing between
+   entries) now that the border/padding/collapsibility live on the
+   <details> child instead. */
+.sksk .model-entry,
+.sksk .lehre-card {
+  margin-bottom: 6px;
+}
+
+/* apps/martial-arts-attacks-dialog.hbs still uses the OLDER, un-collapsed
+   flexcol-card shape .model-entry itself used to provide directly (name/
+   delete row, then plain grid fields, no per-entry <details> wrapper) -
+   its own <li> keeps the "flexcol" class specifically to opt back into
+   that original padding/gap/stretch behavior, scoped narrowly here so it
+   doesn't also add unwanted double padding around the settings-list <li>
+   above (which no longer carries "flexcol" now that its own layout lives
+   on .settings-entry-details instead). See that rule's own comment for
+   why align-items needs !important. */
+.sksk .flexcol.model-entry {
+  align-items: stretch !important;
   padding: 8px 4px;
+  gap: 4px;
+}
+
+/* Req5: every entry in an expandable settings list (Materials/Weapon
+   Models/Armor Models/Training Methods/Status Effects/Lehren -
+   deliberately NOT Combat Styles, which stays a single-line row per
+   design request) gets its own bordered box and can collapse down to
+   showing just its own Name field - native <details>/<summary>
+   disclosure, same data-sync-persists-across-re-renders convention as
+   every other collapsible section in this file (e.g. .gm-section,
+   .lehre-skill-section, .model-properties-details). Status Effects'
+   predefined entries go through this same markup as everything else, so
+   they get the border/collapse too, same as a custom entry. */
+.sksk .settings-entry-details {
+  border: 1px solid var(--color-border-light-tertiary, #7a7971);
+  border-radius: 4px;
+  padding: 6px 8px;
+}
+
+/* Contains the Name field (+ Status Effects' own icon preview/predefined
+   badge) and the delete control - the only things remaining visible once
+   collapsed. display: flex here means the browser's own
+   native disclosure triangle no longer renders (that's tied to <summary>'s
+   default display: list-item, which flex overrides) - .settings-entry-
+   chevron below is a manually-drawn replacement so collapsibility stays
+   visually obvious. */
+.sksk .settings-entry-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.sksk .settings-entry-summary::-webkit-details-marker {
+  display: none;
+}
+
+.sksk .settings-entry-chevron {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: var(--color-text-dark-secondary, #7a7971);
+  transition: transform 0.15s ease;
+}
+
+.sksk .settings-entry-details[open] > .settings-entry-summary .settings-entry-chevron {
+  transform: rotate(90deg);
+}
+
+/* Req2: ~50% wider than this used to render at, and (being an explicit
+   width rather than a flex-filled one) identical across Materials/Weapon
+   Models/Armor Models/Training Methods regardless of those apps' own
+   window width, AND Status Effects despite its narrower window (position:
+   { width: 560 }, deliberately NOT unified with the other three - see
+   apps/status-effects-config.mjs) and its extra icon-preview/predefined-
+   badge sharing the same summary line. */
+.sksk .settings-entry-name {
+  flex: 0 0 300px;
+  width: 300px;
+}
+
+/* Everything besides the Name/delete header - hidden entirely while
+   collapsed, this is what needs align-items: stretch (see .model-entry's
+   old comment, kept below on this element instead now that it's the
+   direct flexcol parent of the Details/Resource/bonus-group sections that
+   actually need it) to fill the card's own width rather than shrink to
+   whichever child happens to be narrowest at the time. */
+.sksk .settings-entry-body {
+  align-items: stretch !important;
+  margin-top: 6px;
+  padding-top: 4px;
   gap: 4px;
 }
 
@@ -1626,6 +1723,27 @@ span.sksk-critical-failure {
 .sksk .model-properties-details summary {
   cursor: pointer;
   margin-bottom: 4px;
+}
+
+/* "Eigenschaften" should always read centered, whether the Properties
+   list below it is collapsed or expanded - scoped to just the three
+   settings-list apps that reuse .model-properties-details for this
+   specific summary (Materials/Weapon Models/Armor Models), NOT the
+   Effect Key Reference app's own category headers or an item sheet's GM
+   tab Property Overrides section, which also happen to reuse this same
+   class for their own, differently-purposed <details>. */
+.sksk-materials-config .model-properties-details summary,
+.sksk.models-config .model-properties-details summary {
+  text-align: center;
+}
+
+/* "Nebenfertigkeiten" (Training Methods settings app's own secondary-
+   skills list header) should always read centered, whether that list is
+   empty or populated - same reasoning/technique as .bonus-group above
+   (label is inline, so text-align goes on the block-level .resource
+   wrapper instead). */
+.sksk-training-methods-config .resource {
+  text-align: center;
 }
 
 /* GM tab's collapsible section groups (gm.hbs) - native <details>/
@@ -1724,6 +1842,13 @@ span.sksk-critical-failure {
   overflow-y: auto;
 }
 
+/* Effect Key Reference settings app - same single-untabbed-part scrolling
+   as .sksk.materials-config above; the category list easily outgrows the
+   fixed window height otherwise. */
+.sksk.effect-key-reference .window-content {
+  overflow-y: auto;
+}
+
 /* Configure Skill Usage FP settings app - same fixed-tab-bar/scrolling-
    content pattern as .sksk.models-config above. */
 .application.sksk.skill-usage-fp-config .window-content {
@@ -1804,14 +1929,6 @@ span.sksk-critical-failure {
   justify-content: center;
   text-align: center;
   white-space: nowrap;
-}
-
-/* One Lehre entry in the GM config app - name/min-level/delete row, own
-   description, own bonus-row sub-list (see .bonus-group above). */
-.sksk .lehre-card {
-  padding: 6px 4px;
-  gap: 4px;
-  border-bottom: 1px solid var(--color-border-light-tertiary, #7a7971);
 }
 
 /* A skill's shared 5-level Lehren pool, shown in the player dialog next to

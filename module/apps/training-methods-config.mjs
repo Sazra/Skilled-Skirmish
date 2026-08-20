@@ -22,7 +22,10 @@ export class SKSKTrainingMethodsConfig extends HandlebarsApplicationMixin(Applic
       title: 'SKSK.Settings.TrainingMethods.Name',
       icon: 'fas fa-dumbbell',
     },
-    position: { width: 560, height: 640 },
+    // Same width as materials-config.mjs/models-config.mjs/lehren-config.mjs
+    // - all four settings list apps deliberately share one width, per design
+    // request, rather than each sizing to its own content.
+    position: { width: 820, height: 640 },
     form: {
       handler: SKSKTrainingMethodsConfig.#onSubmit,
       submitOnChange: true,

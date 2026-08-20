@@ -11,218 +11,222 @@
       </div>
     </li>
     {{#each statusEffects as |entry index|}}
-    <li class="item flexcol model-entry">
-      <div class="flexrow flex-between">
-        <img class="item-image" src="{{entry.img}}" width="24" height="24" />
-        <input type="text" name="statusEffects.{{index}}.name" value="{{entry.name}}"
-          placeholder="{{localize 'SKSK.StatusEffect.Name'}}" />
-        {{#if entry.predefined}}
-        <span class="status-effect-predefined-badge" title="{{localize 'SKSK.StatusEffect.PredefinedHint'}}">
-          {{localize 'SKSK.StatusEffect.Predefined'}}
-        </span>
-        {{else}}
-        <a class="item-control item-delete" data-action="removeStatusEffect" data-index="{{index}}"
-          title="{{localize 'SKSK.StatusEffect.Remove'}}">
-          <i class="fas fa-trash"></i>
-        </a>
-        {{/if}}
-      </div>
+    <li class="item model-entry">
+      <details class="settings-entry-details" data-sync="status-effect-entry-{{index}}" open>
+        <summary class="settings-entry-summary">
+          <i class="fas fa-chevron-right settings-entry-chevron"></i>
+          <img class="item-image" src="{{entry.img}}" width="24" height="24" />
+          <input type="text" name="statusEffects.{{index}}.name" value="{{entry.name}}"
+            class="settings-entry-name" placeholder="{{localize 'SKSK.StatusEffect.Name'}}" />
+          {{#if entry.predefined}}
+          <span class="status-effect-predefined-badge" title="{{localize 'SKSK.StatusEffect.PredefinedHint'}}">
+            {{localize 'SKSK.StatusEffect.Predefined'}}
+          </span>
+          {{else}}
+          <a class="item-control item-delete" data-action="removeStatusEffect" data-index="{{index}}"
+            title="{{localize 'SKSK.StatusEffect.Remove'}}">
+            <i class="fas fa-trash"></i>
+          </a>
+          {{/if}}
+        </summary>
+        <div class="settings-entry-body flexcol">
+          <div class="grid grid-2col">
+            <div class="grid-span-1">
+              <label class="resource-label">{{localize 'SKSK.StatusEffect.Icon'}}</label>
+              <input type="text" name="statusEffects.{{index}}.img" value="{{entry.img}}" placeholder="icons/svg/aura.svg" />
+            </div>
+          </div>
 
-      <div class="grid grid-2col">
-        <div class="grid-span-1">
-          <label class="resource-label">{{localize 'SKSK.StatusEffect.Icon'}}</label>
-          <input type="text" name="statusEffects.{{index}}.img" value="{{entry.img}}" placeholder="icons/svg/aura.svg" />
-        </div>
-      </div>
+          {{#unless entry.predefined}}
+          <label class="resource-label">{{localize 'SKSK.StatusEffect.StatModifiers'}}</label>
+          <p class="hint">{{localize 'SKSK.StatusEffect.StatModifiersHint'}}</p>
+          <div class="grid grid-3col status-effect-stat-modifiers">
+            <div class="grid-span-1">
+              <label class="resource-label">{{localize 'SKSK.Resource.Life'}}</label>
+              <input type="text" name="statusEffects.{{index}}.lifeBonus" value="{{entry.lifeBonus}}" data-dtype="Number" placeholder="0" />
+            </div>
+            <div class="grid-span-1">
+              <label class="resource-label">{{localize 'SKSK.Resource.Mana'}}</label>
+              <input type="text" name="statusEffects.{{index}}.manaBonus" value="{{entry.manaBonus}}" data-dtype="Number" placeholder="0" />
+            </div>
+            <div class="grid-span-1">
+              <label class="resource-label">{{localize 'SKSK.Resource.AP'}}</label>
+              <input type="text" name="statusEffects.{{index}}.apBonus" value="{{entry.apBonus}}" data-dtype="Number" placeholder="0" />
+            </div>
+            <div class="grid-span-1">
+              <label class="resource-label">{{localize 'SKSK.Resource.RP'}}</label>
+              <input type="text" name="statusEffects.{{index}}.rpBonus" value="{{entry.rpBonus}}" data-dtype="Number" placeholder="0" />
+            </div>
+            <div class="grid-span-1">
+              <label class="resource-label">{{localize 'SKSK.Resource.AC'}}</label>
+              <input type="text" name="statusEffects.{{index}}.acBonus" value="{{entry.acBonus}}" data-dtype="Number" placeholder="0" />
+            </div>
+            <div class="grid-span-1">
+              <label class="resource-label">{{localize 'SKSK.Resource.MR'}}</label>
+              <input type="text" name="statusEffects.{{index}}.mrBonus" value="{{entry.mrBonus}}" data-dtype="Number" placeholder="0" />
+            </div>
+          </div>
 
-      {{#unless entry.predefined}}
-      <label class="resource-label">{{localize 'SKSK.StatusEffect.StatModifiers'}}</label>
-      <p class="hint">{{localize 'SKSK.StatusEffect.StatModifiersHint'}}</p>
-      <div class="grid grid-3col status-effect-stat-modifiers">
-        <div class="grid-span-1">
-          <label class="resource-label">{{localize 'SKSK.Resource.Life'}}</label>
-          <input type="text" name="statusEffects.{{index}}.lifeBonus" value="{{entry.lifeBonus}}" data-dtype="Number" placeholder="0" />
-        </div>
-        <div class="grid-span-1">
-          <label class="resource-label">{{localize 'SKSK.Resource.Mana'}}</label>
-          <input type="text" name="statusEffects.{{index}}.manaBonus" value="{{entry.manaBonus}}" data-dtype="Number" placeholder="0" />
-        </div>
-        <div class="grid-span-1">
-          <label class="resource-label">{{localize 'SKSK.Resource.AP'}}</label>
-          <input type="text" name="statusEffects.{{index}}.apBonus" value="{{entry.apBonus}}" data-dtype="Number" placeholder="0" />
-        </div>
-        <div class="grid-span-1">
-          <label class="resource-label">{{localize 'SKSK.Resource.RP'}}</label>
-          <input type="text" name="statusEffects.{{index}}.rpBonus" value="{{entry.rpBonus}}" data-dtype="Number" placeholder="0" />
-        </div>
-        <div class="grid-span-1">
-          <label class="resource-label">{{localize 'SKSK.Resource.AC'}}</label>
-          <input type="text" name="statusEffects.{{index}}.acBonus" value="{{entry.acBonus}}" data-dtype="Number" placeholder="0" />
-        </div>
-        <div class="grid-span-1">
-          <label class="resource-label">{{localize 'SKSK.Resource.MR'}}</label>
-          <input type="text" name="statusEffects.{{index}}.mrBonus" value="{{entry.mrBonus}}" data-dtype="Number" placeholder="0" />
-        </div>
-      </div>
+          <label class="resource-label">{{localize 'SKSK.StatusEffect.TurnStartTicks'}}</label>
+          <p class="hint">{{localize 'SKSK.StatusEffect.TurnStartTicksHint'}}</p>
+          <div class="grid grid-2col status-effect-turn-start-ticks">
+            <div class="grid-span-1">
+              <label class="resource-label">{{localize 'SKSK.StatusEffect.LifeChangePerStack'}}</label>
+              <input type="text" name="statusEffects.{{index}}.lifeChangePerStack" value="{{entry.lifeChangePerStack}}" data-dtype="Number" placeholder="0" />
+            </div>
+            <div class="grid-span-1">
+              <label class="resource-label">{{localize 'SKSK.StatusEffect.ManaChangePerStack'}}</label>
+              <input type="text" name="statusEffects.{{index}}.manaChangePerStack" value="{{entry.manaChangePerStack}}" data-dtype="Number" placeholder="0" />
+            </div>
+          </div>
 
-      <label class="resource-label">{{localize 'SKSK.StatusEffect.TurnStartTicks'}}</label>
-      <p class="hint">{{localize 'SKSK.StatusEffect.TurnStartTicksHint'}}</p>
-      <div class="grid grid-2col status-effect-turn-start-ticks">
-        <div class="grid-span-1">
-          <label class="resource-label">{{localize 'SKSK.StatusEffect.LifeChangePerStack'}}</label>
-          <input type="text" name="statusEffects.{{index}}.lifeChangePerStack" value="{{entry.lifeChangePerStack}}" data-dtype="Number" placeholder="0" />
-        </div>
-        <div class="grid-span-1">
-          <label class="resource-label">{{localize 'SKSK.StatusEffect.ManaChangePerStack'}}</label>
-          <input type="text" name="statusEffects.{{index}}.manaChangePerStack" value="{{entry.manaChangePerStack}}" data-dtype="Number" placeholder="0" />
-        </div>
-      </div>
+          <div class="status-effect-attribute-bonuses">
+            <div class="bonus-group">
+              <label class="resource-label">{{localize 'SKSK.StatusEffect.BaseAttributeBonuses'}}</label>
+              <p class="hint">{{localize 'SKSK.StatusEffect.BaseAttributeBonusesHint'}}</p>
+              <ol class="items-list items-list-compact">
+                {{#each entry.baseAttributeBonuses as |row rowIndex|}}
+                <li class="item flexrow">
+                  <div class="item-name">
+                    <select name="statusEffects.{{index}}.baseAttributeBonuses.{{rowIndex}}.attribute">
+                      {{selectOptions ../../attributeChoices selected=row.attribute localize=true}}
+                    </select>
+                  </div>
+                  <div class="item-name">
+                    <input type="text" name="statusEffects.{{index}}.baseAttributeBonuses.{{rowIndex}}.bonus"
+                      value="{{row.bonus}}" data-dtype="Number" />
+                  </div>
+                  <div class="item-controls">
+                    <a class="item-control item-delete" data-action="removeStatusAttributeBonus" data-index="{{index}}"
+                      data-field="baseAttributeBonuses" data-bonus-index="{{rowIndex}}" title="{{localize 'SKSK.StatusEffect.RemoveAttributeBonus'}}">
+                      <i class="fas fa-trash"></i>
+                    </a>
+                  </div>
+                </li>
+                {{/each}}
+                <li class="item flexrow">
+                  <a class="item-control item-create" data-action="addStatusAttributeBonus" data-index="{{index}}"
+                    data-field="baseAttributeBonuses" title="{{localize 'SKSK.StatusEffect.AddAttributeBonus'}}">
+                    <i class="fas fa-plus"></i> {{localize 'SKSK.StatusEffect.AddAttributeBonus'}}
+                  </a>
+                </li>
+              </ol>
+            </div>
 
-      <div class="status-effect-attribute-bonuses">
-        <div class="bonus-group">
-          <label class="resource-label">{{localize 'SKSK.StatusEffect.BaseAttributeBonuses'}}</label>
-          <p class="hint">{{localize 'SKSK.StatusEffect.BaseAttributeBonusesHint'}}</p>
-          <ol class="items-list items-list-compact">
-            {{#each entry.baseAttributeBonuses as |row rowIndex|}}
-            <li class="item flexrow">
-              <div class="item-name">
-                <select name="statusEffects.{{index}}.baseAttributeBonuses.{{rowIndex}}.attribute">
-                  {{selectOptions ../../attributeChoices selected=row.attribute localize=true}}
-                </select>
-              </div>
-              <div class="item-name">
-                <input type="text" name="statusEffects.{{index}}.baseAttributeBonuses.{{rowIndex}}.bonus"
-                  value="{{row.bonus}}" data-dtype="Number" />
-              </div>
-              <div class="item-controls">
-                <a class="item-control item-delete" data-action="removeStatusAttributeBonus" data-index="{{index}}"
-                  data-field="baseAttributeBonuses" data-bonus-index="{{rowIndex}}" title="{{localize 'SKSK.StatusEffect.RemoveAttributeBonus'}}">
-                  <i class="fas fa-trash"></i>
+            <div class="bonus-group">
+              <label class="resource-label">{{localize 'SKSK.StatusEffect.SpecialAttributeBonuses'}}</label>
+              <p class="hint">{{localize 'SKSK.StatusEffect.SpecialAttributeBonusesHint'}}</p>
+              <ol class="items-list items-list-compact">
+                {{#each entry.specialAttributeBonuses as |row rowIndex|}}
+                <li class="item flexrow">
+                  <div class="item-name">
+                    <select name="statusEffects.{{index}}.specialAttributeBonuses.{{rowIndex}}.attribute">
+                      {{selectOptions ../../attributeChoices selected=row.attribute localize=true}}
+                    </select>
+                  </div>
+                  <div class="item-name">
+                    <input type="text" name="statusEffects.{{index}}.specialAttributeBonuses.{{rowIndex}}.bonus"
+                      value="{{row.bonus}}" data-dtype="Number" />
+                  </div>
+                  <div class="item-controls">
+                    <a class="item-control item-delete" data-action="removeStatusAttributeBonus" data-index="{{index}}"
+                      data-field="specialAttributeBonuses" data-bonus-index="{{rowIndex}}" title="{{localize 'SKSK.StatusEffect.RemoveAttributeBonus'}}">
+                      <i class="fas fa-trash"></i>
+                    </a>
+                  </div>
+                </li>
+                {{/each}}
+                <li class="item flexrow">
+                  <a class="item-control item-create" data-action="addStatusAttributeBonus" data-index="{{index}}"
+                    data-field="specialAttributeBonuses" title="{{localize 'SKSK.StatusEffect.AddAttributeBonus'}}">
+                    <i class="fas fa-plus"></i> {{localize 'SKSK.StatusEffect.AddAttributeBonus'}}
+                  </a>
+                </li>
+              </ol>
+            </div>
+
+            <div class="bonus-group">
+              <label class="resource-label">{{localize 'SKSK.StatusEffect.ModifierAttributeBonuses'}}</label>
+              <p class="hint">{{localize 'SKSK.StatusEffect.ModifierAttributeBonusesHint'}}</p>
+              <ol class="items-list items-list-compact">
+                {{#each entry.modifierAttributeBonuses as |row rowIndex|}}
+                <li class="item flexrow">
+                  <div class="item-name">
+                    <select name="statusEffects.{{index}}.modifierAttributeBonuses.{{rowIndex}}.attribute">
+                      {{selectOptions ../../attributeChoices selected=row.attribute localize=true}}
+                    </select>
+                  </div>
+                  <div class="item-name">
+                    <input type="text" name="statusEffects.{{index}}.modifierAttributeBonuses.{{rowIndex}}.bonus"
+                      value="{{row.bonus}}" data-dtype="Number" />
+                  </div>
+                  <div class="item-controls">
+                    <a class="item-control item-delete" data-action="removeStatusAttributeBonus" data-index="{{index}}"
+                      data-field="modifierAttributeBonuses" data-bonus-index="{{rowIndex}}" title="{{localize 'SKSK.StatusEffect.RemoveAttributeBonus'}}">
+                      <i class="fas fa-trash"></i>
+                    </a>
+                  </div>
+                </li>
+                {{/each}}
+                <li class="item flexrow">
+                  <a class="item-control item-create" data-action="addStatusAttributeBonus" data-index="{{index}}"
+                    data-field="modifierAttributeBonuses" title="{{localize 'SKSK.StatusEffect.AddAttributeBonus'}}">
+                    <i class="fas fa-plus"></i> {{localize 'SKSK.StatusEffect.AddAttributeBonus'}}
+                  </a>
+                </li>
+              </ol>
+            </div>
+          </div>
+
+          <div class="bonus-group">
+            <label class="resource-label">{{localize 'SKSK.StatusEffect.FpGainBonuses'}}</label>
+            <p class="hint">{{localize 'SKSK.StatusEffect.FpGainBonusesHint'}}</p>
+            <ol class="items-list items-list-compact">
+              {{#each entry.fpGainBonuses as |row rowIndex|}}
+              <li class="item flexrow">
+                <div class="item-name">
+                  <select name="statusEffects.{{index}}.fpGainBonuses.{{rowIndex}}.skill">
+                    {{selectOptions ../../skillBonusChoices selected=row.skill localize=true}}
+                  </select>
+                </div>
+                <div class="item-name">
+                  <select name="statusEffects.{{index}}.fpGainBonuses.{{rowIndex}}.bonusType">
+                    {{selectOptions ../../fpGainBonusTypeChoices selected=row.bonusType localize=true}}
+                  </select>
+                </div>
+                <div class="item-name">
+                  <input type="text" name="statusEffects.{{index}}.fpGainBonuses.{{rowIndex}}.amount"
+                    value="{{row.amount}}" data-dtype="Number" />
+                </div>
+                <div class="item-name">
+                  <input type="checkbox" name="statusEffects.{{index}}.fpGainBonuses.{{rowIndex}}.allowZero"
+                    {{checked row.allowZero}} title="{{localize 'SKSK.FpGainBonus.AllowZeroHint'}}" />
+                </div>
+                <div class="item-controls">
+                  <a class="item-control item-delete" data-action="removeStatusFpGainBonus" data-index="{{index}}"
+                    data-bonus-index="{{rowIndex}}" title="{{localize 'SKSK.StatusEffect.RemoveFpGainBonus'}}">
+                    <i class="fas fa-trash"></i>
+                  </a>
+                </div>
+              </li>
+              {{/each}}
+              <li class="item flexrow">
+                <a class="item-control item-create" data-action="addStatusFpGainBonus" data-index="{{index}}"
+                  title="{{localize 'SKSK.StatusEffect.AddFpGainBonus'}}">
+                  <i class="fas fa-plus"></i> {{localize 'SKSK.StatusEffect.AddFpGainBonus'}}
                 </a>
-              </div>
-            </li>
-            {{/each}}
-            <li class="item flexrow">
-              <a class="item-control item-create" data-action="addStatusAttributeBonus" data-index="{{index}}"
-                data-field="baseAttributeBonuses" title="{{localize 'SKSK.StatusEffect.AddAttributeBonus'}}">
-                <i class="fas fa-plus"></i> {{localize 'SKSK.StatusEffect.AddAttributeBonus'}}
-              </a>
-            </li>
-          </ol>
+              </li>
+            </ol>
+          </div>
+          {{/unless}}
+
+          <label class="resource-label">{{localize 'SKSK.StatusEffect.Description'}}</label>
+          <prose-mirror name="statusEffects.{{index}}.description" class="status-effect-description" toggled
+            value="{{entry.description}}">
+            {{{entry.descriptionHTML}}}
+          </prose-mirror>
         </div>
-
-        <div class="bonus-group">
-          <label class="resource-label">{{localize 'SKSK.StatusEffect.SpecialAttributeBonuses'}}</label>
-          <p class="hint">{{localize 'SKSK.StatusEffect.SpecialAttributeBonusesHint'}}</p>
-          <ol class="items-list items-list-compact">
-            {{#each entry.specialAttributeBonuses as |row rowIndex|}}
-            <li class="item flexrow">
-              <div class="item-name">
-                <select name="statusEffects.{{index}}.specialAttributeBonuses.{{rowIndex}}.attribute">
-                  {{selectOptions ../../attributeChoices selected=row.attribute localize=true}}
-                </select>
-              </div>
-              <div class="item-name">
-                <input type="text" name="statusEffects.{{index}}.specialAttributeBonuses.{{rowIndex}}.bonus"
-                  value="{{row.bonus}}" data-dtype="Number" />
-              </div>
-              <div class="item-controls">
-                <a class="item-control item-delete" data-action="removeStatusAttributeBonus" data-index="{{index}}"
-                  data-field="specialAttributeBonuses" data-bonus-index="{{rowIndex}}" title="{{localize 'SKSK.StatusEffect.RemoveAttributeBonus'}}">
-                  <i class="fas fa-trash"></i>
-                </a>
-              </div>
-            </li>
-            {{/each}}
-            <li class="item flexrow">
-              <a class="item-control item-create" data-action="addStatusAttributeBonus" data-index="{{index}}"
-                data-field="specialAttributeBonuses" title="{{localize 'SKSK.StatusEffect.AddAttributeBonus'}}">
-                <i class="fas fa-plus"></i> {{localize 'SKSK.StatusEffect.AddAttributeBonus'}}
-              </a>
-            </li>
-          </ol>
-        </div>
-
-        <div class="bonus-group">
-          <label class="resource-label">{{localize 'SKSK.StatusEffect.ModifierAttributeBonuses'}}</label>
-          <p class="hint">{{localize 'SKSK.StatusEffect.ModifierAttributeBonusesHint'}}</p>
-          <ol class="items-list items-list-compact">
-            {{#each entry.modifierAttributeBonuses as |row rowIndex|}}
-            <li class="item flexrow">
-              <div class="item-name">
-                <select name="statusEffects.{{index}}.modifierAttributeBonuses.{{rowIndex}}.attribute">
-                  {{selectOptions ../../attributeChoices selected=row.attribute localize=true}}
-                </select>
-              </div>
-              <div class="item-name">
-                <input type="text" name="statusEffects.{{index}}.modifierAttributeBonuses.{{rowIndex}}.bonus"
-                  value="{{row.bonus}}" data-dtype="Number" />
-              </div>
-              <div class="item-controls">
-                <a class="item-control item-delete" data-action="removeStatusAttributeBonus" data-index="{{index}}"
-                  data-field="modifierAttributeBonuses" data-bonus-index="{{rowIndex}}" title="{{localize 'SKSK.StatusEffect.RemoveAttributeBonus'}}">
-                  <i class="fas fa-trash"></i>
-                </a>
-              </div>
-            </li>
-            {{/each}}
-            <li class="item flexrow">
-              <a class="item-control item-create" data-action="addStatusAttributeBonus" data-index="{{index}}"
-                data-field="modifierAttributeBonuses" title="{{localize 'SKSK.StatusEffect.AddAttributeBonus'}}">
-                <i class="fas fa-plus"></i> {{localize 'SKSK.StatusEffect.AddAttributeBonus'}}
-              </a>
-            </li>
-          </ol>
-        </div>
-      </div>
-
-      <div class="bonus-group">
-        <label class="resource-label">{{localize 'SKSK.StatusEffect.FpGainBonuses'}}</label>
-        <p class="hint">{{localize 'SKSK.StatusEffect.FpGainBonusesHint'}}</p>
-        <ol class="items-list items-list-compact">
-          {{#each entry.fpGainBonuses as |row rowIndex|}}
-          <li class="item flexrow">
-            <div class="item-name">
-              <select name="statusEffects.{{index}}.fpGainBonuses.{{rowIndex}}.skill">
-                {{selectOptions ../../skillBonusChoices selected=row.skill localize=true}}
-              </select>
-            </div>
-            <div class="item-name">
-              <select name="statusEffects.{{index}}.fpGainBonuses.{{rowIndex}}.bonusType">
-                {{selectOptions ../../fpGainBonusTypeChoices selected=row.bonusType localize=true}}
-              </select>
-            </div>
-            <div class="item-name">
-              <input type="text" name="statusEffects.{{index}}.fpGainBonuses.{{rowIndex}}.amount"
-                value="{{row.amount}}" data-dtype="Number" />
-            </div>
-            <div class="item-name">
-              <input type="checkbox" name="statusEffects.{{index}}.fpGainBonuses.{{rowIndex}}.allowZero"
-                {{checked row.allowZero}} title="{{localize 'SKSK.FpGainBonus.AllowZeroHint'}}" />
-            </div>
-            <div class="item-controls">
-              <a class="item-control item-delete" data-action="removeStatusFpGainBonus" data-index="{{index}}"
-                data-bonus-index="{{rowIndex}}" title="{{localize 'SKSK.StatusEffect.RemoveFpGainBonus'}}">
-                <i class="fas fa-trash"></i>
-              </a>
-            </div>
-          </li>
-          {{/each}}
-          <li class="item flexrow">
-            <a class="item-control item-create" data-action="addStatusFpGainBonus" data-index="{{index}}"
-              title="{{localize 'SKSK.StatusEffect.AddFpGainBonus'}}">
-              <i class="fas fa-plus"></i> {{localize 'SKSK.StatusEffect.AddFpGainBonus'}}
-            </a>
-          </li>
-        </ol>
-      </div>
-      {{/unless}}
-
-      <label class="resource-label">{{localize 'SKSK.StatusEffect.Description'}}</label>
-      <prose-mirror name="statusEffects.{{index}}.description" class="status-effect-description" toggled
-        value="{{entry.description}}">
-        {{{entry.descriptionHTML}}}
-      </prose-mirror>
+      </details>
     </li>
     {{else}}
     <li class="item flexrow">

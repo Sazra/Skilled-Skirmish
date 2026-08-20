@@ -11,59 +11,63 @@
       </div>
     </li>
     {{#each methods as |method index|}}
-    <li class="item flexcol model-entry">
-      <div class="flexrow flex-between">
-        <input type="text" name="methods.{{index}}.name" value="{{method.name}}"
-          placeholder="{{localize 'SKSK.TrainingMethod.Name'}}" />
-        <a class="item-control item-delete" data-action="removeMethod" data-index="{{index}}"
-          title="{{localize 'SKSK.TrainingMethod.Remove'}}">
-          <i class="fas fa-trash"></i>
-        </a>
-      </div>
-
-      <div class="grid grid-2col">
-        <div class="grid-span-1">
-          <label class="resource-label">{{localize 'SKSK.TrainingMethod.MainSkill'}}</label>
-          <select name="methods.{{index}}.mainSkill">
-            {{selectOptions ../skillChoices selected=method.mainSkill localize=true}}
-          </select>
-        </div>
-        <div class="grid-span-1">
-          <label class="resource-label">{{localize 'SKSK.TrainingMethod.RatePerHour'}}</label>
-          <input type="text" name="methods.{{index}}.mainRate" value="{{method.mainRate}}" data-dtype="Number" placeholder="0" />
-        </div>
-      </div>
-
-      <div class="resource">
-        <label class="resource-label">
-          {{localize 'SKSK.TrainingMethod.SecondarySkills'}}
-          <a class="item-control" data-action="addSecondarySkill" data-method-index="{{index}}"
-            title="{{localize 'SKSK.TrainingMethod.AddSecondarySkill'}}">
-            <i class="fas fa-plus"></i>
+    <li class="item model-entry">
+      <details class="settings-entry-details" data-sync="training-method-entry-{{index}}" open>
+        <summary class="settings-entry-summary">
+          <i class="fas fa-chevron-right settings-entry-chevron"></i>
+          <input type="text" name="methods.{{index}}.name" value="{{method.name}}"
+            class="settings-entry-name" placeholder="{{localize 'SKSK.TrainingMethod.Name'}}" />
+          <a class="item-control item-delete" data-action="removeMethod" data-index="{{index}}"
+            title="{{localize 'SKSK.TrainingMethod.Remove'}}">
+            <i class="fas fa-trash"></i>
           </a>
-        </label>
-        {{#each method.secondarySkills as |secondary subIndex|}}
-        <div class="grid grid-3col training-secondary-skill-row">
-          <div class="grid-span-1">
-            <select name="methods.{{index}}.secondarySkills.{{subIndex}}.skill">
-              {{selectOptions ../../skillChoices selected=secondary.skill localize=true}}
-            </select>
+        </summary>
+        <div class="settings-entry-body flexcol">
+          <div class="grid grid-2col">
+            <div class="grid-span-1">
+              <label class="resource-label">{{localize 'SKSK.TrainingMethod.MainSkill'}}</label>
+              <select name="methods.{{index}}.mainSkill">
+                {{selectOptions ../skillChoices selected=method.mainSkill localize=true}}
+              </select>
+            </div>
+            <div class="grid-span-1">
+              <label class="resource-label">{{localize 'SKSK.TrainingMethod.RatePerHour'}}</label>
+              <input type="text" name="methods.{{index}}.mainRate" value="{{method.mainRate}}" data-dtype="Number" placeholder="0" />
+            </div>
           </div>
-          <div class="grid-span-1">
-            <input type="text" name="methods.{{index}}.secondarySkills.{{subIndex}}.rate" value="{{secondary.rate}}"
-              data-dtype="Number" placeholder="0" />
-          </div>
-          <div class="grid-span-1">
-            <a class="item-control item-delete" data-action="removeSecondarySkill" data-method-index="{{index}}"
-              data-index="{{subIndex}}" title="{{localize 'SKSK.TrainingMethod.RemoveSecondarySkill'}}">
-              <i class="fas fa-trash"></i>
-            </a>
+
+          <div class="resource">
+            <label class="resource-label">
+              {{localize 'SKSK.TrainingMethod.SecondarySkills'}}
+              <a class="item-control" data-action="addSecondarySkill" data-method-index="{{index}}"
+                title="{{localize 'SKSK.TrainingMethod.AddSecondarySkill'}}">
+                <i class="fas fa-plus"></i>
+              </a>
+            </label>
+            {{#each method.secondarySkills as |secondary subIndex|}}
+            <div class="grid grid-3col training-secondary-skill-row">
+              <div class="grid-span-1">
+                <select name="methods.{{index}}.secondarySkills.{{subIndex}}.skill">
+                  {{selectOptions ../../skillChoices selected=secondary.skill localize=true}}
+                </select>
+              </div>
+              <div class="grid-span-1">
+                <input type="text" name="methods.{{index}}.secondarySkills.{{subIndex}}.rate" value="{{secondary.rate}}"
+                  data-dtype="Number" placeholder="0" />
+              </div>
+              <div class="grid-span-1">
+                <a class="item-control item-delete" data-action="removeSecondarySkill" data-method-index="{{index}}"
+                  data-index="{{subIndex}}" title="{{localize 'SKSK.TrainingMethod.RemoveSecondarySkill'}}">
+                  <i class="fas fa-trash"></i>
+                </a>
+              </div>
+            </div>
+            {{else}}
+            <p class="hint">{{localize 'SKSK.TrainingMethod.NoSecondarySkills'}}</p>
+            {{/each}}
           </div>
         </div>
-        {{else}}
-        <p class="hint">{{localize 'SKSK.TrainingMethod.NoSecondarySkills'}}</p>
-        {{/each}}
-      </div>
+      </details>
     </li>
     {{else}}
     <li class="item flexrow">

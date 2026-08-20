@@ -52,7 +52,10 @@ export class SKSKModelsConfig extends HandlebarsApplicationMixin(ApplicationV2) 
       title: 'SKSK.Settings.Models.Name',
       icon: 'fas fa-shapes',
     },
-    position: { width: 720, height: 640 },
+    // Same width as materials-config.mjs/training-methods-config.mjs/
+    // lehren-config.mjs - all four settings list apps deliberately share one
+    // width, per design request, rather than each sizing to its own content.
+    position: { width: 820, height: 640 },
     form: {
       handler: SKSKModelsConfig.#onSubmit,
       submitOnChange: true,
