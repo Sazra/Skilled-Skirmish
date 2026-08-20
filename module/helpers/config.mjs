@@ -487,6 +487,23 @@ SKSK.attributeAbbreviations = {
   app: 'SKSK.Attribute.App.abbr',
 };
 
+/**
+ * Armor item "Rüstungsart" dropdown choices - deliberately separate from
+ * SKSK.skills.armors below (which drives actual spendable armor skills):
+ * Cloth has no armor skill of its own, so it must never appear in
+ * SKSK.skills.armors (that would wrongly make it a spendable/FP-tracked
+ * skill on every actor sheet) while still needing its own entry on the
+ * Armor item sheet's Rüstungsart dropdown. See sheets/item-sheet.mjs's
+ * typeChoices and helpers/defense.mjs#computeArmorClassComponents.
+ * @type {Object}
+ */
+SKSK.armorTypes = {
+  lightArmor: 'SKSK.ArmorType.LightArmor',
+  heavyArmor: 'SKSK.ArmorType.HeavyArmor',
+  shield: 'SKSK.ArmorType.Shield',
+  cloth: 'SKSK.ArmorType.Cloth',
+};
+
 // Each skill maps to its localization key and its maximum level
 // ("Stufenzahl" per the design spreadsheet). maxLevel: 1 marks a binary
 // skill (either possessed or not) rather than a point-scaled one.

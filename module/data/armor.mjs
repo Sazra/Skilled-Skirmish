@@ -69,15 +69,33 @@ export default class SKSKArmor extends SKSKItemBase {
     schema.materialBonusOverride = new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 });
     schema.manaCapacityOverride = new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 });
 
-    // This armor's type (Light Armor, Heavy Armor, Shield) - determines
-    // which Armor Models (see helpers/models.mjs) are selectable below.
+    // This armor's type (Light Armor, Heavy Armor, Shield, Cloth) -
+    // determines which Armor Models (see helpers/models.mjs) are
+    // selectable below. Cloth is the odd one out: it has no GM-configured
+    // Models at all (see prepareDerivedData below and
+    // sheets/item-sheet.mjs) and no armor skill of its own (see
+    // helpers/defense.mjs#computeArmorClassComponents) - it only ever
+    // grants an AC bonus via its own Material, and only when that beats
+    // the wearer's natural material bonus, same floor logic as worn Light/
+    // Heavy armor.
     schema.armorType = new fields.StringField({
       required: true, blank: false, initial: "lightArmor",
-      choices: ["lightArmor", "heavyArmor", "shield"],
+      choices: ["lightArmor", "heavyArmor", "shield", "cloth"],
     });
     // The Armor Model this armor uses (a name from the GM-configured world
     // setting, filtered to this armor's own armorType), or blank for none.
+    // Meaningless for Cloth (see clothModelName below instead) - forced
+    // null there regardless of whatever this field happens to still hold,
+    // so switching an item's armorType away from e.g. Light Armor to Cloth
+    // can never leak a stale Model's bonus (see prepareDerivedData below).
     schema.model = new fields.StringField({ required: true, blank: true, initial: "" });
+    // Cloth-only: a free-text "Modell" name (e.g. "Reisegewand"), purely
+    // descriptive/flavor - unlike system.model above, this is never looked
+    // up against the GM-configured Armor Models setting and never grants
+    // any bonus of its own (Cloth has no Models to configure - see
+    // templates/item/parts/armor.hbs, which shows this as a plain text
+    // input instead of the Model dropdown when armorType is "cloth").
+    schema.clothModelName = new fields.StringField({ required: true, blank: true, initial: "" });
     // Zero or more manual property add/remove overrides layered on top of
     // the properties granted by this armor's Material and Model - e.g. a
     // bespoke suit of armor loses the Heavy property it'd otherwise have.
@@ -112,7 +130,12 @@ export default class SKSKArmor extends SKSKItemBase {
     // bonus, and its mana capacity for every 0.1kg of this armor's weight.
     this.materialArmorBonus = resolveMaterialBonus(this);
     this.totalManaCapacity = computeTotalManaCapacity(this);
-    this.resolvedModel = getArmorModel(this.model);
+    // Cloth never has a real Model, regardless of whatever system.model
+    // might still hold from before a type switch (see the schema comment
+    // above) - forcing null here, rather than only hiding the dropdown in
+    // the template, is what actually guarantees no stale/mistaken Model
+    // bonus ever reaches computeArmorPieceBonus (helpers/defense.mjs).
+    this.resolvedModel = this.armorType === 'cloth' ? null : getArmorModel(this.model);
     this.effectiveProperties = computeEffectiveProperties(this, this.resolvedModel);
   }
 }

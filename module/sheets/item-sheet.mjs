@@ -539,11 +539,16 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       const isWeapon = item.type === 'weapon';
       const category = isWeapon ? 'weapon' : item.system.armorType;
       // {value, label} pairs (matching the {{selectOptions}} default shape
-      // used elsewhere, e.g. getSkillBonusChoices) rather than the raw
-      // CONFIG.SKSK.skills.* object, whose entries are {label, maxLevel}.
-      context.typeChoices = Object.entries(isWeapon ? CONFIG.SKSK.skills.weapons : CONFIG.SKSK.skills.armors).map(
-        ([key, def]) => ({ value: key, label: def.label })
-      );
+      // used elsewhere, e.g. getSkillBonusChoices). Weapon types still come
+      // from CONFIG.SKSK.skills.weapons ({label, maxLevel} entries) - Armor
+      // types deliberately do NOT come from CONFIG.SKSK.skills.armors:
+      // Cloth has no armor skill of its own, so it lives only in
+      // CONFIG.SKSK.armorTypes (a plain {key: labelKey} map, see
+      // helpers/config.mjs), never in skills.armors, which would wrongly
+      // turn it into a spendable/FP-tracked actor skill.
+      context.typeChoices = isWeapon
+        ? Object.entries(CONFIG.SKSK.skills.weapons).map(([key, def]) => ({ value: key, label: def.label }))
+        : Object.entries(CONFIG.SKSK.armorTypes).map(([key, label]) => ({ value: key, label }));
       context.modelChoices = (isWeapon ? getWeaponModels() : getArmorModels()).filter(
         m => (isWeapon ? m.weaponType : m.armorType) === (isWeapon ? item.system.weaponType : item.system.armorType)
       );
@@ -986,7 +991,11 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
     event.stopPropagation();
     const item = this.item;
     const isWeapon = item.type === 'weapon';
-    const model = isWeapon ? getWeaponModel(item.system.model) : getArmorModel(item.system.model);
+    // Cloth never has a real Model (see data/armor.mjs#prepareDerivedData) -
+    // mirrored here so a stale system.model left over from before a switch
+    // to Cloth can't leak a Model's properties into this recompute either.
+    const model = isWeapon ? getWeaponModel(item.system.model)
+      : (item.system.armorType === 'cloth' ? null : getArmorModel(item.system.model));
     const natural = new Map(
       computeEffectiveProperties({ material: item.system.material, propertyOverrides: [] }, model)
         .map(e => [e.property, e.value])

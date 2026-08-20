@@ -1518,6 +1518,12 @@
       "DamageTypeOverrideHint": "This weapon's damage type (for Resistance/Weakness/Immunity/Absorption purposes) normally draws from its Model's own Damage Type. Enable this for a unique variant of that Model that should deal a different damage type instead.",
       "DamageTypeOverrideEnabled": "Override this weapon's damage type"
     },
+    "ArmorType": {
+      "LightArmor": "Light Armor",
+      "HeavyArmor": "Heavy Armor",
+      "Shield": "Shield",
+      "Cloth": "Cloth"
+    },
     "ModelProperty": {
       "Heavy": {
         "Name": "Heavy",

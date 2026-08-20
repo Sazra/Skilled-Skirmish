@@ -25,12 +25,19 @@
     </div>
     <div class="grid-span-1">
       <label class="resource-label">{{localize 'SKSK.Models.Model'}}</label>
+      {{#if (eq system.armorType "cloth")}}
+      {{! Cloth has no GM-configured Models to pick from (see
+          helpers/config.mjs#SKSK.armorTypes and data/armor.mjs) - this is
+          a plain flavor-text name, never looked up for a bonus. }}
+      <input type="text" name="system.clothModelName" value="{{system.clothModelName}}" />
+      {{else}}
       <select name="system.model">
         <option value="">{{localize 'SKSK.Models.NoModel'}}</option>
         {{#each modelChoices as |m|}}
         <option value="{{m.name}}" {{#if (eq m.name ../system.model)}}selected{{/if}}>{{m.name}}</option>
         {{/each}}
       </select>
+      {{/if}}
     </div>
   </div>
 

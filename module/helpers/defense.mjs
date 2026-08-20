@@ -52,7 +52,7 @@ export function computeArmorPieceBonus(armorItem) {
 
 /**
  * An actor's equipped Armor items of one particular armorType
- * ("lightArmor"/"heavyArmor"/"shield").
+ * ("lightArmor"/"heavyArmor"/"shield"/"cloth").
  * @param {Actor} actor
  * @param {string} armorType
  * @return {Item[]}
@@ -64,11 +64,13 @@ function getEquippedArmorByType(actor, armorType) {
 /**
  * Every armor-category skill (CONFIG.SKSK.skills.armors) currently
  * "active" on an actor via equipped gear - the worn body armor's own type
- * (lightArmor/heavyArmor, mutually exclusive - see
- * computeArmorClassComponents), plus "shield" if at least one Shield is
- * equipped. Used to grant the "hitTaken" FP trigger (see
- * helpers/skillFp.mjs) to every skill actually protecting the wearer right
- * now, not just one.
+ * (lightArmor/heavyArmor, mutually exclusive with each other AND with
+ * Cloth - see the sksk.mjs updateItem hook and computeArmorClassComponents
+ * above), plus "shield" if at least one Shield is equipped. Cloth itself
+ * never contributes a key here (it has no armor skill of its own - see
+ * helpers/config.mjs#SKSK.armorTypes), even while worn. Used to grant the
+ * "hitTaken" FP trigger (see helpers/skillFp.mjs) to every skill actually
+ * protecting the wearer right now, not just one.
  * @param {Actor} actor
  * @return {string[]}
  */
@@ -87,11 +89,17 @@ export function getEquippedArmorSkillKeys(actor) {
  * - Grund-AC: system.baseArmorClass (a plain user/Active-Effect-editable
  *   field) plus the Constitution modifier.
  * - A skill bonus from equipped Light/Heavy Armor, 1 per skill level up to
- *   and including level 5 (Light) / level 6 (Heavy) - only one of the two
- *   can ever be equipped at once (see the updateItem hook in sksk.mjs).
- * - The worn Light/Heavy armor's own bonus (computeArmorPieceBonus), or
- *   the actor's natural material bonus if that's higher (a creature is
- *   never worse off than its own innate toughness, armored or not).
+ *   and including level 5 (Light) / level 6 (Heavy) - only one of the
+ *   three (Light/Heavy/Cloth) can ever be equipped at once (see the
+ *   updateItem hook in sksk.mjs). Cloth has no armor skill of its own
+ *   (see helpers/config.mjs#SKSK.armorTypes), so it never contributes here.
+ * - The worn Light/Heavy/Cloth armor's own bonus (computeArmorPieceBonus,
+ *   Light/Heavy taking priority over Cloth if somehow more than one is
+ *   equipped at once), or the actor's natural material bonus if that's
+ *   higher (a creature is never worse off than its own innate toughness,
+ *   armored or not) - this is also exactly how Cloth ends up granting an
+ *   AC bonus only when its own Material beats the wearer's natural one,
+ *   same floor logic as real armor, without needing a separate branch.
  * - Every equipped Shield's own bonus (computeArmorPieceBonus), summed -
  *   NOT floored by the natural material bonus (only worn body armor is).
  * - system.customArmorClassBonus, a plain user/Active-Effect-editable
@@ -108,11 +116,14 @@ function computeArmorClassComponents(actor) {
 
   const lightArmor = getEquippedArmorByType(actor, 'lightArmor')[0] ?? null;
   const heavyArmor = getEquippedArmorByType(actor, 'heavyArmor')[0] ?? null;
-  const wornArmor = lightArmor ?? heavyArmor;
+  const clothArmor = getEquippedArmorByType(actor, 'cloth')[0] ?? null;
+  const wornArmor = lightArmor ?? heavyArmor ?? clothArmor;
 
   let armorSkillBonus = 0;
   if (lightArmor) armorSkillBonus = Math.min(getActorSkillLevel(actor, 'lightArmor'), 5);
   else if (heavyArmor) armorSkillBonus = Math.min(getActorSkillLevel(actor, 'heavyArmor'), 6);
+  // Cloth has no armor skill of its own - never adds to armorSkillBonus,
+  // even when it's the piece actually worn (wornArmor above).
   rows.push({ label: game.i18n.localize('SKSK.Breakdown.ArmorSkillBonus'), perLevel: null, value: armorSkillBonus });
 
   const wornArmorBonus = wornArmor ? computeArmorPieceBonus(wornArmor) : 0;
