@@ -552,6 +552,20 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       context.modelChoices = (isWeapon ? getWeaponModels() : getArmorModels()).filter(
         m => (isWeapon ? m.weaponType : m.armorType) === (isWeapon ? item.system.weaponType : item.system.armorType)
       );
+      if (isWeapon) {
+        // The Model dropdown only ever offers "weapon"-kind entries -
+        // "ammunition"-kind ones (Bow/Feuerwaffen only) are a separate
+        // dropdown below, filtered the other way. See helpers/models.mjs
+        // and data/weapon.mjs's own RANGED_WEAPON_TYPES.
+        context.modelChoices = context.modelChoices.filter(m => m.kind !== 'ammunition');
+        context.isRangedWeapon = ['bow', 'firearms'].includes(item.system.weaponType);
+        if (context.isRangedWeapon) {
+          context.ammunitionModelChoices = getWeaponModels().filter(
+            m => m.weaponType === item.system.weaponType && m.kind === 'ammunition'
+          );
+          context.resolvedAmmunitionModel = item.system.resolvedAmmunitionModel;
+        }
+      }
       context.resolvedModel = item.system.resolvedModel;
       // The Property Overrides section shows a switch for every property
       // applicable to this item's category (same keyed-object shape as

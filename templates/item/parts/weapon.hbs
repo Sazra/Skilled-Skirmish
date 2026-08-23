@@ -38,6 +38,20 @@
     </div>
   </div>
 
+  {{#if isRangedWeapon}}
+  <div class="grid grid-2col">
+    <div class="grid-span-1">
+      <label class="resource-label">{{localize 'SKSK.Models.AmmunitionModel'}}</label>
+      <select name="system.ammunitionModel">
+        <option value="">{{localize 'SKSK.Models.NoModel'}}</option>
+        {{#each ammunitionModelChoices as |m|}}
+        <option value="{{m.name}}" {{#if (eq m.name ../system.ammunitionModel)}}selected{{/if}}>{{m.name}}</option>
+        {{/each}}
+      </select>
+    </div>
+  </div>
+  {{/if}}
+
   {{#if resolvedModel}}
   <div class="grid grid-2col">
     <div class="grid-span-1">
@@ -47,6 +61,18 @@
     <div class="grid-span-1">
       <label class="resource-label">{{localize 'SKSK.Models.FlatBonus'}}</label>
       <span>{{resolvedModel.flatBonus}}</span>
+    </div>
+  </div>
+  {{/if}}
+  {{#if resolvedAmmunitionModel}}
+  <div class="grid grid-2col">
+    <div class="grid-span-1">
+      <label class="resource-label">{{localize 'SKSK.Models.AmmunitionDiceFormula'}}</label>
+      <span>{{resolvedAmmunitionModel.diceFormula}}</span>
+    </div>
+    <div class="grid-span-1">
+      <label class="resource-label">{{localize 'SKSK.Models.AmmunitionFlatBonus'}}</label>
+      <span>{{resolvedAmmunitionModel.flatBonus}}</span>
     </div>
   </div>
   {{/if}}

@@ -1,7 +1,12 @@
 import SKSKItemBase from "./item-base.mjs";
 import { resolveMaterialBonus, computeTotalManaCapacity } from "../helpers/materials.mjs";
-import { getWeaponModel } from "../helpers/models.mjs";
+import { getWeaponModel, combineDiceFormulas } from "../helpers/models.mjs";
 import { computeEffectiveProperties } from "../helpers/properties.mjs";
+
+// Weapon types that use a second, separately-selected Ammunition Model
+// alongside their own Weapon Model - see schema.ammunitionModel and
+// prepareDerivedData below.
+const RANGED_WEAPON_TYPES = ["bow", "firearms"];
 
 export default class SKSKWeapon extends SKSKItemBase {
 
@@ -86,6 +91,13 @@ export default class SKSKWeapon extends SKSKItemBase {
     // world setting, filtered to this weapon's own weaponType), or blank
     // for none.
     schema.model = new fields.StringField({ required: true, blank: true, initial: "" });
+    // Only meaningful when weaponType is one of RANGED_WEAPON_TYPES (Bow/
+    // Feuerwaffen): a second Model, filtered to that same weaponType's own
+    // "ammunition"-kind Models (see helpers/models.mjs), whose diceFormula/
+    // flatBonus combine with the weapon Model's own in prepareDerivedData
+    // below. Attribute bonus, damage type, and properties still come from
+    // the weapon Model alone - only the damage roll itself combines.
+    schema.ammunitionModel = new fields.StringField({ required: true, blank: true, initial: "" });
     // Zero or more manual property add/remove overrides layered on top of
     // the properties granted by this weapon's Material and Model - e.g. a
     // bespoke weapon crafted to be throwable gains Throwable plus a Range
@@ -147,15 +159,22 @@ export default class SKSKWeapon extends SKSKItemBase {
     this.totalManaCapacity = computeTotalManaCapacity(this);
     this.resolvedModel = getWeaponModel(this.model);
     this.effectiveProperties = computeEffectiveProperties(this, this.resolvedModel);
+    // Only Bow/Feuerwaffen actually resolve an Ammunition Model - every
+    // other weaponType ignores a stale system.ammunitionModel value left
+    // over from before a switch away from one of those two types.
+    this.resolvedAmmunitionModel = RANGED_WEAPON_TYPES.includes(this.weaponType)
+      ? getWeaponModel(this.ammunitionModel) : null;
 
     // The roll formula used by SKSKItem#roll (Actions tab's "Use" button,
     // Items tab's roll button) - same field name as the generic Item type's
     // own system.formula, so the document's existing roll() logic just
-    // works unchanged. The Model's own dice formula (if any), plus the
-    // Material's attack bonus and the Model's own flat bonus.
-    const flatBonus = materialBonus + (this.resolvedModel?.flatBonus ?? 0);
-    this.formula = this.resolvedModel?.diceFormula
-      ? `${this.resolvedModel.diceFormula} + ${flatBonus}`
-      : `${flatBonus}`;
+    // works unchanged. The Model's own dice formula (if any) combined with
+    // the Ammunition Model's own (see helpers/models.mjs#
+    // combineDiceFormulas - a no-op combine when there's no Ammunition
+    // Model), plus the Material's attack bonus and both Models' own flat
+    // bonuses.
+    const flatBonus = materialBonus + (this.resolvedModel?.flatBonus ?? 0) + (this.resolvedAmmunitionModel?.flatBonus ?? 0);
+    const diceFormula = combineDiceFormulas(this.resolvedModel?.diceFormula, this.resolvedAmmunitionModel?.diceFormula);
+    this.formula = diceFormula ? `${diceFormula} + ${flatBonus}` : `${flatBonus}`;
   }
 }

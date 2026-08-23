@@ -1516,7 +1516,13 @@
       "DamageType": "Damage Type",
       "DamageTypeOverride": "Damage Type Override",
       "DamageTypeOverrideHint": "This weapon's damage type (for Resistance/Weakness/Immunity/Absorption purposes) normally draws from its Model's own Damage Type. Enable this for a unique variant of that Model that should deal a different damage type instead.",
-      "DamageTypeOverrideEnabled": "Override this weapon's damage type"
+      "DamageTypeOverrideEnabled": "Override this weapon's damage type",
+      "Kind": "Kind",
+      "KindWeapon": "Weapon",
+      "KindAmmunition": "Ammunition",
+      "AmmunitionModel": "Ammunition Model",
+      "AmmunitionDiceFormula": "Ammunition Roll Formula",
+      "AmmunitionFlatBonus": "Ammunition Flat Value"
     },
     "ArmorType": {
       "LightArmor": "Light Armor",

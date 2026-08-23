@@ -33,6 +33,21 @@
             </a>
           </summary>
           <div class="settings-entry-body flexcol">
+            {{#if (includes ../../rangedWeaponTypes t.id)}}
+            <div class="grid grid-3col">
+              <div class="grid-span-1">
+                <label class="resource-label">{{localize 'SKSK.Models.Kind'}}</label>
+                <select name="weaponModels.{{entry.index}}.kind">
+                  <option value="weapon" {{#unless (eq entry.model.kind "ammunition")}}selected{{/unless}}>
+                    {{localize 'SKSK.Models.KindWeapon'}}
+                  </option>
+                  <option value="ammunition" {{#if (eq entry.model.kind "ammunition")}}selected{{/if}}>
+                    {{localize 'SKSK.Models.KindAmmunition'}}
+                  </option>
+                </select>
+              </div>
+            </div>
+            {{/if}}
             <div class="grid grid-3col">
               <div class="grid-span-1">
                 <label class="resource-label">{{localize 'SKSK.Models.DiceFormula'}}</label>

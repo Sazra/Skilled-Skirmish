@@ -38,6 +38,32 @@ export function getArmorModel(name) {
 }
 
 /**
+ * Combine a Bow/Feuerwaffen weapon's own Model diceFormula with its
+ * Ammunition Model's (see data/weapon.mjs#prepareDerivedData) into one dice-
+ * formula fragment: matching die sizes merge into a single term (e.g.
+ * "1d4" + "2d4" -> "3d4"), differing sizes stay as two terms joined by "+"
+ * (e.g. "1d4" + "1d6" -> "1d4 + 1d6", still one valid Roll formula), and
+ * either side being blank (or not a plain "NdX" term) just returns the
+ * other side unchanged.
+ * @param {string} [a]
+ * @param {string} [b]
+ * @return {string}
+ */
+export function combineDiceFormulas(a, b) {
+  a = (a ?? '').trim();
+  b = (b ?? '').trim();
+  if (!a) return b;
+  if (!b) return a;
+  const parse = f => {
+    const m = /^(\d+)d(\d+)$/i.exec(f);
+    return m ? { count: Number(m[1]), size: Number(m[2]) } : null;
+  };
+  const pa = parse(a), pb = parse(b);
+  if (pa && pb && pa.size === pb.size) return `${pa.count + pb.count}d${pa.size}`;
+  return `${a} + ${b}`;
+}
+
+/**
  * Enforce a Weapon Model/weapon Item's own attribute-selection rule for
  * its Angriffswurf (attack roll) attribute bonus (see helpers/
  * attackRolls.mjs#computeWeaponAttackBonus): normally only one attribute

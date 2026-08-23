@@ -132,6 +132,9 @@ export class SKSKModelsConfig extends HandlebarsApplicationMixin(ApplicationV2) 
 
     context.weaponModelsByType = groupByType(getWeaponModels(), 'weaponType');
     context.armorModelsByType = groupByType(getArmorModels(), 'armorType');
+    // Only Bow/Feuerwaffen actually offer the Kind (Waffe/Munition) select
+    // on their entries - see data/weapon.mjs's own RANGED_WEAPON_TYPES.
+    context.rangedWeaponTypes = ['bow', 'firearms'];
 
     context.attributeChoices = CONFIG.SKSK.attributes;
     context.damageTypeChoices = CONFIG.SKSK.damageTypes;
@@ -195,6 +198,10 @@ export class SKSKModelsConfig extends HandlebarsApplicationMixin(ApplicationV2) 
       return {
         name: m.name ?? '',
         weaponType: existingWeaponModels[index]?.weaponType ?? 'axe',
+        // Only submitted at all for Bow/Feuerwaffen entries (see
+        // weapon-models.hbs) - every other type's entries have no Kind
+        // select and so always fall back to "weapon" here.
+        kind: m.kind === 'ammunition' ? 'ammunition' : 'weapon',
         diceFormula: m.diceFormula ?? '',
         flatBonus: Number(m.flatBonus) || 0,
         damageType: m.damageType ?? 'blunt',
@@ -226,7 +233,7 @@ export class SKSKModelsConfig extends HandlebarsApplicationMixin(ApplicationV2) 
   static async #addWeaponModel(event, target) {
     const models = foundry.utils.deepClone(getWeaponModels());
     models.push({
-      name: '', weaponType: target.dataset.weaponType, diceFormula: '', flatBonus: 0, damageType: 'blunt',
+      name: '', weaponType: target.dataset.weaponType, kind: 'weapon', diceFormula: '', flatBonus: 0, damageType: 'blunt',
       attributes: [], properties: [],
       heavyRequirement: 0, demandingRequirement: 0, drainingRequirement: 0, reachRange: 0, rangedRange: 0,
     });
