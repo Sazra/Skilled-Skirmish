@@ -564,6 +564,12 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
             m => m.weaponType === item.system.weaponType && m.kind === 'ammunition'
           );
           context.resolvedAmmunitionModel = item.system.resolvedAmmunitionModel;
+          // The Damage Type Override select additionally offers
+          // "Übernehmen" (inherit the Ammunition Model's own damageType) -
+          // see helpers/attackRolls.mjs#getWeaponDamageType. Only relevant
+          // for Bow/Feuerwaffen, which is the only weaponType with an
+          // Ammunition Model to inherit from.
+          context.rangedDamageTypeChoices = { inherit: 'SKSK.DamageType.Inherit', ...CONFIG.SKSK.damageTypes };
         }
       }
       context.resolvedModel = item.system.resolvedModel;

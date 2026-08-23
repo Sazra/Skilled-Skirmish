@@ -62,7 +62,11 @@
               <div class="grid-span-1">
                 <label class="resource-label">{{localize 'SKSK.Models.DamageType'}}</label>
                 <select name="weaponModels.{{entry.index}}.damageType">
+                  {{#if (includes ../../rangedWeaponTypes t.id)}}
+                  {{selectOptions ../../rangedDamageTypeChoices selected=entry.model.damageType localize=true}}
+                  {{else}}
                   {{selectOptions ../../damageTypeChoices selected=entry.model.damageType localize=true}}
+                  {{/if}}
                 </select>
               </div>
             </div>
@@ -99,6 +103,18 @@
                     name="weaponModels.{{entry.index}}.{{concat key 'Range'}}"
                     value="{{lookup entry.model (concat key 'Range')}}" data-dtype="Number"
                     title="{{localize 'SKSK.Models.Range'}}" placeholder="{{localize 'SKSK.Models.Range'}}" />
+                  {{/if}}
+                  {{#if def.hasApCost}}
+                  <input type="text" class="model-requirement-input"
+                    name="weaponModels.{{entry.index}}.{{concat key 'ApCost'}}"
+                    value="{{lookup entry.model (concat key 'ApCost')}}" data-dtype="Number"
+                    title="{{localize 'SKSK.Models.ApCost'}}" placeholder="{{localize 'SKSK.Models.ApCost'}}" />
+                  {{/if}}
+                  {{#if def.hasMagazineSize}}
+                  <input type="text" class="model-requirement-input"
+                    name="weaponModels.{{entry.index}}.{{concat key 'MagazineSize'}}"
+                    value="{{lookup entry.model (concat key 'MagazineSize')}}" data-dtype="Number"
+                    title="{{localize 'SKSK.Models.MagazineSize'}}" placeholder="{{localize 'SKSK.Models.MagazineSize'}}" />
                   {{/if}}
                 </div>
                 {{/each}}

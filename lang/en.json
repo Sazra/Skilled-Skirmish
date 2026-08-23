@@ -866,6 +866,7 @@
       "ModeDisadvantage": "Disadvantage",
       "ModeRecommended": "{mode} (recommended)",
       "FlankingBonus": "Flanking: +{bonus} attack bonus",
+      "ReloadDescription": "{name} reloads {weapon}.",
       "FlankingDefenseBonus": "{defender} is flanking the attacker: +{bonus} AC",
       "NoDefender": "You have no target selected and no assigned character - cannot evaluate.",
       "EvaluationTitle": "Hit Evaluation ({defender})",
@@ -1347,7 +1348,8 @@
       "Electricity": "Electricity",
       "Ice": "Ice",
       "Disease": "Disease",
-      "Aether": "Aether"
+      "Aether": "Aether",
+      "Inherit": "Inherit"
     },
     "PathElement": {
       "Mana": "Mana"
@@ -1500,6 +1502,8 @@
       "HardenedValue": "Hardened Value (X)",
       "Requirement": "Requirement",
       "Range": "Range",
+      "ApCost": "AP Cost",
+      "MagazineSize": "Magazine Size",
       "Add": "Add Model",
       "Remove": "Remove",
       "None": "No models defined yet.",
@@ -1570,6 +1574,10 @@
       "Ranged": {
         "Name": "Ranged",
         "Hint": "A weapon with this modifier can be used to attack at range (given in parentheses / disadvantage at extended range). In melee, i.e. 2m or less from the target, such a weapon can't be used to attack."
+      },
+      "Reload": {
+        "Name": "Reload",
+        "Hint": "After a weapon with this modifier has been used for Magazine Size attack rolls (Magazine Size 1 if unset), it must be reloaded before it can attack again. Pressing the weapon attack button again instead reloads it for the given Action Points, without attacking."
       },
       "Flexible": {
         "Name": "Flexible",

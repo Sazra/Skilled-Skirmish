@@ -79,17 +79,54 @@ export async function postActionChatCard(actor, title, roll, apCost, extraHTML =
 }
 
 /**
+ * Post a simple "reloading" chat card for a Nachladen(X)-property weapon
+ * (see CONFIG.SKSK.modelProperties.reload) and clear its own "ammoRemaining"
+ * flag (back to a full magazine next fire) - no attack/damage roll happens
+ * on this click at all, it's entirely spent reloading. See rollWeaponItem,
+ * which routes here instead of its normal attack flow once the magazine is
+ * empty.
+ * @param {Item} item
+ * @param {number} apCost
+ * @return {Promise<ChatMessage|void>}
+ */
+async function rollWeaponReload(item, apCost) {
+  const actor = item.actor;
+  if (actor && !hasEnoughActionPoints(actor, apCost)) return;
+  if (actor) await actor.update(spendActionPoints(actor, apCost));
+  await item.unsetFlag('sksk', 'ammoRemaining');
+  const descriptionHTML = `<div class="sksk-roll-description">${game.i18n.format('SKSK.AttackRoll.ReloadDescription', { name: actor?.name ?? item.name, weapon: item.name })}</div>`;
+  return postActionChatCard(actor, item.name, null, apCost, descriptionHTML);
+}
+
+/**
  * Roll a weapon item: its Angriffswurf (attack roll) - two d20s plus
  * computeWeaponAttackBonus, see helpers/attackRolls.mjs - followed by its
  * existing damage formula (or plain description, if it has no formula),
  * both in one chat card. See documents/item.mjs#roll, which routes every
  * weapon-type Item here (mirrors the existing spell-type routing to
  * helpers/spell-rolls.mjs#rollSpellItem).
+ *
+ * Nachladen(X)/Magazin(X) (see CONFIG.SKSK.modelProperties.reload): a
+ * weapon carrying this property fires Magazin(X) times (its resolvedModel's
+ * own reloadMagazineSize - a Model-only field, defaulting to 1 when unset,
+ * i.e. "fires once then must reload") before its own next Angriffswurf-
+ * button click instead spends Nachladen(X)'s own AP cost reloading (see
+ * rollWeaponReload above) rather than firing. A "sksk.ammoRemaining" flag
+ * (pure per-Item runtime state, not schema data) tracks shots left in the
+ * current magazine, refilling to a full magazine once reloaded.
  * @param {Item} item   The weapon item being used.
  * @return {Promise<ChatMessage>}
  */
 export async function rollWeaponItem(item) {
   const actor = item.actor;
+  const reloadEntry = (item.system.effectiveProperties ?? []).find(e => e.property === 'reload');
+  let ammoRemaining = null;
+  if (reloadEntry) {
+    const magazineSize = Math.max(1, item.system.resolvedModel?.reloadMagazineSize || 1);
+    ammoRemaining = item.getFlag('sksk', 'ammoRemaining') ?? magazineSize;
+    if (ammoRemaining <= 0) return rollWeaponReload(item, reloadEntry.value ?? 0);
+  }
+
   const parts = [formatRollCardHeading(item.name)];
   const damageType = getWeaponDamageType(item.system);
   const damageDice = [{ damageType, dieSizes: getDamageDieSizes(item.system.formula) }];
@@ -143,6 +180,8 @@ export async function rollWeaponItem(item) {
     parts.push(renderApplyDamageButton(actor, [], item.system.weaponType, getTechniqueEffectPayload(technique)));
     parts.push(renderTechniqueSavingThrowHTML(technique));
   }
+
+  if (reloadEntry) await item.setFlag('sksk', 'ammoRemaining', ammoRemaining - 1);
 
   const messageData = {
     speaker: ChatMessage.getSpeaker({ actor }),

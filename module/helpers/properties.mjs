@@ -16,6 +16,7 @@ function mergeSourceProperties(map, source) {
     let value;
     if (def?.hasRequirement) value = Number(source[`${key}Requirement`]) || 0;
     else if (def?.hasRange) value = Number(source[`${key}Range`]) || 0;
+    else if (def?.hasApCost) value = Number(source[`${key}ApCost`]) || 0;
     const existing = map.get(key);
     if (existing === undefined || (value ?? 0) > (existing ?? 0)) map.set(key, value);
   }

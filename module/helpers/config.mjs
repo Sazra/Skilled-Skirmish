@@ -748,6 +748,16 @@ SKSK.modelProperties = {
   stunning: { label: 'SKSK.ModelProperty.Stunning.Name', hint: 'SKSK.ModelProperty.Stunning.Hint', appliesTo: ['weapon'] },
   disarming: { label: 'SKSK.ModelProperty.Disarming.Name', hint: 'SKSK.ModelProperty.Disarming.Hint', appliesTo: ['weapon', 'lightArmor', 'heavyArmor', 'shield'] },
   ranged: { label: 'SKSK.ModelProperty.Ranged.Name', hint: 'SKSK.ModelProperty.Ranged.Hint', appliesTo: ['weapon'], hasRange: true },
+  // Feuerwaffen-Eigenschaft (aber wie jede andere Property nicht auf einen
+  // Waffentyp beschränkt - siehe helpers/actions.mjs#rollWeaponItem): after
+  // this weapon has fired reloadMagazineSize times (hasMagazineSize below -
+  // a Model-only field, deliberately NOT routed through the generic
+  // Material/Model/Override merge in helpers/properties.mjs, unlike
+  // hasApCost - see data/weapon.mjs#resolvedModel and getWeaponMagazineSize
+  // in actions.mjs), its own next Angriffswurf-button click instead reloads
+  // it for X AP (a Foundry flag "sksk.ammoRemaining" tracks shots left,
+  // rather than a schema field - pure per-Item runtime state).
+  reload: { label: 'SKSK.ModelProperty.Reload.Name', hint: 'SKSK.ModelProperty.Reload.Hint', appliesTo: ['weapon'], hasApCost: true, hasMagazineSize: true },
   flexible: { label: 'SKSK.ModelProperty.Flexible.Name', hint: 'SKSK.ModelProperty.Flexible.Hint', appliesTo: ['weapon'] },
   shapeshifting: { label: 'SKSK.ModelProperty.Shapeshifting.Name', hint: 'SKSK.ModelProperty.Shapeshifting.Hint', appliesTo: ['weapon', 'lightArmor', 'heavyArmor', 'shield'], sources: ['model', 'material'] },
   infusion: { label: 'SKSK.ModelProperty.Infusion.Name', hint: 'SKSK.ModelProperty.Infusion.Hint', appliesTo: ['weapon'], sources: ['model', 'material'] },

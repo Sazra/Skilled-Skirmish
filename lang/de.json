@@ -866,6 +866,7 @@
             "ModeDisadvantage": "Nachteil",
             "ModeRecommended": "{mode} (empfohlen)",
             "FlankingBonus": "Flankiert: +{bonus} Angriffsbonus",
+            "ReloadDescription": "{name} lädt {weapon} nach.",
             "FlankingDefenseBonus": "{defender} flankiert den Angreifer: +{bonus} Rüstungsklasse",
             "NoDefender": "Du hast weder ein Ziel ausgewählt noch einen zugewiesenen Charakter - kann nicht ausgewertet werden.",
             "EvaluationTitle": "Trefferauswertung ({defender})",
@@ -1347,7 +1348,8 @@
             "Electricity": "Elektrizität",
             "Ice": "Eis",
             "Disease": "Krankheit",
-            "Aether": "Äther"
+            "Aether": "Äther",
+            "Inherit": "Übernehmen"
         },
         "PathElement": {
             "Mana": "Mana"
@@ -1500,6 +1502,8 @@
             "HardenedValue": "Härte-Wert (X)",
             "Requirement": "Voraussetzung",
             "Range": "Reichweite",
+            "ApCost": "AP-Kosten",
+            "MagazineSize": "Magazingröße",
             "Add": "Modell hinzufügen",
             "Remove": "Entfernen",
             "None": "Noch keine Modelle angelegt.",
@@ -1570,6 +1574,10 @@
             "Ranged": {
                 "Name": "Fernkampf",
                 "Hint": "Eine Waffe mit diesem Modifikator kann genutzt werden, um auf Reichweite anzugreifen (in Klammern angegeben / Nachteil auf erweiterte Reichweite). Im direkten Kampf, also 2m oder weniger Entfernung zum Ziel, kann eine solche Waffe nicht zum Angreifen genutzt werden."
+            },
+            "Reload": {
+                "Name": "Nachladen",
+                "Hint": "Nachdem eine Waffe mit diesem Modifikator für Magazingröße-viele Angriffswürfe genutzt wurde (Magazingröße 1, wenn nicht angegeben), muss sie erst nachgeladen werden, bevor sie erneut angreifen kann. Ein weiteres Drücken des Waffenangriffs-Buttons lädt sie stattdessen für die angegebenen Aktionspunkte nach, ohne selbst anzugreifen."
             },
             "Flexible": {
                 "Name": "Flexibel",

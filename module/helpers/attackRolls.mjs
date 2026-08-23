@@ -152,16 +152,26 @@ function getWeaponAttributeKeys(weaponSystem) {
 
 /**
  * A weapon's damage type (for Resistance/Weakness/Immunity/Absorption
- * purposes - see helpers/defense.mjs#applyElementalDefense) - its own
- * damageTypeOverride if enabled (a unique variant of a shared Model),
- * otherwise its resolvedModel's own damageType, falling back to "blunt" if
- * neither is set (e.g. no Model selected at all).
+ * purposes - see helpers/defense.mjs#applyElementalDefense): its own
+ * damageTypeOverride if enabled AND not set to "inherit", otherwise its
+ * resolvedModel's own damageType if set AND not "inherit", otherwise (Bow/
+ * Feuerwaffen only) its resolvedAmmunitionModel's own damageType - falling
+ * back to "blunt" if nothing above resolves to a concrete type (e.g. no
+ * Model selected at all). "inherit" ("Übernehmen") is Bow/Feuerwaffen
+ * Models' own default damageType (see apps/models-config.mjs#
+ * addWeaponModel) and a selectable override choice too (see
+ * item-sheet.mjs's own rangedDamageTypeChoices) - it deliberately never
+ * appears in CONFIG.SKSK.damageTypes itself, since every other damage-type
+ * dropdown in the system has no Ammunition Model to inherit from.
  * @param {object} weaponSystem
  * @return {string}
  */
 export function getWeaponDamageType(weaponSystem) {
-  if (weaponSystem.damageTypeOverride?.enabled) return weaponSystem.damageTypeOverride.damageType;
-  return weaponSystem.resolvedModel?.damageType ?? 'blunt';
+  const override = weaponSystem.damageTypeOverride;
+  if (override?.enabled && override.damageType !== 'inherit') return override.damageType;
+  const modelDamageType = weaponSystem.resolvedModel?.damageType;
+  if (modelDamageType && modelDamageType !== 'inherit') return modelDamageType;
+  return weaponSystem.resolvedAmmunitionModel?.damageType ?? 'blunt';
 }
 
 /**

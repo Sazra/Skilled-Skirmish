@@ -27,7 +27,11 @@
       {{localize 'SKSK.Models.DamageTypeOverrideEnabled'}}
     </label>
     <select name="system.damageTypeOverride.damageType">
+      {{#if isRangedWeapon}}
+      {{selectOptions rangedDamageTypeChoices selected=system.damageTypeOverride.damageType localize=true}}
+      {{else}}
       {{selectOptions damageTypeChoices selected=system.damageTypeOverride.damageType localize=true}}
+      {{/if}}
     </select>
   </details>
 
@@ -50,6 +54,11 @@
         <input type="text" class="model-requirement-input property-override-value" data-property="{{key}}"
           value="{{lookup ../effectivePropertyValues key}}" data-dtype="Number"
           title="{{localize 'SKSK.Models.Range'}}" placeholder="{{localize 'SKSK.Models.Range'}}" />
+        {{/if}}
+        {{#if def.hasApCost}}
+        <input type="text" class="model-requirement-input property-override-value" data-property="{{key}}"
+          value="{{lookup ../effectivePropertyValues key}}" data-dtype="Number"
+          title="{{localize 'SKSK.Models.ApCost'}}" placeholder="{{localize 'SKSK.Models.ApCost'}}" />
         {{/if}}
       </div>
       {{/each}}

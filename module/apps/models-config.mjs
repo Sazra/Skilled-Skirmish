@@ -135,6 +135,13 @@ export class SKSKModelsConfig extends HandlebarsApplicationMixin(ApplicationV2) 
     // Only Bow/Feuerwaffen actually offer the Kind (Waffe/Munition) select
     // on their entries - see data/weapon.mjs's own RANGED_WEAPON_TYPES.
     context.rangedWeaponTypes = ['bow', 'firearms'];
+    // Bow/Feuerwaffen Models' own Schadenstyp select additionally offers
+    // "Übernehmen" (inherit the Ammunition Model's own damageType) - see
+    // helpers/attackRolls.mjs#getWeaponDamageType. Deliberately not part of
+    // CONFIG.SKSK.damageTypes itself (which every other damage-type
+    // dropdown in the system, including this same app's own Armor Models
+    // tab, reads unfiltered).
+    context.rangedDamageTypeChoices = { inherit: 'SKSK.DamageType.Inherit', ...CONFIG.SKSK.damageTypes };
 
     context.attributeChoices = CONFIG.SKSK.attributes;
     context.damageTypeChoices = CONFIG.SKSK.damageTypes;
@@ -212,6 +219,8 @@ export class SKSKModelsConfig extends HandlebarsApplicationMixin(ApplicationV2) 
         drainingRequirement: Number(m.drainingRequirement) || 0,
         reachRange: Number(m.reachRange) || 0,
         rangedRange: Number(m.rangedRange) || 0,
+        reloadApCost: Number(m.reloadApCost) || 0,
+        reloadMagazineSize: Math.max(1, Number(m.reloadMagazineSize) || 1),
       };
     });
     const armorModels = Object.entries(expanded.armorModels ?? {}).map(([index, m]) => ({
@@ -232,10 +241,17 @@ export class SKSKModelsConfig extends HandlebarsApplicationMixin(ApplicationV2) 
   /** @private */
   static async #addWeaponModel(event, target) {
     const models = foundry.utils.deepClone(getWeaponModels());
+    // New Bow/Feuerwaffen entries default to "Übernehmen" (inherit the
+    // Ammunition Model's own damageType) rather than "blunt" - every other
+    // weapon type has no Ammunition Model to inherit from, so keeps the old
+    // "blunt" default.
+    const isRanged = ['bow', 'firearms'].includes(target.dataset.weaponType);
     models.push({
-      name: '', weaponType: target.dataset.weaponType, kind: 'weapon', diceFormula: '', flatBonus: 0, damageType: 'blunt',
+      name: '', weaponType: target.dataset.weaponType, kind: 'weapon', diceFormula: '', flatBonus: 0,
+      damageType: isRanged ? 'inherit' : 'blunt',
       attributes: [], properties: [],
       heavyRequirement: 0, demandingRequirement: 0, drainingRequirement: 0, reachRange: 0, rangedRange: 0,
+      reloadApCost: 0, reloadMagazineSize: 1,
     });
     await game.settings.set('sksk', 'weaponModels', models);
     this.render();
