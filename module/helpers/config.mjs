@@ -364,6 +364,7 @@ SKSK.apCostUnits = {
   minutes: 'SKSK.Spell.ApCostUnit.Minutes',
   hours: 'SKSK.Spell.ApCostUnit.Hours',
   days: 'SKSK.Spell.ApCostUnit.Days',
+  rp: 'SKSK.Spell.ApCostUnit.Rp',
 };
 
 // A Technique's own category - see data/technique.mjs#category.

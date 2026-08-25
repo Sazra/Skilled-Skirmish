@@ -88,6 +88,13 @@ export default class SKSKTechnique extends SKSKItemBase {
     schema.combatStyle = new fields.StringField({ required: true, blank: true, initial: "" });
 
     schema.apCost = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+    // RP cost to activate this Technique outside the actor's own turn (see
+    // helpers/technique-rolls.mjs#payTechniqueCost) - 0 means "not set",
+    // which mirrors the (style-discounted) apCost above instead. RP is
+    // never spent on the actor's own turn, and AP is never spent off it -
+    // these are alternate payment paths for the same activation, not a
+    // combined cost.
+    schema.rpCost = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
     schema.manaCost = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
     schema.cooldownRounds = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
     // Only meaningful for "stand", and "effect" with effectTarget "self" -

@@ -37,6 +37,11 @@ export default class SKSKItem extends SKSKItemBase {
     // AP cost to Use this item from the actor sheet's Actions tab - see
     // helpers/actions.mjs#useItem.
     schema.useApCost = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+    // RP cost to Use this item outside the actor's own turn (see
+    // helpers/actions.mjs#rollItemUsage) - 0 means "not set", which mirrors
+    // useApCost above instead. RP is never spent on the actor's own turn,
+    // and AP is never spent off it - alternate payment paths, not combined.
+    schema.useRpCost = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
 
     // Whether Using this item includes a roll at all - optional (see
     // helpers/actions.mjs#rollItemUsage), independent of whether the item

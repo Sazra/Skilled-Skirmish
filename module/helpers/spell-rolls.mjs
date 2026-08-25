@@ -5,6 +5,7 @@ import {
 import { getActorSkillLevel, getSkillLabel } from './skills.mjs';
 import {
   applyD20Malus, canCastMovementSpell, getStatusStacks, setStatusStacks, payManaCost, negativeLifeOverflowHTML,
+  isActorsOwnTurn,
 } from './statusEffects.mjs';
 import {
   computeSpellAttackBonus, rollAttackPair, renderAttackPairHTML, getDamageDieSizes,
@@ -406,9 +407,23 @@ export async function rollSpellItem(item, overchargeCount = 0) {
     return;
   }
 
-  if (actor && ((actor.system.pendingSpell?.apCost ?? 0) > 0 || (actor.system.pendingSpell?.roundsRemaining ?? 0) > 0)) {
-    ui.notifications.warn(game.i18n.localize('SKSK.Spell.Roll.AlreadyConcentrating'));
-    return;
+  if (actor) {
+    const hasPendingDebt = (actor.system.pendingSpell?.apCost ?? 0) > 0 || (actor.system.pendingSpell?.roundsRemaining ?? 0) > 0;
+    if (hasPendingDebt && getStatusStacks(actor, 'concentration') > 0) {
+      ui.notifications.warn(game.i18n.localize('SKSK.Spell.Roll.AlreadyConcentrating'));
+      return;
+    }
+    if (hasPendingDebt) {
+      // Concentration is gone but its own AP-debt/ritual-rounds fields were
+      // left behind - normally these only clear together (a failed
+      // Concentration check clears both at once, see helpers/
+      // statusEffects.mjs#checkConcentration; handlePendingSpellTurnStart
+      // below likewise only pays this down while Concentration is still
+      // active). If Concentration was instead removed some other way (e.g.
+      // a GM manually clearing the status), self-heal here instead of
+      // leaving a stale debt that would silently block every future cast.
+      await actor.update({ 'system.pendingSpell': { itemId: '', apCost: 0, roundsRemaining: 0 } });
+    }
   }
 
   if (actor) overchargeCount = Math.min(overchargeCount, computeMaxOverchargeCount(actor));
@@ -424,17 +439,58 @@ export async function rollSpellItem(item, overchargeCount = 0) {
 
   let deferred = false;
 
+  // Outside the caster's own turn, only apCostUnit "ap" (paying rpCost, or
+  // apCost itself if rpCost isn't set) and the pure-reaction "rp" unit can
+  // be cast at all - Ritual spells (minutes/hours/days) have no off-turn
+  // path, and a "rp"-unit spell conversely has no AP path, so it can only
+  // ever be cast off-turn. Unlike the on-turn "ap" branch's own AP-debt/
+  // pendingSpell mechanic, insufficient RP is a hard block (no partial
+  // payment, no chat card, no Mana spent) - see the plan's own confirmed
+  // design choice.
+  const offTurn = actor && !isActorsOwnTurn(actor);
+
   if (actor) {
-    // 3. AP cost (or ritual minutes/downtime line).
-    if (system.apCostUnit === 'minutes') {
-      const totalRounds = Math.max(1, system.apCost) * ROUNDS_PER_MINUTE;
-      await actor.update({ 'system.pendingSpell': { itemId: item.id, apCost: 0, roundsRemaining: totalRounds, overchargeCount } });
-      await setStatusStacks(actor, 'concentration', 1);
-      parts.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.RitualMinutesStarted', { minutes: system.apCost, rounds: totalRounds })}</div>`);
-      deferred = true;
-    } else if (system.apCostUnit === 'hours' || system.apCostUnit === 'days') {
-      const unitLabel = game.i18n.localize(CONFIG.SKSK.apCostUnits[system.apCostUnit]);
-      parts.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.RitualDowntime', { value: system.apCost, unit: unitLabel })}</div>`);
+    // 3. AP/RP cost (or ritual minutes/downtime line).
+    if (system.apCostUnit === 'minutes' || system.apCostUnit === 'hours' || system.apCostUnit === 'days') {
+      if (offTurn) {
+        ui.notifications.warn(game.i18n.localize('SKSK.Spell.Roll.RitualBlockedOffTurn'));
+        return;
+      }
+      if (system.apCostUnit === 'minutes') {
+        const totalRounds = Math.max(1, system.apCost) * ROUNDS_PER_MINUTE;
+        await actor.update({ 'system.pendingSpell': { itemId: item.id, apCost: 0, roundsRemaining: totalRounds, overchargeCount } });
+        await setStatusStacks(actor, 'concentration', 1);
+        parts.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.RitualMinutesStarted', { minutes: system.apCost, rounds: totalRounds })}</div>`);
+        deferred = true;
+      } else {
+        const unitLabel = game.i18n.localize(CONFIG.SKSK.apCostUnits[system.apCostUnit]);
+        parts.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.RitualDowntime', { value: system.apCost, unit: unitLabel })}</div>`);
+      }
+    } else if (system.apCostUnit === 'rp') {
+      if (!offTurn) {
+        ui.notifications.warn(game.i18n.localize('SKSK.Spell.Roll.ReactiveOnlyBlocked'));
+        return;
+      }
+      const rpCost = computeSpellApCost(system, actor, overchargeCount);
+      const rp = actor.system.reactionPoints.value;
+      if (rp < rpCost) {
+        ui.notifications.warn(game.i18n.localize('SKSK.Action.NotEnoughRP'));
+        return;
+      }
+      parts.push(`<div class="sksk-roll-rp-cost"><strong>${game.i18n.localize('SKSK.Spell.RPCost')}:</strong> ${rpCost}</div>`);
+      await actor.update({ 'system.reactionPoints.value': rp - rpCost });
+      parts.push(formatSkillFpGrantLine(await checkReflexActionTrigger(actor)));
+    } else if (offTurn) {
+      const apCost = computeSpellApCost(system, actor, overchargeCount);
+      const rpCost = (system.rpCost ?? 0) > 0 ? system.rpCost : apCost;
+      const rp = actor.system.reactionPoints.value;
+      if (rp < rpCost) {
+        ui.notifications.warn(game.i18n.localize('SKSK.Action.NotEnoughRP'));
+        return;
+      }
+      parts.push(`<div class="sksk-roll-rp-cost"><strong>${game.i18n.localize('SKSK.Spell.RPCost')}:</strong> ${rpCost}</div>`);
+      await actor.update({ 'system.reactionPoints.value': rp - rpCost });
+      parts.push(formatSkillFpGrantLine(await checkReflexActionTrigger(actor)));
     } else {
       const apCost = computeSpellApCost(system, actor, overchargeCount);
       parts.push(`<div class="sksk-roll-ap-cost"><strong>${game.i18n.localize('SKSK.Spell.APCost')}:</strong> ${apCost}</div>`);

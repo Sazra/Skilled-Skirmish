@@ -1439,6 +1439,7 @@ li.chat-message:has(.sksk-chat-card) .flavor-text {
 /* Costs (AP/Mana/...) and a Spell's own magic-school line - larger than
    the card's own 12px base. */
 .sksk-chat-card .sksk-roll-ap-cost,
+.sksk-chat-card .sksk-roll-rp-cost,
 .sksk-chat-card .sksk-roll-mana-cost,
 .sksk-chat-card .sksk-roll-magic-school {
   font-size: 16px;

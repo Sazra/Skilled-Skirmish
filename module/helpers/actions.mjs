@@ -1,7 +1,7 @@
 import { getActorSkillLevel } from "./skills.mjs";
 import { getClassAbilityLevels, actorHasAdvancedClass } from "./abilities.mjs";
 import { computeMovementSpeeds } from "./movement.mjs";
-import { canUseWeaponAttack, canMove, applyAdrenalinDamage } from "./statusEffects.mjs";
+import { canUseWeaponAttack, canMove, applyAdrenalinDamage, isActorsOwnTurn } from "./statusEffects.mjs";
 import {
   computeWeaponAttackBonus, computeMartialArtsAttackBonus, rollAttackPair, renderAttackPairHTML,
   getDamageDieSizes, getWeaponDamageType,
@@ -58,12 +58,18 @@ function formatFlankingBonusLine(flank, bonus) {
  * @param {number} apCost
  * @param {string} [extraHTML]
  * @param {"success"|"failure"|null} [criticalType]
+ * @param {number} [rpCost]   Alternate cost paid off the actor's own turn -
+ *   see helpers/statusEffects.mjs#isActorsOwnTurn. Never non-zero together
+ *   with apCost - RP and AP are alternate payment paths, not combined.
  * @return {Promise<ChatMessage>}
  */
-export async function postActionChatCard(actor, title, roll, apCost, extraHTML = '', criticalType = null) {
+export async function postActionChatCard(actor, title, roll, apCost, extraHTML = '', criticalType = null, rpCost = 0) {
   const parts = [formatRollCardHeading(title)];
   if (apCost) {
     parts.push(`<div class="sksk-roll-ap-cost"><strong>${game.i18n.localize('SKSK.Spell.APCost')}:</strong> ${apCost}</div>`);
+  }
+  if (rpCost) {
+    parts.push(`<div class="sksk-roll-rp-cost"><strong>${game.i18n.localize('SKSK.Spell.RPCost')}:</strong> ${rpCost}</div>`);
   }
   if (roll) parts.push(wrapCriticalBlock(await roll.render(), criticalType));
   if (extraHTML) parts.push(extraHTML);
@@ -220,6 +226,36 @@ function spendActionPoints(actor, apCost) {
 }
 
 /**
+ * Whether an actor currently has at least rpCost Reaction Points - warns
+ * and returns false otherwise, aborting the calling action before anything
+ * is rolled or deducted. Mirrors hasEnoughActionPoints above; see
+ * helpers/statusEffects.mjs#isActorsOwnTurn - callers only ever reach this
+ * off the actor's own turn, RP's only spendable context.
+ * @param {Actor} actor
+ * @param {number} rpCost
+ * @return {boolean}
+ */
+function hasEnoughReactionPoints(actor, rpCost) {
+  if ((actor.system.reactionPoints?.value ?? 0) >= rpCost) return true;
+  ui.notifications.warn(game.i18n.localize('SKSK.Action.NotEnoughRP'));
+  return false;
+}
+
+/**
+ * Deduct a flat RP cost from an actor - a plain object patch, not yet
+ * applied; merge into whatever else the calling action also updates so
+ * both land in a single actor.update() call. Mirrors spendActionPoints
+ * above.
+ * @param {Actor} actor
+ * @param {number} rpCost
+ * @return {object}
+ */
+function spendReactionPoints(actor, rpCost) {
+  if (!rpCost) return {};
+  return { 'system.reactionPoints.value': Math.max(0, (actor.system.reactionPoints?.value ?? 0) - rpCost) };
+}
+
+/**
  * How a Martial Arts Attack's selected attribute switches combine into a
  * single modifier (CONFIG.SKSK.attributeUsageTypes) - mirrors the
  * Refined/Specialized/Masterful Model properties' wording, generalized to
@@ -262,7 +298,13 @@ export async function rollMartialArtsAttack(actor, index) {
   if (!canUseWeaponAttack(actor)) {
     return ui.notifications.warn(game.i18n.localize('SKSK.StatusEffect.AttackBlocked'));
   }
-  if (!hasEnoughActionPoints(actor, attack.apCost)) return;
+  // Outside the actor's own turn, this attack is paid from RP instead of
+  // AP - mirroring the attack's own apCost 1:1 (Martial Arts Attacks have
+  // no separate RP-cost field, unlike Techniques/Items/Spells). Martial
+  // Arts Attacks are always melee, so unlike weapon items (see useItem
+  // below) there's no Ranged property to block here.
+  const offTurn = !isActorsOwnTurn(actor);
+  if (offTurn ? !hasEnoughReactionPoints(actor, attack.apCost) : !hasEnoughActionPoints(actor, attack.apCost)) return;
 
   const damageDice = [{ damageType: attack.damageType, dieSizes: getDamageDieSizes(attack.formula) }];
   const technique = await consumePrimedTechnique(actor, 'martialArts');
@@ -288,7 +330,7 @@ export async function rollMartialArtsAttack(actor, index) {
   const applyDamageHTML = renderApplyDamageButton(actor, damageEntries, 'martialArts', getTechniqueEffectPayload(technique))
     + renderTechniqueSavingThrowHTML(technique);
 
-  await actor.update(spendActionPoints(actor, attack.apCost));
+  await actor.update(offTurn ? spendReactionPoints(actor, attack.apCost) : spendActionPoints(actor, attack.apCost));
   let fpHTML = formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'martialArts', 'weaponAttack'));
   if (flank.flanking) fpHTML += formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'tactic', 'flankAttack'));
   // Every attack beyond the first (see the default-seeded "Main Hand"/
@@ -300,7 +342,7 @@ export async function rollMartialArtsAttack(actor, index) {
   fpHTML += formatSkillFpGrantLine(await checkReflexActionTrigger(actor));
 
   const apCostHTML = attack.apCost
-    ? `<div class="sksk-roll-ap-cost"><strong>${game.i18n.localize('SKSK.Spell.APCost')}:</strong> ${attack.apCost}</div>`
+    ? `<div class="${offTurn ? 'sksk-roll-rp-cost' : 'sksk-roll-ap-cost'}"><strong>${game.i18n.localize(offTurn ? 'SKSK.Spell.RPCost' : 'SKSK.Spell.APCost')}:</strong> ${attack.apCost}</div>`
     : '';
   const title = attack.name || game.i18n.localize('SKSK.Action.MartialArtsAttack');
   const messageData = {
@@ -458,14 +500,19 @@ export async function useMove(actor, movementType) {
     return ui.notifications.warn(game.i18n.localize('SKSK.StatusEffect.MoveBlocked'));
   }
 
+  // Outside the actor's own turn, moving is a flat 2 RP reaction - the
+  // on-turn "first use per round is free, then 1 AP" logic below is purely
+  // an own-turn concept and doesn't apply.
+  const offTurn = !isActorsOwnTurn(actor);
   const round = game.combat?.round ?? null;
-  const isFree = round === null || actor.system.lastFreeMoveRound !== round;
-  const apCost = isFree ? 0 : 1;
-  if (!hasEnoughActionPoints(actor, apCost)) return;
+  const isFree = !offTurn && (round === null || actor.system.lastFreeMoveRound !== round);
+  const apCost = offTurn ? 0 : (isFree ? 0 : 1);
+  const rpCost = offTurn ? 2 : 0;
+  if (offTurn ? !hasEnoughReactionPoints(actor, rpCost) : !hasEnoughActionPoints(actor, apCost)) return;
 
   const speed = computeMovementSpeeds(actor)[movementType] ?? 0;
-  const updates = spendActionPoints(actor, apCost);
-  if (isFree && round !== null) updates['system.lastFreeMoveRound'] = round;
+  const updates = offTurn ? spendReactionPoints(actor, rpCost) : spendActionPoints(actor, apCost);
+  if (!offTurn && isFree && round !== null) updates['system.lastFreeMoveRound'] = round;
   if (Object.keys(updates).length) await actor.update(updates);
 
   // Stamina's own "distance moved in combat" FP trigger - only while an
@@ -478,7 +525,7 @@ export async function useMove(actor, movementType) {
   const label = game.i18n.localize(CONFIG.SKSK.movementTypes[movementType] ?? movementType);
   const extraHTML = `<div class="sksk-roll-description">${game.i18n.format('SKSK.Action.MoveDistance', { label, speed })}</div>`
     + formatSkillFpGrantLine(fpGrant) + formatSkillFpGrantLine(await checkReflexActionTrigger(actor));
-  return postActionChatCard(actor, game.i18n.localize('SKSK.Action.Move'), null, apCost, extraHTML);
+  return postActionChatCard(actor, game.i18n.localize('SKSK.Action.Move'), null, apCost, extraHTML, null, rpCost);
 }
 
 /**
@@ -501,16 +548,28 @@ export async function useItem(actor, item) {
     return ui.notifications.warn(game.i18n.localize('SKSK.StatusEffect.AttackBlocked'));
   }
 
-  const apCost = item.system.useApCost ?? 0;
-  if (!hasEnoughActionPoints(actor, apCost)) return;
+  // Outside the actor's own turn, this attack is paid from RP instead of
+  // AP - mirroring the weapon's own useApCost 1:1 (weapons have no
+  // separate RP-cost field). Ranged weapons can't be used this way at all
+  // (per design, only melee attacks work as an off-turn reaction).
+  const offTurn = item.type === 'weapon' && !isActorsOwnTurn(actor);
+  if (offTurn && (item.system.effectiveProperties ?? []).some(p => p.property === 'ranged')) {
+    return ui.notifications.warn(game.i18n.localize('SKSK.Action.RangedReactionBlocked'));
+  }
+
+  const cost = item.system.useApCost ?? 0;
+  if (offTurn ? !hasEnoughReactionPoints(actor, cost) : !hasEnoughActionPoints(actor, cost)) return;
 
   await item.roll();
-  await actor.update(spendActionPoints(actor, apCost));
+  await actor.update(offTurn ? spendReactionPoints(actor, cost) : spendActionPoints(actor, cost));
+  if (offTurn && cost) {
+    ui.notifications.info(game.i18n.format('SKSK.Action.ReactionRpSpent', { cost }));
+  }
 
-  // item.roll() (above) already posted its own chat card before AP was
-  // spent, so Reflexe's own FP trigger (which can only be checked once AP
-  // is actually deducted) gets a small chat card of its own instead, only
-  // when it actually fires.
+  // item.roll() (above) already posted its own chat card before AP/RP was
+  // spent, so Reflexe's own FP trigger (which can only be checked once
+  // it's actually deducted) gets a small chat card of its own instead,
+  // only when it actually fires.
   const reflexGrant = await checkReflexActionTrigger(actor);
   if (reflexGrant) await postActionChatCard(actor, game.i18n.localize('SKSK.Action.Use'), null, 0, formatSkillFpGrantLine(reflexGrant));
 }
@@ -561,8 +620,13 @@ export async function rollItemUsage(item) {
     return postItemUsageCard(actor, item, parts);
   }
 
+  // Outside the actor's own turn, Using this item is paid from RP instead
+  // of AP - system.useRpCost if explicitly set (0 = "not set"), otherwise
+  // mirroring useApCost 1:1.
+  const offTurn = actor && !isActorsOwnTurn(actor);
   const apCost = system.useApCost ?? 0;
-  if (actor && !hasEnoughActionPoints(actor, apCost)) return;
+  const rpCost = offTurn ? ((system.useRpCost ?? 0) > 0 ? system.useRpCost : apCost) : 0;
+  if (actor && (offTurn ? !hasEnoughReactionPoints(actor, rpCost) : !hasEnoughActionPoints(actor, apCost))) return;
 
   const usesCharges = system.charges?.enabled;
   const updates = {};
@@ -586,7 +650,10 @@ export async function rollItemUsage(item) {
   }
   if (Object.keys(updates).length) await item.update(updates);
 
-  if (actor && apCost) await actor.update(spendActionPoints(actor, apCost));
+  if (actor) {
+    if (offTurn) { if (rpCost) await actor.update(spendReactionPoints(actor, rpCost)); }
+    else if (apCost) await actor.update(spendActionPoints(actor, apCost));
+  }
 
   // 2. Status line - what's happening to the item itself.
   let statusText;
@@ -603,8 +670,10 @@ export async function rollItemUsage(item) {
   }
   parts.push(`<div class="sksk-item-use-status-line">${statusText}</div>`);
 
-  // 3. AP cost, only when non-zero.
-  if (apCost > 0) {
+  // 3. AP/RP cost, only when non-zero.
+  if (offTurn && rpCost > 0) {
+    parts.push(`<div class="sksk-roll-rp-cost"><strong>${game.i18n.localize('SKSK.Spell.RPCost')}:</strong> ${rpCost}</div>`);
+  } else if (!offTurn && apCost > 0) {
     parts.push(`<div class="sksk-roll-ap-cost"><strong>${game.i18n.localize('SKSK.Spell.APCost')}:</strong> ${apCost}</div>`);
   }
 
@@ -667,14 +736,18 @@ async function postItemUsageCard(actor, item, parts, roll = null) {
  * @return {Promise<ChatMessage|void>}
  */
 export async function useDodge(actor) {
-  const apCost = 1;
-  if (!hasEnoughActionPoints(actor, apCost)) return;
+  // Outside the actor's own turn, Dodge is a flat 2 RP reaction instead of
+  // its usual 1 AP.
+  const offTurn = !isActorsOwnTurn(actor);
+  const apCost = offTurn ? 0 : 1;
+  const rpCost = offTurn ? 2 : 0;
+  if (offTurn ? !hasEnoughReactionPoints(actor, rpCost) : !hasEnoughActionPoints(actor, apCost)) return;
 
   const count = 1 + getActorSkillLevel(actor, 'reflexes');
-  await actor.update(spendActionPoints(actor, apCost));
+  await actor.update(offTurn ? spendReactionPoints(actor, rpCost) : spendActionPoints(actor, apCost));
   const fpGrant = await grantSkillUsageFp(actor, 'reflexes', 'dodgeUsed');
 
   const extraHTML = `<div class="sksk-roll-description">${game.i18n.format('SKSK.Action.DodgeCount', { count })}</div>`
     + formatSkillFpGrantLine(fpGrant) + formatSkillFpGrantLine(await checkReflexActionTrigger(actor));
-  return postActionChatCard(actor, game.i18n.localize('SKSK.Action.Dodge'), null, apCost, extraHTML);
+  return postActionChatCard(actor, game.i18n.localize('SKSK.Action.Dodge'), null, apCost, extraHTML, null, rpCost);
 }

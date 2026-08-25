@@ -30,9 +30,15 @@
   </div>
 
   {{#if isUsable}}
-  <div class="resource">
-    <label class="resource-label">{{localize 'SKSK.Action.UseApCost'}}</label>
-    <input type="text" name="system.useApCost" value="{{system.useApCost}}" data-dtype="Number" />
+  <div class="grid grid-2col">
+    <div class="grid-span-1">
+      <label class="resource-label">{{localize 'SKSK.Action.UseApCost'}}</label>
+      <input type="text" name="system.useApCost" value="{{system.useApCost}}" data-dtype="Number" />
+    </div>
+    <div class="grid-span-1">
+      <label class="resource-label">{{localize 'SKSK.Action.UseRpCost'}}</label>
+      <input type="text" name="system.useRpCost" value="{{system.useRpCost}}" data-dtype="Number" />
+    </div>
   </div>
 
   <div class="resource">

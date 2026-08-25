@@ -1,6 +1,6 @@
 import { getCombatStyleName } from './combatStyles.mjs';
 import { resolveClickDefender, applyTechniqueEffectBundle } from './damageApplication.mjs';
-import { applyD20Malus } from './statusEffects.mjs';
+import { applyD20Malus, isActorsOwnTurn } from './statusEffects.mjs';
 import {
   resolveCheckSuccess, wrapCriticalBlock, wrapCriticalInline,
   chooseGenericRollMode, evaluateD20WithMode, formatD20ModeSummaryLine,
@@ -88,17 +88,35 @@ async function payTechniqueCost(actor, item) {
   const apCost = Math.max(0, (item.system.apCost ?? 0) - discounts.apDiscount);
   const manaCost = Math.max(0, (item.system.manaCost ?? 0) - discounts.manaDiscount);
 
-  const ap = actor.system.actionPoints.value;
-  if (ap < apCost) {
-    ui.notifications.warn(game.i18n.localize('SKSK.Action.NotEnoughAP'));
-    return false;
+  // Outside the actor's own turn, this Technique is paid from RP instead
+  // of AP - its own rpCost if explicitly set (0 = "not set"), otherwise
+  // mirroring the (already style-discounted) apCost above 1:1. Mana is
+  // paid the same way regardless of turn.
+  const offTurn = !isActorsOwnTurn(actor);
+  const rpCost = (item.system.rpCost ?? 0) > 0 ? item.system.rpCost : apCost;
+
+  if (offTurn) {
+    const rp = actor.system.reactionPoints.value;
+    if (rp < rpCost) {
+      ui.notifications.warn(game.i18n.localize('SKSK.Action.NotEnoughRP'));
+      return false;
+    }
+  } else {
+    const ap = actor.system.actionPoints.value;
+    if (ap < apCost) {
+      ui.notifications.warn(game.i18n.localize('SKSK.Action.NotEnoughAP'));
+      return false;
+    }
   }
   const mana = actor.system.mana.value;
   if (mana < manaCost) {
     ui.notifications.warn(game.i18n.localize('SKSK.Technique.NotEnoughMana'));
     return false;
   }
-  await actor.update({ 'system.actionPoints.value': ap - apCost, 'system.mana.value': mana - manaCost });
+  const costUpdate = offTurn
+    ? { 'system.reactionPoints.value': actor.system.reactionPoints.value - rpCost }
+    : { 'system.actionPoints.value': actor.system.actionPoints.value - apCost };
+  await actor.update({ ...costUpdate, 'system.mana.value': mana - manaCost });
   return true;
 }
 

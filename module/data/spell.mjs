@@ -43,17 +43,28 @@ export default class SKSKSpell extends SKSKItemBase {
     schema.manaCost = new fields.NumberField({ ...requiredInteger, initial: 1, min: 0 });
     schema.apCost = new fields.NumberField({ ...requiredInteger, initial: 1, min: 1 });
     // What apCost's own number actually counts - a flat AP amount (the
-    // default), or a casting time in minutes/hours/days instead. Minutes
-    // drains all of the caster's AP every Combat round for apCost*10
-    // rounds (see helpers/spell-rolls.mjs#rollSpellItem/
+    // default), a casting time in minutes/hours/days, or a flat RP amount
+    // (unit "rp" - see rpCost below for the different, additive-RP case).
+    // Minutes drains all of the caster's AP every Combat round for
+    // apCost*10 rounds (see helpers/spell-rolls.mjs#rollSpellItem/
     // handlePendingSpellTurnStart); hours/days are pure downtime - no AP
     // cost, no Combat-round tie-in at all. Only ever affects Ritualism's
     // own "hours spent" FP once a "Ritual" casting-method spell resolves
-    // (see helpers/spells.mjs#computeRitualHours) for non-"ap" units.
+    // (see helpers/spells.mjs#computeRitualHours) for non-"ap" units. Unit
+    // "rp" makes apCost a pure Reaction Point cost instead - such a spell
+    // has no AP payment path at all, so it can only ever be cast outside
+    // the caster's own turn (see helpers/spell-rolls.mjs#rollSpellItem).
     schema.apCostUnit = new fields.StringField({
       required: true, blank: false, initial: "ap",
-      choices: ["ap", "minutes", "hours", "days"]
+      choices: ["ap", "minutes", "hours", "days", "rp"]
     });
+    // An additional, independent RP cost - only meaningful alongside
+    // apCostUnit "ap" (a spell that costs AP on the caster's own turn, but
+    // a separately-priced RP amount when cast as a reaction outside it). 0
+    // means "not set", which mirrors apCost above instead. RP is never
+    // spent on the caster's own turn, and AP is never spent off it -
+    // alternate payment paths, not a combined cost.
+    schema.rpCost = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
 
     // Manakern's own flat FP grant (to the "manaCore" skill) whenever this
     // spell is cast - a designer-set value on the item itself, not a GM-

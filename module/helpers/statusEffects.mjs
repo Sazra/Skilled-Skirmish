@@ -659,6 +659,22 @@ export function canMove(actor) {
 }
 
 /**
+ * Whether it's currently the given actor's own Combat turn - true whenever
+ * there's no active/started Combat at all (no "own turn" concept to speak
+ * of, so the AP-only path always applies), otherwise true only while this
+ * actor's own combatant is the current one. Reaction Points (see
+ * helpers/actions.mjs#hasEnoughReactionPoints and callers) are only ever
+ * spendable when this returns false.
+ * @param {Actor} actor
+ * @return {boolean}
+ */
+export function isActorsOwnTurn(actor) {
+  const combat = game.combat;
+  if (!combat?.started) return true;
+  return combat.combatant?.actor?.uuid === actor.uuid;
+}
+
+/**
  * Flag (or unflag) one specific active status instance to bypass Spezial-
  * Boni on its own automatic save - Poison (per severity), Concentration,
  * and Restrained are the only predefined statuses with such a save (see
