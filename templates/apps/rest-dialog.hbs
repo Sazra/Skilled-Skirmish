@@ -41,6 +41,10 @@
   {{#if skillIntegrationUnlocked}}
   <p class="rest-preview-line">{{localize 'SKSK.Rest.SkillIntegrationPreview'}}: {{skillIntegrationCount}}</p>
 
+  {{#if levelGainPreview}}
+  <p class="rest-preview-line">{{localize 'SKSK.Rest.LevelGainPreview'}}: {{levelGainPreview}}</p>
+  {{/if}}
+
   {{#if exhaustionMax}}
   <div class="resource">
     <label class="resource-label">

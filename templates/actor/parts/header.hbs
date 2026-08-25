@@ -5,9 +5,14 @@
   <div class="header-row header-row-1">
     <h1 class="charname"><input name="name" type="text" value="{{actor.name}}" placeholder="Name" /></h1>
     <div class="header-level flex-group-center">
-      <label for="system.resources.level.value" class="resource-label">Level</label>
+      <label for="system.resources.level.value" class="resource-label">{{localize 'SKSK.General.Level'}}</label>
       <input type="text" name="system.resources.level.value" value="{{system.resources.level.value}}"
         data-dtype="Number" />
+    </div>
+    <div class="header-xp flex-group-center">
+      <label for="system.resources.xp" class="resource-label">{{localize 'SKSK.General.XP'}}</label>
+      <input type="text" name="system.resources.xp" value="{{system.resources.xp}}"
+        data-dtype="Number" maxlength="4" />
     </div>
   </div>
 
@@ -35,12 +40,6 @@
         </li>
         {{/each}}
       </ol>
-    </div>
-    <div class="header-size flex-group-center">
-      <label for="system.sizeCategory" class="resource-label">{{localize 'SKSK.General.SizeCategory'}}</label>
-      <select name="system.sizeCategory">
-        {{selectOptions sizeCategoryChoices selected=sizeCategory localize=true}}
-      </select>
     </div>
     <div class="header-inspiration-die flex-group-center">
       <label class="resource-label">{{localize 'SKSK.General.InspirationDie'}}</label>

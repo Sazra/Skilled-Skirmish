@@ -1,4 +1,4 @@
-import { getActorSkillLevel } from './skills.mjs';
+import { getActorSkillLevel, isActorSkillUnlocked } from './skills.mjs';
 import { postActionChatCard, getRegenerationDieSizes } from './actions.mjs';
 import { getStatusStacks, decreaseStatusStacks, getAdrenalinDamage, reduceAdrenalinDamage } from './statusEffects.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantText } from './skillFp.mjs';
@@ -60,6 +60,35 @@ function computeExhaustionChargeMax(actor, tier) {
 }
 
 /**
+ * A Character's own level cap for the XP-driven level-up below - 25, or 30
+ * with the Unlimitiert skill unlocked.
+ * @param {Actor} actor
+ * @return {number}
+ */
+function computeLevelCap(actor) {
+  return isActorSkillUnlocked(actor, 'unlimited') ? 30 : 25;
+}
+
+/**
+ * The Character level an actor would reach at this Pause from its own
+ * (Character-only, hand-entered - see data/actor-base.mjs#resources.xp)
+ * XP total, or null if no level-up would happen. At most one level per
+ * Pause even if XP would cover more (excess XP carries over to the next
+ * one); a no-op once at the level cap (XP is preserved, not spent). NPCs
+ * never qualify - the XP field isn't even shown for them (see templates/
+ * actor/parts/header.hbs vs header-npc.hbs).
+ * @param {Actor} actor
+ * @param {"erholung"|"anpassung"|"genesung"|null} tier
+ * @return {number|null}
+ */
+function computeLevelGainPreview(actor, tier) {
+  if (actor.type !== 'character' || !(tier === 'anpassung' || tier === 'genesung')) return null;
+  const level = actor.system.resources.level.value;
+  if ((actor.system.resources.xp ?? 0) < 1000 || level >= computeLevelCap(actor)) return null;
+  return level + 1;
+}
+
+/**
  * A live preview of what confirming the current Rest dialog state would do
  * - used to render the dialog's read-only summary lines/input maximums
  * without touching the actor. Mirrors applyRest's own logic; keep the two
@@ -112,6 +141,8 @@ export function computeRestPreview(actor, state) {
     ? Math.min(getAdrenalinDamage(actor), tier === 'genesung' ? Math.max(level, conMod) : conMod)
     : 0;
 
+  const levelGainPreview = computeLevelGainPreview(actor, tier);
+
   return {
     segments,
     hours: segments * SEGMENT_MINUTES / 60,
@@ -133,6 +164,7 @@ export function computeRestPreview(actor, state) {
     adrenalinDamageToReduce,
     inspirationChargesRestore,
     luckChargesRestore,
+    levelGainPreview,
   };
 }
 
@@ -155,10 +187,12 @@ export function computeRestPreview(actor, state) {
  *   Regeneration charges as chosen can each roll a Regeneration to heal
  *   Life (summed into one roll).
  * - Anpassungspause (>= 16 segments, sleeping): integrates every skill's
- *   pending "gain" into its real points; up to 1 Regeneration charge can
- *   heal 1 Exhaustion level; restores Meditation charges/Meditation
- *   skill level + 1; refills Adrenalin/Inspiration/Luck charges to max;
- *   reduces Adrenalin Damage by the Constitution modifier.
+ *   pending "gain" into its real points; converts 1000 XP into +1 Character
+ *   level (see computeLevelGainPreview - Character-only, at most one level
+ *   per Pause, capped at 25/30); up to 1 Regeneration charge can heal 1
+ *   Exhaustion level; restores Meditation charges/Meditation skill level +
+ *   1; refills Adrenalin/Inspiration/Luck charges to max; reduces Adrenalin
+ *   Damage by the Constitution modifier.
  * - Genesungspause (>= 32 segments, not required to be contiguous):
  *   restores Meditation charges/(2 + Meditation skill level * 2) instead
  *   (replacing, not stacking with, Anpassungspause's own restore);
@@ -260,6 +294,13 @@ export async function applyRest(actor, options) {
         }
       }
       if (integratedCount > 0) lines.push(game.i18n.format('SKSK.Rest.SkillsIntegrated', { count: integratedCount }));
+
+      const newLevel = computeLevelGainPreview(actor, tier);
+      if (newLevel !== null) {
+        updates['system.resources.level.value'] = newLevel;
+        updates['system.resources.xp'] = (actor.system.resources.xp ?? 0) - 1000;
+        lines.push(game.i18n.format('SKSK.Rest.LevelGained', { level: newLevel }));
+      }
 
       // Manakapazität/Manaregeneration's own "Tagesabrechnung" FP - the
       // accumulated real mana cost paid / mana actually restored since the

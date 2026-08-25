@@ -11,6 +11,7 @@ import { applyDamageFromChat } from './helpers/damageApplication.mjs';
 import { claimInspirationDie } from './helpers/inspiration.mjs';
 import { rollTechniqueEffectSaveFromChat } from './helpers/technique-rolls.mjs';
 import { computeSpeciesAura } from './helpers/attributes.mjs';
+import { getMainSpeciesItem } from './helpers/movement.mjs';
 import {
   ensurePredefinedStatusEffects, registerConfigStatusEffects, handleCombatTurnStart, handleCombatTurnEnd,
 } from './helpers/statusEffects.mjs';
@@ -212,6 +213,33 @@ Hooks.once('ready', async function () {
     if (item.type !== 'species' || !(item.parent instanceof Actor)) return;
     if (game.user.id !== userId) return;
     item.parent.update({ 'system.attributes.aur.rawValue': computeSpeciesAura(item.parent) });
+  });
+
+  // Size Category (system.sizeCategory - see helpers/movement.mjs#
+  // getActorSizeCategory) is otherwise a normal user-editable field (edited
+  // on the General tab's Charakter/Daten sub-section, see templates/actor/
+  // parts/character.hbs), but the moment a new main Species item is added,
+  // it's overwritten to match that species' own sizeCategory - same
+  // write-back pattern as Aura above, just triggered by item creation
+  // instead of every Species item's own value (only the main one counts).
+  Hooks.on('createItem', (item, options, userId) => {
+    if (item.type !== 'species' || !(item.parent instanceof Actor)) return;
+    if (game.user.id !== userId) return;
+    if (getMainSpeciesItem(item.parent)?.id !== item.id) return;
+    item.parent.update({ 'system.sizeCategory': item.system.sizeCategory });
+  });
+
+  // ...and likewise whenever the current main Species item's own
+  // sizeCategory (or speciesType, in case a sub-species item is promoted to
+  // main) is edited afterward.
+  Hooks.on('updateItem', (item, changes, options, userId) => {
+    if (item.type !== 'species' || !(item.parent instanceof Actor)) return;
+    if (game.user.id !== userId) return;
+    const changedSize = foundry.utils.getProperty(changes, 'system.sizeCategory') !== undefined;
+    const changedType = foundry.utils.getProperty(changes, 'system.speciesType') !== undefined;
+    if (!changedSize && !changedType) return;
+    if (getMainSpeciesItem(item.parent)?.id !== item.id) return;
+    item.parent.update({ 'system.sizeCategory': item.system.sizeCategory });
   });
 
   // Only one Light/Heavy/Cloth Armor can ever be equipped at once (Shields

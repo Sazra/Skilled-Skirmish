@@ -337,6 +337,13 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       level: new fields.SchemaField({
         value: new fields.NumberField({ ...requiredInteger, initial: 1 })
       }),
+      // Experience Points - Character-only (see templates/actor/parts/
+      // header.hbs, not shown at all on header-npc.hbs), hand-entered by
+      // the GM or player. helpers/rest.mjs#applyRest converts 1000 XP into
+      // +1 Character level at the next Anpassungspause/Genesungspause, up
+      // to a level cap (25, or 30 with the Unlimitiert skill) - at most one
+      // level per Pause even if XP would cover more.
+      xp: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0, max: 9999 }),
     });
 
     // User-extensible list of additional trackable resources (e.g. Rage,
@@ -351,10 +358,14 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       max: new fields.NumberField({ ...requiredInteger, initial: 0 }),
     }));
 
-    // Overrides the size category (CONFIG.SKSK.sizeCategories) this actor
-    // would otherwise inherit from its main Species item - e.g. an
-    // individual that's smaller than typical for its species. Blank means
-    // "use the species default" - see helpers/movement.mjs#getActorSizeCategory.
+    // Size category (CONFIG.SKSK.sizeCategories) - a normal user-editable
+    // field (General tab's Charakter/Daten sub-section, see templates/
+    // actor/parts/character.hbs), kept in sync with the actor's main
+    // Species item by the createItem/updateItem hooks in sksk.mjs whenever
+    // that item is (re)assigned or its own sizeCategory changes - same
+    // write-back pattern as system.attributes.aur.rawValue. Blank (e.g. a
+    // brand new actor with no Species yet) falls back to "medium" - see
+    // helpers/movement.mjs#getActorSizeCategory.
     schema.sizeCategory = new fields.StringField({ required: true, blank: true, initial: "" });
 
     // Base movement speeds (in meters), one per CONFIG.SKSK.movementTypes -

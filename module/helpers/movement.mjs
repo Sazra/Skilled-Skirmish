@@ -92,18 +92,35 @@ export function computeMovementSpeeds(actor) {
 }
 
 /**
- * An actor's size category (CONFIG.SKSK.sizeCategories): the actor's own
- * override (system.sizeCategory, editable in the sheet header - e.g. an
- * individual smaller than typical for its species) if set, otherwise
- * derived from their main Species item (sub-species don't affect it), or
- * "medium" if neither is set.
+ * An actor's main Species item (the one whose sizeCategory/Aura actually
+ * count) - the one explicitly flagged speciesType "main", or, failing that,
+ * whichever Species item happens to be present first (covers an actor with
+ * only a single, technically-"sub" Species item). Sub-species never affect
+ * size. Used both to resolve the actor's own size category below and by
+ * the createItem/updateItem hooks in sksk.mjs that keep system.sizeCategory
+ * in sync whenever this item (or its own sizeCategory) changes.
+ * @param {Actor} actor
+ * @return {Item|undefined}
+ */
+export function getMainSpeciesItem(actor) {
+  return actor.items.find(i => i.type === 'species' && i.system.speciesType === 'main')
+    ?? actor.items.find(i => i.type === 'species');
+}
+
+/**
+ * An actor's size category (CONFIG.SKSK.sizeCategories) - a normal,
+ * user-editable field (system.sizeCategory, edited on the General tab's
+ * Charakter/Daten sub-section - see templates/actor/parts/character.hbs),
+ * "medium" if blank. Kept in sync with the actor's main Species item by the
+ * createItem/updateItem hooks in sksk.mjs (mirroring how system.attributes.
+ * aur.rawValue is kept in sync with every Species item's own Aura) rather
+ * than derived fresh on every read, so a GM can still hand-edit it
+ * afterward for an individual exception - exactly like Aura - without that
+ * being silently overwritten by anything other than an actual Species
+ * change.
  * @param {Actor} actor
  * @return {string}
  */
 export function getActorSizeCategory(actor) {
-  if (actor.system.sizeCategory) return actor.system.sizeCategory;
-
-  const mainSpecies = actor.items.find(i => i.type === 'species' && i.system.speciesType === 'main')
-    ?? actor.items.find(i => i.type === 'species');
-  return mainSpecies?.system.sizeCategory ?? 'medium';
+  return actor.system.sizeCategory || 'medium';
 }

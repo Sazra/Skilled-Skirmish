@@ -1067,9 +1067,8 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       key, label, value: speeds[key],
     }));
 
-    // Header dropdown: shows the resolved size (override or species
-    // default) but only ever writes an explicit override on change - see
-    // getActorSizeCategory.
+    // General tab's Charakter/Daten dropdown (templates/actor/parts/
+    // character.hbs) - see getActorSizeCategory.
     context.sizeCategory = getActorSizeCategory(actor);
     context.sizeCategoryChoices = CONFIG.SKSK.sizeCategories;
 
