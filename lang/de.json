@@ -168,6 +168,7 @@
             "NoMaterial": "Keins",
             "MaterialBonusOverride": "Materialbonus (dieser Gegenstand)",
             "ManaCapacityOverride": "Manakapazität (dieser Gegenstand)",
+            "DurabilityOverride": "Haltbarkeit (dieser Gegenstand)",
             "TotalManaCapacity": "Gesamt-Manakapazität",
             "AttackBonus": "Angriffsbonus (Material)",
             "DamageBonus": "Schadensbonus (Material)",

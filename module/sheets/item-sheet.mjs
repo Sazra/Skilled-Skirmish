@@ -517,6 +517,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       const material = getMaterial(item.system.material);
       context.materialBonusIsVariable = material?.materialBonus === '?';
       context.manaCapacityIsVariable = material?.manaCapacity === '?';
+      context.durabilityIsVariable = material?.durability === '?';
       context.totalManaCapacity = item.system.totalManaCapacity;
       // Haltbarkeit (Durability) max - same derived-only reasoning as
       // totalManaCapacity above (see data/weapon.mjs/armor.mjs/item.mjs#

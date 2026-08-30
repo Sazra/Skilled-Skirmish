@@ -102,17 +102,20 @@ export function computeDurabilityRatio(itemSystem) {
 
 /**
  * The base Haltbarkeit (Durability) an Item/Armor/Weapon's material grants -
- * a plain non-negative number (no "?" per-item-override convention, unlike
- * materialBonus/manaCapacity above). 0 if no material is set. See
- * data/weapon.mjs/armor.mjs/item.mjs#prepareDerivedData, which multiplies
- * this by the item's own effective durabilityMultiplier (Model-sourced for
- * Weapons/Armor, GM-override-only for generic Items) and rounds up.
+ * the referenced material's own durability, or the item's own
+ * durabilityOverride if that material's value is "?" (individually
+ * configurable per item, same convention as materialBonus/manaCapacity
+ * above). 0 if no material is set. See data/weapon.mjs/armor.mjs/item.mjs#
+ * prepareDerivedData, which multiplies this by the item's own effective
+ * durabilityMultiplier (Model-sourced for Weapons/Armor, GM-override-only
+ * for generic Items) and rounds up.
  * @param {object} itemSystem
  * @return {number}
  */
 export function resolveMaterialDurability(itemSystem) {
   const material = getMaterial(itemSystem.material);
-  return Number(material?.durability) || 0;
+  if (!material) return 0;
+  return material.durability === '?' ? (itemSystem.durabilityOverride ?? 0) : (Number(material.durability) || 0);
 }
 
 /**

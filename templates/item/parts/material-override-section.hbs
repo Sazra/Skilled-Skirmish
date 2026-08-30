@@ -13,4 +13,13 @@
       data-dtype="Number" />
   </div>
   {{/if}}
+  {{#if durabilityEnabled}}
+  {{#if durabilityIsVariable}}
+  <div class="grid-span-1">
+    <label class="resource-label">{{localize 'SKSK.Materials.DurabilityOverride'}}</label>
+    <input type="text" name="system.durabilityOverride" value="{{system.durabilityOverride}}"
+      data-dtype="Number" />
+  </div>
+  {{/if}}
+  {{/if}}
 </div>

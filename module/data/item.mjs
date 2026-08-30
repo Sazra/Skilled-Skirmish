@@ -123,6 +123,9 @@ export default class SKSKItem extends SKSKItemBase {
     // helpers/materials.mjs#resolveMaterialBonus/resolveMaterialManaCapacity.
     schema.materialBonusOverride = new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 });
     schema.manaCapacityOverride = new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 });
+    // Only used when the selected material's own durability is "?" - see
+    // helpers/materials.mjs#resolveMaterialDurability.
+    schema.durabilityOverride = new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 });
 
     // Haltbarkeit (Durability) - Consumable items are exempt entirely (never
     // shown, never decremented - see templates/item/parts/item-gear.hbs and

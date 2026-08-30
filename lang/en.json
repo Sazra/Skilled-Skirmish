@@ -168,6 +168,7 @@
       "NoMaterial": "None",
       "MaterialBonusOverride": "Material Bonus (this item)",
       "ManaCapacityOverride": "Mana Capacity (this item)",
+      "DurabilityOverride": "Durability (this item)",
       "TotalManaCapacity": "Total Mana Capacity",
       "AttackBonus": "Attack Bonus (Material)",
       "DamageBonus": "Damage Bonus (Material)",

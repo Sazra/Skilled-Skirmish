@@ -88,7 +88,7 @@ export class SKSKMaterialsConfig extends HandlebarsApplicationMixin(ApplicationV
       name: m.name ?? '',
       materialBonus: sanitizeMaterialValue(m.materialBonus),
       manaCapacity: sanitizeMaterialValue(m.manaCapacity),
-      durability: Math.max(0, Number(m.durability) || 0),
+      durability: sanitizeMaterialValue(m.durability),
       properties: selectedKeys(m.properties),
       heavyRequirement: Number(m.heavyRequirement) || 0,
       demandingRequirement: Number(m.demandingRequirement) || 0,

@@ -68,6 +68,9 @@ export default class SKSKArmor extends SKSKItemBase {
     // helpers/materials.mjs#resolveMaterialBonus/resolveMaterialManaCapacity.
     schema.materialBonusOverride = new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 });
     schema.manaCapacityOverride = new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 });
+    // Only used when the selected material's own durability is "?" - see
+    // helpers/materials.mjs#resolveMaterialDurability.
+    schema.durabilityOverride = new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 });
 
     // This armor's type (Light Armor, Heavy Armor, Shield, Cloth) -
     // determines which Armor Models (see helpers/models.mjs) are
