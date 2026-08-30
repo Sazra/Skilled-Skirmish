@@ -13,6 +13,21 @@ function selectedKeys(selection) {
 }
 
 /**
+ * A Model's own durabilityMultiplier - any non-negative number the GM
+ * types (0 included, e.g. a flimsy improvised-weapon Model that zeroes out
+ * its Material's own Haltbarkeit entirely), falling back to 1 (not 0) only
+ * for a genuinely blank/invalid input - so a fresh Model with no value
+ * typed yet just passes its Material's own Durability through unchanged.
+ * @param {*} value
+ * @return {number}
+ */
+function sanitizeDurabilityMultiplier(value) {
+  if (value === '' || value === null || value === undefined) return 1;
+  const num = Number(value);
+  return Number.isFinite(num) && num >= 0 ? num : 1;
+}
+
+/**
  * Groups an array of models by one of their own fields, while preserving
  * each model's index in the ORIGINAL (ungrouped) array - needed since
  * every field name in the form is "weaponModels.<original index>.<field>",
@@ -221,6 +236,12 @@ export class SKSKModelsConfig extends HandlebarsApplicationMixin(ApplicationV2) 
         rangedRange: Number(m.rangedRange) || 0,
         reloadApCost: Number(m.reloadApCost) || 0,
         reloadMagazineSize: Math.max(1, Number(m.reloadMagazineSize) || 1),
+        // Multiplies the Material's own base Haltbarkeit (Durability),
+        // rounded up - see helpers/materials.mjs#resolveMaterialDurability
+        // and data/weapon.mjs#prepareDerivedData. Default 1 (not 0) so a
+        // Model with no explicit value just passes the Material's own
+        // value through unchanged.
+        durabilityMultiplier: sanitizeDurabilityMultiplier(m.durabilityMultiplier),
       };
     });
     const armorModels = Object.entries(expanded.armorModels ?? {}).map(([index, m]) => ({
@@ -233,6 +254,7 @@ export class SKSKModelsConfig extends HandlebarsApplicationMixin(ApplicationV2) 
       heavyRequirement: Number(m.heavyRequirement) || 0,
       demandingRequirement: Number(m.demandingRequirement) || 0,
       drainingRequirement: Number(m.drainingRequirement) || 0,
+      durabilityMultiplier: sanitizeDurabilityMultiplier(m.durabilityMultiplier),
     }));
     await game.settings.set('sksk', 'weaponModels', weaponModels);
     await game.settings.set('sksk', 'armorModels', armorModels);
@@ -251,7 +273,7 @@ export class SKSKModelsConfig extends HandlebarsApplicationMixin(ApplicationV2) 
       damageType: isRanged ? 'inherit' : 'blunt',
       attributes: [], properties: [],
       heavyRequirement: 0, demandingRequirement: 0, drainingRequirement: 0, reachRange: 0, rangedRange: 0,
-      reloadApCost: 0, reloadMagazineSize: 1,
+      reloadApCost: 0, reloadMagazineSize: 1, durabilityMultiplier: 1,
     });
     await game.settings.set('sksk', 'weaponModels', models);
     this.render();
@@ -271,7 +293,7 @@ export class SKSKModelsConfig extends HandlebarsApplicationMixin(ApplicationV2) 
     const models = foundry.utils.deepClone(getArmorModels());
     models.push({
       name: '', armorType: target.dataset.armorType, flatBonus: 0, attributes: [], properties: [], hardenedValue: 0,
-      heavyRequirement: 0, demandingRequirement: 0, drainingRequirement: 0,
+      heavyRequirement: 0, demandingRequirement: 0, drainingRequirement: 0, durabilityMultiplier: 1,
     });
     await game.settings.set('sksk', 'armorModels', models);
     this.render();

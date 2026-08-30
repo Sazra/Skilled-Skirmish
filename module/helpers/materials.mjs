@@ -67,6 +67,55 @@ export function resolveMaterialManaCapacity(itemSystem) {
 }
 
 /**
+ * Whether Haltbarkeit (Durability) is tracked at all - the world setting
+ * (General Settings menu, see apps/general-settings-config.mjs) gating
+ * every maxDurability computation (data/weapon.mjs/armor.mjs/item.mjs#
+ * prepareDerivedData) and every place it's spent (helpers/actions.mjs#
+ * rollWeaponItem/rollItemUsage, helpers/damageApplication.mjs#
+ * applyDamageFromChat) or shown on a sheet (sheets/item-sheet.mjs).
+ * @return {boolean}
+ */
+export function isDurabilityEnabled() {
+  return game.settings.get('sksk', 'durabilityEnabled');
+}
+
+/**
+ * How much of a Weapon/Armor's own fixed Material+Model(+Quality) bonus
+ * still applies given its current Haltbarkeit (Durability) - 1 (no
+ * reduction) whenever Durability is switched off, or the item has no
+ * computed max (e.g. no Material selected) at all. Otherwise the plain
+ * current/max ratio, clamped so an (abnormal) current > max never
+ * amplifies the bonus. Callers apply this AFTER Herstellungsqualität's own
+ * scaling and round the result UP (ceil) - e.g. a fixed bonus of 10 at 81%
+ * remaining Durability becomes ceil(10 * 0.81) = 9 - see data/weapon.mjs#
+ * prepareDerivedData, helpers/attackRolls.mjs#computeWeaponAttackBonus,
+ * and helpers/defense.mjs#computeArmorPieceBonus.
+ * @param {object} itemSystem  A Weapon/Armor's system data.
+ * @return {number}
+ */
+export function computeDurabilityRatio(itemSystem) {
+  if (!isDurabilityEnabled()) return 1;
+  const max = itemSystem.maxDurability ?? 0;
+  if (max <= 0) return 1;
+  return Math.min(1, (itemSystem.durability?.value ?? 0) / max);
+}
+
+/**
+ * The base Haltbarkeit (Durability) an Item/Armor/Weapon's material grants -
+ * a plain non-negative number (no "?" per-item-override convention, unlike
+ * materialBonus/manaCapacity above). 0 if no material is set. See
+ * data/weapon.mjs/armor.mjs/item.mjs#prepareDerivedData, which multiplies
+ * this by the item's own effective durabilityMultiplier (Model-sourced for
+ * Weapons/Armor, GM-override-only for generic Items) and rounds up.
+ * @param {object} itemSystem
+ * @return {number}
+ */
+export function resolveMaterialDurability(itemSystem) {
+  const material = getMaterial(itemSystem.material);
+  return Number(material?.durability) || 0;
+}
+
+/**
  * Total mana capacity an Item/Armor/Weapon contributes: the material's
  * resolved mana capacity for every 0.1kg of the item's own weight (weight
  * is always in kg in SKSK) - i.e. the resolved value times 10x the weight.

@@ -13,9 +13,13 @@
         "Name": "Max Carry Weight Formula",
         "Hint": "Base max carry weight, before size-category scaling (Tiny 25%, Small 75%, Medium 100%, Large 150%, Huge 300%, Gigantic 1000%, Titanic unlimited). A real roll formula - reference attributes as @attributes.str.value or @attributes.str.mod, skill levels as @skills.<key> (e.g. @skills.axe), and character level as @lvl."
       },
+      "DurabilityEnabled": {
+        "Name": "Enable Durability",
+        "Hint": "Whether Weapon/Armor/Item Durability (see the Materials and Models settings) is tracked, calculated, and shown at all. Off by default."
+      },
       "GeneralSettings": {
         "Name": "General Settings",
-        "Hint": "Skill point costs for Level 10/Level 5 skills, and the max carry weight formula.",
+        "Hint": "Skill point costs for Level 10/Level 5 skills, the max carry weight formula, and whether Durability is enabled.",
         "Label": "Configure General Settings"
       },
       "Materials": {
@@ -147,10 +151,15 @@
       "Value": "Current Charges",
       "Max": "Max Charges"
     },
+    "Durability": {
+      "Value": "Durability",
+      "Max": "Max Durability"
+    },
     "Materials": {
       "Name": "Name",
       "MaterialBonus": "Material Bonus",
       "ManaCapacity": "Mana Capacity",
+      "Durability": "Durability",
       "VariableHint": "A non-negative number, or \"?\" to let each item using this material set its own value",
       "Add": "Add Material",
       "Remove": "Remove",
@@ -1538,7 +1547,13 @@
       "KindAmmunition": "Ammunition",
       "AmmunitionModel": "Ammunition Model",
       "AmmunitionDiceFormula": "Ammunition Roll Formula",
-      "AmmunitionFlatBonus": "Ammunition Flat Value"
+      "AmmunitionFlatBonus": "Ammunition Flat Value",
+      "DurabilityMultiplier": "Durability Multiplier",
+      "DurabilityMultiplierOverride": "Durability Multiplier Override",
+      "DurabilityMultiplierOverrideHint": "This item's max Durability normally multiplies its Material's own base value by its Model's own Durability Multiplier (always 1 for items with no Model). Enable this to override that multiplier for this specific item instead.",
+      "DurabilityMultiplierOverrideEnabled": "Override this item's Durability Multiplier",
+      "Quality": "Manufacturing Quality (%)",
+      "QualityHint": "100 = normal. Multiplicatively scales (rounded down) this item's own combined Material+Model flat attack/damage bonus (Weapon) or AC/MR bonus (Armor) - the wielder's own skill/attribute/Lehren contributions are never affected."
     },
     "ArmorType": {
       "LightArmor": "Light Armor",

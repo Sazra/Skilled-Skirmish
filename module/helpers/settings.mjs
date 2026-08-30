@@ -47,7 +47,22 @@ export function registerSettings() {
     default: '@attributes.str.baseValue * 5',
   });
 
-  // GM-only menu bundling the three plain settings above into one dialog -
+  // Whether Haltbarkeit (Durability) is tracked at all - see helpers/
+  // materials.mjs#isDurabilityEnabled, consulted everywhere Weapon/Armor/
+  // Item's own maxDurability is computed (data/weapon.mjs/armor.mjs/
+  // item.mjs#prepareDerivedData) and everywhere it's spent (helpers/
+  // actions.mjs#rollWeaponItem/rollItemUsage, helpers/damageApplication.mjs#
+  // applyDamageFromChat) or shown on a sheet. Off by default so existing
+  // worlds aren't suddenly shown/spending a stat they never configured
+  // Material/Model values for.
+  game.settings.register('sksk', 'durabilityEnabled', {
+    scope: 'world',
+    config: false,
+    type: Boolean,
+    default: false,
+  });
+
+  // GM-only menu bundling the four plain settings above into one dialog -
   // see apps/general-settings-config.mjs. Registered first so its button is
   // the first entry in the Skilled Skirmish settings list.
   game.settings.registerMenu('sksk', 'generalSettingsMenu', {

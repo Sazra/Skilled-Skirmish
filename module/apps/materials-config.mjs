@@ -88,6 +88,7 @@ export class SKSKMaterialsConfig extends HandlebarsApplicationMixin(ApplicationV
       name: m.name ?? '',
       materialBonus: sanitizeMaterialValue(m.materialBonus),
       manaCapacity: sanitizeMaterialValue(m.manaCapacity),
+      durability: Math.max(0, Number(m.durability) || 0),
       properties: selectedKeys(m.properties),
       heavyRequirement: Number(m.heavyRequirement) || 0,
       demandingRequirement: Number(m.demandingRequirement) || 0,
@@ -100,7 +101,7 @@ export class SKSKMaterialsConfig extends HandlebarsApplicationMixin(ApplicationV
   static async #addMaterial(event, target) {
     const materials = foundry.utils.deepClone(game.settings.get('sksk', 'materials') ?? []);
     materials.push({
-      name: '', materialBonus: 0, manaCapacity: 0, properties: [],
+      name: '', materialBonus: 0, manaCapacity: 0, durability: 0, properties: [],
       heavyRequirement: 0, demandingRequirement: 0, drainingRequirement: 0,
     });
     await game.settings.set('sksk', 'materials', materials);

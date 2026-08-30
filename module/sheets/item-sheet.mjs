@@ -6,7 +6,7 @@ import {
 } from '../helpers/effects.mjs';
 import { getSkillBonusChoices } from '../helpers/skills.mjs';
 import { computeSavingThrowValue, computeDamageBonus, computeCombinedSchoolOverrideLevel } from '../helpers/spells.mjs';
-import { getMaterials, getMaterial } from '../helpers/materials.mjs';
+import { getMaterials, getMaterial, isDurabilityEnabled } from '../helpers/materials.mjs';
 import { getWeaponModels, getArmorModels, getWeaponModel, getArmorModel, getOverridablePropertiesFor } from '../helpers/models.mjs';
 import { computeEffectiveProperties } from '../helpers/properties.mjs';
 import { getCombatStyles } from '../helpers/combatStyles.mjs';
@@ -322,7 +322,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       delete tabs.effects;
     } else if (group === 'primary' && this.item.type === 'technique') {
       tabs.attributes.label = 'TYPES.Item.technique';
-    } else if (group === 'primary' && this.item.type === 'item') {
+    } else if (group === 'primary' && ['item', 'weapon', 'armor'].includes(this.item.type)) {
       tabs.attributes.label = 'SKSK.ItemSheet.InfoTab';
     } else if (group === 'primary' && this.item.type === 'soulPath') {
       delete tabs.description;
@@ -518,6 +518,13 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       context.materialBonusIsVariable = material?.materialBonus === '?';
       context.manaCapacityIsVariable = material?.manaCapacity === '?';
       context.totalManaCapacity = item.system.totalManaCapacity;
+      // Haltbarkeit (Durability) max - same derived-only reasoning as
+      // totalManaCapacity above (see data/weapon.mjs/armor.mjs/item.mjs#
+      // prepareDerivedData). durabilityEnabled gates whether any of the
+      // Durability UI (current/max display, GM Multiplier Override) renders
+      // at all - see helpers/materials.mjs#isDurabilityEnabled.
+      context.maxDurability = item.system.maxDurability;
+      context.durabilityEnabled = isDurabilityEnabled();
       if (item.type === 'weapon') {
         context.materialAttackBonus = item.system.materialAttackBonus;
         context.materialDamageBonus = item.system.materialDamageBonus;

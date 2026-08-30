@@ -16,6 +16,7 @@ import {
 } from "./technique-rolls.mjs";
 import { checkFlanking } from "./flanking.mjs";
 import { computeLehrenTargetBonus } from "./lehren.mjs";
+import { isDurabilityEnabled } from "./materials.mjs";
 
 /**
  * The intended target's flanking result (see helpers/flanking.mjs) for an
@@ -187,7 +188,19 @@ export async function rollWeaponItem(item) {
     parts.push(renderTechniqueSavingThrowHTML(technique));
   }
 
-  if (reloadEntry) await item.setFlag('sksk', 'ammoRemaining', ammoRemaining - 1);
+  // Haltbarkeit (Durability) - every actual shot/swing costs 1, regardless
+  // of hit/miss; Nachladen's own reload click (above, an early return)
+  // never reaches here, so reloading itself never costs durability. A
+  // no-op entirely while the mechanic is switched off (see helpers/
+  // materials.mjs#isDurabilityEnabled).
+  const durabilityUpdate = isDurabilityEnabled()
+    ? { 'system.durability.value': Math.max(0, item.system.durability.value - 1) }
+    : {};
+  if (reloadEntry) {
+    await item.update({ ...durabilityUpdate, 'flags.sksk.ammoRemaining': ammoRemaining - 1 });
+  } else if (Object.keys(durabilityUpdate).length) {
+    await item.update(durabilityUpdate);
+  }
 
   const messageData = {
     speaker: ChatMessage.getSpeaker({ actor }),
@@ -647,6 +660,12 @@ export async function rollItemUsage(item) {
     remainingQuantity = Math.max(0, system.quantity - 1);
     updates['system.quantity'] = remainingQuantity;
     quantityDecreased = true;
+  }
+  // Haltbarkeit (Durability) - Consumable items are exempt entirely (per
+  // design; see data/item.mjs#durability), and the whole mechanic is a
+  // no-op while switched off (see helpers/materials.mjs#isDurabilityEnabled).
+  if (!system.consumable && isDurabilityEnabled()) {
+    updates['system.durability.value'] = Math.max(0, system.durability.value - 1);
   }
   if (Object.keys(updates).length) await item.update(updates);
 

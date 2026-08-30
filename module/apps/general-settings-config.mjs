@@ -1,12 +1,12 @@
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
 /**
- * GM-only settings menu app bundling the system's three simple top-level
+ * GM-only settings menu app bundling the system's four simple top-level
  * world settings (Skill Points for Level 10/5 Skills, Max Carry Weight
- * Formula) behind one menu button, instead of Foundry's core Settings
- * dialog rendering them as separate plain config:true fields at the bottom
- * of its own list - see helpers/settings.mjs, where all three are now
- * registered with config:false.
+ * Formula, Haltbarkeit/Durability enabled) behind one menu button, instead
+ * of Foundry's core Settings dialog rendering them as separate plain
+ * config:true fields at the bottom of its own list - see helpers/
+ * settings.mjs, where all four are now registered with config:false.
  */
 export class SKSKGeneralSettingsConfig extends HandlebarsApplicationMixin(ApplicationV2) {
   /** @override */
@@ -40,6 +40,7 @@ export class SKSKGeneralSettingsConfig extends HandlebarsApplicationMixin(Applic
     context.skillPointsLevel10 = game.settings.get('sksk', 'skillPointsLevel10');
     context.skillPointsLevel5 = game.settings.get('sksk', 'skillPointsLevel5');
     context.carryWeightFormula = game.settings.get('sksk', 'carryWeightFormula');
+    context.durabilityEnabled = game.settings.get('sksk', 'durabilityEnabled');
     return context;
   }
 
@@ -49,5 +50,6 @@ export class SKSKGeneralSettingsConfig extends HandlebarsApplicationMixin(Applic
     await game.settings.set('sksk', 'skillPointsLevel10', Number(data.skillPointsLevel10) || 0);
     await game.settings.set('sksk', 'skillPointsLevel5', Number(data.skillPointsLevel5) || 0);
     await game.settings.set('sksk', 'carryWeightFormula', data.carryWeightFormula ?? '');
+    await game.settings.set('sksk', 'durabilityEnabled', !!data.durabilityEnabled);
   }
 }

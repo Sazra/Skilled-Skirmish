@@ -1,5 +1,5 @@
 import SKSKItemBase from "./item-base.mjs";
-import { computeTotalManaCapacity, resolveMaterialBonus } from "../helpers/materials.mjs";
+import { computeTotalManaCapacity, resolveMaterialBonus, resolveMaterialDurability, isDurabilityEnabled } from "../helpers/materials.mjs";
 
 export default class SKSKItem extends SKSKItemBase {
 
@@ -124,6 +124,25 @@ export default class SKSKItem extends SKSKItemBase {
     schema.materialBonusOverride = new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 });
     schema.manaCapacityOverride = new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 });
 
+    // Haltbarkeit (Durability) - Consumable items are exempt entirely (never
+    // shown, never decremented - see templates/item/parts/item-gear.hbs and
+    // helpers/actions.mjs#rollItemUsage). Only the current value is real
+    // schema data (like Mana/AP/RP, not auto-clamped down if the computed
+    // max below ever shrinks); see prepareDerivedData's own maxDurability,
+    // and documents/item.mjs#_preCreate for how a freshly created item
+    // starts at full.
+    schema.durability = new fields.SchemaField({
+      value: new fields.NumberField({ required: true, nullable: false, integer: true, initial: 0, min: 0 }),
+    });
+    // GM override of this item's effective durabilityMultiplier - Items
+    // have no Model system of their own to source one from, so this is the
+    // ONLY way an Item's multiplier is ever anything but 1. Same
+    // enabled/value pattern as Weapon's attributeOverride/damageTypeOverride.
+    schema.durabilityMultiplierOverride = new fields.SchemaField({
+      enabled: new fields.BooleanField({ initial: false }),
+      value: new fields.NumberField({ required: true, nullable: false, initial: 1, min: 0 }),
+    });
+
     // Zero or more bonuses adjusting a specific skill's pending FP gain
     // ("gain" - see actor-base.mjs) whenever it's granted - positive/negative
     // flat amounts, a multiplicative percentage (multiple multiplicative
@@ -160,5 +179,15 @@ export default class SKSKItem extends SKSKItemBase {
     // on the sheet and on its own Roll-Card) for a Usable item - see
     // helpers/actions.mjs#rollItemUsage.
     this.isUsable = this.consumable || (this.equippable && this.equipped && this.enchanted);
+
+    // Haltbarkeit (Durability) max - see weapon.mjs's identical comment.
+    // No Model system exists for generic Items, so the multiplier is always
+    // 1 unless the GM overrides it.
+    if (isDurabilityEnabled()) {
+      const durabilityMultiplier = this.durabilityMultiplierOverride.enabled ? this.durabilityMultiplierOverride.value : 1;
+      this.maxDurability = Math.ceil(resolveMaterialDurability(this) * durabilityMultiplier);
+    } else {
+      this.maxDurability = 0;
+    }
   }
 }

@@ -1,5 +1,6 @@
 import { getActorSkillLevel, isActorSkillUnlocked, getSkillStacks } from "./skills.mjs";
 import { computeLehrenTargetBonus } from "./lehren.mjs";
+import { computeDurabilityRatio } from "./materials.mjs";
 
 /**
  * The level-based component of a creature's "natural" material bonus -
@@ -38,16 +39,24 @@ export function computeNaturalMaterialBonus(actor) {
 
 /**
  * A single equipped Armor item's own "armor bonus" - its material's bonus,
- * plus its model's flat bonus, plus the model's Hardened Value - shared by
- * light/heavy armor and shields alike.
+ * plus its model's flat bonus, plus the model's Hardened Value, all summed
+ * THEN scaled by the item's own Herstellungsqualität (Manufacturing
+ * Quality, see data/armor.mjs#quality), rounded down, then further scaled
+ * by how worn the armor currently is (helpers/materials.mjs#
+ * computeDurabilityRatio), rounded UP - shared by light/heavy armor and
+ * shields alike, and by Magic Resistance's own Antimagic bonus (half of
+ * this same value - see computeMagicResistanceComponents below), so both
+ * AC and MR inherit both the Quality and Durability scaling automatically.
  * @param {Item} armorItem
  * @return {number}
  */
 export function computeArmorPieceBonus(armorItem) {
   const system = armorItem.system;
-  return (system.materialArmorBonus ?? 0)
+  const rawBonus = (system.materialArmorBonus ?? 0)
     + (system.resolvedModel?.flatBonus ?? 0)
     + (system.resolvedModel?.hardenedValue ?? 0);
+  const qualityBonus = Math.floor(rawBonus * system.quality / 100);
+  return Math.ceil(qualityBonus * computeDurabilityRatio(system));
 }
 
 /**
@@ -80,6 +89,25 @@ export function getEquippedArmorSkillKeys(actor) {
   else if (getEquippedArmorByType(actor, 'heavyArmor').length) keys.push('heavyArmor');
   if (getEquippedArmorByType(actor, 'shield').length) keys.push('shield');
   return keys;
+}
+
+/**
+ * Every equipped Armor item on the given actor that loses 1 Haltbarkeit
+ * (Durability) whenever they're hit - the one worn body armor piece
+ * (Light/Heavy/Cloth, mutually exclusive - same wornArmor floor logic as
+ * computeArmorClassComponents above) plus every equipped Shield (Shields
+ * stack, unlike body armor). See helpers/damageApplication.mjs#
+ * applyDamageFromChat.
+ * @param {Actor} actor
+ * @return {Item[]}
+ */
+export function getDurabilityAffectedArmor(actor) {
+  const wornArmor = getEquippedArmorByType(actor, 'lightArmor')[0]
+    ?? getEquippedArmorByType(actor, 'heavyArmor')[0]
+    ?? getEquippedArmorByType(actor, 'cloth')[0]
+    ?? null;
+  const shields = getEquippedArmorByType(actor, 'shield');
+  return wornArmor ? [wornArmor, ...shields] : shields;
 }
 
 /**

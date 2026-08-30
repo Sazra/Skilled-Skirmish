@@ -13,9 +13,13 @@
                 "Name": "Formel für maximales Tragegewicht",
                 "Hint": "Basis-Maximalgewicht, vor der Skalierung durch die Größenkategorie (Winzig 25%, Klein 75%, Mittelgroß 100%, Groß 150%, Riesig 300%, Gigantisch 1000%, Titanisch unbegrenzt). Eine echte Würfelformel - Attribute als @attributes.str.value oder @attributes.str.mod, Fertigkeitsstufen als @skills.<Kürzel> (z.B. @skills.axe), Charakterlevel als @lvl."
             },
+            "DurabilityEnabled": {
+                "Name": "Haltbarkeit aktivieren",
+                "Hint": "Ob die Haltbarkeit von Waffen/Rüstungen/Gegenständen (siehe Materialien- und Modelle-Einstellungen) überhaupt getrackt, berechnet und angezeigt wird. Standardmäßig aus."
+            },
             "GeneralSettings": {
                 "Name": "Allgemeine Einstellungen",
-                "Hint": "Fertigkeitspunktkosten für Stufe-10-/Stufe-5-Fertigkeiten sowie die Formel für das maximale Tragegewicht.",
+                "Hint": "Fertigkeitspunktkosten für Stufe-10-/Stufe-5-Fertigkeiten, die Formel für das maximale Tragegewicht, sowie ob Haltbarkeit aktiviert ist.",
                 "Label": "Allgemeine Einstellungen konfigurieren"
             },
             "Materials": {
@@ -147,10 +151,15 @@
             "Value": "Momentane Ladungen",
             "Max": "Maximale Ladungen"
         },
+        "Durability": {
+            "Value": "Haltbarkeit",
+            "Max": "Maximale Haltbarkeit"
+        },
         "Materials": {
             "Name": "Name",
             "MaterialBonus": "Materialbonus",
             "ManaCapacity": "Manakapazität",
+            "Durability": "Haltbarkeit",
             "VariableHint": "Eine Zahl ab 0, oder \"?\", damit jeder Gegenstand mit diesem Material einen eigenen Wert festlegt",
             "Add": "Material hinzufügen",
             "Remove": "Entfernen",
@@ -1538,7 +1547,13 @@
             "KindAmmunition": "Munition",
             "AmmunitionModel": "Munitions-Modell",
             "AmmunitionDiceFormula": "Munitions-Wurfformel",
-            "AmmunitionFlatBonus": "Munitions-Fester Wert"
+            "AmmunitionFlatBonus": "Munitions-Fester Wert",
+            "DurabilityMultiplier": "Haltbarkeits-Multiplikator",
+            "DurabilityMultiplierOverride": "Haltbarkeits-Multiplikator-Überschreibung",
+            "DurabilityMultiplierOverrideHint": "Die maximale Haltbarkeit dieses Gegenstands ergibt sich normalerweise aus dem Basiswert seines Materials multipliziert mit dem Haltbarkeits-Multiplikator seines Modells (immer 1 bei Gegenständen ohne Modell). Aktiviere dies, um diesen Multiplikator für dieses eine Item zu überschreiben.",
+            "DurabilityMultiplierOverrideEnabled": "Haltbarkeits-Multiplikator dieses Items überschreiben",
+            "Quality": "Herstellungsqualität (%)",
+            "QualityHint": "100 = normal. Skaliert (abgerundet) multiplikativ den eigenen kombinierten Material+Modell-Anteil des Angriffs-/Schadensbonus (Waffe) bzw. AC-/MR-Bonus (Rüstung) dieses Items - Fertigkeits-, Attribut- und Lehren-Anteile des Trägers/der Trägerin bleiben davon unberührt."
         },
         "ArmorType": {
             "LightArmor": "Leichte Rüstung",

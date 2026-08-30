@@ -1,4 +1,5 @@
 import { getActorSkillLevel } from './skills.mjs';
+import { computeDurabilityRatio } from './materials.mjs';
 import { computeLehrenTargetBonus } from './lehren.mjs';
 import { getSpellSchool } from './spells.mjs';
 import { computeNaturalMaterialBonus } from './defense.mjs';
@@ -197,9 +198,12 @@ function computeWeaponAttributeBonus(actor, weaponSystem) {
 
 /**
  * A weapon item's Angriffswurf (attack roll) bonus, added to both of the
- * two d20s rolled for it: its matching weapon skill + its material's
- * attack bonus + its resolved Model's flat bonus + its attribute bonus
- * (see computeWeaponAttributeBonus).
+ * two d20s rolled for it: its matching weapon skill + its own combined
+ * Material+Model flat bonus - scaled by Herstellungsqualität, rounded down
+ * (same combined-then-scaled treatment as its damage formula's flat bonus,
+ * see data/weapon.mjs#prepareDerivedData), then further scaled by how worn
+ * the weapon currently is (helpers/materials.mjs#computeDurabilityRatio),
+ * rounded UP - plus its attribute bonus (see computeWeaponAttributeBonus).
  * @param {Actor} actor
  * @param {Item} weaponItem
  * @return {number}
@@ -207,13 +211,14 @@ function computeWeaponAttributeBonus(actor, weaponSystem) {
 export function computeWeaponAttackBonus(actor, weaponItem) {
   const system = weaponItem.system;
   const skillLevel = getActorSkillLevel(actor, system.weaponType);
-  const materialBonus = system.materialAttackBonus ?? 0;
-  const modelFlat = system.resolvedModel?.flatBonus ?? 0;
+  const rawItemBonus = (system.materialAttackBonus ?? 0) + (system.resolvedModel?.flatBonus ?? 0);
+  const qualityItemBonus = Math.floor(rawItemBonus * system.quality / 100);
+  const itemBonus = Math.ceil(qualityItemBonus * computeDurabilityRatio(system));
   const attributeBonus = computeWeaponAttributeBonus(actor, system);
   const lehrenBonus = computeLehrenTargetBonus(actor, 'attackBonus', { skillKey: system.weaponType, kind: 'weapon' });
   const weaponTypeBonus = actor.system.weaponAttackBonus?.[system.weaponType] ?? 0;
   const allWeaponsBonus = actor.system.weaponAttackBonusAll ?? 0;
-  return skillLevel + materialBonus + modelFlat + attributeBonus + lehrenBonus + weaponTypeBonus + allWeaponsBonus;
+  return skillLevel + itemBonus + attributeBonus + lehrenBonus + weaponTypeBonus + allWeaponsBonus;
 }
 
 /**

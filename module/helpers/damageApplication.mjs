@@ -1,4 +1,5 @@
-import { applyElementalDefense } from './defense.mjs';
+import { applyElementalDefense, getDurabilityAffectedArmor } from './defense.mjs';
+import { isDurabilityEnabled } from './materials.mjs';
 import {
   applyLifeChange, negativeLifeOverflowHTML, getStatusStacks, increaseStatusStacks, getStatusEffectDefinitions,
   checkConcentration, damageDealtFrom,
@@ -233,6 +234,19 @@ export function renderApplyDamageButton(attacker, damageEntries, killSkillKey = 
 export async function applyDamageFromChat(button) {
   const defender = resolveClickDefender();
   if (!defender) return ui.notifications.warn(game.i18n.localize('SKSK.AttackRoll.NoDefender'));
+
+  // Haltbarkeit (Durability) - a confirmed hit (this click) costs 1 to the
+  // defender's own worn body armor AND every equipped Shield, once each
+  // per click regardless of how many damage entries it carries (a single
+  // hit, not one tick per entry) - uniformly for every damage source that
+  // funnels through this shared button (weapon/Martial Arts attacks,
+  // spells, techniques). A no-op entirely while the mechanic is switched
+  // off (see helpers/materials.mjs#isDurabilityEnabled).
+  if (isDurabilityEnabled()) {
+    for (const armorItem of getDurabilityAffectedArmor(defender)) {
+      await armorItem.update({ 'system.durability.value': Math.max(0, armorItem.system.durability.value - 1) });
+    }
+  }
 
   const attacker = button.dataset.attackerUuid ? await fromUuid(button.dataset.attackerUuid) : null;
   const entries = JSON.parse(decodeURIComponent(button.dataset.damageEntries || '[]'));

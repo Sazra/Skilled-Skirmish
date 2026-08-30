@@ -1,5 +1,5 @@
 import SKSKItemBase from "./item-base.mjs";
-import { resolveMaterialBonus, computeTotalManaCapacity } from "../helpers/materials.mjs";
+import { resolveMaterialBonus, computeTotalManaCapacity, resolveMaterialDurability, isDurabilityEnabled } from "../helpers/materials.mjs";
 import { getArmorModel } from "../helpers/models.mjs";
 import { computeEffectiveProperties } from "../helpers/properties.mjs";
 
@@ -106,6 +106,31 @@ export default class SKSKArmor extends SKSKItemBase {
       value: new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 }),
     }));
 
+    // Haltbarkeit (Durability) - only the current value is real schema data
+    // (like Mana/AP/RP, not auto-clamped down if the computed max below
+    // ever shrinks); see prepareDerivedData's own maxDurability for the
+    // computed maximum, and documents/item.mjs#_preCreate for how a freshly
+    // created armor piece starts at full.
+    schema.durability = new fields.SchemaField({
+      value: new fields.NumberField({ required: true, nullable: false, integer: true, initial: 0, min: 0 }),
+    });
+    // GM override of this armor's effective durabilityMultiplier (see
+    // helpers/models.mjs Armor Models), bypassing its resolvedModel's own
+    // value entirely when enabled - same enabled/value pattern as Weapon's
+    // attributeOverride/damageTypeOverride.
+    schema.durabilityMultiplierOverride = new fields.SchemaField({
+      enabled: new fields.BooleanField({ initial: false }),
+      value: new fields.NumberField({ required: true, nullable: false, initial: 1, min: 0 }),
+    });
+
+    // Herstellungsqualität (Manufacturing Quality) - a GM-only percentage
+    // (100 = normal, unmodified), multiplicatively scaling (rounded down)
+    // this armor's own combined Material+Model flat AC bonus - see
+    // helpers/defense.mjs#computeArmorPieceBonus, which also feeds Magic
+    // Resistance's own Antimagic bonus (half of the same value), so both
+    // are scaled together automatically.
+    schema.quality = new fields.NumberField({ required: true, nullable: false, integer: true, initial: 100, min: 0 });
+
     // Zero or more bonuses adjusting a specific skill's pending FP gain
     // ("gain" - see actor-base.mjs) whenever it's granted - positive/negative
     // flat amounts, a multiplicative percentage (multiple multiplicative
@@ -137,5 +162,17 @@ export default class SKSKArmor extends SKSKItemBase {
     // bonus ever reaches computeArmorPieceBonus (helpers/defense.mjs).
     this.resolvedModel = this.armorType === 'cloth' ? null : getArmorModel(this.model);
     this.effectiveProperties = computeEffectiveProperties(this, this.resolvedModel);
+
+    // Haltbarkeit (Durability) max - see weapon.mjs's identical comment.
+    // Cloth's resolvedModel is always null (above), so it naturally falls
+    // back to a multiplier of 1 without needing its own special case here.
+    if (isDurabilityEnabled()) {
+      const durabilityMultiplier = this.durabilityMultiplierOverride.enabled
+        ? this.durabilityMultiplierOverride.value
+        : (this.resolvedModel?.durabilityMultiplier ?? 1);
+      this.maxDurability = Math.ceil(resolveMaterialDurability(this) * durabilityMultiplier);
+    } else {
+      this.maxDurability = 0;
+    }
   }
 }

@@ -33,7 +33,7 @@
             </a>
           </summary>
           <div class="settings-entry-body flexcol">
-            <div class="grid grid-2col">
+            <div class="grid grid-3col">
               <div class="grid-span-1">
                 <label class="resource-label">{{localize 'SKSK.Models.FlatBonus'}}</label>
                 <input type="text" name="armorModels.{{entry.index}}.flatBonus" value="{{entry.model.flatBonus}}"
@@ -45,6 +45,11 @@
                 </label>
                 <input type="text" name="armorModels.{{entry.index}}.hardenedValue" value="{{entry.model.hardenedValue}}"
                   data-dtype="Number" />
+              </div>
+              <div class="grid-span-1">
+                <label class="resource-label">{{localize 'SKSK.Models.DurabilityMultiplier'}}</label>
+                <input type="text" name="armorModels.{{entry.index}}.durabilityMultiplier"
+                  value="{{entry.model.durabilityMultiplier}}" data-dtype="Number" placeholder="1" />
               </div>
             </div>
 

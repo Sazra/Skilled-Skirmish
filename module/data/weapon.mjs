@@ -1,5 +1,7 @@
 import SKSKItemBase from "./item-base.mjs";
-import { resolveMaterialBonus, computeTotalManaCapacity } from "../helpers/materials.mjs";
+import {
+  resolveMaterialBonus, computeTotalManaCapacity, resolveMaterialDurability, isDurabilityEnabled, computeDurabilityRatio,
+} from "../helpers/materials.mjs";
 import { getWeaponModel, combineDiceFormulas } from "../helpers/models.mjs";
 import { computeEffectiveProperties } from "../helpers/properties.mjs";
 
@@ -130,6 +132,32 @@ export default class SKSKWeapon extends SKSKItemBase {
       damageType: new fields.StringField({ required: true, blank: false, initial: "blunt" }),
     });
 
+    // Haltbarkeit (Durability) - only the current value is real schema data
+    // (like Mana/AP/RP, not auto-clamped down if the computed max below
+    // ever shrinks); see prepareDerivedData's own maxDurability for the
+    // computed maximum, and documents/item.mjs#_preCreate for how a freshly
+    // created weapon starts at full.
+    schema.durability = new fields.SchemaField({
+      value: new fields.NumberField({ required: true, nullable: false, integer: true, initial: 0, min: 0 }),
+    });
+    // GM override of this weapon's effective durabilityMultiplier (see
+    // helpers/models.mjs Weapon Models), bypassing its resolvedModel's own
+    // value entirely when enabled - same enabled/value pattern as
+    // attributeOverride/damageTypeOverride above.
+    schema.durabilityMultiplierOverride = new fields.SchemaField({
+      enabled: new fields.BooleanField({ initial: false }),
+      value: new fields.NumberField({ required: true, nullable: false, initial: 1, min: 0 }),
+    });
+
+    // Herstellungsqualität (Manufacturing Quality) - a GM-only percentage
+    // (100 = normal, unmodified), multiplicatively scaling (rounded down)
+    // this weapon's own combined Material+Model flat attack bonus (see
+    // helpers/attackRolls.mjs#computeWeaponAttackBonus) and combined
+    // Material+Model(+Ammunition Model) flat damage bonus (see
+    // prepareDerivedData below) - the wielder's own skill/attribute/Lehren
+    // contributions are never affected.
+    schema.quality = new fields.NumberField({ required: true, nullable: false, integer: true, initial: 100, min: 0 });
+
     // Zero or more bonuses adjusting a specific skill's pending FP gain
     // ("gain" - see actor-base.mjs) whenever it's granted - positive/negative
     // flat amounts, a multiplicative percentage (multiple multiplicative
@@ -165,6 +193,24 @@ export default class SKSKWeapon extends SKSKItemBase {
     this.resolvedAmmunitionModel = RANGED_WEAPON_TYPES.includes(this.weaponType)
       ? getWeaponModel(this.ammunitionModel) : null;
 
+    // Haltbarkeit (Durability) max - the Material's own base value (see
+    // helpers/materials.mjs#resolveMaterialDurability), times the Model's
+    // own durabilityMultiplier (or the GM's per-item override of it, if
+    // enabled), rounded up. No Model selected falls back to a multiplier of
+    // 1 (the Material's own value passes through unchanged). 0 whenever the
+    // mechanic is switched off entirely (see helpers/materials.mjs#
+    // isDurabilityEnabled) - not computed at all, not just hidden. Computed
+    // BEFORE the formula below, which needs it (via computeDurabilityRatio)
+    // to know how worn this weapon currently is.
+    if (isDurabilityEnabled()) {
+      const durabilityMultiplier = this.durabilityMultiplierOverride.enabled
+        ? this.durabilityMultiplierOverride.value
+        : (this.resolvedModel?.durabilityMultiplier ?? 1);
+      this.maxDurability = Math.ceil(resolveMaterialDurability(this) * durabilityMultiplier);
+    } else {
+      this.maxDurability = 0;
+    }
+
     // The roll formula used by SKSKItem#roll (Actions tab's "Use" button,
     // Items tab's roll button) - same field name as the generic Item type's
     // own system.formula, so the document's existing roll() logic just
@@ -172,8 +218,17 @@ export default class SKSKWeapon extends SKSKItemBase {
     // the Ammunition Model's own (see helpers/models.mjs#
     // combineDiceFormulas - a no-op combine when there's no Ammunition
     // Model), plus the Material's attack bonus and both Models' own flat
-    // bonuses.
-    const flatBonus = materialBonus + (this.resolvedModel?.flatBonus ?? 0) + (this.resolvedAmmunitionModel?.flatBonus ?? 0);
+    // bonuses - the combined flat total (not each ingredient separately)
+    // scaled by Herstellungsqualität, rounded down (e.g. Material 4 + Model
+    // flat 3 = 7, times 50% quality = 3.5, floored to 3 - see schema.quality
+    // above), then further scaled by how worn the weapon currently is
+    // (helpers/materials.mjs#computeDurabilityRatio), rounded UP this time
+    // (e.g. a quality-adjusted 10 at 81% Durability remaining becomes
+    // ceil(10 * 0.81) = 9) - never below its own dice roll, which is
+    // entirely unaffected either way.
+    const rawFlatBonus = materialBonus + (this.resolvedModel?.flatBonus ?? 0) + (this.resolvedAmmunitionModel?.flatBonus ?? 0);
+    const qualityFlatBonus = Math.floor(rawFlatBonus * this.quality / 100);
+    const flatBonus = Math.ceil(qualityFlatBonus * computeDurabilityRatio(this));
     const diceFormula = combineDiceFormulas(this.resolvedModel?.diceFormula, this.resolvedAmmunitionModel?.diceFormula);
     this.formula = diceFormula ? `${diceFormula} + ${flatBonus}` : `${flatBonus}`;
   }

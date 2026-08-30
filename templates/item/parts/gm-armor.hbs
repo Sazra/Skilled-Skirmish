@@ -1,6 +1,27 @@
 <section class="tab {{tab.cssClass}}" data-group="primary" data-tab="gm">
   {{> "systems/sksk/templates/item/parts/material-override-section.hbs"}}
 
+  {{#if durabilityEnabled}}
+  <details class="model-properties-details" data-sync="armor-durability-multiplier-override">
+    <summary class="resource-label">{{localize 'SKSK.Models.DurabilityMultiplierOverride'}}</summary>
+    <p class="hint">{{localize 'SKSK.Models.DurabilityMultiplierOverrideHint'}}</p>
+    <label class="casting-method-option">
+      <input type="checkbox" name="system.durabilityMultiplierOverride.enabled"
+        {{checked system.durabilityMultiplierOverride.enabled}} />
+      {{localize 'SKSK.Models.DurabilityMultiplierOverrideEnabled'}}
+    </label>
+    <input type="text" name="system.durabilityMultiplierOverride.value"
+      value="{{system.durabilityMultiplierOverride.value}}" data-dtype="Number" />
+  </details>
+  {{/if}}
+
+  <div class="resource">
+    <label class="resource-label" title="{{localize 'SKSK.Models.QualityHint'}}">
+      {{localize 'SKSK.Models.Quality'}}
+    </label>
+    <input type="text" name="system.quality" value="{{system.quality}}" data-dtype="Number" maxlength="4" />
+  </div>
+
   <details class="model-properties-details property-overrides-section" data-sync="armor-property-overrides">
     <summary class="resource-label">{{localize 'SKSK.Models.PropertyOverrides'}}</summary>
     <div class="grid grid-3col model-checkbox-grid">
