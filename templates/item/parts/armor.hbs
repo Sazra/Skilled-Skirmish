@@ -3,16 +3,29 @@
     <div class="grid-span-1">
       <label class="casting-method-option">
         <input type="checkbox" name="system.equipped" {{checked system.equipped}} />
-        Equipped
+        {{localize 'SKSK.Items.Equipped'}}
       </label>
     </div>
     <div class="grid-span-1">
       <label class="casting-method-option">
         <input type="checkbox" name="system.enchanted" {{checked system.enchanted}} />
-        Enchanted
+        {{localize 'SKSK.Items.Enchanted'}}
       </label>
     </div>
   </div>
+
+  {{#if durabilityEnabled}}
+  <div class="grid grid-2col">
+    <div class="grid-span-1">
+      <label class="resource-label">{{localize 'SKSK.Durability.Value'}}</label>
+      <input type="text" name="system.durability.value" value="{{system.durability.value}}" data-dtype="Number" />
+    </div>
+    <div class="grid-span-1">
+      <label class="resource-label">{{localize 'SKSK.Durability.Max'}}</label>
+      <span>{{maxDurability}}</span>
+    </div>
+  </div>
+  {{/if}}
 
   {{> "systems/sksk/templates/item/parts/material-section.hbs" showArmorBonus=true}}
 
@@ -50,19 +63,6 @@
     <div class="grid-span-1">
       <label class="resource-label">{{localize 'SKSK.Models.HardenedValue'}}</label>
       <span>{{resolvedModel.hardenedValue}}</span>
-    </div>
-  </div>
-  {{/if}}
-
-  {{#if durabilityEnabled}}
-  <div class="grid grid-2col">
-    <div class="grid-span-1">
-      <label class="resource-label">{{localize 'SKSK.Durability.Value'}}</label>
-      <input type="text" name="system.durability.value" value="{{system.durability.value}}" data-dtype="Number" />
-    </div>
-    <div class="grid-span-1">
-      <label class="resource-label">{{localize 'SKSK.Durability.Max'}}</label>
-      <span>{{maxDurability}}</span>
     </div>
   </div>
   {{/if}}

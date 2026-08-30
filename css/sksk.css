@@ -11,6 +11,15 @@
   cursor: pointer;
 }
 
+/* The red shadow above is unreadable against black hover text once the
+   window itself is dark (Foundry's own theme-dark class on <body>) - keep
+   the text itself white there and use a light blue shadow instead of red. */
+.theme-dark .rollable:hover,
+.theme-dark .rollable:focus {
+  color: #fff;
+  text-shadow: 0 0 10px #7ec8ff;
+}
+
 .grid,
 .grid-2col {
   display: grid;
@@ -623,6 +632,12 @@ body.theme-light .application.sksk.actor {
 
 .sksk .attribute-bonus-color {
   color: var(--color-text-hyperlink, #00538d);
+}
+
+/* The hyperlink blue above is too dark to read against the dark box
+   background - use a lighter blue just for that theme instead. */
+.theme-dark .sksk .attribute-bonus-color {
+  color: #7ec8ff;
 }
 
 .sksk .skill-category-body .skill-toggle {
@@ -1783,7 +1798,7 @@ span.sksk-critical-failure {
   font-size: 15px;
   font-weight: bold;
   text-align: center;
-  color: var(--color-text-light-highlight, #f0f0e0);
+  color: var(--color-text-primary);
   background: color-mix(in srgb, var(--color-text-hyperlink) 18%, transparent);
   border: 1px solid var(--color-text-hyperlink);
   border-radius: 4px;
