@@ -176,6 +176,39 @@ export function getWeaponDamageType(weaponSystem) {
 }
 
 /**
+ * A weapon's range display for the Actions tab's own weapon list (see
+ * sheets/actor-sheet.mjs's equippedWeapons context and templates/actor/
+ * parts/general-actions.hbs): a Ranged ("Fernkampf") weapon shows its own
+ * normal range and its extended range - always exactly double the normal
+ * one (no second stored field for it, see helpers/models.mjs), matching
+ * the Ranged property's own Hint text. A melee weapon instead shows its
+ * own Reach ("Reichweite") range if it has one, plus a Long/Sehr Lang
+ * indicator if either of those (melee-range-doubling/tripling) properties
+ * apply - these are independent of Reach (a thrown/extended-attack range),
+ * so both can show together. Blank if none of these properties apply at
+ * all.
+ * @param {Item} weaponItem
+ * @return {string}  E.g. "(10m)", "(Lang)", "(10m, Sehr Lang)", "(40m/80m)", or "".
+ */
+export function computeWeaponRangeLabel(weaponItem) {
+  const properties = weaponItem.system.effectiveProperties ?? [];
+  const find = key => properties.find(p => p.property === key);
+
+  const rangedEntry = find('ranged');
+  if (rangedEntry) {
+    const range = rangedEntry.value ?? 0;
+    return `(${range}m/${range * 2}m)`;
+  }
+
+  const parts = [];
+  const reachEntry = find('reach');
+  if (reachEntry) parts.push(`${reachEntry.value ?? 0}m`);
+  if (find('veryLong')) parts.push(game.i18n.localize('SKSK.ModelProperty.VeryLong.Name'));
+  else if (find('long')) parts.push(game.i18n.localize('SKSK.ModelProperty.Long.Name'));
+  return parts.length ? `(${parts.join(', ')})` : '';
+}
+
+/**
  * A weapon's attack-bonus attribute contribution - Masterful uses
  * highestOrSumIfAllTied; Refined/Specialized/no property just take the
  * highest (ties don't stack), with Specialized doubling the result.

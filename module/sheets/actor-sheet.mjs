@@ -29,7 +29,8 @@ import { getClassAbilityLevels, actorHasAdvancedClass } from '../helpers/abiliti
 import { getLifeBreakdown, getNegativeLifeBreakdown } from '../helpers/life.mjs';
 import { getManaBreakdown } from '../helpers/mana.mjs';
 import { daysToBreakdown, applyPendingLongevityGrowth, adjustLongevity, resetLongevityToFull } from '../helpers/longevity.mjs';
-import { getArmorClassBreakdown, getMagicResistanceBreakdown } from '../helpers/defense.mjs';
+import { getArmorClassBreakdown, getMagicResistanceBreakdown, computeArmorPieceBonus } from '../helpers/defense.mjs';
+import { computeWeaponAttackBonus, computeWeaponRangeLabel } from '../helpers/attackRolls.mjs';
 import { renderBreakdownHtml } from '../helpers/tooltips.mjs';
 import { rollMartialArtsAttack, rollRegeneration, rollMeditation, rollAdrenalin, useMove, useDodge, useItem, postActionChatCard } from '../helpers/actions.mjs';
 import { chooseOverchargeCount } from '../helpers/spell-rolls.mjs';
@@ -575,6 +576,9 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     // data/item.mjs#prepareDerivedData's own isUsable) - see helpers/
     // actions.mjs#rollItemUsage.
     context.equippedWeapons = actor.items.filter(i => i.type === 'weapon' && i.system.equipped);
+    // Range/reach parenthetical shown next to each weapon's own name - see
+    // helpers/attackRolls.mjs#computeWeaponRangeLabel.
+    context.equippedWeapons.forEach(w => { w.rangeLabel = computeWeaponRangeLabel(w); });
     context.usableItems = actor.items.filter(i => i.type === 'item' && i.system.isUsable);
     context.skillTabs = Object.values(this._prepareTabs('skillCategories'));
     context.spellTypeTabs = Object.values(this._prepareTabs('spellTypes'));
@@ -836,14 +840,26 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       i.img = i.img || Item.DEFAULT_ICON;
       // Append to gear.
       if (i.type === 'item') {
+        i.typeIcon = CONFIG.SKSK.itemTypeIcon;
+        i.typeLabel = game.i18n.localize('TYPES.Item.item');
         gear.push(i);
       }
-      // Append to gear.
+      // Append to gear - AC bonus and a type icon matching its own
+      // armorType (Info tab shows the full breakdown; this is just the
+      // Items list's own at-a-glance summary).
       else if (i.type === 'armor') {
+        i.typeIcon = CONFIG.SKSK.armorTypeIcons[i.system.armorType] ?? CONFIG.SKSK.itemTypeIcon;
+        i.typeLabel = game.i18n.localize(CONFIG.SKSK.armorTypes[i.system.armorType]);
+        i.acBonus = computeArmorPieceBonus(i);
         gear.push(i);
       }
-      // Append to gear.
+      // Append to gear - attack bonus and a type icon matching its own
+      // weaponType (system.formula, already derived, is the damage roll
+      // string - see data/weapon.mjs#prepareDerivedData).
       else if (i.type === 'weapon') {
+        i.typeIcon = CONFIG.SKSK.weaponTypeIcons[i.system.weaponType] ?? CONFIG.SKSK.itemTypeIcon;
+        i.typeLabel = game.i18n.localize(CONFIG.SKSK.skills.weapons[i.system.weaponType]?.label ?? '');
+        i.attackBonus = computeWeaponAttackBonus(this.actor, i);
         gear.push(i);
       }
       // Append to features.

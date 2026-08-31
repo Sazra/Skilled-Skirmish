@@ -1308,6 +1308,37 @@ body.theme-light .application.sksk.actor {
   font-size: 12px;
 }
 
+/* Armor's AC bonus / Weapon's attack bonus (combat-bonus) and Weapon's own
+   damage roll formula - blank for plain Items either way. */
+.sksk .item-combat-bonus {
+  flex: 0 0 44px;
+  text-align: center;
+  font-size: 12px;
+}
+
+.sksk .item-damage-formula {
+  flex: 0 0 70px;
+  text-align: center;
+  font-size: 12px;
+}
+
+/* Actions tab's own weapon list - Reach/Ranged parenthetical next to each
+   weapon's name (see helpers/attackRolls.mjs#computeWeaponRangeLabel). */
+.sksk .weapon-range-label {
+  margin-left: 4px;
+  font-size: 11px;
+  font-style: italic;
+  color: var(--color-text-dark-secondary, #7a7971);
+}
+
+/* Item/Weapon/Armor type icon (see helpers/config.mjs#weaponTypeIcons/
+   armorTypeIcons/itemTypeIcon) shown right before the item's own name. */
+.sksk .items-list .item-name .item-type-icon {
+  flex: 0 0 auto;
+  margin-right: 5px;
+  opacity: 0.8;
+}
+
 .sksk .effects .item .effect-source,
 .sksk .effects .item .effect-duration,
 .sksk .effects .item .effect-controls {

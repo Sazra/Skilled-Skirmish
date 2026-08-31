@@ -1,6 +1,8 @@
 <ol class='items-list'>
   <li class='item flexrow items-header'>
     <div class='item-name'>{{localize 'Name'}}</div>
+    <div class='item-combat-bonus' title="{{localize 'SKSK.Items.CombatBonus'}}">{{localize 'SKSK.Items.CombatBonusAbbr'}}</div>
+    <div class='item-damage-formula' title="{{localize 'SKSK.Items.Damage'}}">{{localize 'SKSK.Items.DamageAbbr'}}</div>
     <div class='item-weight' title="{{localize 'SKSK.Items.Weight'}}">{{localize 'SKSK.Items.WeightAbbr'}}</div>
     <div class='item-equipped' title="{{localize 'SKSK.Items.Equipped'}}">{{localize 'SKSK.Items.EquippedAbbr'}}</div>
     <div class='item-enchanted' title="{{localize 'SKSK.Items.Enchanted'}}">{{localize 'SKSK.Items.EnchantedAbbr'}}</div>
@@ -46,7 +48,18 @@
             />
           </a>
         </div>
+        <i class="fas {{item.typeIcon}} item-type-icon" title="{{item.typeLabel}}"></i>
         <h4>{{item.name}}</h4>
+      </div>
+      <div class='item-combat-bonus'>
+        {{#if (eq item.type "armor")}}
+        {{numberFormat item.acBonus decimals=0 sign=true}}
+        {{else if (eq item.type "weapon")}}
+        {{numberFormat item.attackBonus decimals=0 sign=true}}
+        {{/if}}
+      </div>
+      <div class='item-damage-formula'>
+        {{#if (eq item.type "weapon")}}{{item.system.formula}}{{/if}}
       </div>
       <div class='item-weight'>{{item.system.weight}}</div>
       <div class='item-equipped'>

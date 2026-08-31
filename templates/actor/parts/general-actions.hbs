@@ -114,7 +114,10 @@
       <ol class="items-list items-list-compact">
         {{#each equippedWeapons as |weapon|}}
         <li class="item flexrow">
-          <div class="item-name">{{weapon.name}}</div>
+          <div class="item-name">
+            {{weapon.name}}
+            {{#if weapon.rangeLabel}}<span class="weapon-range-label">{{weapon.rangeLabel}}</span>{{/if}}
+          </div>
           <div class="item-controls">
             <button type="button" class="action-roll-button" data-action="useItem" data-item-id="{{weapon.id}}" title="{{localize 'SKSK.Action.Use'}}">
               <i class="fas fa-dice-d20"></i>

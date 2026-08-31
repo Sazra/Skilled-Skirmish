@@ -848,6 +848,31 @@ SKSK.pathElementIcons = {
   cryomancy: 'fa-temperature-arrow-down', witchery: 'fa-broom', mana: 'fa-circle-nodes',
 };
 
+// FontAwesome (solid) icon class per weaponType/armorType, shown next to
+// each Weapon/Armor row in the actor sheet's Items list (see
+// sheets/actor-sheet.mjs#_prepareItems) - same "best-effort pick, swap any
+// that render as an empty box in-browser" convention as pathTypeIcons/
+// pathElementIcons above. itemTypeIcon is the generic fallback for plain
+// Items (and for either map missing a key, which shouldn't normally
+// happen).
+SKSK.weaponTypeIcons = {
+  axe: 'fa-axe',
+  bow: 'fa-bow-arrow',
+  bluntWeapon: 'fa-hammer',
+  dagger: 'fa-khanda',
+  firearms: 'fa-gun',
+  martialArts: 'fa-hand-fist',
+  polearms: 'fa-arrow-up-long',
+  sword: 'fa-sword',
+};
+SKSK.armorTypeIcons = {
+  lightArmor: 'fa-vest',
+  heavyArmor: 'fa-shield',
+  shield: 'fa-shield-halved',
+  cloth: 'fa-shirt',
+};
+SKSK.itemTypeIcon = 'fa-box';
+
 // A Path Ability's own type - see data/soulPath.mjs#pathAbilities.
 SKSK.pathAbilityTypes = {
   active: 'SKSK.SoulPath.AbilityType.Active',
