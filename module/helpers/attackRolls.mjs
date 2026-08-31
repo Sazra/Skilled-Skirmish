@@ -209,14 +209,15 @@ export function computeWeaponRangeLabel(weaponItem) {
 }
 
 /**
- * A weapon's attack-bonus attribute contribution - Masterful uses
+ * A weapon's attack-bonus (and, per helpers/actions.mjs#rollWeaponItem,
+ * damage-bonus) attribute contribution - Masterful uses
  * highestOrSumIfAllTied; Refined/Specialized/no property just take the
  * highest (ties don't stack), with Specialized doubling the result.
  * @param {Actor} actor
  * @param {object} weaponSystem
  * @return {number}
  */
-function computeWeaponAttributeBonus(actor, weaponSystem) {
+export function computeWeaponAttributeBonus(actor, weaponSystem) {
   const keys = getWeaponAttributeKeys(weaponSystem);
   const mods = keys.map(key => actor.system.attributes?.[key]?.mod ?? 0);
   if (!mods.length) return 0;

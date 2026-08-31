@@ -3,7 +3,7 @@ import { getClassAbilityLevels, actorHasAdvancedClass } from "./abilities.mjs";
 import { computeMovementSpeeds } from "./movement.mjs";
 import { canUseWeaponAttack, canMove, applyAdrenalinDamage, isActorsOwnTurn } from "./statusEffects.mjs";
 import {
-  computeWeaponAttackBonus, computeMartialArtsAttackBonus, rollAttackPair, renderAttackPairHTML,
+  computeWeaponAttackBonus, computeWeaponAttributeBonus, computeMartialArtsAttackBonus, rollAttackPair, renderAttackPairHTML,
   getDamageDieSizes, getWeaponDamageType,
 } from "./attackRolls.mjs";
 import { wrapCriticalBlock } from "./criticalRolls.mjs";
@@ -163,12 +163,13 @@ export async function rollWeaponItem(item) {
   }
 
   if (item.system.formula) {
+    const attributeBonus = actor ? computeWeaponAttributeBonus(actor, item.system) : 0;
     const lehrenDamageBonus = actor
       ? computeLehrenTargetBonus(actor, 'damageBonus', { skillKey: item.system.weaponType, kind: 'weapon' })
       : 0;
     const damageTypeBonus = actor?.system.damageBonus?.[damageType] ?? 0;
     const allWeaponsDamageBonus = actor?.system.damageBonusAll ?? 0;
-    const totalDamageBonus = lehrenDamageBonus + damageTypeBonus + allWeaponsDamageBonus;
+    const totalDamageBonus = attributeBonus + lehrenDamageBonus + damageTypeBonus + allWeaponsDamageBonus;
     const damageFormulaBase = totalDamageBonus ? `${item.system.formula} + ${totalDamageBonus}` : item.system.formula;
     const damageFormula = applyTechniqueDiceIncrease(damageFormulaBase, technique);
     const roll = await new Roll(damageFormula, item.getRollData()).evaluate();
