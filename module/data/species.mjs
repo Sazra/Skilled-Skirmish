@@ -22,6 +22,19 @@ export default class SKSKSpecies extends SKSKItemBase {
     // on speciesType.
     schema.aura = new fields.NumberField({ ...requiredInteger, initial: 10, min: 0, max: 20 });
 
+    // Base Lebenszeit (Longevity) - a Main Species' own value is in years
+    // (a character's starting longevity, see data/actor-base.mjs#longevity,
+    // helpers/longevity.mjs, is initialized from their main species' own
+    // value the first time they gain one - same "main species only"
+    // convention as sizeCategory below). A Sub-Species instead defines a
+    // multiplier (initial 1 = no change) applied on top of that base value
+    // - see helpers/longevity.mjs#computeBaseLongevityDays. Both share one
+    // schema field (like Aura above); templates/item/parts/species.hbs
+    // shows whichever one applies as "Basis-Lebenszeit"/"Basis-Lebenszeit-
+    // Multiplikator" depending on system.speciesType.
+    schema.baseLongevity = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+    schema.baseLongevityMultiplier = new fields.NumberField({ required: true, nullable: false, initial: 1, min: 0 });
+
     // The size category (CONFIG.SKSK.sizeCategories) a character of this
     // species defaults to - only the main species' value is used (see
     // helpers/movement.mjs#getActorSizeCategory), not any sub-species.

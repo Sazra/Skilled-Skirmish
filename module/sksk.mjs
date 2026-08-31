@@ -13,6 +13,9 @@ import { rollTechniqueEffectSaveFromChat } from './helpers/technique-rolls.mjs';
 import { computeSpeciesAura } from './helpers/attributes.mjs';
 import { getMainSpeciesItem } from './helpers/movement.mjs';
 import {
+  computeMainSpeciesBaseDays, computeSubMultiplierProduct, computePermanentLifeManaTotal, recalculateDaysFromBaseline,
+} from './helpers/longevity.mjs';
+import {
   ensurePredefinedStatusEffects, registerConfigStatusEffects, handleCombatTurnStart, handleCombatTurnEnd,
 } from './helpers/statusEffects.mjs';
 import { clampSingleAttributeSelection } from './helpers/models.mjs';
@@ -240,6 +243,83 @@ Hooks.once('ready', async function () {
     if (!changedSize && !changedType) return;
     if (getMainSpeciesItem(item.parent)?.id !== item.id) return;
     item.parent.update({ 'system.sizeCategory': item.system.sizeCategory });
+  });
+
+  // Lebenszeit (Longevity - see data/actor-base.mjs#longevity, helpers/
+  // longevity.mjs) otherwise grows automatically from permanent max
+  // Life/Mana increases, but has no baseline to grow from until a Character
+  // actually has a main Species - the moment they gain one, mainBaselineDays
+  // is (re)seeded fresh from it (helpers/longevity.mjs#
+  // computeMainSpeciesBaseDays - deliberately NOT the accumulated-by-growth
+  // value, which is discarded here). The first time this ever happens for
+  // a Character, percent starts at 100 (system.longevity.initialized flips
+  // true, baselineTotal is seeded too); every subsequent time (replacing an
+  // existing main Species), percent is instead PRESERVED and days
+  // re-derived from it against the new baseline - same "preserve percent,
+  // re-derive days" rule as every other Species-related change below.
+  Hooks.on('createItem', (item, options, userId) => {
+    if (item.type !== 'species' || item.system.speciesType !== 'main' || !(item.parent instanceof Actor)) return;
+    if (game.user.id !== userId) return;
+    const actor = item.parent;
+    if (actor.type !== 'character') return;
+    if (getMainSpeciesItem(actor)?.id !== item.id) return;
+    const mainBaselineDays = computeMainSpeciesBaseDays(actor);
+    if (!actor.system.longevity.initialized) {
+      actor.update({
+        'system.longevity.initialized': true,
+        'system.longevity.mainBaselineDays': mainBaselineDays,
+        'system.longevity.percent': 100,
+        'system.longevity.days': Math.round(mainBaselineDays * computeSubMultiplierProduct(actor)),
+        'system.longevity.baselineTotal': computePermanentLifeManaTotal(actor),
+      });
+    } else {
+      const percent = actor.system.longevity.percent;
+      actor.update({
+        'system.longevity.mainBaselineDays': mainBaselineDays,
+        'system.longevity.days': Math.round(mainBaselineDays * computeSubMultiplierProduct(actor) * percent / 100),
+      });
+    }
+  });
+
+  // ...and likewise whenever the current main Species item's own
+  // baseLongevity is edited directly (rather than the whole item being
+  // replaced) - same "preserve percent, re-derive days against a freshly
+  // reset mainBaselineDays" rule as above.
+  Hooks.on('updateItem', (item, changes, options, userId) => {
+    if (item.type !== 'species' || item.system.speciesType !== 'main' || !(item.parent instanceof Actor)) return;
+    if (game.user.id !== userId) return;
+    if (foundry.utils.getProperty(changes, 'system.baseLongevity') === undefined) return;
+    const actor = item.parent;
+    if (actor.type !== 'character' || !actor.system.longevity.initialized) return;
+    if (getMainSpeciesItem(actor)?.id !== item.id) return;
+    const mainBaselineDays = computeMainSpeciesBaseDays(actor);
+    const percent = actor.system.longevity.percent;
+    actor.update({
+      'system.longevity.mainBaselineDays': mainBaselineDays,
+      'system.longevity.days': Math.round(mainBaselineDays * computeSubMultiplierProduct(actor) * percent / 100),
+    });
+  });
+
+  // A Sub-Species' own baseLongevityMultiplier (gained, changed, or lost
+  // entirely) never touches mainBaselineDays or percent - only days moves,
+  // re-derived from the preserved percent against the freshly recomputed
+  // multiplier product (helpers/longevity.mjs#recalculateDaysFromBaseline).
+  function isSubSpeciesOnActor(item) {
+    return item.type === 'species' && item.system.speciesType === 'sub' && item.parent instanceof Actor
+      && item.parent.type === 'character' && item.parent.system.longevity.initialized;
+  }
+  Hooks.on('createItem', (item, options, userId) => {
+    if (!isSubSpeciesOnActor(item) || game.user.id !== userId) return;
+    recalculateDaysFromBaseline(item.parent);
+  });
+  Hooks.on('updateItem', (item, changes, options, userId) => {
+    if (!isSubSpeciesOnActor(item) || game.user.id !== userId) return;
+    if (foundry.utils.getProperty(changes, 'system.baseLongevityMultiplier') === undefined) return;
+    recalculateDaysFromBaseline(item.parent);
+  });
+  Hooks.on('deleteItem', (item, options, userId) => {
+    if (!isSubSpeciesOnActor(item) || game.user.id !== userId) return;
+    recalculateDaysFromBaseline(item.parent);
   });
 
   // Only one Light/Heavy/Cloth Armor can ever be equipped at once (Shields

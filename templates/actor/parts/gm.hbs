@@ -9,6 +9,12 @@
       <i class="fas fa-skull-crossbones"></i>
       <span>{{localize 'SKSK.GM.KillTrackingSectionTitle'}}</span>
     </a>
+    {{#unless isNpc}}
+    <a class="gm-quick-action-button" data-action="resetLongevity" title="{{localize 'SKSK.Longevity.ResetHint'}}">
+      <i class="fas fa-hourglass-start"></i>
+      <span>{{localize 'SKSK.Longevity.Reset'}}</span>
+    </a>
+    {{/unless}}
   </div>
 
   <details class="gm-section" data-sync="gm-section-switches" open>

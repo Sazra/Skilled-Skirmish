@@ -89,4 +89,74 @@
     </prose-mirror>
   </section>
 
+  {{#unless isNpc}}
+  <section class="tab" data-group="characterSections" data-tab="longevity">
+
+    <div class="resource">
+      <label class="resource-label">{{localize 'SKSK.Longevity.Current'}}</label>
+      <p>
+        {{localize 'SKSK.Longevity.Breakdown'
+          years=longevityBreakdown.years months=longevityBreakdown.months
+          weeks=longevityBreakdown.weeks days=longevityBreakdown.days}}
+      </p>
+      <p>
+        {{localize 'SKSK.Longevity.TotalDays' days=system.longevity.days}}
+        ({{numberFormat system.longevity.percent decimals=1}}%)
+      </p>
+    </div>
+
+    <div class="grid grid-2col">
+      <div class="resource longevity-unit-row">
+        <label class="resource-label">{{localize 'SKSK.Longevity.Year'}}</label>
+        <div class="item-controls flexrow flex-center">
+          <a class="item-control" data-action="adjustLongevity" data-unit="year" data-direction="decrease" title="-">
+            <i class="fas fa-minus"></i>
+          </a>
+          <input type="number" class="longevity-amount-input" min="1" value="1" />
+          <a class="item-control" data-action="adjustLongevity" data-unit="year" data-direction="increase" title="+">
+            <i class="fas fa-plus"></i>
+          </a>
+        </div>
+      </div>
+      <div class="resource longevity-unit-row">
+        <label class="resource-label">{{localize 'SKSK.Longevity.Month'}}</label>
+        <div class="item-controls flexrow flex-center">
+          <a class="item-control" data-action="adjustLongevity" data-unit="month" data-direction="decrease" title="-">
+            <i class="fas fa-minus"></i>
+          </a>
+          <input type="number" class="longevity-amount-input" min="1" value="1" />
+          <a class="item-control" data-action="adjustLongevity" data-unit="month" data-direction="increase" title="+">
+            <i class="fas fa-plus"></i>
+          </a>
+        </div>
+      </div>
+      <div class="resource longevity-unit-row">
+        <label class="resource-label">{{localize 'SKSK.Longevity.Week'}}</label>
+        <div class="item-controls flexrow flex-center">
+          <a class="item-control" data-action="adjustLongevity" data-unit="week" data-direction="decrease" title="-">
+            <i class="fas fa-minus"></i>
+          </a>
+          <input type="number" class="longevity-amount-input" min="1" value="1" />
+          <a class="item-control" data-action="adjustLongevity" data-unit="week" data-direction="increase" title="+">
+            <i class="fas fa-plus"></i>
+          </a>
+        </div>
+      </div>
+      <div class="resource longevity-unit-row">
+        <label class="resource-label">{{localize 'SKSK.Longevity.Day'}}</label>
+        <div class="item-controls flexrow flex-center">
+          <a class="item-control" data-action="adjustLongevity" data-unit="day" data-direction="decrease" title="-">
+            <i class="fas fa-minus"></i>
+          </a>
+          <input type="number" class="longevity-amount-input" min="1" value="1" />
+          <a class="item-control" data-action="adjustLongevity" data-unit="day" data-direction="increase" title="+">
+            <i class="fas fa-plus"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </section>
+  {{/unless}}
+
 </section>

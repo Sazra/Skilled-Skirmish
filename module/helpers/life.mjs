@@ -96,6 +96,7 @@ function computeLifeComponents(actor) {
     subtotal,
     toughnessMultiplier: 1 + 0.2 * getActorSkillLevel(actor, 'tenacity'),
     flatBonus: actor.system.life?.bonus ?? 0,
+    lehrenBonus,
   };
 }
 
@@ -111,6 +112,22 @@ function computeLifeComponents(actor) {
 export function computeMaxLife(actor) {
   const { subtotal, toughnessMultiplier, flatBonus } = computeLifeComponents(actor);
   return Math.max(0, Math.round(subtotal * toughnessMultiplier + flatBonus));
+}
+
+/**
+ * Max life stripped down to only its permanent-progression components, for
+ * Lebenszeit (Longevity - see helpers/longevity.mjs): excludes flatBonus
+ * (Item/Active-Effect-driven, freely equipped/unequipped) and the Lehren
+ * bonus (a training assignment, not a fixed character-progression gain),
+ * leaving only Class flat life, ability formulas, Constitution baseMod,
+ * Health skill level and the Advanced-Class-13 bonus, still scaled by
+ * Tenacity's multiplier (a skill level, i.e. permanent progression too).
+ * @param {Actor} actor
+ * @return {number}
+ */
+export function computePermanentMaxLife(actor) {
+  const { subtotal, toughnessMultiplier, lehrenBonus } = computeLifeComponents(actor);
+  return Math.max(0, Math.round((subtotal - lehrenBonus) * toughnessMultiplier));
 }
 
 /**

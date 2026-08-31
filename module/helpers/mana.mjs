@@ -74,7 +74,7 @@ function computeManaComponents(actor) {
 
   const subtotal = rows.reduce((sum, row) => sum + row.value, 0);
 
-  return { rows, subtotal, flatBonus: actor.system.mana?.bonus ?? 0 };
+  return { rows, subtotal, flatBonus: actor.system.mana?.bonus ?? 0, lehrenBonus };
 }
 
 /**
@@ -89,6 +89,20 @@ function computeManaComponents(actor) {
 export function computeMaxMana(actor) {
   const { subtotal, flatBonus } = computeManaComponents(actor);
   return Math.max(0, Math.round(subtotal + flatBonus));
+}
+
+/**
+ * Max mana stripped down to only its permanent-progression components, for
+ * Lebenszeit (Longevity - see helpers/longevity.mjs): excludes flatBonus
+ * (Item/Active-Effect-driven, freely equipped/unequipped) and the Lehren
+ * bonus (a training assignment, not a fixed character-progression gain) -
+ * see computePermanentMaxLife in helpers/life.mjs for the same reasoning.
+ * @param {Actor} actor
+ * @return {number}
+ */
+export function computePermanentMaxMana(actor) {
+  const { subtotal, lehrenBonus } = computeManaComponents(actor);
+  return Math.max(0, Math.round(subtotal - lehrenBonus));
 }
 
 /**

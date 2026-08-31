@@ -12,6 +12,18 @@
     <input type="text" name="system.aura" value="{{system.aura}}" data-dtype="Number" />
   </div>
 
+  {{#if (eq system.speciesType "sub")}}
+  <div class="resource">
+    <label class="resource-label">Base Longevity Multiplier</label>
+    <input type="text" name="system.baseLongevityMultiplier" value="{{system.baseLongevityMultiplier}}" data-dtype="Number" />
+  </div>
+  {{else}}
+  <div class="resource">
+    <label class="resource-label">Base Longevity (Years)</label>
+    <input type="text" name="system.baseLongevity" value="{{system.baseLongevity}}" data-dtype="Number" />
+  </div>
+  {{/if}}
+
   <div class="resource">
     <label class="resource-label">Size Category</label>
     <select name="system.sizeCategory">

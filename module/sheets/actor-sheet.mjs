@@ -28,6 +28,7 @@ import { computeCarriedWeight, computeMaxCarryWeight } from '../helpers/inventor
 import { getClassAbilityLevels, actorHasAdvancedClass } from '../helpers/abilities.mjs';
 import { getLifeBreakdown, getNegativeLifeBreakdown } from '../helpers/life.mjs';
 import { getManaBreakdown } from '../helpers/mana.mjs';
+import { daysToBreakdown, applyPendingLongevityGrowth, adjustLongevity, resetLongevityToFull } from '../helpers/longevity.mjs';
 import { getArmorClassBreakdown, getMagicResistanceBreakdown } from '../helpers/defense.mjs';
 import { renderBreakdownHtml } from '../helpers/tooltips.mjs';
 import { rollMartialArtsAttack, rollRegeneration, rollMeditation, rollAdrenalin, useMove, useDodge, useItem, postActionChatCard } from '../helpers/actions.mjs';
@@ -151,6 +152,8 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       grantPassivePerceptionFp: SKSKActorSheet.#grantPassivePerceptionFp,
       increaseStatusStack: SKSKActorSheet.#increaseStatusStack,
       decreaseStatusStack: SKSKActorSheet.#decreaseStatusStack,
+      adjustLongevity: SKSKActorSheet.#adjustLongevity,
+      resetLongevity: SKSKActorSheet.#resetLongevity,
       applyRestrained: SKSKActorSheet.#applyRestrained,
       toggleStatusEffect: SKSKActorSheet.#toggleStatusEffect,
       addStatusInstance: SKSKActorSheet.#addStatusInstance,
@@ -223,6 +226,10 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       tabs: [
         { id: "data", label: "SKSK.CharacterSection.Data" },
         { id: "biography", label: "SKSK.CharacterSection.Biography" },
+        // Character-only (see character.hbs's own {{#unless isNpc}} guard
+        // around both this tab's nav link and its section) - see
+        // helpers/longevity.mjs.
+        { id: "longevity", label: "SKSK.SheetLabels.Longevity" },
       ],
       initial: "data",
     },
@@ -552,7 +559,11 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     if (!this.#isSoulPathUnlocked) delete context.tabs.soulPath;
     context.soulPathStageTabs = Object.values(this._prepareTabs('soulPathStages'));
     context.generalSectionTabs = Object.values(this._prepareTabs('generalSections'));
-    context.characterSectionTabs = Object.values(this._prepareTabs('characterSections'));
+    const characterSections = this._prepareTabs('characterSections');
+    // Lebenszeit (Longevity) sub-tab is Character-only - see
+    // helpers/longevity.mjs, never computed/grown for NPCs.
+    if (actor.type === 'npc') delete characterSections.longevity;
+    context.characterSectionTabs = Object.values(characterSections);
     context.genderChoices = CONFIG.SKSK.genders;
     // Actions tab's Move dropdown - see helpers/actions.mjs.
     context.movementTypeChoices = CONFIG.SKSK.movementTypes;
@@ -695,6 +706,11 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       game.i18n.localize('SKSK.Resource.NegativeLife'), getNegativeLifeBreakdown(actor)
     );
     context.manaTooltip = renderBreakdownHtml(game.i18n.localize('SKSK.Resource.Mana'), getManaBreakdown(actor));
+    // Lebenszeit (Longevity) sub-tab's own Year/Month/Week/Day display -
+    // Character-only (see character.hbs's {{#unless isNpc}} guard), harmless
+    // to compute unconditionally since system.longevity.days is just 0 for
+    // NPCs (never grown - see helpers/longevity.mjs#applyPendingLongevityGrowth).
+    context.longevityBreakdown = daysToBreakdown(actor.system.longevity.days);
     context.armorClassTooltip = renderBreakdownHtml(game.i18n.localize('SKSK.Resource.AC'), getArmorClassBreakdown(actor));
     context.magicResistanceTooltip = renderBreakdownHtml(
       game.i18n.localize('SKSK.Resource.MR'), getMagicResistanceBreakdown(actor)
@@ -1460,6 +1476,13 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     // is left pending. See helpers/attributeBonuses.mjs.
     if (this.actor.isOwner) applyPendingAutoGrants(this.actor);
 
+    // Lebenszeit (Longevity) growth from a permanent max Life/Mana increase
+    // has the exact same "no single event to hook" problem as the
+    // attribute-threshold bonuses above, and is detected the same lazy way
+    // - see helpers/longevity.mjs#applyPendingLongevityGrowth (a no-op for
+    // NPCs).
+    if (this.actor.isOwner) applyPendingLongevityGrowth(this.actor);
+
     // Inspiration button's own Right-Click variant (spend a charge, roll
     // the die for yourself) - ApplicationV2's own action map only ever
     // dispatches "click", so this needs its own listener; suppresses the
@@ -1956,6 +1979,29 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
 
   static async #decreaseStatusStack(event, target) {
     await decreaseStatusStacks(this.actor, target.dataset.statusId, 1);
+  }
+
+  /**
+   * ±N Year/Month/Week/Day button on the Lebenszeit (Longevity) sub-tab
+   * (templates/actor/parts/general-longevity.hbs) - N comes from that same
+   * row's own free-entry amount input (data-unit's sibling), defaulting to
+   * 1 when left blank/0, so this one handler covers both the "+/-1" and the
+   * "free entry" behavior requested for each unit.
+   */
+  static async #adjustLongevity(event, target) {
+    const unit = target.dataset.unit;
+    const direction = target.dataset.direction === 'decrease' ? -1 : 1;
+    const input = target.closest('.longevity-unit-row')?.querySelector('.longevity-amount-input');
+    const amount = Math.max(1, Number(input?.value) || 1);
+    await adjustLongevity(this.actor, unit, amount * direction);
+  }
+
+  /**
+   * GM-Tab "Lebenszeit zurücksetzen" button (gm.hbs) - see
+   * helpers/longevity.mjs#resetLongevityToFull.
+   */
+  static async #resetLongevity(event, target) {
+    await resetLongevityToFull(this.actor);
   }
 
   /**

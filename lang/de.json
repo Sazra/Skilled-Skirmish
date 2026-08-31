@@ -155,6 +155,17 @@
             "Value": "Haltbarkeit",
             "Max": "Maximale Haltbarkeit"
         },
+        "Longevity": {
+            "Current": "Momentane Lebenszeit",
+            "Breakdown": "{years} Jahre, {months} Monate, {weeks} Wochen, {days} Tage",
+            "TotalDays": "Gesamt: {days} Tage",
+            "Year": "Jahr",
+            "Month": "Monat",
+            "Week": "Woche",
+            "Day": "Tag",
+            "Reset": "Lebenszeit zurücksetzen",
+            "ResetHint": "Setzt die momentane Lebenszeit auf 100% der Basis-Lebenszeit zurück (Hauptspezies inkl. aktueller Sub-Spezies-Multiplikatoren)."
+        },
         "Materials": {
             "Name": "Name",
             "MaterialBonus": "Materialbonus",
@@ -968,6 +979,7 @@
             "Effects": "Effekte",
             "General": "Allgemein",
             "Character": "Charakter",
+            "Longevity": "Lebenszeit",
             "Actions": "Aktionen",
             "GM": "GM",
             "ConfigureToken": "Token konfigurieren"

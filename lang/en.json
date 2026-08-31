@@ -155,6 +155,17 @@
       "Value": "Durability",
       "Max": "Max Durability"
     },
+    "Longevity": {
+      "Current": "Current Longevity",
+      "Breakdown": "{years} years, {months} months, {weeks} weeks, {days} days",
+      "TotalDays": "Total: {days} days",
+      "Year": "Year",
+      "Month": "Month",
+      "Week": "Week",
+      "Day": "Day",
+      "Reset": "Reset Longevity",
+      "ResetHint": "Resets current Longevity to 100% of base Longevity (main Species including current Sub-Species multipliers)."
+    },
     "Materials": {
       "Name": "Name",
       "MaterialBonus": "Material Bonus",
@@ -1193,6 +1204,7 @@
       "Effects": "Effects",
       "General": "General",
       "Character": "Character",
+      "Longevity": "Longevity",
       "Actions": "Actions",
       "GM": "GM",
       "ConfigureToken": "Configure Token"

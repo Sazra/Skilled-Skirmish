@@ -346,6 +346,40 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       xp: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0, max: 9999 }),
     });
 
+    // Lebenszeit (Longevity) - Character-only (see actor-sheet.mjs's
+    // generalSections tabs, hidden for NPCs), the actor's own running "how
+    // many days old" tracker (1 year = 12 months = 60 weeks = 360 days; 1
+    // month = 5 weeks = 30 days; 1 week = 6 days - see helpers/longevity.mjs
+    // for the conversion table and adjustLongevity, used by the sheet's own
+    // ±Year/Month/Week/Day buttons). days and percent are the two
+    // player/GM-facing values (percent = days' own percentage of "full"
+    // Lebenszeit, shown alongside it); initialized/mainBaselineDays/
+    // baselineTotal are internal bookkeeping only (never shown directly),
+    // analogous to skillAttributeBonusChoices' own "already granted"
+    // markers. See helpers/longevity.mjs:
+    // - applyPendingLongevityGrowth (lazily, on sheet render, detects a
+    //   permanent increase in max Life+Mana and grows mainBaselineDays by
+    //   1% of itself per point of increase - percent is preserved, days is
+    //   re-derived from it).
+    // - adjustLongevity (the sheet's own ±buttons change days directly;
+    //   percent is then re-derived from it against the current baseline).
+    // - sksk.mjs's own Species-related hooks (gaining/editing/losing a
+    //   main or sub Species) re-derive days from the preserved percent
+    //   against the newly changed baseline instead.
+    schema.longevity = new fields.SchemaField({
+      days: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+      percent: new fields.NumberField({ required: true, nullable: false, initial: 100 }),
+      initialized: new fields.BooleanField({ initial: false }),
+      // The main Species' own baseLongevity (years, in days) - grows via
+      // applyPendingLongevityGrowth, reset from scratch whenever the main
+      // Species' baseLongevity value changes or it's replaced outright
+      // (deliberately does NOT include any Sub-Species multiplier, which is
+      // instead always applied fresh - see helpers/longevity.mjs#
+      // computeSubMultiplierProduct/deriveDaysFromPercent).
+      mainBaselineDays: new fields.NumberField({ ...requiredInteger, initial: 0 }),
+      baselineTotal: new fields.NumberField({ ...requiredInteger, initial: 0 }),
+    });
+
     // User-extensible list of additional trackable resources (e.g. Rage,
     // Ki points), shown on the General tab alongside Life/Mana/AP/etc.
     // abbreviation (up to 4 letters, enforced by the input's maxlength
