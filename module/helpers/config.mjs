@@ -207,6 +207,25 @@ SKSK.sizeCategories = {
   titanic: 'SKSK.Size.Titanic',
 };
 
+// Creature categories a Species can belong to (a Species can carry more
+// than one - e.g. Naga is Humanoid + Beast) - player-extensible list shown
+// on the Species tab. See data/species.mjs#creatureCategories.
+SKSK.creatureCategories = {
+  humanoid: 'SKSK.CreatureCategory.Humanoid',
+  beast: 'SKSK.CreatureCategory.Beast',
+  plant: 'SKSK.CreatureCategory.Plant',
+  insect: 'SKSK.CreatureCategory.Insect',
+  monster: 'SKSK.CreatureCategory.Monster',
+  undead: 'SKSK.CreatureCategory.Undead',
+  elemental: 'SKSK.CreatureCategory.Elemental',
+  fey: 'SKSK.CreatureCategory.Fey',
+  demon: 'SKSK.CreatureCategory.Demon',
+  drake: 'SKSK.CreatureCategory.Drake',
+  diera: 'SKSK.CreatureCategory.Diera',
+  otherworldly: 'SKSK.CreatureCategory.Otherworldly',
+  construct: 'SKSK.CreatureCategory.Construct',
+};
+
 SKSK.classTypes = {
   first: 'SKSK.Class.Type.First',
   second: 'SKSK.Class.Type.Second',

@@ -101,6 +101,21 @@
             "Gigantic": "Gigantisch",
             "Titanic": "Titanisch"
         },
+        "CreatureCategory": {
+            "Humanoid": "Humanoid",
+            "Beast": "Bestie",
+            "Plant": "Pflanze",
+            "Insect": "Insekt",
+            "Monster": "Monster",
+            "Undead": "Untot",
+            "Elemental": "Elementar",
+            "Fey": "Fey",
+            "Demon": "Dämon",
+            "Drake": "Drake",
+            "Diera": "Diera",
+            "Otherworldly": "Überirdisch",
+            "Construct": "Konstrukt"
+        },
         "General": {
             "Overview": "Übersicht",
             "MovementSpeeds": "Bewegungsgeschwindigkeiten",
@@ -1218,7 +1233,9 @@
                 "Main": "Hauptspezies",
                 "Sub": "Sub-Spezies"
             },
-            "GmNotes": "GM-Notizen"
+            "GmNotes": "GM-Notizen",
+            "CreatureCategories": "Kreaturenkategorien",
+            "AddCreatureCategory": "Kreaturenkategorie hinzufügen"
         },
         "Class": {
             "Type": {

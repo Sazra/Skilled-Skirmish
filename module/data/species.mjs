@@ -48,6 +48,13 @@ export default class SKSKSpecies extends SKSKItemBase {
       choices: ["tiny", "small", "medium", "large", "huge", "gigantic", "titanic"]
     });
 
+    // Zero or more creature categories (CONFIG.SKSK.creatureCategories) this
+    // species belongs to - e.g. Naga is both Humanoid and Beast. Shown on
+    // the Species tab, player-extensible list.
+    schema.creatureCategories = new fields.ArrayField(
+      new fields.StringField({ required: true, blank: false, initial: "humanoid" })
+    );
+
     // Bonuses to attributes other than Aura. Player-extensible list.
     schema.attributeBonuses = new fields.ArrayField(new fields.SchemaField({
       attribute: new fields.StringField({ required: true, blank: false, initial: "str" }),

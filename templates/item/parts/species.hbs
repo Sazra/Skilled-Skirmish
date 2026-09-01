@@ -32,6 +32,34 @@
   </div>
 
   <div class="resource">
+    <label class="resource-label">{{localize 'SKSK.Species.CreatureCategories'}}</label>
+    <ol class="items-list items-list-compact">
+      {{#each system.creatureCategories as |entry index|}}
+      <li class="item flexrow">
+        <div class="item-name">
+          <select name="system.creatureCategories.{{index}}">
+            {{selectOptions ../creatureCategoryChoices selected=entry localize=true}}
+          </select>
+        </div>
+        <div class="item-controls">
+          <a class="item-control item-delete" data-action="removeArrayEntry" data-field="creatureCategories"
+            data-index="{{index}}" title="Remove">
+            <i class="fas fa-trash"></i>
+          </a>
+        </div>
+      </li>
+      {{/each}}
+      <li class="item flexrow">
+        <div class="item-controls">
+          <a class="item-control item-create" data-action="addCreatureCategory" title="Add creature category">
+            <i class="fas fa-plus"></i> {{localize 'SKSK.Species.AddCreatureCategory'}}
+          </a>
+        </div>
+      </li>
+    </ol>
+  </div>
+
+  <div class="resource">
     <label class="resource-label">Attribute Bonuses</label>
     <ol class="items-list">
       <li class="item flexrow items-header">

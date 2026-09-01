@@ -40,6 +40,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       toggle: SKSKItemSheet.#onEffectAction,
       addAttributeBonus: SKSKItemSheet.#addAttributeBonus,
       addSkillBonus: SKSKItemSheet.#addSkillBonus,
+      addCreatureCategory: SKSKItemSheet.#addCreatureCategory,
       addAbility: SKSKItemSheet.#addAbility,
       removeArrayEntry: SKSKItemSheet.#removeArrayEntry,
       addAbilityEffect: SKSKItemSheet.#addAbilityEffect,
@@ -418,6 +419,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       );
       context.canAddAbility = (item.system.abilities?.length ?? 0) < 3;
       context.sizeCategoryChoices = CONFIG.SKSK.sizeCategories;
+      context.creatureCategoryChoices = CONFIG.SKSK.creatureCategories;
     }
 
     if (item.type === 'class') {
@@ -781,6 +783,10 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
 
   static async #addSkillBonus(event, target) {
     await this.#addArrayEntry('skillBonuses', { skill: 'axe', bonus: 1 });
+  }
+
+  static async #addCreatureCategory(event, target) {
+    await this.#addArrayEntry('creatureCategories', 'humanoid');
   }
 
   static async #addAbility(event, target) {
