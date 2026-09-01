@@ -1258,7 +1258,9 @@
                 "Mythic": "Mythisch",
                 "Bonus": "Bonustalent",
                 "Bloodline": "Blutlinie"
-            }
+            },
+            "Prerequisites": "Voraussetzung",
+            "GmNotes": "GM-Notizen"
         },
         "Ability": {
             "LifeBonusFormula": "Lebens-Bonus (skalierend)",

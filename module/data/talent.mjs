@@ -12,6 +12,17 @@ export default class SKSKTalent extends SKSKItemBase {
       choices: ["level6", "level12", "level18", "level24", "mythic", "bonus", "bloodline"]
     });
 
+    // Freeform, player-visible prerequisite text (minimum level, attribute/
+    // skill minimums, other required talents, etc.) - shown on the Talent
+    // tab, since a player needs to see this to know whether they can take
+    // the talent (unlike gmNotes below, which is GM-only).
+    schema.prerequisites = new fields.StringField({ required: true, blank: true });
+
+    // Freeform GM-only notes - not mechanically enforced by anything, just
+    // a place to jot down effects that don't cleanly map to a structured
+    // field (see module/data/class.mjs#gmNotes for the same pattern).
+    schema.gmNotes = new fields.StringField({ required: true, blank: true });
+
     // Bonuses to attributes. Player-extensible list, like species/class.
     schema.attributeBonuses = new fields.ArrayField(new fields.SchemaField({
       attribute: new fields.StringField({ required: true, blank: false, initial: "str" }),
