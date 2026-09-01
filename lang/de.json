@@ -1217,7 +1217,8 @@
             "Type": {
                 "Main": "Hauptspezies",
                 "Sub": "Sub-Spezies"
-            }
+            },
+            "GmNotes": "GM-Notizen"
         },
         "Class": {
             "Type": {

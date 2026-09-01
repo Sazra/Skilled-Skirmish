@@ -14,6 +14,11 @@ export default class SKSKSpecies extends SKSKItemBase {
       required: true, blank: false, initial: "main", choices: ["main", "sub"]
     });
 
+    // Freeform GM-only notes - not mechanically enforced by anything, just
+    // a place to jot down effects that don't cleanly map to a structured
+    // field (see module/data/class.mjs#gmNotes for the same pattern).
+    schema.gmNotes = new fields.StringField({ required: true, blank: true });
+
     // Base value granted to the Aura attribute. A character's Aura is the
     // sum of this value from their main species and (if any) sub-species.
     // The field's own min covers a Sub-Species (0 - it doesn't have to add
