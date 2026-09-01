@@ -1228,7 +1228,8 @@
       },
       "SkillBonuses": "Skill Bonuses",
       "SkillPrerequisites": "Skill Prerequisites",
-      "RequiredLevel": "Required Level"
+      "RequiredLevel": "Required Level",
+      "GmNotes": "GM Notes"
     },
     "Talent": {
       "Type": {

@@ -11,6 +11,13 @@ export default class SKSKClass extends SKSKItemBase {
       required: true, blank: false, initial: "first", choices: ["first", "second", "third", "advanced"]
     });
 
+    // Freeform GM-only notes - not mechanically enforced by anything, just
+    // a place to jot down effects that don't cleanly map to a structured
+    // field (e.g. a design-doc ability granting "one weapon skill of your
+    // choice at level 1", which skillBonuses can't represent since it
+    // needs one fixed skill key).
+    schema.gmNotes = new fields.StringField({ required: true, blank: true });
+
     // A character/NPC's base life is the first + second class's life
     // values added together, multiplied by level.
     schema.life = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });

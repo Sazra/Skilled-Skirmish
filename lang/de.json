@@ -1025,7 +1025,7 @@
                 "Dark": "Dunkelheit",
                 "Life": "Leben",
                 "Death": "Tod",
-                "Trickery": "Täuschung",
+                "Trickery": "Trickkunst",
                 "Nature": "Natur",
                 "Bardic": "Barde",
                 "Divination": "Wahrsagerei",
@@ -1228,7 +1228,8 @@
             },
             "SkillBonuses": "Skill-Boni",
             "SkillPrerequisites": "Skill-Voraussetzung",
-            "RequiredLevel": "Erforderliches Level"
+            "RequiredLevel": "Erforderliches Level",
+            "GmNotes": "GM-Notizen"
         },
         "Talent": {
             "Type": {
