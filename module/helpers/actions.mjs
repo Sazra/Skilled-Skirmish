@@ -17,6 +17,7 @@ import {
 import { checkFlanking } from "./flanking.mjs";
 import { computeLehrenTargetBonus } from "./lehren.mjs";
 import { isDurabilityEnabled } from "./materials.mjs";
+import { computePatronDamageBonus } from "./religion.mjs";
 
 /**
  * The intended target's flanking result (see helpers/flanking.mjs) for an
@@ -169,7 +170,8 @@ export async function rollWeaponItem(item) {
       : 0;
     const damageTypeBonus = actor?.system.damageBonus?.[damageType] ?? 0;
     const allWeaponsDamageBonus = actor?.system.damageBonusAll ?? 0;
-    const totalDamageBonus = attributeBonus + lehrenDamageBonus + damageTypeBonus + allWeaponsDamageBonus;
+    const patronDamageBonus = actor ? computePatronDamageBonus(actor, { skillKey: item.system.weaponType, damageType }) : 0;
+    const totalDamageBonus = attributeBonus + lehrenDamageBonus + damageTypeBonus + patronDamageBonus + allWeaponsDamageBonus;
     const damageFormulaBase = totalDamageBonus ? `${item.system.formula} + ${totalDamageBonus}` : item.system.formula;
     const damageFormula = applyTechniqueDiceIncrease(damageFormulaBase, technique);
     const roll = await new Roll(damageFormula, item.getRollData()).evaluate();
@@ -334,7 +336,8 @@ export async function rollMartialArtsAttack(actor, index) {
   const lehrenDamageBonus = computeLehrenTargetBonus(actor, 'damageBonus', { skillKey: 'martialArts', kind: 'weapon' });
   const damageTypeBonus = actor.system.damageBonus?.[attack.damageType] ?? 0;
   const allWeaponsDamageBonus = actor.system.damageBonusAll ?? 0;
-  const bonus = attributeBonus + lehrenDamageBonus + damageTypeBonus + allWeaponsDamageBonus;
+  const patronDamageBonus = computePatronDamageBonus(actor, { skillKey: 'martialArts', damageType: attack.damageType });
+  const bonus = attributeBonus + lehrenDamageBonus + damageTypeBonus + patronDamageBonus + allWeaponsDamageBonus;
   const formulaBase = bonus ? `${attack.formula} + ${bonus}` : attack.formula;
   const formula = applyTechniqueDiceIncrease(formulaBase, technique);
   const roll = await new Roll(formula, actor.getRollData()).evaluate();

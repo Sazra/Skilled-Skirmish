@@ -16,8 +16,9 @@ const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
  * "Löschen" clears the slot back to empty, freeing it for a new summon.
  * Every still-summoned slot separately grants "summonExistenceDay" FP on
  * the next Anpassungs-/Genesungspause - see helpers/rest.mjs#applyRest.
- * Unlike SKSKPrayerDialog (or SKSKMassKillDialog's own Mark Kill section),
- * each row writes immediately (no separate Confirm step), since every row
+ * Unlike SKSKReligionDialog's own Prayer section (or SKSKMassKillDialog's
+ * own Mark Kill section), each row writes immediately (no separate Confirm
+ * step), since every row
  * is its own atomic action; the dialog stays open and re-renders after
  * each one.
  */

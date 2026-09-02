@@ -1,0 +1,149 @@
+<div class="sksk-deities-config">
+  <p class="hint">{{localize 'SKSK.Settings.Deities.Hint'}}</p>
+
+  <div class="resource">
+    <label class="resource-label">{{localize 'SKSK.Deity.AbilityCount'}}</label>
+    <input type="text" name="deityAbilityCount" value="{{deityAbilityCount}}" data-dtype="Number" placeholder="3" />
+    <p class="hint">{{localize 'SKSK.Deity.AbilityCountHint'}}</p>
+  </div>
+
+  <ol class="items-list">
+    <li class="item flexrow items-header">
+      <div class="item-name">{{localize 'SKSK.Deity.Name'}}</div>
+      <div class="item-controls">
+        <a class="item-control" data-action="addDeity" title="{{localize 'SKSK.Deity.Add'}}">
+          <i class="fas fa-plus"></i>
+        </a>
+      </div>
+    </li>
+    {{#each deities as |deity index|}}
+    <li class="item model-entry">
+      <details class="settings-entry-details" data-sync="deity-entry-{{index}}" open>
+        <summary class="settings-entry-summary">
+          <i class="fas fa-chevron-right settings-entry-chevron"></i>
+          <input type="text" name="deities.{{index}}.name" value="{{deity.name}}"
+            class="settings-entry-name" placeholder="{{localize 'SKSK.Deity.Name'}}" />
+          <a class="item-control item-delete" data-action="removeDeity" data-index="{{index}}"
+            title="{{localize 'SKSK.Deity.Remove'}}">
+            <i class="fas fa-trash"></i>
+          </a>
+        </summary>
+        <div class="settings-entry-body flexcol">
+
+          <label class="resource-label">{{localize 'SKSK.Deity.Description'}}</label>
+          <textarea name="deities.{{index}}.description" rows="2">{{deity.description}}</textarea>
+
+          <label class="resource-label">{{localize 'SKSK.Deity.Elements'}}</label>
+          <div class="grid grid-4col model-checkbox-grid">
+            {{#each ../elementChoices as |el|}}
+            <label class="casting-method-option">
+              <input type="checkbox" name="deities.{{index}}.elements.{{el.key}}"
+                {{checked (includes deity.elements el.key)}} />
+              {{localize el.label}}
+            </label>
+            {{/each}}
+          </div>
+
+          <label class="resource-label">{{localize 'SKSK.Deity.Skills'}}</label>
+          <div class="grid grid-3col model-checkbox-grid">
+            {{#each ../skillChoices as |choice|}}
+            <label class="casting-method-option">
+              <input type="checkbox" name="deities.{{index}}.skills.{{choice.value}}"
+                {{checked (includes deity.skills choice.value)}} />
+              {{localize choice.label}}
+            </label>
+            {{/each}}
+          </div>
+
+          <div class="grid grid-2col">
+            <div class="grid-span-1">
+              <label class="resource-label">{{localize 'SKSK.Deity.CombinedSchoolOverride'}}</label>
+              <select name="deities.{{index}}.combinedSchoolOverride">
+                {{selectOptions ../combinedSchoolChoices selected=deity.combinedSchoolOverride localize=true}}
+              </select>
+            </div>
+          </div>
+
+          <div class="resource">
+            <label class="resource-label">
+              {{localize 'SKSK.Deity.Domains'}}
+              <a class="item-control" data-action="addDomain" data-deity-index="{{index}}"
+                title="{{localize 'SKSK.Deity.AddDomain'}}">
+                <i class="fas fa-plus"></i>
+              </a>
+            </label>
+            {{#each deity.domains as |domain subIndex|}}
+            <div class="grid grid-2col deity-domain-row">
+              <div class="grid-span-1">
+                <input type="text" name="deities.{{index}}.domains.{{subIndex}}" value="{{domain}}" />
+              </div>
+              <div class="grid-span-1">
+                <a class="item-control item-delete" data-action="removeDomain" data-deity-index="{{index}}"
+                  data-index="{{subIndex}}" title="{{localize 'SKSK.Deity.RemoveDomain'}}">
+                  <i class="fas fa-trash"></i>
+                </a>
+              </div>
+            </div>
+            {{else}}
+            <p class="hint">{{localize 'SKSK.Deity.NoDomains'}}</p>
+            {{/each}}
+          </div>
+
+          <div class="resource">
+            <label class="resource-label">
+              {{localize 'SKSK.Deity.Deeds'}}
+              <a class="item-control" data-action="addDeed" data-deity-index="{{index}}"
+                title="{{localize 'SKSK.Deity.AddDeed'}}">
+                <i class="fas fa-plus"></i>
+              </a>
+            </label>
+            {{#each deity.deeds as |deed subIndex|}}
+            <div class="grid grid-4col deity-deed-row">
+              <div class="grid-span-2">
+                <input type="text" name="deities.{{index}}.deeds.{{subIndex}}.name" value="{{deed.name}}"
+                  placeholder="{{localize 'SKSK.Deity.Deed.Name'}}" />
+              </div>
+              <div class="grid-span-1">
+                <input type="text" name="deities.{{index}}.deeds.{{subIndex}}.amount" value="{{deed.amount}}"
+                  data-dtype="Number" placeholder="0" />
+              </div>
+              <div class="grid-span-1">
+                <select name="deities.{{index}}.deeds.{{subIndex}}.type">
+                  {{selectOptions ../../deedTypeChoices selected=deed.type localize=true}}
+                </select>
+              </div>
+              <div class="grid-span-1">
+                <a class="item-control item-delete" data-action="removeDeed" data-deity-index="{{index}}"
+                  data-index="{{subIndex}}" title="{{localize 'SKSK.Deity.RemoveDeed'}}">
+                  <i class="fas fa-trash"></i>
+                </a>
+              </div>
+            </div>
+            {{else}}
+            <p class="hint">{{localize 'SKSK.Deity.NoDeeds'}}</p>
+            {{/each}}
+          </div>
+
+          <div class="resource">
+            <label class="resource-label">{{localize 'SKSK.Deity.Abilities'}}</label>
+            {{#each deity.abilities as |ability subIndex|}}
+            <div class="deity-ability-row">
+              <label class="resource-label">{{localize 'SKSK.Deity.AbilityNumber'}} {{inc subIndex}}</label>
+              <input type="text" name="deities.{{index}}.abilities.{{subIndex}}.name" value="{{ability.name}}"
+                placeholder="{{localize 'SKSK.Deity.Name'}}" />
+              <textarea name="deities.{{index}}.abilities.{{subIndex}}.description"
+                rows="2">{{ability.description}}</textarea>
+            </div>
+            {{/each}}
+          </div>
+
+        </div>
+      </details>
+    </li>
+    {{else}}
+    <li class="item flexrow">
+      <div class="item-name">{{localize 'SKSK.Deity.None'}}</div>
+    </li>
+    {{/each}}
+  </ol>
+</div>

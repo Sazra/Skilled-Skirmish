@@ -3,6 +3,7 @@ import { applyD20Malus, computeDazedAttributeMalus } from './statusEffects.mjs';
 import { chooseGenericRollMode, evaluateD20WithMode, formatD20ModeSummaryLine } from './criticalRolls.mjs';
 import { postActionChatCard } from './actions.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
+import { computePatronRollBonus } from './religion.mjs';
 
 /**
  * The skill's own config entry (CONFIG.SKSK.skills[category][skillKey]) if
@@ -153,7 +154,8 @@ export async function rollSkillCheck(actor, skillKey, chosenAttributes, variant 
   const mode = await chooseGenericRollMode();
   if (!mode) return;
 
-  const level = getActorSkillLevel(actor, skillKey) + (actor.system.skillRollBonus?.[skillKey] ?? 0);
+  const level = getActorSkillLevel(actor, skillKey) + (actor.system.skillRollBonus?.[skillKey] ?? 0)
+    + computePatronRollBonus(actor, skillKey);
   const modField = ignoreSpecial ? 'modExcludingSpecial' : 'mod';
   const modTerms = chosenAttributes.map(a => `@attributes.${a}.${modField}`).join(' + ');
   const baseFormula = `d20 + ${level} + ${modTerms}`;

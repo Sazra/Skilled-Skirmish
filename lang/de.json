@@ -74,6 +74,11 @@
                 "Name": "Effekt-Schlüssel-Referenz",
                 "Hint": "Eine durchsuchbare Liste aller echten Foundry-Effekt-\"Attribute Key\"-Werte, die dieses System unterstützt.",
                 "Label": "Effekt-Schlüssel durchsuchen"
+            },
+            "Deities": {
+                "Name": "Patrone",
+                "Hint": "Die göttlichen Wesen (Patrone), die Akteure im Religions-Fenster als ihren Patron wählen können - mit Elementen, Patron-Fertigkeiten, kombinierter Magieschule, Domänen, Taten und nummerierten Patron-Fähigkeiten.",
+                "Label": "Patrone konfigurieren"
             }
         },
         "Movement": {
@@ -223,6 +228,34 @@
             "Add": "Kampfstil hinzufügen",
             "Remove": "Entfernen",
             "None": "Noch keine Kampfstile angelegt."
+        },
+        "Deity": {
+            "Name": "Name",
+            "Description": "Beschreibung",
+            "Add": "Patron hinzufügen",
+            "Remove": "Entfernen",
+            "None": "Noch keine Patrone angelegt.",
+            "Elements": "Elemente",
+            "Skills": "Patron-Fertigkeiten",
+            "CombinedSchoolOverride": "Kombinierte Magieschule",
+            "NoCombinedSchoolOverride": "Keine",
+            "Domains": "Domäne",
+            "AddDomain": "Domäne hinzufügen",
+            "RemoveDomain": "Entfernen",
+            "NoDomains": "Noch keine Domänen.",
+            "Deeds": "Dinge und Taten",
+            "AddDeed": "Tat hinzufügen",
+            "RemoveDeed": "Entfernen",
+            "NoDeeds": "Noch keine Taten.",
+            "Deed": {
+                "Name": "Name",
+                "Passive": "Passiv",
+                "Active": "Aktiv"
+            },
+            "Abilities": "Patron-Fähigkeiten",
+            "AbilityNumber": "Fähigkeit",
+            "AbilityCount": "Anzahl Fähigkeiten pro Patron",
+            "AbilityCountHint": "Gilt für alle Patrone gleichermaßen - jeder Patron besitzt genau diese Anzahl an nummerierten Fähigkeiten, die Glaubensklassen über einen Fähigkeits-Index referenzieren können."
         },
         "SkillFpConfig": {
             "Skill": "Fertigkeit",
@@ -810,15 +843,23 @@
             "PathAbilityExpired": "{name}: Wirkungsdauer abgelaufen - deaktiviert.",
             "TurnStartTitle": "Seelenpfad"
         },
-        "PrayerDialog": {
-            "Title": "Gebet",
-            "Hours": "Stunden",
-            "Confirm": "Gebets-FP vergeben",
+        "Religion": {
+            "Title": "Religion",
+            "Patron": "Patron",
+            "NoPatron": "Kein Patron",
+            "PrayerHours": "Gebets-Stunden",
+            "ConfirmPrayer": "Gebets-FP vergeben",
+            "PrayerTitle": "Gebet",
+            "PrayerDescription": "{name} betet {hours} Stunden.",
             "NoGain": "Keine FP generiert - für Glaube ist keine Gebets-Rate konfiguriert.",
-            "Description": "{name} betet {hours} Stunden."
-        },
-        "Prayer": {
-            "Title": "Beten"
+            "Deed": "Tat",
+            "SelectDeed": "Tat wählen",
+            "ConfirmDeed": "Tat anwenden",
+            "DeedTitle": "Tat",
+            "DeedDescription": "{name} vollführt die Tat \"{deed}\" und erhält {amount} Punkte in Glaube.",
+            "NoElements": "Keine Elemente.",
+            "PatronSkill": "Patron-Fertigkeit - Würfe erhalten einen Bonus gleich der Fertigkeitsstufe von Glaube.",
+            "NoPatronHint": "Wähle zuerst einen Patron, um beten oder eine Tat vollführen zu können."
         },
         "SummoningDialog": {
             "Title": "Beschwörung",
@@ -1247,7 +1288,13 @@
             "SkillBonuses": "Skill-Boni",
             "SkillPrerequisites": "Skill-Voraussetzung",
             "RequiredLevel": "Erforderliches Level",
-            "GmNotes": "GM-Notizen"
+            "GmNotes": "GM-Notizen",
+            "IsFaithClass": "Glaubensklasse",
+            "FaithPatron": "Patron",
+            "NoPatronOverride": "Vom Akteur übernehmen",
+            "PatronAbility": "Patron-Fähigkeit",
+            "NoPatronAbility": "Keine",
+            "PatronAbilityNumbered": "Fähigkeit {number}"
         },
         "Talent": {
             "Type": {

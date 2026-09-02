@@ -183,7 +183,7 @@ const SKILL_SPECIFIC_TRIGGERS = {
 
   // Misc (Nutzungsfertigkeiten). "passiveDetection" and "prayer" are both
   // wired - see sheets/actor-sheet.mjs's header (#grantPassivePerceptionFp/
-  // #openPrayerDialog, via apps/prayer-dialog.mjs).
+  // #openReligionDialog, via apps/religion-dialog.mjs).
   observation: [{ key: 'passiveDetection', label: 'SKSK.SkillFpConfig.PassiveDetection' }],
   faith: [{ key: 'prayer', label: 'SKSK.SkillFpConfig.Prayer' }],
   healer: [{ key: 'healedCreature', label: 'SKSK.SkillFpConfig.HealedCreature' }],

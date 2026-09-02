@@ -1058,6 +1058,12 @@ body.theme-light .application.sksk.actor {
   overflow-x: hidden;
 }
 
+.sksk .items-list .item-name .patron-skill-icon {
+  margin-right: 4px;
+  flex: 0 0 auto;
+  color: var(--color-text-hyperlink, #7a1fb2);
+}
+
 .sksk .items-list .item-controls {
   display: flex;
   flex: 0 0 100px;
@@ -1878,6 +1884,13 @@ span.sksk-critical-failure {
 /* Configure Materials settings app - a single, untabbed part, so the
    whole window content just scrolls as one block. */
 .sksk.materials-config .window-content {
+  overflow-y: auto;
+}
+
+/* Configure Deities (Patrone) settings app - same single-untabbed-part
+   scrolling as .sksk.materials-config above; each Deity's own element/skill
+   checkbox grids easily outgrow the fixed window height otherwise. */
+.sksk.deities-config .window-content {
   overflow-y: auto;
 }
 

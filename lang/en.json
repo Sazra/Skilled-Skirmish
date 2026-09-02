@@ -74,6 +74,11 @@
         "Name": "Effect Key Reference",
         "Hint": "A searchable list of every real Foundry Active Effect \"Attribute Key\" this system supports.",
         "Label": "Browse Effect Keys"
+      },
+      "Deities": {
+        "Name": "Deities",
+        "Hint": "The Deities (Patrons) actors can choose as their patron in the Religion window - with elements, Patron skills, combined magic school, domains, deeds, and numbered Patron abilities.",
+        "Label": "Configure Deities"
       }
     },
     "Movement": {
@@ -223,6 +228,34 @@
       "Add": "Add Combat Style",
       "Remove": "Remove",
       "None": "No combat styles defined yet."
+    },
+    "Deity": {
+      "Name": "Name",
+      "Description": "Description",
+      "Add": "Add Deity",
+      "Remove": "Remove",
+      "None": "No Deities defined yet.",
+      "Elements": "Elements",
+      "Skills": "Patron Skills",
+      "CombinedSchoolOverride": "Combined Magic School",
+      "NoCombinedSchoolOverride": "None",
+      "Domains": "Domain",
+      "AddDomain": "Add Domain",
+      "RemoveDomain": "Remove",
+      "NoDomains": "No domains yet.",
+      "Deeds": "Deeds",
+      "AddDeed": "Add Deed",
+      "RemoveDeed": "Remove",
+      "NoDeeds": "No deeds yet.",
+      "Deed": {
+        "Name": "Name",
+        "Passive": "Passive",
+        "Active": "Active"
+      },
+      "Abilities": "Patron Abilities",
+      "AbilityNumber": "Ability",
+      "AbilityCount": "Number of Abilities per Deity",
+      "AbilityCountHint": "Applies to every Deity equally - each Deity has exactly this many numbered abilities, which Glaubensklassen (faith classes) can reference by ability index."
     },
     "SkillFpConfig": {
       "Skill": "Skill",
@@ -810,15 +843,23 @@
       "PathAbilityExpired": "{name}: duration expired - deactivated.",
       "TurnStartTitle": "Soul Path"
     },
-    "PrayerDialog": {
-      "Title": "Prayer",
-      "Hours": "Hours",
-      "Confirm": "Grant Prayer FP",
+    "Religion": {
+      "Title": "Religion",
+      "Patron": "Patron",
+      "NoPatron": "No Patron",
+      "PrayerHours": "Prayer Hours",
+      "ConfirmPrayer": "Grant Prayer FP",
+      "PrayerTitle": "Prayer",
+      "PrayerDescription": "{name} prays for {hours} hours.",
       "NoGain": "No FP generated - no Prayer rate configured for Faith.",
-      "Description": "{name} prays for {hours} hours."
-    },
-    "Prayer": {
-      "Title": "Pray"
+      "Deed": "Deed",
+      "SelectDeed": "Select Deed",
+      "ConfirmDeed": "Apply Deed",
+      "DeedTitle": "Deed",
+      "DeedDescription": "{name} performs the deed \"{deed}\" and gains {amount} points in Faith.",
+      "NoElements": "No elements.",
+      "PatronSkill": "Patron skill - rolls get a bonus equal to the Faith skill level.",
+      "NoPatronHint": "Choose a Patron first to pray or perform a deed."
     },
     "SummoningDialog": {
       "Title": "Summoning",
@@ -1247,7 +1288,13 @@
       "SkillBonuses": "Skill Bonuses",
       "SkillPrerequisites": "Skill Prerequisites",
       "RequiredLevel": "Required Level",
-      "GmNotes": "GM Notes"
+      "GmNotes": "GM Notes",
+      "IsFaithClass": "Faith Class",
+      "FaithPatron": "Patron",
+      "NoPatronOverride": "Inherit from Actor",
+      "PatronAbility": "Patron Ability",
+      "NoPatronAbility": "None",
+      "PatronAbilityNumbered": "Ability {number}"
     },
     "Talent": {
       "Type": {

@@ -5,6 +5,19 @@
   </div>
 
   <div class="resource">
+    <label class="casting-method-option">
+      <input type="checkbox" name="system.isFaithClass" {{checked system.isFaithClass}} />
+      {{localize 'SKSK.Class.IsFaithClass'}}
+    </label>
+    {{#if system.isFaithClass}}
+    <label class="resource-label">{{localize 'SKSK.Class.FaithPatron'}}</label>
+    <select name="system.faithPatronId">
+      {{selectOptions deityChoices selected=system.faithPatronId}}
+    </select>
+    {{/if}}
+  </div>
+
+  <div class="resource">
     <label class="resource-label">Combined School Overrides</label>
     <ol class="items-list items-list-compact">
       <li class="item flexrow items-header">

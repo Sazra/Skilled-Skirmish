@@ -96,6 +96,10 @@ Handlebars.registerHelper('concat', function (...args) {
   return args.join('');
 });
 
+Handlebars.registerHelper('inc', function (value) {
+  return Number(value) + 1;
+});
+
 Hooks.once('ready', async function () {
   // Seed the world's predefined status effects (Exhaustion/Dazed/the four
   // Poison severities - see helpers/statusEffects.mjs) if missing, and

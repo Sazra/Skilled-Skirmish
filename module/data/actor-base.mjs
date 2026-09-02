@@ -549,6 +549,15 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // summonSlotsMultiplier above. See helpers/totem.mjs#computeTotemSlots.
     schema.totemSlotsBonus = new fields.NumberField({ ...requiredInteger, initial: 0 });
     schema.totemSlotsMultiplier = new fields.NumberField({ required: true, nullable: false, initial: 1, min: 0 });
+    // The actor's own chosen Patron (Deity) - an id into the world's
+    // "deities" setting (see helpers/settings.mjs, helpers/religion.mjs),
+    // or blank for no Patron. Set via apps/religion-dialog.mjs. A
+    // Glaubensklasse Class item can override this per-class (see
+    // data/class.mjs#faithPatronId) - this field is only the actor's own
+    // default/fallback Patron.
+    schema.religion = new fields.SchemaField({
+      patronId: new fields.StringField({ required: true, blank: true, initial: "" }),
+    });
     // GM-tab switch gating Seelenstärke's "meditationUsedInCombat" FP
     // trigger (helpers/actions.mjs#rollMeditation) - off by default, since
     // unlike every other skill-usage trigger (gated purely by its own GM-

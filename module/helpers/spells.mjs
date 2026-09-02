@@ -1,5 +1,6 @@
 import { evaluateBonusFormula, evaluateSkillFormula, getActorSkillLevel, getSkillLabel } from './skills.mjs';
 import { computeLehrenTargetBonus } from './lehren.mjs';
+import { computePatronDamageBonus, getActivePatronCombinedSchoolLevel } from './religion.mjs';
 
 /**
  * Sum a set of attribute- and skill-based bonuses for a given caster, each
@@ -67,7 +68,37 @@ export function computeDamageBonus(damage, actor, spellSystem = null) {
   // applies unconditionally whenever an actor is present - no spellSystem
   // needed.
   const allSpellsDamageBonus = actor?.system.spellDamageBonusAll ?? 0;
-  return sumBonuses(damage.attributeBonuses, damage.skillBonuses, actor) + lehrenBonus + damageTypeBonus + allSpellsDamageBonus;
+  const patronBonus = actor && spellSystem
+    ? computeSpellPatronDamageBonus(spellSystem, actor, damage.damageType)
+    : 0;
+  return sumBonuses(damage.attributeBonuses, damage.skillBonuses, actor) + lehrenBonus + damageTypeBonus + patronBonus + allSpellsDamageBonus;
+}
+
+/**
+ * The Patron damage bonus (see helpers/religion.mjs#computePatronDamageBonus)
+ * for one of a spell's own damage entries - checked against whichever
+ * individual skill(s) the spell's own attack roll bonus is computed from
+ * (helpers/attackRolls.mjs#computeSpellAttackBonus): magicSchool for
+ * Simple/Advanced, each required combinedSkills entry for Combined (any one
+ * matching applies the bonus once - computePatronDamageBonus's own result is
+ * either 0 or a fixed value, so Math.max never double-counts), Magiekontrolle
+ * for Systemless.
+ * @param {object} spellSystem
+ * @param {Actor} actor
+ * @param {string} damageType
+ * @return {number}
+ */
+function computeSpellPatronDamageBonus(spellSystem, actor, damageType) {
+  if (spellSystem.spellType === 'simple' || spellSystem.spellType === 'advanced') {
+    return computePatronDamageBonus(actor, { skillKey: spellSystem.magicSchool, damageType });
+  }
+  if (spellSystem.spellType === 'combined') {
+    const perSkill = (spellSystem.combinedSkills ?? []).map(entry =>
+      computePatronDamageBonus(actor, { skillKey: entry.skill, damageType })
+    );
+    return Math.max(0, ...perSkill, computePatronDamageBonus(actor, { damageType }));
+  }
+  return computePatronDamageBonus(actor, { skillKey: 'magicControl', damageType });
 }
 
 /**
@@ -114,6 +145,11 @@ export function getCombinedSchoolOverrideLevel(actor, combinedSchool) {
       if (best === null || level > best) best = level;
     }
   }
+  // A Patron granting this combined school (see helpers/religion.mjs) - the
+  // actor's own Religion choice, or any Glaubensklasse's own effective
+  // Patron - grants it up to their Glaube (faith) skill level.
+  const patronLevel = getActivePatronCombinedSchoolLevel(actor, combinedSchool);
+  if (patronLevel !== null && (best === null || patronLevel > best)) best = patronLevel;
   return best;
 }
 

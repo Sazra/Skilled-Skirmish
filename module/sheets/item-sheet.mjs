@@ -19,6 +19,7 @@ import {
 } from '../helpers/soulPathRolls.mjs';
 import { ensureLinkedSpellEffect } from '../helpers/spell-rolls.mjs';
 import { SKSKSoulPathElementsDialog } from '../apps/soul-path-elements-dialog.mjs';
+import { getWorldDeities } from '../helpers/religion.mjs';
 
 /**
  * Extend the basic ItemSheet with some very simple modifications
@@ -425,6 +426,16 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
     if (item.type === 'class') {
       context.classTypeChoices = CONFIG.SKSK.classTypes;
       context.isFirstClass = item.system.classType === 'first';
+      // Glaubensklasse (faith class) support - see data/class.mjs#
+      // isFaithClass/faithPatronId/abilities.patronAbilityIndex and
+      // helpers/religion.mjs.
+      context.deityChoices = { '': game.i18n.localize('SKSK.Class.NoPatronOverride') };
+      for (const deity of getWorldDeities()) context.deityChoices[deity.id] = deity.name;
+      const deityAbilityCount = game.settings.get('sksk', 'deityAbilityCount') ?? 3;
+      context.deityAbilityChoices = { 0: game.i18n.localize('SKSK.Class.NoPatronAbility') };
+      for (let i = 1; i <= deityAbilityCount; i++) {
+        context.deityAbilityChoices[i] = game.i18n.format('SKSK.Class.PatronAbilityNumbered', { number: i });
+      }
     }
 
     // Equipped/Enchanted only matter (and are only shown) once an Item is

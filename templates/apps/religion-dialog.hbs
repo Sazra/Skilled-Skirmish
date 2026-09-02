@@ -1,0 +1,47 @@
+<div class="sksk-religion-dialog flexcol">
+  <div class="resource">
+    <label class="resource-label">{{localize 'SKSK.Religion.Patron'}}</label>
+    <select data-religion-field="patronId">
+      {{selectOptions patronChoices selected=patronId}}
+    </select>
+  </div>
+
+  {{#if patron}}
+  <div class="resource">
+    <label class="resource-label">{{localize 'SKSK.Deity.Description'}}</label>
+    <p class="hint">{{patron.description}}</p>
+  </div>
+
+  <div class="resource">
+    <label class="resource-label">{{localize 'SKSK.Deity.Domains'}}</label>
+    <p class="hint">
+      {{#if domains.length}}{{#each domains}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
+      {{else}}{{localize 'SKSK.Deity.NoDomains'}}{{/if}}
+    </p>
+  </div>
+
+  <div class="resource">
+    <label class="resource-label">{{localize 'SKSK.Deity.Elements'}}</label>
+    <p class="hint">
+      {{#if elementLabels.length}}{{#each elementLabels}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
+      {{else}}{{localize 'SKSK.Religion.NoElements'}}{{/if}}
+    </p>
+  </div>
+
+  <div class="resource">
+    <label class="resource-label">{{localize 'SKSK.Religion.PrayerHours'}}</label>
+    <input type="text" data-religion-field="hours" value="{{hours}}" data-dtype="Number" />
+  </div>
+  <button type="button" data-action="confirmPrayer">{{localize 'SKSK.Religion.ConfirmPrayer'}}</button>
+
+  <div class="resource">
+    <label class="resource-label">{{localize 'SKSK.Religion.Deed'}}</label>
+    <select data-religion-field="deedId">
+      {{selectOptions deedChoices selected=deedId}}
+    </select>
+  </div>
+  <button type="button" data-action="confirmDeed">{{localize 'SKSK.Religion.ConfirmDeed'}}</button>
+  {{else}}
+  <p class="hint">{{localize 'SKSK.Religion.NoPatronHint'}}</p>
+  {{/if}}
+</div>

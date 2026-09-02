@@ -26,6 +26,7 @@ import {
 import { computeMovementSpeeds, getActorSizeCategory } from '../helpers/movement.mjs';
 import { computeCarriedWeight, computeMaxCarryWeight } from '../helpers/inventory.mjs';
 import { getClassAbilityLevels, actorHasAdvancedClass } from '../helpers/abilities.mjs';
+import { getActorPatron, getEffectiveClassPatron, isPatronSkill } from '../helpers/religion.mjs';
 import { getLifeBreakdown, getNegativeLifeBreakdown } from '../helpers/life.mjs';
 import { getManaBreakdown } from '../helpers/mana.mjs';
 import { daysToBreakdown, applyPendingLongevityGrowth, adjustLongevity, resetLongevityToFull } from '../helpers/longevity.mjs';
@@ -36,7 +37,7 @@ import { rollMartialArtsAttack, rollRegeneration, rollMeditation, rollAdrenalin,
 import { chooseOverchargeCount } from '../helpers/spell-rolls.mjs';
 import { SKSKRestDialog } from '../apps/rest-dialog.mjs';
 import { SKSKTrainingDialog } from '../apps/training-dialog.mjs';
-import { SKSKPrayerDialog } from '../apps/prayer-dialog.mjs';
+import { SKSKReligionDialog } from '../apps/religion-dialog.mjs';
 import { SKSKSummoningDialog } from '../apps/summoning-dialog.mjs';
 import { SKSKTotemDialog } from '../apps/totem-dialog.mjs';
 import { SKSKSourceDialog } from '../apps/source-dialog.mjs';
@@ -142,7 +143,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       openRestDialog: SKSKActorSheet.#openRestDialog,
       openTrainingDialog: SKSKActorSheet.#openTrainingDialog,
       openMassKillDialog: SKSKActorSheet.#openMassKillDialog,
-      openPrayerDialog: SKSKActorSheet.#openPrayerDialog,
+      openReligionDialog: SKSKActorSheet.#openReligionDialog,
       openSummoningDialog: SKSKActorSheet.#openSummoningDialog,
       openTotemDialog: SKSKActorSheet.#openTotemDialog,
       openSourceDialog: SKSKActorSheet.#openSourceDialog,
@@ -386,10 +387,9 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     if (actorType === 'npc') {
       parts.header.template = `systems/sksk/templates/actor/parts/header-npc.hbs`;
       parts.resources.template = `systems/sksk/templates/actor/parts/resources-npc.hbs`;
-      // The icon toolbar only exists for Characters (see header.hbs's own
-      // .header-rest, now relocated there) - the NPC header has nothing
-      // worth collapsing into it.
-      delete parts.toolbar;
+      // NPCs get the same icon toolbar as Characters, but reduced to Rest/
+      // Religion/Lehren only - see templates/actor/parts/header-toolbar.hbs's
+      // own isNpc guards.
     } else {
       parts.header.template = `systems/sksk/templates/actor/parts/header.hbs`;
       parts.resources.template = `systems/sksk/templates/actor/parts/resources.hbs`;
@@ -423,13 +423,14 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
   /** @override */
   async _renderFrame(options) {
     const frame = await super._renderFrame(options);
-    // Header toolbar toggle - Character-only (see _configureRenderParts,
-    // which deletes the "toolbar" PART entirely for NPCs). Foundry's own
-    // window.controls array only ever populates the "..." dropdown, never a
-    // standalone sibling button, so this button is inserted by hand right
-    // before that dropdown's own toggle (this.window.controls - confirmed
-    // live to be that exact button element, not the dropdown's contents).
-    if (this.actor.type === 'character') {
+    // Header toolbar toggle - both Character and NPC now carry the
+    // "toolbar" PART (see _configureRenderParts; NPCs get a reduced icon
+    // set). Foundry's own window.controls array only ever populates the
+    // "..." dropdown, never a standalone sibling button, so this button is
+    // inserted by hand right before that dropdown's own toggle
+    // (this.window.controls - confirmed live to be that exact button
+    // element, not the dropdown's contents).
+    {
       const button = document.createElement('button');
       button.type = 'button';
       button.classList.add('header-control', 'icon', 'fa-solid', this.#toolbarCollapsed ? 'fa-arrow-down' : 'fa-arrow-up');
@@ -804,9 +805,23 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
         const requiredLevel = levels[index] ?? 1;
         // Not unlocked yet at the actor's current level.
         if (actorLevel < requiredLevel) return;
+        // Glaubensklasse (faith class) - dynamically append the effective
+        // Patron's own numbered ability (see data/class.mjs#
+        // isFaithClass/faithPatronId/abilities.patronAbilityIndex and
+        // helpers/religion.mjs). Nothing is persisted - this re-resolves
+        // fresh on every render, so it tracks Patron changes live.
+        let description = ability.description;
+        if (source.system.isFaithClass && ability.patronAbilityIndex > 0) {
+          const patron = getEffectiveClassPatron(this.actor, source);
+          const patronAbility = patron?.abilities?.[ability.patronAbilityIndex - 1];
+          if (patronAbility?.name || patronAbility?.description) {
+            const patronAbilityText = `${patronAbility.name}: ${patronAbility.description}`;
+            description = description ? `${description}\n\n${patronAbilityText}` : patronAbilityText;
+          }
+        }
         classAndSpeciesAbilities.push({
           name: ability.name || source.name,
-          description: ability.description,
+          description,
           sourceId: source.id,
           sourceImg: source.img,
           sourceLabel: `${source.name}: Lvl ${requiredLevel}`,
@@ -999,6 +1014,11 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     // level derived from entered points/formula, capped at the skill's max.
     const skillBonusTotals = computeSkillBonusTotals(actor);
 
+    // The actor's own chosen Patron (see helpers/religion.mjs) - resolved
+    // once here rather than per-skill, to mark favored skills with a prayer
+    // icon (see templates/actor/parts/skills.hbs).
+    const actorPatron = getActorPatron(actor);
+
     const skillCategories = {};
     for (const [category, categorySkills] of Object.entries(CONFIG.SKSK.skills)) {
       skillCategories[category] = Object.entries(categorySkills).map(([key, def]) => {
@@ -1020,6 +1040,9 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
           // attribute assigned via the design sheet's "Attributsnutzung"
           // column do.
           rollable: !!def.attributes?.length,
+          // Marks a Patron-favored skill with a prayer icon - see helpers/
+          // religion.mjs#isPatronSkill.
+          isPatronSkill: isPatronSkill(actorPatron, key),
           // "Oder"-choice attribute-bonus thresholds this skill currently
           // has an unresolved, visible dropdown for - see
           // helpers/attributeBonuses.mjs#getVisibleAttributeBonusDropdowns.
@@ -1773,17 +1796,19 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
   }
 
   /**
-   * Open the "Gebet" (Prayer) dialog (apps/prayer-dialog.mjs) from the
-   * sheet header - Character-only, same convention as #openTrainingDialog.
+   * Open the "Religion" dialog (apps/religion-dialog.mjs) from the sheet
+   * header - same convention as #openTrainingDialog, but (unlike most
+   * header-toolbar buttons) also available for NPCs, via the reduced NPC
+   * toolbar - see templates/actor/parts/header-toolbar.hbs.
    */
-  static #openPrayerDialog(event, target) {
-    new SKSKPrayerDialog(this.actor).render(true);
+  static #openReligionDialog(event, target) {
+    new SKSKReligionDialog(this.actor).render(true);
   }
 
   /**
    * Open the "Beschwörung" (Summoning) dialog (apps/summoning-dialog.mjs)
    * from the sheet header - Character-only, same convention as
-   * #openTrainingDialog/#openPrayerDialog.
+   * #openTrainingDialog/#openReligionDialog.
    */
   static #openSummoningDialog(event, target) {
     new SKSKSummoningDialog(this.actor).render(true);

@@ -8,6 +8,7 @@ import { SKSKSkillUsageFpConfig } from '../apps/skill-usage-fp-config.mjs';
 import { SKSKLehrenConfig } from '../apps/lehren-config.mjs';
 import { SKSKEffectKeyReference } from '../apps/effect-key-reference.mjs';
 import { SKSKGeneralSettingsConfig } from '../apps/general-settings-config.mjs';
+import { SKSKDeitiesConfig } from '../apps/deities-config.mjs';
 
 /**
  * Register world-scoped game settings for the system.
@@ -220,6 +221,41 @@ export function registerSettings() {
     label: 'SKSK.Settings.StatusEffects.Label',
     icon: 'fas fa-skull-crossbones',
     type: SKSKStatusEffectsConfig,
+    restricted: true,
+  });
+
+  // GM-configurable list of Patrone (Deities) - see apps/deities-config.mjs
+  // and helpers/religion.mjs. Each entry is a plain object: {id, name,
+  // description, elements: [damageType], skills: [skillKey],
+  // combinedSchoolOverride, domains: [string], deeds: [{id, name, amount,
+  // type}], abilities: [{name, description}, ...]} - the "abilities" array
+  // is always kept exactly deityAbilityCount entries long (see below), so
+  // every Deity offers the same fixed number of numbered Patron abilities
+  // for a Glaubensklasse to reference by index.
+  game.settings.register('sksk', 'deities', {
+    scope: 'world',
+    config: false,
+    type: Array,
+    default: [],
+  });
+
+  // The fixed number of numbered "Fähigkeiten" every Deity's abilities
+  // array must have - set once for the whole world (see apps/deities-
+  // config.mjs, which resizes every Deity's abilities array to match
+  // whenever this changes), not per-Deity.
+  game.settings.register('sksk', 'deityAbilityCount', {
+    scope: 'world',
+    config: false,
+    type: Number,
+    default: 3,
+  });
+
+  game.settings.registerMenu('sksk', 'deitiesMenu', {
+    name: 'SKSK.Settings.Deities.Name',
+    hint: 'SKSK.Settings.Deities.Hint',
+    label: 'SKSK.Settings.Deities.Label',
+    icon: 'fas fa-hands-praying',
+    type: SKSKDeitiesConfig,
     restricted: true,
   });
 

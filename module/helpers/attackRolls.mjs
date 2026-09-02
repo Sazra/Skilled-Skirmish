@@ -10,6 +10,7 @@ import { getEquippedArmorSkillKeys } from './defense.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
 import { resolveClickDefender, renderApplyDamageButton } from './damageApplication.mjs';
 import { checkFlanking } from './flanking.mjs';
+import { computePatronRollBonus } from './religion.mjs';
 
 /**
  * Tactic level 10's own flat AC bonus (see helpers/flanking.mjs) - a
@@ -122,18 +123,25 @@ export function computeSpellAttackBonus(spellSystem, actor) {
     const schoolLevel = getActorSkillLevel(actor, spellSystem.magicSchool);
     const schoolBonus = actor.system.magicSchoolAttackBonus?.[spellSystem.magicSchool] ?? 0;
     const lehrenBonus = computeLehrenTargetBonus(actor, 'attackBonus', { skillKey: spellSystem.magicSchool, kind: 'spell' });
-    return wilMod + schoolLevel + hitCorrection + schoolBonus + lehrenBonus + allSpellsBonus;
+    const patronBonus = computePatronRollBonus(actor, spellSystem.magicSchool);
+    return wilMod + schoolLevel + hitCorrection + schoolBonus + lehrenBonus + patronBonus + allSpellsBonus;
   }
 
   if (spellSystem.spellType === 'combined') {
     const schoolBonus = actor.system.combinedMagicSchoolAttackBonus?.[spellSystem.combinedSchool] ?? 0;
     const lehrenBonus = computeLehrenTargetBonus(actor, 'attackBonus', { skillKey: null, kind: 'spell' });
-    return wilMod + hitCorrection + schoolBonus + computeCombinedSkillAttackBonus(spellSystem, actor) + lehrenBonus + allSpellsBonus;
+    // Any one of the combined spell's own required skills matching the
+    // Patron's favored skills grants the bonus once (see
+    // computePatronRollBonus - its result is either 0 or a fixed value, so
+    // taking the max across every required skill never double-counts).
+    const patronBonus = Math.max(0, ...(spellSystem.combinedSkills ?? []).map(entry => computePatronRollBonus(actor, entry.skill)));
+    return wilMod + hitCorrection + schoolBonus + computeCombinedSkillAttackBonus(spellSystem, actor) + lehrenBonus + patronBonus + allSpellsBonus;
   }
 
   // Systemless.
   const lehrenBonus = computeLehrenTargetBonus(actor, 'attackBonus', { skillKey: null, kind: 'spell' });
-  return wilMod + hitCorrection + getActorSkillLevel(actor, 'magicControl') + lehrenBonus + allSpellsBonus;
+  const patronBonus = computePatronRollBonus(actor, 'magicControl');
+  return wilMod + hitCorrection + getActorSkillLevel(actor, 'magicControl') + lehrenBonus + patronBonus + allSpellsBonus;
 }
 
 /**
@@ -252,7 +260,8 @@ export function computeWeaponAttackBonus(actor, weaponItem) {
   const lehrenBonus = computeLehrenTargetBonus(actor, 'attackBonus', { skillKey: system.weaponType, kind: 'weapon' });
   const weaponTypeBonus = actor.system.weaponAttackBonus?.[system.weaponType] ?? 0;
   const allWeaponsBonus = actor.system.weaponAttackBonusAll ?? 0;
-  return skillLevel + itemBonus + attributeBonus + lehrenBonus + weaponTypeBonus + allWeaponsBonus;
+  const patronBonus = computePatronRollBonus(actor, system.weaponType);
+  return skillLevel + itemBonus + attributeBonus + lehrenBonus + weaponTypeBonus + patronBonus + allWeaponsBonus;
 }
 
 /**
@@ -286,7 +295,8 @@ export function computeMartialArtsAttackBonus(actor, attack) {
   const lehrenBonus = computeLehrenTargetBonus(actor, 'attackBonus', { skillKey: 'martialArts', kind: 'weapon' });
   const weaponTypeBonus = actor.system.weaponAttackBonus?.martialArts ?? 0;
   const allWeaponsBonus = actor.system.weaponAttackBonusAll ?? 0;
-  return skillLevel + materialBonus + attributeBonus + lehrenBonus + weaponTypeBonus + allWeaponsBonus;
+  const patronBonus = computePatronRollBonus(actor, 'martialArts');
+  return skillLevel + materialBonus + attributeBonus + lehrenBonus + weaponTypeBonus + patronBonus + allWeaponsBonus;
 }
 
 /**

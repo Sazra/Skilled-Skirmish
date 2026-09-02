@@ -18,6 +18,19 @@ export default class SKSKClass extends SKSKItemBase {
     // needs one fixed skill key).
     schema.gmNotes = new fields.StringField({ required: true, blank: true });
 
+    // Marks this Class as a "Glaubensklasse" (faith class) - see helpers/
+    // religion.mjs. A Glaubensklasse can follow its own Patron (below),
+    // independent of the actor's own Religion choice, and each of its 3
+    // abilities can be tied to one numbered Patron ability (see
+    // abilities.patronAbilityIndex below).
+    schema.isFaithClass = new fields.BooleanField({ initial: false });
+
+    // The Glaubensklasse's own chosen Patron - an id into the world's
+    // "deities" setting, same as actor-base.mjs#religion. Blank means "use
+    // whichever Patron the actor themselves has chosen" - see helpers/
+    // religion.mjs#getEffectiveClassPatron. Meaningless unless isFaithClass.
+    schema.faithPatronId = new fields.StringField({ required: true, blank: true, initial: "" });
+
     // A character/NPC's base life is the first + second class's life
     // values added together, multiplied by level.
     schema.life = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
@@ -42,12 +55,20 @@ export default class SKSKClass extends SKSKItemBase {
       // supporting "L" for the actor's level (e.g. "L * 2") - see
       // helpers/life.mjs#computeMaxLife and helpers/mana.mjs#computeMaxMana.
       lifeBonusFormula: new fields.StringField({ required: true, blank: true, initial: "0" }),
-      manaBonusFormula: new fields.StringField({ required: true, blank: true, initial: "0" })
+      manaBonusFormula: new fields.StringField({ required: true, blank: true, initial: "0" }),
+      // Only meaningful when isFaithClass is true - the 1-based index (into
+      // the world's deityAbilityCount slots) of the effective Patron's own
+      // numbered ability to dynamically append to this ability's
+      // description on the actor's Fähigkeiten tab (see sheets/actor-
+      // sheet.mjs#collectClassAbilities and helpers/religion.mjs). 0 means
+      // this ability isn't tied to a Patron ability (plain NumberField, not
+      // nullable, so "None" round-trips cleanly through a <select>).
+      patronAbilityIndex: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
     }), {
       initial: [
-        { name: "", description: "", lifeBonusFormula: "0", manaBonusFormula: "0" },
-        { name: "", description: "", lifeBonusFormula: "0", manaBonusFormula: "0" },
-        { name: "", description: "", lifeBonusFormula: "0", manaBonusFormula: "0" }
+        { name: "", description: "", lifeBonusFormula: "0", manaBonusFormula: "0", patronAbilityIndex: 0 },
+        { name: "", description: "", lifeBonusFormula: "0", manaBonusFormula: "0", patronAbilityIndex: 0 },
+        { name: "", description: "", lifeBonusFormula: "0", manaBonusFormula: "0", patronAbilityIndex: 0 }
       ]
     });
 
