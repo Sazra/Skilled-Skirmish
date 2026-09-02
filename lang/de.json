@@ -271,9 +271,9 @@
             "MagicSchoolsHint": "FP wird pro Zauberstufe generiert, sobald ein Einfacher oder Fortgeschrittener Zauber dieser Magieschule gewirkt wird (z.B. eine Rate von 1 und ein Zauber der Stufe 3 ergibt 3 FP).",
             "AttributeHint": "FP wird generiert, sobald der entsprechende reine Attributswurf (kein Fertigkeitswurf) durchgeführt wird - betrifft nur die 8 \"Unbegrenzte X\"-Fertigkeiten, je eine pro Attribut.",
             "ResistancesHint": "FP wird generiert, sobald Schaden des entsprechenden Elements über den \"Schaden anwenden\"-Button genommen wurde - als einzige Fertigkeiten-Kategorie jedoch gedeckelt: automatischer Gewinn kann eine Resistenz nie über Stufe 3 (zzgl. etwaiger Fertigkeitsbonusstufen durch Items) hinaus anheben; manuelle Stufenänderungen sind davon unberührt.",
-            "ProductionHint": "Wird über den \"Herstellungs-FP\"-Button im Kopfbereich vergeben - der Spieler trägt dort Qualität (%, für Alchemie zusätzlich die Anzahl verarbeiteter Essenzen, für Verzauberung zusätzlich eine Ritual-Dauer in Stunden) einer bereits abgeschlossenen Handlung ein, die Rate unten wird entsprechend skaliert. Verzauberung vergibt zusätzlich Ritualismus' eigenen \"ritualHour\"-FP für die eingetragene Stunden-Dauer.",
+            "ProductionHint": "Wird über den \"Herstellungs-FP\"-Button im Kopfbereich vergeben - der Spieler trägt dort Qualität (%, für Alchemie zusätzlich die Anzahl verarbeiteter Essenzen, für Verzauberung zusätzlich eine Ritual-Dauer in Stunden) einer bereits abgeschlossenen Handlung ein, die Rate unten wird entsprechend skaliert. Verzauberung vergibt zusätzlich Ritualists eigenen \"ritualHour\"-FP für die eingetragene Stunden-Dauer.",
             "RogueHint": "Der Fertigkeitswurf für Fallen lässt den Spieler zwischen \"Falle stellen\" und \"Falle entschärfen\" wählen (beides automatisiert); Fingerfertigkeit bietet ebenso eine Wahl zwischen Basis-Fertigkeitswurf, Schlossknacken und Taschendiebstahl (ebenfalls automatisiert). Attentat ist ebenfalls automatisiert: Attentatsangriff generiert FP, sobald ein Waffen-/Kampfkunstangriff bei aktiver Tarnung trifft (zusammen mit dem Attentat-Zusatzschaden), Attentatstötung zusätzlich, wenn derselbe Angriff den Verteidiger tötet.",
-            "MagicHint": "Konzentrationswürfe, genutzte Meditationswürfel, jeder gewirkte Zauber (Magiekontrolle, Spruchkürzung sobald Magiekontrolle Stufe 1 erreicht), die Tagesabrechnung von Manakapazität/Manaregeneration (bei der nächsten Anpassungspause+), Manakerns fester Wert pro Item, Ritualismus' Stunden pro gewirktem Ritual-Zauber (mindestens 1 Stunde, auch bei AP-Kosten oder unter 60 Minuten Wirkzeit), genutzte Überladungen (Shift+Klick auf einen Zauber), Quellengebunden/Äthergebunden (über den eigenen \"Quelle\"-Button im Kopfbereich - Genutzte Quellenfähigkeit bei \"Quelle aktivieren\", Geöffnete Quelle bei \"Ätherquelle öffnen\", jeweils mit eigenen editierbaren AP-/Mana-Kosten, ohne Nutzungslimit) sowie Beschwörung (über den Beschwörungs-Button im Kopfbereich - Stufe der beschworenen Kreatur bei \"Beschwören\", Tag der Beschwörungs-Existenz für jeden noch aktiven Platz bei der nächsten Anpassungspause+) sind automatisiert; alles andere unten (u.a. Verzauberungsstunden) ist noch nicht automatisiert - es gibt noch kein passendes System.",
+            "MagicHint": "Konzentrationswürfe, genutzte Meditationswürfel, jeder gewirkte Zauber (Magiekontrolle, Spruchkürzung sobald Magiekontrolle Stufe 1 erreicht), die Tagesabrechnung von Manakapazität/Manaregeneration (bei der nächsten Anpassungspause+), Manakerns fester Wert pro Item, Ritualists Stunden pro gewirktem Ritual-Zauber (mindestens 1 Stunde, auch bei AP-Kosten oder unter 60 Minuten Wirkzeit), genutzte Überladungen (Shift+Klick auf einen Zauber), Quellengebunden/Äthergebunden (über den eigenen \"Quelle\"-Button im Kopfbereich - Genutzte Quellenfähigkeit bei \"Quelle aktivieren\", Geöffnete Quelle bei \"Ätherquelle öffnen\", jeweils mit eigenen editierbaren AP-/Mana-Kosten, ohne Nutzungslimit) sowie Beschwörung (über den Beschwörungs-Button im Kopfbereich - Stufe der beschworenen Kreatur bei \"Beschwören\", Tag der Beschwörungs-Existenz für jeden noch aktiven Platz bei der nächsten Anpassungspause+) sind automatisiert; alles andere unten (u.a. Verzauberungsstunden) ist noch nicht automatisiert - es gibt noch kein passendes System.",
             "FighterHint": "Genutzte Trefferwürfel, Kampf-Bewegung, genutztes Ausweichen, Reflexaktion (4+ AP im eigenen Zug verbraucht), genutztes Adrenalin, kritische Treffer (inkl. Doppel-Krit), Brutals Bonus-Schadenspunkte sowie Techniks eigene Abklingzeit-Runden (jedes im Besitz befindliche Technik-Item, das sich gerade in der Abklingzeit befindet, gewährt einmal pro Kampfrunde darin) sind automatisiert; alles andere unten ist noch nicht automatisiert.",
             "MiscHint": "Gewirkte Bardenmagie (Singen), Getarnt-Sein zu Beginn des eigenen Zuges (Schleichen), Gebete über den Gebets-Button im Kopfbereich (Glaube), Klicks auf das Passive-Wahrnehmung-Feld im Kopfbereich (Beobachtung), das Umwandeln eines Schadensanwenden-Eintrags in Heilung durch die Absorption des Verteidigers (Heiler - wird dem Verursacher gutgeschrieben, skaliert mit dem geheilten Betrag), Totem (über den Totem-Button im Kopfbereich - Totem-Bindung eingegangen bei \"Totem binden\", Genutztes Totem bei \"Totem aktivieren\") sowie Inspiration (über den Inspiration-Button im Aktionen-Tab und das Inspirationswürfel-Feld im Kopfbereich - wird immer dem ursprünglichen Vergeber gutgeschrieben, sobald ein Würfel tatsächlich gewürfelt wird, egal ob durch dessen Halter oder durch den Vergeber selbst per Rechtsklick-Selbstwurf) sind automatisiert; alles andere unten ist noch nicht automatisiert - es gibt noch kein passendes System.",
             "SpecialHint": "Ein gelandeter Treffer (Trefferkorrektur), ein abgewehrter Angriff (Verteidigungskorrektur), 0 Leben mit verbleibendem negativen Leben zu Beginn des eigenen Zuges (Zähigkeit), jeder kritische Erfolg/doppelt kritische Erfolg bei einem generischen (Nicht-Angriffswurf-)W20-Wurf - Fertigkeitswürfe, Rettungswürfe, Attributswürfe und der manuelle Fesselung-Fluchtversuch fragen jedes Mal Neutral/Vorteil/Nachteil ab; Fesselungs eigener Zugbeginn-/Zugende-Wurf, der Gift-Erneuerungswurf und Konzentration nutzen stattdessen die Hintergrundwurf-Modus-Voreinstellung im GM-Tab ohne Dialog (Glücks eigener \"Kritischer Wurf\"/\"Doppelt kritischer Wurf\", dem Würfelnden gutgeschrieben - doppelt nur bei Vorteil/Nachteil mit beiden kritischen Würfeln) - Seelenstärkes eigener \"Genutzter Meditationswürfel im Kampf\" (zusätzlich zu Meditations eigenem FP, sobald ein Kampf aktiv ist, aber nur solange der GM-Tab-Schalter \"Seelenstärke: FP für Meditation im Kampf\" ebenfalls aktiv ist, standardmäßig aus) sowie Massakers eigene 5 Massentötung-Buttons im GM-Tab (20/50/150/500/1500 getötete Personen innerhalb von etwa 10 Minuten, eine rein manuelle GM-Entscheidung - die Rate jeder Abstufung hängt von der aktuellen Massaker-Fertigkeitsstufe des Akteurs ab, einzeln konfigurierbar je Abstufung/Stufen-Kombination in den Fertigkeitsnutzungs-FP-Einstellungen) - sind automatisiert; alles andere unten ist noch nicht automatisiert.",
@@ -1048,7 +1048,7 @@
             "Weapon": {
                 "Axe": "Axt",
                 "Bow": "Bogen",
-                "BluntWeapon": "Stumpfe Waffe",
+                "BluntWeapon": "Schlagwaffe",
                 "Dagger": "Dolch",
                 "Firearms": "Feuerwaffen",
                 "MartialArts": "Kampfkunst",
@@ -1069,7 +1069,7 @@
             "Rogue": {
                 "Assassination": "Attentat",
                 "Traps": "Fallen",
-                "Stealth": "Heimlichkeit",
+                "Stealth": "Schleichen",
                 "SleightOfHand": "Fingerfertigkeit"
             },
             "MagicSchool": {
@@ -1083,8 +1083,8 @@
                 "Death": "Tod",
                 "Trickery": "Trickkunst",
                 "Nature": "Natur",
-                "Bardic": "Barde",
-                "Divination": "Wahrsagerei",
+                "Bardic": "Bardenmagie",
+                "Divination": "Wahrsagung",
                 "Space": "Raum",
                 "Time": "Zeit",
                 "Blood": "Blut"
@@ -1097,12 +1097,12 @@
                 "ManaCapacity": "Manakapazität",
                 "ManaRegeneration": "Manaregeneration",
                 "ManaCore": "Manakern",
-                "Ritualism": "Ritualismus",
+                "Ritualism": "Ritualist",
                 "ChantShortening": "Spruchkürzung",
-                "Overcharge": "Überladung",
+                "Overcharge": "Überladen",
                 "SourceBound": "Quellengebunden",
                 "EtherBound": "Äthergebunden",
-                "Chantless": "Formellos"
+                "Chantless": "Spruchlos"
             },
             "Fighter": {
                 "Health": "Gesundheit",
@@ -1110,20 +1110,20 @@
                 "Technique": "Technik",
                 "Reflexes": "Reflexe",
                 "Precision": "Präzision",
-                "Brutality": "Brutalität",
+                "Brutality": "Brutal",
                 "Adrenalin": "Adrenalin",
                 "Ambidextrous": "Beidhändigkeit"
             },
             "Misc": {
                 "Observation": "Beobachtung",
                 "Faith": "Glaube",
-                "Rhetoric": "Rhetorik",
+                "Rhetoric": "Redekunst",
                 "Healer": "Heiler",
-                "Singing": "Gesang",
+                "Singing": "Singen",
                 "Tactic": "Taktik",
                 "Survival": "Überleben",
                 "Disguise": "Verkleidung",
-                "Intimidation": "Einschüchterung",
+                "Intimidation": "Verängstigen",
                 "Inspiration": "Inspiration",
                 "Totem": "Totem",
                 "Tenacity": "Zähigkeit"

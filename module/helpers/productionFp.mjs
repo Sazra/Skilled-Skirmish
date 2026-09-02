@@ -41,11 +41,11 @@ export async function grantCookingFp(actor, qualityPercent) {
 /**
  * Verzauberung's (Enchanting's) own two-in-one grant: the enchantment's own
  * quality scales "enchantmentLevel" FP (Verzauberung), while the ritual's
- * own duration (hours) scales "ritualHour" FP (Ritualismus) - the same
+ * own duration (hours) scales "ritualHour" FP (Ritualist) - the same
  * trigger a Ritual-casting-method spell already grants via
  * helpers/spells.mjs#computeRitualHours (see helpers/spell-rolls.mjs),
  * reused here for a manually-adjudicated enchanting session rather than an
- * actual spell cast. The Ritualismus grant is skipped entirely (not even
+ * actual spell cast. The Ritualist grant is skipped entirely (not even
  * attempted) when hours is 0 - most enchantments won't involve a ritual at
  * all.
  * @param {Actor} actor
