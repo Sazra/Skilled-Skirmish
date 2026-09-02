@@ -107,6 +107,25 @@
       </div>
     </div>
 
+    <div class="grid grid-3col">
+      <div class="resource">
+        <label class="resource-label casting-method-option" title="{{localize 'SKSK.Spell.ManaCostPerRoundHint'}}">
+          <input type="checkbox" name="system.manaCostPerRound" {{checked system.manaCostPerRound}} />
+          {{localize 'SKSK.Spell.ManaCostPerRound'}}
+        </label>
+      </div>
+      <div class="resource">
+        <label class="resource-label" title="{{localize 'SKSK.Spell.UpkeepHint'}}">{{localize 'SKSK.Spell.Upkeep'}}</label>
+        <input type="text" name="system.upkeep" value="{{system.upkeep}}" data-dtype="Number" />
+      </div>
+      <div class="resource">
+        <label class="resource-label casting-method-option" title="{{localize 'SKSK.Spell.SustainingHint'}}">
+          <input type="checkbox" name="system.sustaining" {{checked system.sustaining}} />
+          {{localize 'SKSK.Spell.Sustaining'}}
+        </label>
+      </div>
+    </div>
+
     <div class="resource">
       <label class="resource-label">Ranges</label>
       <ol class="items-list">

@@ -40,7 +40,35 @@ export default class SKSKSpell extends SKSKItemBase {
     // systemlessMagicCategories, likewise only for actor-sheet organization.
     schema.systemlessCategory = new fields.StringField({ required: true, blank: false, initial: "general" });
 
+    // Pure lore/flavor flags from the design sheet ("verlorene Kunst"/
+    // "verbotene Kunst") - not mechanically enforced by anything, just GM-
+    // facing categorization (e.g. for filtering which spells are common
+    // knowledge vs. rare/taboo).
+    schema.isLostArt = new fields.BooleanField({ initial: false });
+    schema.isForbiddenArt = new fields.BooleanField({ initial: false });
+
     schema.manaCost = new fields.NumberField({ ...requiredInteger, initial: 1, min: 0 });
+    // Whether manaCost is drained every round (from the caster's CURRENT
+    // mana) for as long as this spell is sustaining, instead of only once
+    // at cast time - same per-round-drain/auto-deactivate-on-insufficient-
+    // mana pattern as Totem (see helpers/statusEffects.mjs#
+    // handleTotemTurnStart/handleSpellUpkeepTurnStart), just reusing
+    // manaCost itself as the per-round amount rather than a separate field.
+    schema.manaCostPerRound = new fields.BooleanField({ initial: false });
+    // A continuous mana-CAPACITY cost while this spell is sustaining -
+    // reduces the caster's MAXIMUM mana for as long as it's active (not a
+    // per-round drain from current mana), summed across every sustaining
+    // spell on the actor and capped so it can never push max mana below 0.
+    // See helpers/mana.mjs#computeMaxMana.
+    schema.upkeep = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+    // Whether this spell's ongoing effect (and therefore its
+    // manaCostPerRound/upkeep, if either is set) is currently active on its
+    // owning actor. Toggled manually - e.g. once a spell's own stated
+    // Duration has run out and the caster chooses to keep sustaining it,
+    // per a "kann aufrecht erhalten werden" ("can be sustained") duration -
+    // since Duration below is freeform text, not a tracked countdown, this
+    // transition isn't automatic.
+    schema.sustaining = new fields.BooleanField({ initial: false });
     schema.apCost = new fields.NumberField({ ...requiredInteger, initial: 1, min: 1 });
     // What apCost's own number actually counts - a flat AP amount (the
     // default), a casting time in minutes/hours/days, or a flat RP amount

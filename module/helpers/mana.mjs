@@ -74,7 +74,24 @@ function computeManaComponents(actor) {
 
   const subtotal = rows.reduce((sum, row) => sum + row.value, 0);
 
-  return { rows, subtotal, flatBonus: actor.system.mana?.bonus ?? 0, lehrenBonus };
+  return { rows, subtotal, flatBonus: actor.system.mana?.bonus ?? 0, lehrenBonus, upkeepTotal: computeActiveSpellUpkeepTotal(actor) };
+}
+
+/**
+ * The sum of every currently-sustaining Spell Item's own Unterhalt
+ * (upkeep) on this actor - see data/spell.mjs#upkeep/sustaining. A
+ * continuous reduction of MAXIMUM mana (see computeMaxMana), not a
+ * per-round drain from current mana (that's manaCostPerRound instead - see
+ * helpers/statusEffects.mjs#handleSpellUpkeepTurnStart).
+ * @param {Actor} actor
+ * @return {number}
+ */
+export function computeActiveSpellUpkeepTotal(actor) {
+  let total = 0;
+  for (const item of actor.items) {
+    if (item.type === 'spell' && item.system.sustaining) total += item.system.upkeep ?? 0;
+  }
+  return total;
 }
 
 /**
@@ -87,8 +104,8 @@ function computeManaComponents(actor) {
  * @return {number}
  */
 export function computeMaxMana(actor) {
-  const { subtotal, flatBonus } = computeManaComponents(actor);
-  return Math.max(0, Math.round(subtotal + flatBonus));
+  const { subtotal, flatBonus, upkeepTotal } = computeManaComponents(actor);
+  return Math.max(0, Math.round(subtotal + flatBonus) - upkeepTotal);
 }
 
 /**
@@ -112,6 +129,9 @@ export function computePermanentMaxMana(actor) {
  * @return {{rows: Array, subtotal: number, flatBonus: number, total: number}}
  */
 export function getManaBreakdown(actor) {
-  const { rows, subtotal, flatBonus } = computeManaComponents(actor);
-  return { rows, subtotal, flatBonus, total: computeMaxMana(actor) };
+  const { rows, subtotal, flatBonus, upkeepTotal } = computeManaComponents(actor);
+  const breakdownRows = upkeepTotal
+    ? [...rows, { label: game.i18n.localize('SKSK.Breakdown.SpellUpkeep'), perLevel: null, value: -upkeepTotal }]
+    : rows;
+  return { rows: breakdownRows, subtotal, flatBonus, total: computeMaxMana(actor) };
 }

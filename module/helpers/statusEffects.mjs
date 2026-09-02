@@ -1326,6 +1326,40 @@ async function handleTotemTurnStart(actor) {
 }
 
 /**
+ * Drains manaCost from CURRENT mana, once per Combat turn start, for every
+ * sustaining Spell Item on this actor whose manaCostPerRound is set (see
+ * data/spell.mjs#sustaining/manaCostPerRound/upkeep) - same per-round-
+ * drain/auto-deactivate pattern as handleTotemTurnStart above. Upkeep
+ * itself (a continuous max-mana reduction) needs no turn-start handling -
+ * see helpers/mana.mjs#computeMaxMana, which reads system.sustaining
+ * directly every time max mana is recomputed.
+ * @param {Actor} actor
+ * @return {Promise<string[]>}   Description lines for any auto-deactivation.
+ */
+async function handleSpellUpkeepTurnStart(actor) {
+  const spells = actor.items.filter(i => i.type === 'spell' && i.system.sustaining && i.system.manaCostPerRound);
+  if (!spells.length) return [];
+
+  let mana = actor.system.mana.value;
+  const deactivatedNames = [];
+  const itemUpdates = [];
+  for (const item of spells) {
+    const cost = item.system.manaCost ?? 0;
+    if (mana >= cost) {
+      mana -= cost;
+    } else {
+      itemUpdates.push({ _id: item.id, 'system.sustaining': false });
+      deactivatedNames.push(item.name);
+    }
+  }
+
+  if (mana !== actor.system.mana.value) await actor.update({ 'system.mana.value': mana });
+  if (itemUpdates.length) await actor.updateEmbeddedDocuments('Item', itemUpdates);
+
+  return deactivatedNames.map(name => game.i18n.format('SKSK.Spell.UpkeepAutoDeactivated', { name }));
+}
+
+/**
  * Whether a Technique's own "active" flag represents a genuine duration-
  * ticking buff (stand, or an "effect" targeting its own wielder) rather
  * than a "primed, awaiting the next weapon/Martial Arts attack" marker
@@ -1505,12 +1539,13 @@ export async function handleCombatTurnStart(actor, round) {
   const restrainedSections = await handleRestrainedTurnStart(actor);
   const totemLines = await handleTotemTurnStart(actor);
   const techniqueLines = await handleTechniqueTurnStart(actor);
+  const spellUpkeepLines = await handleSpellUpkeepTurnStart(actor);
 
   const totalDamage = poison.damage + frostbite.damage + wound.damage + custom.damage;
   const descriptionLines = [
     ...dazedLines,
     ...poison.descriptionLines, ...frostbite.descriptionLines, ...wound.descriptionLines, ...custom.descriptionLines,
-    ...totemLines, ...techniqueLines,
+    ...totemLines, ...techniqueLines, ...spellUpkeepLines,
   ];
   const extraSections = [
     ...poison.extraSections, ...frostbite.extraSections, ...wound.extraSections, ...custom.extraSections,
