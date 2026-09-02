@@ -106,7 +106,7 @@ export default class SKSKSpell extends SKSKItemBase {
       distance: new fields.NumberField({ ...requiredInteger, initial: 10, min: 0 }),
       indicator: new fields.StringField({
         required: true, blank: false, initial: "projectile",
-        choices: ["self", "touch", "targeted", "projectile", "line", "radius", "cone", "square"]
+        choices: ["self", "touch", "targeted", "sight", "projectile", "line", "radius", "cone", "square"]
       })
     }), {
       initial: [{ distance: 10, indicator: "projectile" }]
@@ -163,6 +163,14 @@ export default class SKSKSpell extends SKSKItemBase {
     schema.savingThrows = new fields.ArrayField(new fields.SchemaField({
       label: new fields.StringField({ required: true, blank: true }),
       baseValue: new fields.NumberField({ ...requiredInteger, initial: 10 }),
+      // "Wettstreit" (contest): instead of resolving against a fixed DC
+      // (baseValue, ignored while this is on), the caster's own d20 + this
+      // save's attribute-/skill-bonuses is rolled once, right when the
+      // saving-throw button is rendered in chat, and whoever clicks that
+      // button rolls their own d20 + testAttributes/testSkills against
+      // that fixed roll instead of a DC - see helpers/spell-rolls.mjs#
+      // renderSavingThrowButton/resolveAndRollSavingThrow.
+      contest: new fields.BooleanField({ initial: false }),
       attributeBonuses: new fields.ArrayField(new fields.SchemaField({
         attribute: new fields.StringField({ required: true, blank: false, initial: "wil" }),
         // true: the attribute's modifier: false: its full value.

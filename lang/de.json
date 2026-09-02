@@ -1354,6 +1354,7 @@
             "EffectNotOwned": "Dieser Zauber gehört keinem Akteur - noch kein verknüpfter Effekt möglich.",
             "ApplyEffect": "Effekt anwenden",
             "RollEffectSavingThrow": "{label} würfeln (SG {dc})",
+            "RollEffectSavingThrowContest": "{label} würfeln (gegen Wurf {total})",
             "StatusEffectApplied": "{name}: auf {target} angewendet.",
             "EffectApplied": "{name}: Effekt auf {target} angewendet.",
             "Section": {
@@ -1391,6 +1392,7 @@
                 "Self": "Selbst",
                 "Touch": "Berührung",
                 "Targeted": "Gezielt",
+                "Sight": "Sichtweite",
                 "Projectile": "Projektil",
                 "Line": "Linie",
                 "Radius": "Radius",
@@ -1412,12 +1414,17 @@
                 "Unconditional": "Bedingungslos"
             },
             "SavingThrow": {
-                "Numbered": "Rettungswurf {number}"
+                "Numbered": "Rettungswurf {number}",
+                "Contest": "Wettstreit",
+                "ContestHint": "Statt eines festen SG würfelt der Zaubernde beim Wirken direkt seinen eigenen Wurf (W20 + Attributs-/Fertigkeitsboni dieses Rettungswurfs). Jeder, der danach den Knopf im Chat klickt, würfelt seinen eigenen Wurf dagegen statt gegen einen festen SG. Der Basis-Wert wird dabei ignoriert."
             },
             "Roll": {
                 "Attack": "Angriff {number}",
                 "Damage": "Schaden",
                 "StatusEffect": "Statuseffekt",
+                "ContestCasterRoll": "{label}: Wurf des Zaubernden",
+                "ContestButton": "{label} würfeln (gegen Wurf {total})",
+                "VsContestTotal": "Wurf {total}",
                 "Vs": "gegen",
                 "Success": "Erfolg",
                 "Failure": "Misserfolg",

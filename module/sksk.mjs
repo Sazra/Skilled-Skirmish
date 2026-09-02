@@ -119,8 +119,12 @@ Hooks.once('ready', async function () {
     event.preventDefault();
     // Shift+click excludes Spezial-Boni from this save's attribute
     // modifier - see helpers/spell-rolls.mjs#rollSavingThrowFromChat.
+    // data-contest-total (only present for a "Wettstreit" saving throw)
+    // carries the caster's own roll, fixed at cast time - see
+    // renderSavingThrowButton/rollContestCasterRoll.
     rollSavingThrowFromChat(
-      button.dataset.itemUuid, Number(button.dataset.saveIndex), Number(button.dataset.overcharge) || 0, event.shiftKey
+      button.dataset.itemUuid, Number(button.dataset.saveIndex), Number(button.dataset.overcharge) || 0, event.shiftKey,
+      button.dataset.contestTotal !== undefined ? Number(button.dataset.contestTotal) : null
     );
   });
 
@@ -168,7 +172,8 @@ Hooks.once('ready', async function () {
     if (!button) return;
     event.preventDefault();
     rollSpellEffectSaveFromChat(
-      button.dataset.itemUuid, Number(button.dataset.saveIndex), Number(button.dataset.overcharge) || 0, event.shiftKey
+      button.dataset.itemUuid, Number(button.dataset.saveIndex), Number(button.dataset.overcharge) || 0, event.shiftKey,
+      button.dataset.contestTotal !== undefined ? Number(button.dataset.contestTotal) : null
     );
   });
 

@@ -244,6 +244,7 @@
         <li class="item flexrow items-header">
           <div class="item-name">Label</div>
           <div class="item-name">Base</div>
+          <div class="item-name">{{localize 'SKSK.Spell.SavingThrow.Contest'}}</div>
           <div class="item-controls">
             <a class="item-control item-create" data-action="addSavingThrow" title="Add saving throw">
               <i class="fas fa-plus"></i>
@@ -259,7 +260,12 @@
             </div>
             <div class="item-name">
               <input type="text" name="system.savingThrows.{{index}}.baseValue" value="{{save.baseValue}}"
-                data-dtype="Number" />
+                data-dtype="Number" {{#if save.contest}}disabled{{/if}} />
+            </div>
+            <div class="item-name">
+              <label class="casting-method-option" title="{{localize 'SKSK.Spell.SavingThrow.ContestHint'}}">
+                <input type="checkbox" name="system.savingThrows.{{index}}.contest" {{checked save.contest}} />
+              </label>
             </div>
             {{#if ../savingThrowValues}}
             <div class="item-name computed-total">= {{lookup ../savingThrowValues index}}</div>

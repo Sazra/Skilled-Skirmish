@@ -1354,6 +1354,7 @@
       "EffectNotOwned": "This Spell isn't owned by an Actor - no linked effect possible yet.",
       "ApplyEffect": "Apply Effect",
       "RollEffectSavingThrow": "Roll {label} (DC {dc})",
+      "RollEffectSavingThrowContest": "Roll {label} (vs roll {total})",
       "StatusEffectApplied": "{name}: applied to {target}.",
       "EffectApplied": "{name}: effect applied to {target}.",
       "Section": {
@@ -1391,6 +1392,7 @@
         "Self": "Self",
         "Touch": "Touch",
         "Targeted": "Targeted",
+        "Sight": "Sight",
         "Projectile": "Projectile",
         "Line": "Line",
         "Radius": "Radius",
@@ -1412,12 +1414,17 @@
         "Unconditional": "Unconditional"
       },
       "SavingThrow": {
-        "Numbered": "Saving Throw {number}"
+        "Numbered": "Saving Throw {number}",
+        "Contest": "Contest",
+        "ContestHint": "Instead of a fixed DC, the caster rolls their own roll right at cast time (1d20 + this saving throw's own attribute-/skill-bonuses). Whoever clicks the button in chat afterward rolls their own roll against that instead of a fixed DC. The Base value is ignored."
       },
       "Roll": {
         "Attack": "Attack {number}",
         "Damage": "Damage",
         "StatusEffect": "Status Effect",
+        "ContestCasterRoll": "{label}: caster's roll",
+        "ContestButton": "Roll {label} (vs roll {total})",
+        "VsContestTotal": "roll {total}",
         "Vs": "vs",
         "Success": "Success",
         "Failure": "Failure",

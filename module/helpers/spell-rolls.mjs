@@ -1,6 +1,6 @@
 import {
-  computeDamageBonus, computeSavingThrowValue, computeSpellManaCost, computeSpellApCost, computeRitualHours,
-  computeMaxOverchargeCount, computeOverchargedRanges,
+  computeDamageBonus, computeSavingThrowValue, computeSavingThrowBonusSum, computeSpellManaCost, computeSpellApCost,
+  computeRitualHours, computeMaxOverchargeCount, computeOverchargedRanges,
 } from './spells.mjs';
 import { getActorSkillLevel, getSkillLabel } from './skills.mjs';
 import {
@@ -165,21 +165,55 @@ async function renderDamageRoll(damage, actor, overchargeCount = 0, spellSystem 
 }
 
 /**
+ * Roll the caster's own side of a "Wettstreit" (contest) saving throw (see
+ * data/spell.mjs#savingThrows.contest): 1d20 plus this save's own
+ * attribute-/skill-bonuses (the same bonuses a fixed-DC save would fold
+ * into its DC - see computeSavingThrowValue), evaluated once right when
+ * the saving-throw button is rendered and then fixed on that button for
+ * every later opposing roll against it (see resolveAndRollSavingThrow's
+ * contestTotal param) - the caster's own roll doesn't change just because
+ * someone rolls against it later.
+ * @param {object} save
+ * @param {Actor} actor   The caster.
+ * @return {Promise<{roll: Roll, total: number}>}
+ */
+async function rollContestCasterRoll(save, actor) {
+  const bonus = computeSavingThrowBonusSum(save, actor);
+  const roll = await new Roll(`1d20 + ${bonus}`, actor?.getRollData()).evaluate();
+  return { roll, total: roll.total };
+}
+
+/**
  * Render one saving throw as a clickable button carrying enough data
  * (item UUID + index) for rollSavingThrowFromChat to resolve it later,
  * whenever anyone clicks it - including the Überladen (Overcharge) count
  * this cast used (already DC-baked-in below, but also stashed on the
  * button so a later click reproduces the exact same DC rather than
  * recomputing off the item's current state).
+ *
+ * A "Wettstreit" (contest) saving throw (save.contest) has no fixed DC at
+ * all - instead the caster's own d20 roll happens right here (see
+ * rollContestCasterRoll), is shown inline, and its total is stashed on the
+ * button so whoever clicks it later rolls their own d20 + bonus against
+ * that fixed roll instead of a DC.
  * @param {object} save    An entry from SKSKSpell#savingThrows.
  * @param {number} index   Its index into savingThrows.
  * @param {Item} item      The spell item (owned by the caster).
  * @param {number} [overchargeCount=0]
- * @return {string}
+ * @return {Promise<string>}
  */
-function renderSavingThrowButton(save, index, item, overchargeCount = 0) {
-  const dc = computeSavingThrowValue(save, item.actor, overchargeCount);
+async function renderSavingThrowButton(save, index, item, overchargeCount = 0) {
   const label = save.label || game.i18n.format('SKSK.Spell.SavingThrow.Numbered', { number: index + 1 });
+  if (save.contest) {
+    const casterRoll = await rollContestCasterRoll(save, item.actor);
+    const rollHTML = await casterRoll.roll.render();
+    return `<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.ContestCasterRoll', { label })}</div>${rollHTML}
+    <button type="button" class="sksk-roll-save" data-action="rollSavingThrow"
+      data-item-uuid="${item.uuid}" data-save-index="${index}" data-overcharge="${overchargeCount}" data-contest-total="${casterRoll.total}">
+      ${game.i18n.format('SKSK.Spell.Roll.ContestButton', { label, total: casterRoll.total })}
+    </button>`;
+  }
+  const dc = computeSavingThrowValue(save, item.actor, overchargeCount);
   return `<button type="button" class="sksk-roll-save" data-action="rollSavingThrow"
     data-item-uuid="${item.uuid}" data-save-index="${index}" data-overcharge="${overchargeCount}">
     ${label} (DC ${dc})
@@ -322,7 +356,7 @@ async function renderSpellEffectParts(item, overchargeCount = 0) {
   )];
   for (const idx of saveIndexesWithDamage) {
     if (!system.savingThrows[idx]) continue;
-    parts.push(`<div class="sksk-roll-saves">${renderSavingThrowButton(system.savingThrows[idx], idx, item, effectiveOvercharge)}</div>`);
+    parts.push(`<div class="sksk-roll-saves">${await renderSavingThrowButton(system.savingThrows[idx], idx, item, effectiveOvercharge)}</div>`);
     const saveDamageEntries = [];
     for (const damage of system.damages.filter(d => d.trigger === 'save' && (d.savingThrowIndex ?? 0) === idx)) {
       const { html, entry } = await rollDamageWithTechnique(damage);
@@ -361,7 +395,7 @@ async function renderSpellEffectParts(item, overchargeCount = 0) {
     if (entry.trigger === 'save') saveIndexesWithEffects.add(entry.savingThrowIndex ?? 0);
   }
   for (const idx of saveIndexesWithEffects) {
-    parts.push(renderSpellEffectSaveButtonHTML(item, idx, effectiveOvercharge));
+    parts.push(await renderSpellEffectSaveButtonHTML(item, idx, effectiveOvercharge));
   }
 
   // 13. Status/Foundry effects applied unconditionally.
@@ -736,9 +770,15 @@ export async function handlePendingSpellTurnStart(actor) {
  * @param {boolean} ignoreSpecial   Shift+click - excludes Spezial-Boni from
  *   the best applicable attribute modifier for this one roll (Modifikator-
  *   Boni still apply; skill-based saves are unaffected either way).
- * @return {Promise<{dc: number, roll: Roll, criticalType: string|null, success: boolean, saveLabel: string, outcome: string, luckHTML: string, best: {label: string, value: number, attributeKey: string|null}, result: object}>}
+ * @param {number|null} [contestTotal=null]   For a "Wettstreit" (contest)
+ *   saving throw (save.contest) - the caster's own roll total, already
+ *   fixed at button-render time (see renderSavingThrowButton/
+ *   rollContestCasterRoll) and passed through from the button's own
+ *   data-contest-total. Used as the value to beat instead of computing a
+ *   DC from save.baseValue.
+ * @return {Promise<{dc: number, roll: Roll, criticalType: string|null, success: boolean, saveLabel: string, outcome: string, luckHTML: string, best: {label: string, value: number, attributeKey: string|null}, result: object, isContest: boolean}>}
  */
-async function resolveAndRollSavingThrow(rollingActor, casterItem, save, saveIndex, overchargeCount, mode, ignoreSpecial) {
+async function resolveAndRollSavingThrow(rollingActor, casterItem, save, saveIndex, overchargeCount, mode, ignoreSpecial, contestTotal = null) {
   let best = null;
   const modField = ignoreSpecial ? 'modExcludingSpecial' : 'mod';
   for (const [attributeKey, enabled] of Object.entries(save.testAttributes ?? {})) {
@@ -756,7 +796,7 @@ async function resolveAndRollSavingThrow(rollingActor, casterItem, save, saveInd
   }
   best ??= { label: '', value: 0, attributeKey: null };
 
-  const dc = computeSavingThrowValue(save, casterItem.actor, overchargeCount);
+  const dc = contestTotal ?? computeSavingThrowValue(save, casterItem.actor, overchargeCount);
   const formula = applyD20Malus(`1d20 + ${best.value}`, rollingActor, best.attributeKey);
   const result = await evaluateD20WithMode(formula, rollingActor.getRollData(), mode);
   const { roll, criticalType, doubleCritical } = result;
@@ -778,7 +818,7 @@ async function resolveAndRollSavingThrow(rollingActor, casterItem, save, saveInd
   }
   luckHTML += formatD20ModeSummaryLine(result, mode);
 
-  return { dc, roll, criticalType, success, saveLabel, outcome, luckHTML, best, result };
+  return { dc, roll, criticalType, success, saveLabel, outcome, luckHTML, best, result, isContest: contestTotal != null };
 }
 
 /**
@@ -795,9 +835,12 @@ async function resolveAndRollSavingThrow(rollingActor, casterItem, save, saveInd
  * @param {number} [overchargeCount=0]
  * @param {boolean} [ignoreSpecial=false]   Shift+click on the chat button
  *   (see sksk.mjs's "rollSavingThrow" delegate).
+ * @param {number|null} [contestTotal=null]   See resolveAndRollSavingThrow's
+ *   own contestTotal param - passed through from the button's
+ *   data-contest-total for a "Wettstreit" (contest) saving throw.
  * @return {Promise<ChatMessage|void>}
  */
-export async function rollSavingThrowFromChat(itemUuid, saveIndex, overchargeCount = 0, ignoreSpecial = false) {
+export async function rollSavingThrowFromChat(itemUuid, saveIndex, overchargeCount = 0, ignoreSpecial = false, contestTotal = null) {
   const item = await fromUuid(itemUuid);
   if (!item) return ui.notifications.warn(game.i18n.localize('SKSK.Spell.Roll.ItemNotFound'));
 
@@ -810,9 +853,10 @@ export async function rollSavingThrowFromChat(itemUuid, saveIndex, overchargeCou
   const mode = await chooseGenericRollMode();
   if (!mode) return;
 
-  const r = await resolveAndRollSavingThrow(actor, item, save, saveIndex, overchargeCount, mode, ignoreSpecial);
+  const r = await resolveAndRollSavingThrow(actor, item, save, saveIndex, overchargeCount, mode, ignoreSpecial, contestTotal);
 
-  const flavor = `${r.saveLabel} (${r.best.label}) ${game.i18n.localize('SKSK.Spell.Roll.Vs')} DC ${r.dc}: ${r.outcome}`;
+  const vsLabel = r.isContest ? game.i18n.format('SKSK.Spell.Roll.VsContestTotal', { total: r.dc }) : `DC ${r.dc}`;
+  const flavor = `${r.saveLabel} (${r.best.label}) ${game.i18n.localize('SKSK.Spell.Roll.Vs')} ${vsLabel}: ${r.outcome}`;
   const messageData = {
     speaker: ChatMessage.getSpeaker({ actor }),
     flavor,
@@ -832,16 +876,29 @@ export async function rollSavingThrowFromChat(itemUuid, saveIndex, overchargeCou
  * rollSpellEffectSaveFromChat below) - multiple entries sharing the same
  * savingThrowIndex are naturally merged into this one button. Empty string
  * if that index has no qualifying entries.
+ * A "Wettstreit" (contest) saving throw (save.contest) has no fixed DC -
+ * the caster's own d20 roll happens right here instead (see
+ * rollContestCasterRoll), shown inline, with its total stashed on the
+ * button for whoever clicks it later to roll against.
  * @param {Item} item
  * @param {number} savingThrowIndex
  * @param {number} [overchargeCount=0]
- * @return {string}
+ * @return {Promise<string>}
  */
-function renderSpellEffectSaveButtonHTML(item, savingThrowIndex, overchargeCount = 0) {
+async function renderSpellEffectSaveButtonHTML(item, savingThrowIndex, overchargeCount = 0) {
   const save = item.system.savingThrows?.[savingThrowIndex];
   if (!save) return '';
-  const dc = computeSavingThrowValue(save, item.actor, overchargeCount);
   const label = save.label || game.i18n.format('SKSK.Spell.SavingThrow.Numbered', { number: savingThrowIndex + 1 });
+  if (save.contest) {
+    const casterRoll = await rollContestCasterRoll(save, item.actor);
+    const rollHTML = await casterRoll.roll.render();
+    return `<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.ContestCasterRoll', { label })}</div>${rollHTML}
+    <button type="button" class="sksk-roll-hit-eval" data-action="rollSpellEffectSave"
+      data-item-uuid="${item.uuid}" data-save-index="${savingThrowIndex}" data-overcharge="${overchargeCount}" data-contest-total="${casterRoll.total}">
+      ${game.i18n.format('SKSK.Spell.RollEffectSavingThrowContest', { label, total: casterRoll.total })}
+    </button>`;
+  }
+  const dc = computeSavingThrowValue(save, item.actor, overchargeCount);
   return `<button type="button" class="sksk-roll-hit-eval" data-action="rollSpellEffectSave"
     data-item-uuid="${item.uuid}" data-save-index="${savingThrowIndex}" data-overcharge="${overchargeCount}">
     ${game.i18n.format('SKSK.Spell.RollEffectSavingThrow', { label, dc })}
@@ -861,9 +918,12 @@ function renderSpellEffectSaveButtonHTML(item, savingThrowIndex, overchargeCount
  * @param {number} saveIndex
  * @param {number} [overchargeCount=0]
  * @param {boolean} [ignoreSpecial=false]
+ * @param {number|null} [contestTotal=null]   See resolveAndRollSavingThrow's
+ *   own contestTotal param - passed through from the button's
+ *   data-contest-total for a "Wettstreit" (contest) saving throw.
  * @return {Promise<ChatMessage|void>}
  */
-export async function rollSpellEffectSaveFromChat(itemUuid, saveIndex, overchargeCount = 0, ignoreSpecial = false) {
+export async function rollSpellEffectSaveFromChat(itemUuid, saveIndex, overchargeCount = 0, ignoreSpecial = false, contestTotal = null) {
   const item = await fromUuid(itemUuid);
   if (!item) return ui.notifications.warn(game.i18n.localize('SKSK.Spell.Roll.ItemNotFound'));
 
@@ -876,10 +936,11 @@ export async function rollSpellEffectSaveFromChat(itemUuid, saveIndex, overcharg
   const mode = await chooseGenericRollMode();
   if (!mode) return;
 
-  const r = await resolveAndRollSavingThrow(actor, item, save, saveIndex, overchargeCount, mode, ignoreSpecial);
+  const r = await resolveAndRollSavingThrow(actor, item, save, saveIndex, overchargeCount, mode, ignoreSpecial, contestTotal);
   const appliedHTML = r.success ? '' : await applySpellEffectGroup(itemUuid, 'save', saveIndex, actor);
 
-  const flavor = `${r.saveLabel} (${r.best.label}) ${game.i18n.localize('SKSK.Spell.Roll.Vs')} DC ${r.dc}: ${r.outcome}`;
+  const vsLabel = r.isContest ? game.i18n.format('SKSK.Spell.Roll.VsContestTotal', { total: r.dc }) : `DC ${r.dc}`;
+  const flavor = `${r.saveLabel} (${r.best.label}) ${game.i18n.localize('SKSK.Spell.Roll.Vs')} ${vsLabel}: ${r.outcome}`;
   const messageData = {
     speaker: ChatMessage.getSpeaker({ actor }),
     flavor,

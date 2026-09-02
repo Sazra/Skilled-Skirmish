@@ -359,6 +359,7 @@ SKSK.rangeIndicators = {
   self: 'SKSK.Spell.RangeIndicator.Self',
   touch: 'SKSK.Spell.RangeIndicator.Touch',
   targeted: 'SKSK.Spell.RangeIndicator.Targeted',
+  sight: 'SKSK.Spell.RangeIndicator.Sight',
   projectile: 'SKSK.Spell.RangeIndicator.Projectile',
   line: 'SKSK.Spell.RangeIndicator.Line',
   radius: 'SKSK.Spell.RangeIndicator.Radius',

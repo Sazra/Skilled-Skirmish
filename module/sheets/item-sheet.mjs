@@ -5,7 +5,7 @@ import {
   prepareActiveEffectCategories,
 } from '../helpers/effects.mjs';
 import { getSkillBonusChoices } from '../helpers/skills.mjs';
-import { computeSavingThrowValue, computeDamageBonus, computeCombinedSchoolOverrideLevel } from '../helpers/spells.mjs';
+import { computeSavingThrowValue, computeSavingThrowBonusSum, computeDamageBonus, computeCombinedSchoolOverrideLevel } from '../helpers/spells.mjs';
 import { getMaterials, getMaterial, isDurabilityEnabled } from '../helpers/materials.mjs';
 import { getWeaponModels, getArmorModels, getWeaponModel, getArmorModel, getOverridablePropertiesFor } from '../helpers/models.mjs';
 import { computeEffectiveProperties } from '../helpers/properties.mjs';
@@ -652,7 +652,9 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       // there's no caster to derive attribute/skill values from.
       if (item.actor) {
         context.savingThrowValues = (item.system.savingThrows ?? []).map(
-          entry => computeSavingThrowValue(entry, item.actor)
+          entry => entry.contest
+            ? computeSavingThrowBonusSum(entry, item.actor)
+            : computeSavingThrowValue(entry, item.actor)
         );
         context.damageBonusValues = (item.system.damages ?? []).map(
           entry => computeDamageBonus(entry, item.actor)

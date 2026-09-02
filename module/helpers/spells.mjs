@@ -47,6 +47,20 @@ export function computeSavingThrowValue(savingThrow, actor, overchargeCount = 0)
 }
 
 /**
+ * Sum just a saving throw's own attribute-/skill-bonuses for a given
+ * caster, with no flat base and no Überladen (Overcharge) bump - the
+ * caster's own d20 roll bonus for a "Wettstreit" (contest) saving throw
+ * (see data/spell.mjs#savingThrows.contest), where there is no fixed DC to
+ * add a base/Overcharge to.
+ * @param {object} savingThrow   An entry from SKSKSpell#savingThrows.
+ * @param {Actor} actor          The actor casting the spell.
+ * @return {number}
+ */
+export function computeSavingThrowBonusSum(savingThrow, actor) {
+  return sumBonuses(savingThrow.attributeBonuses, savingThrow.skillBonuses, actor);
+}
+
+/**
  * Compute a damage entry's total scaling bonus for a given caster - the
  * flat number to add to the damage formula's own roll once actual damage
  * rolling is implemented.
