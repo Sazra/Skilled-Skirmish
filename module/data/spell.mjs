@@ -106,7 +106,7 @@ export default class SKSKSpell extends SKSKItemBase {
       distance: new fields.NumberField({ ...requiredInteger, initial: 10, min: 0 }),
       indicator: new fields.StringField({
         required: true, blank: false, initial: "projectile",
-        choices: ["self", "touch", "targeted", "sight", "projectile", "line", "radius", "cone", "square"]
+        choices: ["self", "touch", "targeted", "sight", "hearing", "projectile", "line", "radius", "cone", "square"]
       })
     }), {
       initial: [{ distance: 10, indicator: "projectile" }]

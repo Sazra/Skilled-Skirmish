@@ -360,6 +360,7 @@ SKSK.rangeIndicators = {
   touch: 'SKSK.Spell.RangeIndicator.Touch',
   targeted: 'SKSK.Spell.RangeIndicator.Targeted',
   sight: 'SKSK.Spell.RangeIndicator.Sight',
+  hearing: 'SKSK.Spell.RangeIndicator.Hearing',
   projectile: 'SKSK.Spell.RangeIndicator.Projectile',
   line: 'SKSK.Spell.RangeIndicator.Line',
   radius: 'SKSK.Spell.RangeIndicator.Radius',
