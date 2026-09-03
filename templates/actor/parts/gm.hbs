@@ -35,6 +35,14 @@
       <input type="checkbox" name="system.soulPowerMechanicEnabled" {{checked system.soulPowerMechanicEnabled}} />
       {{localize 'SKSK.GM.SoulPowerMechanicEnabled'}}
     </label>
+    <div class="resource">
+      <label class="resource-label" title="{{localize 'SKSK.GM.LifeAbsorptionOverrideHint'}}">{{localize 'SKSK.GM.LifeAbsorptionOverrideLabel'}}</label>
+      <select name="system.lifeAbsorptionOverride">
+        <option value="default" {{#if (eq system.lifeAbsorptionOverride "default")}}selected{{/if}}>{{localize 'SKSK.GM.LifeAbsorptionOverride.Default'}}</option>
+        <option value="force" {{#if (eq system.lifeAbsorptionOverride "force")}}selected{{/if}}>{{localize 'SKSK.GM.LifeAbsorptionOverride.Force'}}</option>
+        <option value="deny" {{#if (eq system.lifeAbsorptionOverride "deny")}}selected{{/if}}>{{localize 'SKSK.GM.LifeAbsorptionOverride.Deny'}}</option>
+      </select>
+    </div>
   </details>
 
   <details class="gm-section" data-sync="gm-section-identity" open>

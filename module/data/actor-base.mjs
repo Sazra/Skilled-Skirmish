@@ -558,6 +558,17 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     schema.religion = new fields.SchemaField({
       patronId: new fields.StringField({ required: true, blank: true, initial: "" }),
     });
+    // GM-tab tri-state override for whether "life"-type damage (Lebensmagie's
+    // own healing spells - see helpers/spells.mjs) heals this actor instead
+    // of harming them (see helpers/defense.mjs#applyElementalDefense/
+    // actorAbsorbsLifeDamageByDefault) - "default" defers to the actor's own
+    // equipped Species' creatureCategories (most living creatures absorb
+    // Lebensschaden as healing; Undead/Elemental/Construct don't), "force"/
+    // "deny" override that per-actor regardless of species.
+    schema.lifeAbsorptionOverride = new fields.StringField({
+      required: true, blank: false, initial: "default",
+      choices: ["default", "force", "deny"]
+    });
     // GM-tab switch gating Seelenstärke's "meditationUsedInCombat" FP
     // trigger (helpers/actions.mjs#rollMeditation) - off by default, since
     // unlike every other skill-usage trigger (gated purely by its own GM-

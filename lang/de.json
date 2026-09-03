@@ -493,7 +493,14 @@
             "SoulPowerResourceEnabled": "Seelenstärke: Seelenmacht-Ressource anzeigen",
             "SoulPowerResourceEnabledHint": "Zeigt die Seelenmacht-Ressource in der Seitenleiste bereits an, bevor Seelenstärke ihre eigene maximale Stufe (5) erreicht hat - sie wird ohnehin angezeigt, sobald diese Stufe erreicht ist, daher wirkt sich dieser Schalter nur vorher aus. Standardmäßig aus. Von Active Effects ansteuerbar.",
             "SoulPowerMechanicEnabled": "Seelenstärke: Neue Mechanik aktivieren (reserviert)",
-            "SoulPowerMechanicEnabledHint": "Reserviert für Seelenmachts eigene Eintausch-Mechanik (ihren \"Eingetauschte Seelenmacht\"-FP-Trigger) - noch nicht entworfen oder angebunden, wird angegangen sobald jeder Fertigkeitsnutzungs-FP-Trigger vollständig implementiert ist. Hat aktuell keine Auswirkung. Von Active Effects ansteuerbar."
+            "SoulPowerMechanicEnabledHint": "Reserviert für Seelenmachts eigene Eintausch-Mechanik (ihren \"Eingetauschte Seelenmacht\"-FP-Trigger) - noch nicht entworfen oder angebunden, wird angegangen sobald jeder Fertigkeitsnutzungs-FP-Trigger vollständig implementiert ist. Hat aktuell keine Auswirkung. Von Active Effects ansteuerbar.",
+            "LifeAbsorptionOverrideLabel": "Lebensschaden heilt",
+            "LifeAbsorptionOverride": {
+                "Default": "Nach Kreaturenkategorie (Standard)",
+                "Force": "Immer heilen",
+                "Deny": "Nie heilen"
+            },
+            "LifeAbsorptionOverrideHint": "Steuert, ob Lebensschaden (Lebensmagie-Heilzauber) diese Kreatur heilt statt schadet. Standard: heilt, außer die Spezies trägt die Kreaturenkategorie Untot, Elementar oder Konstrukt. Kann hiermit pro Akteur erzwungen oder unterbunden werden."
         },
         "AttributeUsage": {
             "HighestSingle": "Nutze Höchsten (Nur Ein Attribut)",

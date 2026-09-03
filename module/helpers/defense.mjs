@@ -243,6 +243,34 @@ export function getMagicResistanceBreakdown(actor) {
   return computeMagicResistanceComponents(actor);
 }
 
+// Species creatureCategories (data/species.mjs) that opt an actor OUT of
+// life-damage-heals-by-default (see actorAbsorbsLifeDamageByDefault) -
+// Lebensmagie's own healing spells are dealt as "life"-type damage (per
+// design decision) and expected to heal most living creatures outright.
+const NON_LIVING_CREATURE_CATEGORIES = ['undead', 'elemental', 'construct'];
+
+/**
+ * Whether "life"-type damage (Lebensmagie's own healing spells) should heal
+ * this actor outright instead of harming them, absent an explicit
+ * lifeAbsorption skill unlock (see applyElementalDefense below) - most
+ * living creatures do; Undead/Elemental/Construct (by their equipped
+ * Species' own creatureCategories) don't - either default can be overridden
+ * per-actor via the GM tab's lifeAbsorptionOverride switch (data/
+ * actor-base.mjs), regardless of species.
+ * @param {Actor} actor
+ * @return {boolean}
+ */
+function actorAbsorbsLifeDamageByDefault(actor) {
+  const override = actor.system.lifeAbsorptionOverride;
+  if (override === 'force') return true;
+  if (override === 'deny') return false;
+
+  const categories = actor.items
+    .filter(i => i.type === 'species')
+    .flatMap(i => i.system.creatureCategories ?? []);
+  return !categories.some(category => NON_LIVING_CREATURE_CATEGORIES.includes(category));
+}
+
 /**
  * How a given amount of one element's damage is modified by the
  * defender's Resistance/Weakness/Immunity/Absorption skills for that same
@@ -268,6 +296,7 @@ export function applyElementalDefense(actor, damageType, amount) {
   if (amount <= 0) return { amount: 0, healing: false };
 
   if (isActorSkillUnlocked(actor, `${damageType}Absorption`)) return { amount, healing: true };
+  if (damageType === 'life' && actorAbsorbsLifeDamageByDefault(actor)) return { amount, healing: true };
   if (isActorSkillUnlocked(actor, `${damageType}Immunity`)) return { amount: 0, healing: false };
 
   const resistancePercent = Math.min(99, getActorSkillLevel(actor, `${damageType}Resistance`) * 10);

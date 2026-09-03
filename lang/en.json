@@ -493,7 +493,14 @@
       "SoulPowerResourceEnabled": "Soulforce: Show Soul Power Resource",
       "SoulPowerResourceEnabledHint": "Shows the Soul Power resource on the sidebar even before Soulforce reaches its own max level (5) - it's shown regardless once that level is reached, so this only matters earlier. Off by default. Targetable by Active Effects.",
       "SoulPowerMechanicEnabled": "Soulforce: Enable New Mechanic (reserved)",
-      "SoulPowerMechanicEnabledHint": "Reserved for Soul Power's own trade-in mechanic (its \"Soul Power Traded\" FP trigger) - not yet designed or wired up, to be tackled once every skill-usage FP trigger is fully implemented. Has no effect yet. Targetable by Active Effects."
+      "SoulPowerMechanicEnabledHint": "Reserved for Soul Power's own trade-in mechanic (its \"Soul Power Traded\" FP trigger) - not yet designed or wired up, to be tackled once every skill-usage FP trigger is fully implemented. Has no effect yet. Targetable by Active Effects.",
+      "LifeAbsorptionOverrideLabel": "Life Damage Heals",
+      "LifeAbsorptionOverride": {
+        "Default": "By Creature Category (Default)",
+        "Force": "Always Heals",
+        "Deny": "Never Heals"
+      },
+      "LifeAbsorptionOverrideHint": "Controls whether life-type damage (Life Magic's healing spells) heals this creature instead of harming them. Default: heals, unless the Species carries the Undead, Elemental, or Construct creature category. Can be forced or denied per-actor here regardless."
     },
     "AttributeUsage": {
       "HighestSingle": "Use Highest (Only One Attribute)",
