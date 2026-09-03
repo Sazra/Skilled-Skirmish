@@ -107,6 +107,42 @@
       </div>
     </div>
 
+    <div class="resource">
+      <label class="resource-label" title="{{localize 'SKSK.Spell.ExtraManaCostsHint'}}">{{localize 'SKSK.Spell.ExtraManaCostsLabel'}}</label>
+      <ol class="items-list items-list-compact">
+        <li class="item flexrow items-header">
+          <div class="item-name">Label</div>
+          <div class="item-name">{{localize 'SKSK.Spell.ManaCost'}}</div>
+          <div class="item-controls">
+            <a class="item-control item-create" data-action="addExtraManaCost" title="Add extra mana cost tier">
+              <i class="fas fa-plus"></i>
+            </a>
+          </div>
+        </li>
+        {{#each system.extraManaCosts as |tier index|}}
+        <li class="item flexrow">
+          <div class="item-name">
+            <input type="text" name="system.extraManaCosts.{{index}}.label" value="{{tier.label}}"
+              placeholder="e.g. Extra Cost 1" />
+          </div>
+          <div class="item-name">
+            <input type="text" name="system.extraManaCosts.{{index}}.manaCost" value="{{tier.manaCost}}"
+              data-dtype="Number" />
+          </div>
+          {{#if ../extraManaCostCumulative}}
+          <div class="item-name computed-total">= {{lookup ../extraManaCostCumulative index}}</div>
+          {{/if}}
+          <div class="item-controls">
+            <a class="item-control item-delete" data-action="removeArrayEntry" data-field="extraManaCosts"
+              data-index="{{index}}" title="Remove">
+              <i class="fas fa-trash"></i>
+            </a>
+          </div>
+        </li>
+        {{/each}}
+      </ol>
+    </div>
+
     <div class="grid grid-3col">
       <div class="resource">
         <label class="resource-label casting-method-option" title="{{localize 'SKSK.Spell.ManaCostPerRoundHint'}}">
@@ -468,11 +504,16 @@
             </div>
             <div class="item-name">
               <select name="system.damages.{{index}}.trigger">
-                {{selectOptions ../spellTriggerChoices selected=dmg.trigger localize=true}}
+                {{selectOptions ../damageTriggerChoices selected=dmg.trigger localize=true}}
               </select>
               {{#if (eq dmg.trigger "save")}}
               <select name="system.damages.{{index}}.savingThrowIndex">
                 {{selectOptions ../savingThrowChoices selected=dmg.savingThrowIndex}}
+              </select>
+              {{/if}}
+              {{#if (eq dmg.trigger "extraCost")}}
+              <select name="system.damages.{{index}}.extraCostIndex">
+                {{selectOptions ../extraCostChoices selected=dmg.extraCostIndex}}
               </select>
               {{/if}}
             </div>

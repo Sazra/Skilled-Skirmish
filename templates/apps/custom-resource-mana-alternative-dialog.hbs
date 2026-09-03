@@ -1,0 +1,58 @@
+<div class="sksk-custom-resource-mana-alternative-dialog">
+  <div class="resource">
+    <label class="resource-label" title="{{localize 'SKSK.General.AbbreviationHint'}}">{{localize 'SKSK.General.Abbreviation'}}</label>
+    <input type="text" name="abbreviation" value="{{entry.abbreviation}}" maxlength="4" class="resource-abbreviation"
+      placeholder="e.g. RAGE" />
+  </div>
+
+  <div class="flexrow">
+    <label class="casting-method-option" title="{{localize 'SKSK.General.ManaAlternativeEnableHint'}}">
+      <input type="checkbox" name="isManaAlternative" {{checked entry.isManaAlternative}} />
+      {{localize 'SKSK.General.ManaAlternativeEnable'}}
+    </label>
+    {{#if entry.isManaAlternative}}
+    <select name="manaAlternativeMode">
+      {{selectOptions manaAlternativeModeChoices selected=entry.manaAlternativeMode localize=true}}
+    </select>
+    {{/if}}
+  </div>
+
+  {{#if entry.isManaAlternative}}
+  {{#if (eq entry.manaAlternativeMode "rate")}}
+  <div class="bonus-groups">
+    <div class="bonus-group">
+      <label class="resource-label">{{localize 'SKSK.General.ManaAlternativeRateLabel'}}</label>
+      <div class="flexrow flex-center">
+        <input type="text" name="manaAlternativeRateResource" value="{{entry.manaAlternativeRateResource}}"
+          data-dtype="Number" />
+        <span>{{localize 'SKSK.General.ManaAlternativeRateUnit'}} =</span>
+        <input type="text" name="manaAlternativeRateMana" value="{{entry.manaAlternativeRateMana}}"
+          data-dtype="Number" />
+        <span>{{localize 'SKSK.Spell.ManaCost'}}</span>
+      </div>
+    </div>
+    <div class="bonus-group">
+      <label class="resource-label">{{localize 'SKSK.General.ManaAlternativeUsableFor'}}</label>
+      <div class="casting-methods">
+        <label class="casting-method-option">
+          <input type="checkbox" name="manaAlternativeForSpells" {{checked entry.manaAlternativeForSpells}} />
+          {{localize 'SKSK.SheetLabels.Spells'}}
+        </label>
+        <label class="casting-method-option">
+          <input type="checkbox" name="manaAlternativeForTechniques" {{checked entry.manaAlternativeForTechniques}} />
+          {{localize 'SKSK.Technique.SectionTitle'}}
+        </label>
+        <label class="casting-method-option">
+          <input type="checkbox" name="manaAlternativeForAbilities" {{checked entry.manaAlternativeForAbilities}} />
+          {{localize 'SKSK.SheetLabels.Abilities'}}
+        </label>
+      </div>
+    </div>
+  </div>
+  {{else}}
+  <div class="resource">
+    <span class="hint">{{localize 'SKSK.General.ManaAlternativeSpellLevelHint'}}</span>
+  </div>
+  {{/if}}
+  {{/if}}
+</div>

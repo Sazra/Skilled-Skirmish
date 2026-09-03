@@ -390,6 +390,31 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       abbreviation: new fields.StringField({ required: true, blank: true }),
       value: new fields.NumberField({ ...requiredInteger, initial: 0 }),
       max: new fields.NumberField({ ...requiredInteger, initial: 0 }),
+      // Whether this resource can be spent instead of Mana - see helpers/
+      // customResources.mjs#getManaAlternativeResources/
+      // computeManaAlternativeCoverage, chosen at spell-cast time via the
+      // same Shift+Click dialog as Überladen (helpers/spell-rolls.mjs#
+      // chooseSpellCastOptions).
+      isManaAlternative: new fields.BooleanField({ initial: false }),
+      // "rate": a fixed manaAlternativeRateResource:manaAlternativeRateMana
+      // conversion (e.g. 1:1, 2:1), gated per-usage by the three
+      // manaAlternativeFor* switches below. "spellLevel": 1 resource point
+      // = 1 spell level (up to the spell's own level, max 10 since that's
+      // the schema's own spellLevel cap) - always spells-only, ignores the
+      // manaAlternativeFor* switches entirely.
+      manaAlternativeMode: new fields.StringField({
+        required: true, blank: false, initial: "rate", choices: ["rate", "spellLevel"]
+      }),
+      manaAlternativeRateResource: new fields.NumberField({ ...requiredInteger, initial: 1, min: 1 }),
+      manaAlternativeRateMana: new fields.NumberField({ ...requiredInteger, initial: 1, min: 1 }),
+      manaAlternativeForSpells: new fields.BooleanField({ initial: true }),
+      manaAlternativeForTechniques: new fields.BooleanField({ initial: false }),
+      // Not yet wired to any actual mechanic - Class/Species/Talent
+      // "Fähigkeiten" are purely descriptive (no cost of their own) and
+      // Soul Path's own active Pfadfähigkeiten aren't referred to as
+      // "Fähigkeiten" anywhere else in this system - reserved for a future
+      // costed "Fähigkeiten" mechanic.
+      manaAlternativeForAbilities: new fields.BooleanField({ initial: false }),
     }));
 
     // Size category (CONFIG.SKSK.sizeCategories) - a normal user-editable
@@ -633,6 +658,11 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       // helpers/spell-rolls.mjs#resolvePendingSpell), so a deferred
       // overcharged cast still scales its saving throws/ranges/damage.
       overchargeCount: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+      // Which "Es kann mehr Mana gezahlt werden" tier (see data/spell.mjs#
+      // extraManaCosts) this pending spell's cast paid, carried through the
+      // same way overchargeCount is - see helpers/spell-rolls.mjs#
+      // resolvePendingSpell.
+      extraCostTier: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
     });
 
     const attributeKeys = Object.keys(CONFIG.SKSK.attributes);

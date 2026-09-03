@@ -41,7 +41,6 @@
       <ol class="items-list items-list-compact">
         <li class="item flexrow items-header">
           <div class="item-name">{{localize 'Name'}}</div>
-          <div class="item-name" title="{{localize 'SKSK.General.AbbreviationHint'}}">{{localize 'SKSK.General.Abbreviation'}}</div>
           <div class="item-name">{{localize 'SKSK.SheetLabels.Resources'}}</div>
           <div class="item-controls">
             <a class="item-control item-create" data-action="addResource" title="{{localize 'SKSK.General.AddResource'}}">
@@ -52,7 +51,6 @@
         {{#each generalResources as |res|}}
         <li class="item flexrow">
           <div class="item-name">{{localize res.label}}</div>
-          <div class="item-name"></div>
           <div class="item-name flexrow flex-center">
             <input type="text" name="system.{{res.key}}.value" value="{{res.value}}" data-dtype="Number" />
             {{#unless res.noMax}}
@@ -71,21 +69,20 @@
         {{/each}}
         {{#each system.customResources as |entry index|}}
         <li class="item flexrow">
-          <div class="item-name">
+          <div class="item-name custom-resource-name-row">
             <input type="text" name="system.customResources.{{index}}.name" value="{{entry.name}}"
               placeholder="{{localize 'Name'}}" />
-          </div>
-          <div class="item-name">
-            <input type="text" name="system.customResources.{{index}}.abbreviation" value="{{entry.abbreviation}}"
-              maxlength="4" class="resource-abbreviation" placeholder="e.g. RAGE"
-              title="{{localize 'SKSK.General.AbbreviationHint'}}" />
+            <a class="item-control" data-action="openCustomResourceManaAlternativeDialog" data-index="{{index}}"
+              title="{{localize 'SKSK.General.ManaAlternativeDialogTitle'}}">
+              <i class="fas fa-gear"></i>
+            </a>
           </div>
           <div class="item-name flexrow flex-center">
             <input type="text" name="system.customResources.{{index}}.value" value="{{entry.value}}"
-              data-dtype="Number" />
+              data-dtype="Number" class="custom-resource-amount" />
             <span>/</span>
             <input type="text" name="system.customResources.{{index}}.max" value="{{entry.max}}"
-              data-dtype="Number" />
+              data-dtype="Number" class="custom-resource-amount" />
           </div>
           <div class="item-controls">
             <a class="item-control item-delete" data-action="removeResource" data-index="{{index}}"

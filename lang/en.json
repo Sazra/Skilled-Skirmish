@@ -139,6 +139,17 @@
       "AddResource": "Add resource",
       "Abbreviation": "Var.",
       "AbbreviationHint": "Up to 4 letters. Usable in roll formulas as @<abbreviation>, e.g. @rage.",
+      "ManaAlternativeEnable": "Usable as Mana Alternative",
+      "ManaAlternativeEnableHint": "This resource can be spent instead of Mana - selectable via the Shift+Click menu on spell rolls. If it doesn't cover the full cost, the remainder is paid normally with Mana.",
+      "ManaAlternativeMode": {
+        "Rate": "Fixed Rate",
+        "SpellLevel": "1 Point = 1 Spell Level"
+      },
+      "ManaAlternativeRateLabel": "Rate",
+      "ManaAlternativeRateUnit": "point(s)",
+      "ManaAlternativeUsableFor": "Usable For",
+      "ManaAlternativeSpellLevelHint": "1 resource point is worth one spell level (up to 10 points at once, for a level 10 spell). Spells only.",
+      "ManaAlternativeDialogTitle": "Mana Alternative",
       "Type": "Type",
       "School": "School",
       "Skill": "Skill",
@@ -740,6 +751,8 @@
       "StyleApCostDiscount": "AP Cost Discount",
       "StyleManaCostDiscount": "Mana Cost Discount",
       "Status": "Status",
+      "CostLabel": "Cost",
+      "CooldownLabel": "Cooldown",
       "StatusActive": "Active ({rounds} rounds left)",
       "StatusPrimed": "Primed - awaiting next attack",
       "StatusCooldown": "Cooldown ({rounds} rounds left)",
@@ -1350,6 +1363,8 @@
       "UpkeepAutoDeactivated": "{name}: No longer sustained - not enough mana for the per-round cost.",
       "OverchargeAutoEffects": "Automatic Overcharge Effects",
       "OverchargeAutoEffectsHint": "When on, saving throw DC (+1), range (+20%) and damage (+50%) all scale automatically per Überladung. Turn off for a spell with a hand-written Custom Effect - the increased AP/Mana cost still applies either way, but the actual effect is then calculated manually.",
+      "ExtraManaCostsLabel": "More Mana Can Be Paid",
+      "ExtraManaCostsHint": "Cumulative tiers of extra Mana cost - paying tier 2 also requires paying tier 1. Chosen via Shift+Click on the spell, in the same window as Overcharge. A Damage row can be tied to one of these tiers via the \"Extra Cost\" trigger.",
       "PrerequisiteNotMet": "Prerequisite not met: {details}",
       "StatusEffectsLabel": "Status Effects",
       "FoundryEffectsLabel": "Effects",
@@ -1419,12 +1434,16 @@
       "Trigger": {
         "Attack": "Attack Roll",
         "Save": "Saving Throw",
-        "Unconditional": "Unconditional"
+        "Unconditional": "Unconditional",
+        "ExtraCost": "Extra Cost"
       },
       "SavingThrow": {
         "Numbered": "Saving Throw {number}",
         "Contest": "Contest",
         "ContestHint": "Instead of a fixed DC, the caster rolls their own roll right at cast time (1d20 + this saving throw's own attribute-/skill-bonuses). Whoever clicks the button in chat afterward rolls their own roll against that instead of a fixed DC. The Base value is ignored."
+      },
+      "ExtraManaCost": {
+        "Numbered": "Extra Cost {number}"
       },
       "Roll": {
         "Attack": "Attack {number}",
@@ -1455,7 +1474,15 @@
         "OverchargeCount": "Overcharge ×{count}",
         "OverchargeActive": "Overcharged (×{count}) - no reduction from Chant Shortening.",
         "OverchargeRanges": "Range (overcharged): {ranges}",
-        "OverchargeDamage": "Overcharged: {amount} damage"
+        "OverchargeDamage": "Overcharged: {amount} damage",
+        "ExtraCostLabel": "More Mana Can Be Paid",
+        "ExtraCostNone": "None",
+        "ExtraCostActive": "Extra Mana cost paid: {label} (+{amount} Mana)",
+        "CastWithoutOvercharge": "Cast Without Overcharge",
+        "AltResourceLabel": "Alternative Resource Instead of Mana",
+        "AltResourceNone": "None",
+        "AltResourcePreview": "{spent} points, covers {covered} Mana",
+        "AltResourcePaid": "{name}: {spent} points spent, covers {covered} Mana"
       }
     },
     "DamageType": {

@@ -34,7 +34,7 @@ import { getArmorClassBreakdown, getMagicResistanceBreakdown, computeArmorPieceB
 import { computeWeaponAttackBonus, computeWeaponRangeLabel } from '../helpers/attackRolls.mjs';
 import { renderBreakdownHtml } from '../helpers/tooltips.mjs';
 import { rollMartialArtsAttack, rollRegeneration, rollMeditation, rollAdrenalin, useMove, useDodge, useItem, postActionChatCard } from '../helpers/actions.mjs';
-import { chooseOverchargeCount } from '../helpers/spell-rolls.mjs';
+import { chooseSpellCastOptions } from '../helpers/spell-rolls.mjs';
 import { SKSKRestDialog } from '../apps/rest-dialog.mjs';
 import { SKSKTrainingDialog } from '../apps/training-dialog.mjs';
 import { SKSKReligionDialog } from '../apps/religion-dialog.mjs';
@@ -50,6 +50,7 @@ import { copyEffectKeyToClipboard } from '../helpers/effectKeyReference.mjs';
 import { formatRollCardHeading } from '../helpers/rollCard.mjs';
 import { SKSKMassKillDialog } from '../apps/mass-kill-dialog.mjs';
 import { SKSKMartialArtsAttacksDialog } from '../apps/martial-arts-attacks-dialog.mjs';
+import { SKSKCustomResourceManaAlternativeDialog } from '../apps/custom-resource-mana-alternative-dialog.mjs';
 import { SKSKTechniqueDialog } from '../apps/technique-dialog.mjs';
 import {
   getSoulPathItem, isPathAbilityVisible, getPathAbilityStatusLabel, getPathAbilityActionLabel,
@@ -131,6 +132,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       addAdditionalData: SKSKActorSheet.#addAdditionalData,
       removeAdditionalData: SKSKActorSheet.#removeAdditionalData,
       openMartialArtsAttacksDialog: SKSKActorSheet.#openMartialArtsAttacksDialog,
+      openCustomResourceManaAlternativeDialog: SKSKActorSheet.#openCustomResourceManaAlternativeDialog,
       rollMartialArtsAttack: SKSKActorSheet.#rollMartialArtsAttack,
       rollRegeneration: SKSKActorSheet.#rollRegeneration,
       rollMeditation: SKSKActorSheet.#rollMeditation,
@@ -1105,10 +1107,14 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
   /**
    * Build the General tab's data: movement speeds, favorited skills (level
    * only - see skills.hbs' favorite toggle), and the actor's user-
-   * extensible custom resources list. Also resolves the size category
-   * shown (and editable) in the sheet header. Must run after
-   * _prepareSkills, since it reuses its already-computed skillCategories
-   * rows to pull out the favorited ones.
+   * extensible custom resources list - each entry's own "used instead of
+   * Mana" sub-config (data/actor-base.mjs#customResources.
+   * manaAlternativeMode and friends) lives in its own small sub-window
+   * instead (apps/custom-resource-mana-alternative-dialog.mjs), so none of
+   * that needs preparing here. Also resolves the size category shown (and
+   * editable) in the sheet header. Must run after _prepareSkills, since it
+   * reuses its already-computed skillCategories rows to pull out the
+   * favorited ones.
    *
    * @param {Object} context The context to prepare.
    *
@@ -1686,6 +1692,17 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
   }
 
   /**
+   * Open the "Mana-Alternative" sub-window (apps/
+   * custom-resource-mana-alternative-dialog.mjs) for one row of the General
+   * tab's "Zusätzliche Ressourcen" list - see data/actor-base.mjs#
+   * customResources.
+   */
+  static #openCustomResourceManaAlternativeDialog(event, target) {
+    const index = Number(target.dataset.index);
+    new SKSKCustomResourceManaAlternativeDialog(this.actor, index).render(true);
+  }
+
+  /**
    * Roll the Martial Arts Attack currently chosen in the Actions tab's
    * selector - see helpers/actions.mjs#rollMartialArtsAttack.
    * @param {PointerEvent} event
@@ -2150,12 +2167,15 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
   }
 
   /**
-   * Handle clickable rolls - Shift+clicking a spell prompts to Überladen
-   * (Overcharge) it first (see helpers/spell-rolls.mjs#
-   * chooseOverchargeCount), skipped entirely if this actor is already
-   * mid-cast (same condition rollSpellItem itself guards on) to avoid
-   * popping the dialog pointlessly. A plain click, or Shift+click on any
-   * non-spell item, behaves exactly as before.
+   * Handle clickable rolls - Shift+clicking a spell opens a dialog to pick
+   * Überladen (Overcharge), an "Es kann mehr Mana gezahlt werden" extra-cost
+   * tier, and/or a custom resource to spend instead of Mana, all together -
+   * see helpers/spell-rolls.mjs#chooseSpellCastOptions, which returns every
+   * choice at once (including a "cast without Überladen" option, for using
+   * the dialog's other choices without also overcharging). Skipped entirely
+   * if this actor is already mid-cast (same condition rollSpellItem itself
+   * guards on) to avoid popping the dialog pointlessly. A plain click, or
+   * Shift+click on any non-spell item, behaves exactly as before.
    * @param {PointerEvent} event   The originating click event.
    * @param {HTMLElement} target   The capturing HTML element.
    * @private
@@ -2176,9 +2196,9 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
           if ((pendingSpell?.apCost ?? 0) > 0 || (pendingSpell?.roundsRemaining ?? 0) > 0) {
             return ui.notifications.warn(game.i18n.localize('SKSK.Spell.Roll.AlreadyConcentrating'));
           }
-          const count = await chooseOverchargeCount(this.actor, item);
-          if (!count) return;
-          return item.roll(count);
+          const choice = await chooseSpellCastOptions(this.actor, item);
+          if (!choice) return;
+          return item.roll(choice.overchargeCount, choice.extraCostTier, choice.altResourceIndex);
         }
 
         return item.roll();

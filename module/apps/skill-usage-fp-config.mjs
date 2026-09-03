@@ -151,7 +151,7 @@ const SKILL_SPECIFIC_TRIGGERS = {
   ],
   // Wired (helpers/spell-rolls.mjs#rollSpellItem, via a spell's Shift+Click
   // - see sheets/actor-sheet.mjs's #onRoll and helpers/spell-rolls.mjs#
-  // chooseOverchargeCount) - scaled by however many times the cast was
+  // chooseSpellCastOptions) - scaled by however many times the cast was
   // overcharged.
   overcharge: [{ key: 'overchargeUsed', label: 'SKSK.SkillFpConfig.OverchargeUsed' }],
   // Both wired via the header's own "Quelle" (Source) button - apps/source-

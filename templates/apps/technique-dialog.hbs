@@ -4,6 +4,8 @@
       <div class="item-name">{{localize 'Name'}}</div>
       <div class="item-name">{{localize 'SKSK.Technique.CategoryLabel'}}</div>
       <div class="item-name">{{localize 'SKSK.Technique.Status'}}</div>
+      <div class="spell-cost technique-cost">{{localize 'SKSK.Technique.CostLabel'}}</div>
+      <div class="spell-cost technique-cooldown">{{localize 'SKSK.Technique.CooldownLabel'}}</div>
       <div class="item-controls">
         <a class="item-control" data-action="createTechnique" title="{{localize 'DOCUMENT.New' type='technique'}}">
           <i class="fas fa-plus"></i>
@@ -17,15 +19,41 @@
       </div>
       <div class="item-name">{{localize entry.categoryLabel}}</div>
       <div class="item-name">{{entry.statusLabel}}</div>
+      <div class="spell-cost technique-cost" title="{{localize 'SKSK.Technique.CostLabel'}}">
+        <span class="spell-cost-line {{#if entry.manaAffordable}}mana-cost-good{{/if}}">
+          <i class="fas fa-tint"></i>{{entry.effectiveManaCost}}
+        </span>
+        <span class="spell-cost-line {{#if entry.apAffordable}}ap-cost-good{{/if}}">
+          <i class="fas fa-bolt"></i>{{entry.effectiveApCost}}
+        </span>
+        {{#if entry.hasOwnRpCost}}
+        <span class="spell-cost-line {{#if entry.rpAffordable}}ap-cost-good{{/if}}">
+          <i class="fas fa-reply"></i>{{entry.effectiveRpCost}}
+        </span>
+        {{/if}}
+      </div>
+      <div class="spell-cost technique-cooldown" title="{{localize 'SKSK.Technique.CooldownLabel'}}">
+        {{#if entry.hasCooldown}}
+        <span class="spell-cost-line">
+          <i class="fas fa-hourglass-half"></i>{{#if entry.onCooldown}}{{entry.item.system.roundsRemaining}}/{{/if}}{{entry.item.system.cooldownRounds}}
+        </span>
+        {{/if}}
+      </div>
       <div class="item-controls">
         <a class="item-control" data-action="activateTechnique" data-item-id="{{entry.item.id}}" title="{{localize entry.actionLabel}}">
           <i class="fas fa-bolt"></i>
         </a>
-        {{#if entry.showEffectButton}}
-        <a class="item-control" data-action="openTechniqueEffect" data-item-id="{{entry.item.id}}" title="{{localize 'SKSK.Technique.EditEffect'}}">
+        {{!-- Always rendered (never {{#if}}-removed) so every row reserves
+        the exact same three icon slots regardless of Technique category -
+        only "stand"/"effect" categories can ever show this one (see
+        showEffectButton/techniqueShowsEffectButton), but an "attackBonus"
+        row hiding it outright would shift Delete's own position left,
+        breaking column alignment against rows that do show it. --}}
+        <a class="item-control {{#unless entry.showEffectButton}}item-control-reserved{{/unless}}"
+          data-action="openTechniqueEffect" data-item-id="{{entry.item.id}}"
+          title="{{localize 'SKSK.Technique.EditEffect'}}" {{#unless entry.showEffectButton}}tabindex="-1" aria-hidden="true"{{/unless}}>
           <i class="fas fa-sliders-h"></i>
         </a>
-        {{/if}}
         <a class="item-control item-delete" data-action="deleteTechnique" data-item-id="{{entry.item.id}}" title="{{localize 'DOCUMENT.Delete' type='Item'}}">
           <i class="fas fa-trash"></i>
         </a>

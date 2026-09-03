@@ -1,6 +1,7 @@
 import {
   computeDamageBonus, computeSavingThrowValue, computeSavingThrowBonusSum, computeSpellManaCost, computeSpellApCost,
-  computeRitualHours, computeMaxOverchargeCount, computeOverchargedRanges,
+  computeRitualHours, computeMaxOverchargeCount, computeOverchargedRanges, computeExtraManaCostSum,
+  computeMaxExtraCostTier,
 } from './spells.mjs';
 import { getActorSkillLevel, getSkillLabel } from './skills.mjs';
 import {
@@ -15,6 +16,7 @@ import {
   formatD20ModeSummaryLine,
 } from './criticalRolls.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine, grantFlatSkillFp, checkReflexActionTrigger } from './skillFp.mjs';
+import { getManaAlternativeResources, computeManaAlternativeCoverage, payWithManaAlternative } from './customResources.mjs';
 import { renderApplyDamageButton, resolveClickDefender, applySpellEffectGroup } from './damageApplication.mjs';
 import {
   consumePrimedTechnique, applyTechniqueBonusDamage, applyTechniqueDiceIncrease,
@@ -93,30 +95,100 @@ function formatCastingMethodsLine(system) {
 }
 
 /**
- * Prompt for how many times to Überladen (Overcharge) a spell cast - one
- * button per count from 1 to computeMaxOverchargeCount(actor), matching
- * helpers/attackRolls.mjs#chooseAttackMode's own one-click DialogV2.wait
- * pattern (a button's own callback resolves the promise directly;
- * rejectClose:false so closing without choosing aborts the cast entirely,
- * same as closing that mode dialog aborts an Evaluate click).
+ * Prompt for a spell cast's optional modifiers - Überladen (Overcharge)
+ * count, an "Es kann mehr Mana gezahlt werden" extra-cost tier, and/or a
+ * custom resource to spend instead of Mana - all in one Shift+Click dialog,
+ * matching helpers/attackRolls.mjs#chooseAttackMode's own one-click
+ * DialogV2.wait pattern (a button's own callback resolves the promise
+ * directly; rejectClose:false so closing without choosing aborts the cast
+ * entirely, same as closing that mode dialog aborts an Evaluate click).
+ *
+ * One button per Überladen count from 1 to computeMaxOverchargeCount(actor),
+ * plus a leading "cast without Überladen" button (overchargeCount 0) - so
+ * the dialog's other choices (extra-cost tier, alternative resource) can be
+ * used without also overcharging.
+ *
+ * If the spell defines any extra-cost tiers (data/spell.mjs#extraManaCosts),
+ * the dialog also offers a <select> for which cumulative tier to pay (0 =
+ * none) - each option shows the running total extra Mana cost (see
+ * computeExtraManaCostSum). If the actor has any custom resource flagged
+ * usable instead of Mana for spells (data/actor-base.mjs#customResources.
+ * isManaAlternative, see helpers/customResources.mjs#
+ * getManaAlternativeResources), the dialog also offers a <select> for which
+ * one to spend - each option previews how many of its own points would be
+ * spent to cover this spell's BASE Mana cost (no Überladen/extra-cost tier
+ * factored in - a representative preview, not a live recalculation; the
+ * actual amount spent at cast time is always computed against the final
+ * cost, see rollSpellItem). Whichever button is clicked, its callback reads
+ * every <select>'s CURRENT value off the button's own owning form (DialogV2
+ * wraps its content+footer in one <form>, so button.form reaches it) - one
+ * click commits every choice together, there being only the one row of
+ * buttons.
  * @param {Actor} actor
  * @param {Item} item   The spell item, for the dialog's own title.
- * @return {Promise<number|null>} The chosen count, or null/undefined if
- *   the dialog was closed without picking one - the caller should abort.
+ * @return {Promise<{overchargeCount: number, extraCostTier: number, altResourceIndex: number}|null>}
+ *   altResourceIndex is -1 for "none". null/undefined if the dialog was
+ *   closed without picking an option - the caller should abort.
  */
-export async function chooseOverchargeCount(actor, item) {
+export async function chooseSpellCastOptions(actor, item) {
   const max = computeMaxOverchargeCount(actor);
-  const buttons = [];
+  const extraTiers = item.system.extraManaCosts ?? [];
+  const hasExtraTiers = extraTiers.length > 0;
+  const altResources = getManaAlternativeResources(actor, 'spells');
+  const hasAltResources = altResources.length > 0;
+
+  let extraCostFieldHTML = '';
+  if (hasExtraTiers) {
+    const options = [`<option value="0">${game.i18n.localize('SKSK.Spell.Roll.ExtraCostNone')}</option>`];
+    extraTiers.forEach((tierEntry, index) => {
+      const tier = index + 1;
+      const sum = computeExtraManaCostSum(item.system, tier);
+      const label = tierEntry.label || game.i18n.format('SKSK.Spell.ExtraManaCost.Numbered', { number: tier });
+      options.push(`<option value="${tier}">${label} (+${sum})</option>`);
+    });
+    extraCostFieldHTML = `<div class="form-group">
+      <label>${game.i18n.localize('SKSK.Spell.Roll.ExtraCostLabel')}</label>
+      <select name="extraCostTier">${options.join('')}</select>
+    </div>`;
+  }
+
+  let altResourceFieldHTML = '';
+  if (hasAltResources) {
+    const baseManaCost = computeSpellManaCost(item.system, actor, 0, 0).cost;
+    const options = [`<option value="-1">${game.i18n.localize('SKSK.Spell.Roll.AltResourceNone')}</option>`];
+    for (const { index, resource } of altResources) {
+      const { resourcePointsSpent, manaCovered } = computeManaAlternativeCoverage(resource, baseManaCost, item.system.spellLevel);
+      const name = resource.name || resource.abbreviation;
+      const preview = game.i18n.format('SKSK.Spell.Roll.AltResourcePreview', { spent: resourcePointsSpent, covered: manaCovered });
+      options.push(`<option value="${index}">${name} (${preview})</option>`);
+    }
+    altResourceFieldHTML = `<div class="form-group">
+      <label>${game.i18n.localize('SKSK.Spell.Roll.AltResourceLabel')}</label>
+      <select name="altResourceIndex">${options.join('')}</select>
+    </div>`;
+  }
+
+  const readChoice = (overchargeCount) => (event, button) => ({
+    overchargeCount,
+    extraCostTier: hasExtraTiers ? Number(button.form?.elements?.extraCostTier?.value ?? 0) : 0,
+    altResourceIndex: hasAltResources ? Number(button.form?.elements?.altResourceIndex?.value ?? -1) : -1,
+  });
+
+  const buttons = [{
+    action: 'noOvercharge',
+    label: game.i18n.localize('SKSK.Spell.Roll.CastWithoutOvercharge'),
+    callback: readChoice(0),
+  }];
   for (let count = 1; count <= max; count++) {
     buttons.push({
       action: `overcharge${count}`,
       label: game.i18n.format('SKSK.Spell.Roll.OverchargeCount', { count }),
-      callback: () => count,
+      callback: readChoice(count),
     });
   }
   return foundry.applications.api.DialogV2.wait({
     window: { title: game.i18n.format('SKSK.Spell.Roll.OverchargeTitle', { name: item.name }) },
-    content: `<p>${game.i18n.localize('SKSK.Spell.Roll.ChooseOverchargePrompt')}</p>`,
+    content: `<p>${game.i18n.localize('SKSK.Spell.Roll.ChooseOverchargePrompt')}</p>${extraCostFieldHTML}${altResourceFieldHTML}`,
     buttons,
     rejectClose: false,
   });
@@ -269,9 +341,13 @@ async function postSpellChatCard(item, parts) {
  * (attack-triggered first, else save-triggered, else unconditional).
  * @param {Item} item   The spell item.
  * @param {number} [overchargeCount=0]
+ * @param {number} [extraCostTier=0]   Which "Es kann mehr Mana gezahlt
+ *   werden" tier was paid (see data/spell.mjs#extraManaCosts) - gates any
+ *   damages entry whose trigger is "extraCost" (see the "extraCost" damage
+ *   loop below), independent of overchargeAutoEffects.
  * @return {Promise<string[]>}
  */
-async function renderSpellEffectParts(item, overchargeCount = 0) {
+async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier = 0) {
   const actor = item.actor;
   const system = item.system;
   const parts = [];
@@ -306,6 +382,12 @@ async function renderSpellEffectParts(item, overchargeCount = 0) {
 
   if (overchargeCount > 0) {
     parts.push(`<div class="sksk-roll-line"><strong>${game.i18n.format('SKSK.Spell.Roll.OverchargeActive', { count: overchargeCount })}</strong></div>`);
+  }
+  if (extraCostTier > 0) {
+    const tierEntry = system.extraManaCosts?.[extraCostTier - 1];
+    const tierLabel = tierEntry?.label || game.i18n.format('SKSK.Spell.ExtraManaCost.Numbered', { number: extraCostTier });
+    const sum = computeExtraManaCostSum(system, extraCostTier);
+    parts.push(`<div class="sksk-roll-line"><strong>${game.i18n.format('SKSK.Spell.Roll.ExtraCostActive', { label: tierLabel, amount: sum })}</strong></div>`);
   }
   if (effectiveOvercharge > 0 && system.ranges?.length) {
     const rangeLabel = computeOverchargedRanges(system.ranges, effectiveOvercharge)
@@ -374,6 +456,21 @@ async function renderSpellEffectParts(item, overchargeCount = 0) {
   }
   parts.push(renderApplyDamageButton(actor, unconditionalDamageEntries, null, takeTechniqueEffect()));
 
+  // 10b. "Es kann mehr Mana gezahlt werden" - damage entries whose trigger
+  // is "extraCost" (see data/spell.mjs#damages.extraCostIndex), gated on
+  // whichever tier was actually paid at cast time (extraCostTier) -
+  // cumulative, so a higher paid tier also rolls every lower-indexed entry
+  // (extraCostIndex 0 = tier 1, etc. - see computeExtraManaCostSum's own
+  // identical cumulative slicing). Independent of overchargeAutoEffects -
+  // the extra cost was paid either way, so its damage always applies.
+  const extraCostDamageEntries = [];
+  for (const damage of system.damages.filter(d => d.trigger === 'extraCost' && extraCostTier >= (d.extraCostIndex ?? 0) + 1)) {
+    const { html, entry } = await rollDamageWithTechnique(damage);
+    parts.push(html);
+    extraCostDamageEntries.push(entry);
+  }
+  parts.push(renderApplyDamageButton(actor, extraCostDamageEntries, null, takeTechniqueEffect()));
+
   // 11. Status/Foundry effects tied to the attack roll - merged into one
   // "Effekt anwenden" button, separate from the attack's own Apply Damage
   // button(s) above (only relevant if the spell actually has an attack roll).
@@ -427,10 +524,17 @@ async function renderSpellEffectParts(item, overchargeCount = 0) {
  * @param {Item} item   The spell item being cast.
  * @param {number} [overchargeCount=0]   How many times to Überladen
  *   (Overcharge) this cast - see helpers/spells.mjs#
- *   computeMaxOverchargeCount/chooseOverchargeCount below.
+ *   computeMaxOverchargeCount/chooseSpellCastOptions below.
+ * @param {number} [extraCostTier=0]   Which "Es kann mehr Mana gezahlt
+ *   werden" tier to pay this cast (see data/spell.mjs#extraManaCosts) -
+ *   chosen via the same dialog as overchargeCount (chooseSpellCastOptions).
+ * @param {number} [altResourceIndex=-1]   Index into the actor's own
+ *   system.customResources to spend (instead of Mana) toward this cast's
+ *   final Mana cost - -1 for none. Whatever the resource doesn't cover
+ *   falls back to normal Mana payment. See helpers/customResources.mjs.
  * @return {Promise<ChatMessage|void>}
  */
-export async function rollSpellItem(item, overchargeCount = 0) {
+export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0, altResourceIndex = -1) {
   const actor = item.actor;
   const system = item.system;
 
@@ -461,6 +565,7 @@ export async function rollSpellItem(item, overchargeCount = 0) {
   }
 
   if (actor) overchargeCount = Math.min(overchargeCount, computeMaxOverchargeCount(actor));
+  extraCostTier = Math.max(0, Math.min(extraCostTier, computeMaxExtraCostTier(system)));
 
   // 1. Heading, 2. Magic school.
   const parts = [formatRollCardHeading(item.name)];
@@ -492,7 +597,7 @@ export async function rollSpellItem(item, overchargeCount = 0) {
       }
       if (system.apCostUnit === 'minutes') {
         const totalRounds = Math.max(1, system.apCost) * ROUNDS_PER_MINUTE;
-        await actor.update({ 'system.pendingSpell': { itemId: item.id, apCost: 0, roundsRemaining: totalRounds, overchargeCount } });
+        await actor.update({ 'system.pendingSpell': { itemId: item.id, apCost: 0, roundsRemaining: totalRounds, overchargeCount, extraCostTier } });
         await setStatusStacks(actor, 'concentration', 1);
         parts.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.RitualMinutesStarted', { minutes: system.apCost, rounds: totalRounds })}</div>`);
         deferred = true;
@@ -538,7 +643,7 @@ export async function rollSpellItem(item, overchargeCount = 0) {
       }
 
       if (remaining > 0) {
-        await actor.update({ 'system.pendingSpell': { itemId: item.id, apCost: remaining, roundsRemaining: 0, overchargeCount } });
+        await actor.update({ 'system.pendingSpell': { itemId: item.id, apCost: remaining, roundsRemaining: 0, overchargeCount, extraCostTier } });
         await setStatusStacks(actor, 'concentration', 1);
         parts.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.ApOwed', { paid: paidNow, remaining })}</div>`);
         deferred = true;
@@ -546,19 +651,37 @@ export async function rollSpellItem(item, overchargeCount = 0) {
     }
 
     // 4. Mana cost.
-    const { cost: manaCost, increased } = computeSpellManaCost(system, actor, overchargeCount);
+    const { cost: manaCost, increased } = computeSpellManaCost(system, actor, overchargeCount, extraCostTier);
     const costClass = increased ? 'sksk-roll-mana-cost-increased' : '';
     parts.push(`<div class="sksk-roll-mana-cost"><strong>${game.i18n.localize('SKSK.Spell.ManaCost')}:</strong> <span class="${costClass}">${manaCost}</span></div>`);
 
     // Manakapazität's own FP accumulator (see helpers/rest.mjs#applyRest,
     // which turns this into FP on the next Anpassungs-/Genesungspause) -
     // the real mana cost above (after mali/boni), regardless of whether it
-    // actually got paid from Mana or overflowed into Life/Negative Life.
+    // actually got paid from Mana, a custom resource, or overflowed into
+    // Life/Negative Life.
     if (manaCost > 0) {
       await actor.update({ 'system.manaCapacityAccumulator': (actor.system.manaCapacityAccumulator ?? 0) + manaCost });
     }
 
-    const { lifeDelta, negativeLifeDelta } = await payManaCost(actor, manaCost);
+    // A custom resource spent instead of Mana (see helpers/
+    // customResources.mjs) - computed against the FINAL manaCost (after
+    // Überladen/extra-cost tier/discounts), unlike the dialog's own preview
+    // which only ever showed the base cost. Whatever it doesn't cover falls
+    // back to the normal Mana payment below.
+    let manaCostAfterAltResource = manaCost;
+    const altResource = altResourceIndex >= 0 ? actor.system.customResources?.[altResourceIndex] : null;
+    if (altResource?.isManaAlternative) {
+      const { resourcePointsSpent, manaCovered } = computeManaAlternativeCoverage(altResource, manaCost, system.spellLevel);
+      if (resourcePointsSpent > 0) {
+        await payWithManaAlternative(actor, altResourceIndex, resourcePointsSpent);
+        manaCostAfterAltResource = manaCost - manaCovered;
+        const resourceName = altResource.name || altResource.abbreviation;
+        parts.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.AltResourcePaid', { name: resourceName, spent: resourcePointsSpent, covered: manaCovered })}</div>`);
+      }
+    }
+
+    const { lifeDelta, negativeLifeDelta } = await payManaCost(actor, manaCostAfterAltResource);
     if (lifeDelta || negativeLifeDelta) {
       const fromLife = -lifeDelta + negativeLifeDelta;
       parts.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.ManaShortfallFromLife', { amount: fromLife })}</div>`);
@@ -628,7 +751,7 @@ export async function rollSpellItem(item, overchargeCount = 0) {
   parts.push(`<div class="sksk-roll-description">${descriptionHTML}</div>`);
 
   if (!deferred) {
-    parts.push(...(await renderSpellEffectParts(item, overchargeCount)));
+    parts.push(...(await renderSpellEffectParts(item, overchargeCount, extraCostTier)));
   }
 
   return postSpellChatCard(item, parts);
@@ -659,21 +782,22 @@ async function postPendingSpellProgress(actor, label, lineHTML, reflexGrant) {
  * A pending spell's debt fully paid off (either kind - see
  * handlePendingSpellTurnStart): clears pendingSpell, turns Concentration
  * off, and finally lets the spell take effect (see renderSpellEffectParts,
- * with whatever Überladen count the original cast used - see
- * data/actor-base.mjs#pendingSpell.overchargeCount), posted in its own
- * chat message.
+ * with whatever Überladen count/extra-cost tier the original cast used -
+ * see data/actor-base.mjs#pendingSpell.overchargeCount/extraCostTier),
+ * posted in its own chat message.
  * @param {Actor} actor
  * @param {Item|undefined} item
  * @param {{label: string, amount: number}|null} reflexGrant
  * @param {number} [overchargeCount=0]
+ * @param {number} [extraCostTier=0]
  * @return {Promise<void>}
  */
-async function resolvePendingSpell(actor, item, reflexGrant, overchargeCount = 0) {
+async function resolvePendingSpell(actor, item, reflexGrant, overchargeCount = 0, extraCostTier = 0) {
   await actor.update({ 'system.pendingSpell.itemId': '' });
   await setStatusStacks(actor, 'concentration', 0);
   if (!item) return;
 
-  const parts = [formatRollCardHeading(item.name), ...(await renderSpellEffectParts(item, overchargeCount))];
+  const parts = [formatRollCardHeading(item.name), ...(await renderSpellEffectParts(item, overchargeCount, extraCostTier))];
   parts.push(formatSkillFpGrantLine(reflexGrant));
   await postSpellChatCard(item, parts);
 }
@@ -701,6 +825,7 @@ export async function handlePendingSpellTurnStart(actor) {
   const item = actor.items.get(pending.itemId);
   const label = item?.name ?? game.i18n.localize('SKSK.StatusEffect.Concentration.Name');
   const overchargeCount = pending.overchargeCount ?? 0;
+  const extraCostTier = pending.extraCostTier ?? 0;
 
   if (hasRoundsDebt) {
     const drained = actor.system.actionPoints.value;
@@ -720,7 +845,7 @@ export async function handlePendingSpellTurnStart(actor) {
       return;
     }
 
-    await resolvePendingSpell(actor, item, reflexGrant, overchargeCount);
+    await resolvePendingSpell(actor, item, reflexGrant, overchargeCount, extraCostTier);
     return;
   }
 
@@ -742,7 +867,7 @@ export async function handlePendingSpellTurnStart(actor) {
     return;
   }
 
-  await resolvePendingSpell(actor, item, reflexGrant, overchargeCount);
+  await resolvePendingSpell(actor, item, reflexGrant, overchargeCount, extraCostTier);
 }
 
 /**

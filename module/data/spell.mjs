@@ -94,6 +94,19 @@ export default class SKSKSpell extends SKSKItemBase {
     // alternate payment paths, not a combined cost.
     schema.rpCost = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
 
+    // "Es kann mehr Mana gezahlt werden" - a cumulative list of extra-cost
+    // tiers a caster may additionally pay when casting, on top of manaCost.
+    // Paying tier N (1-based) implies every tier below it (1..N-1) is paid
+    // too - see helpers/spells.mjs#computeExtraManaCostSum, which sums
+    // tiers[0..tier-1]. Chosen at cast time via the same dialog as Überladen
+    // (Overcharge) - see helpers/spell-rolls.mjs#chooseSpellCastOptions. A
+    // damages entry can gate on a specific tier via trigger "extraCost" +
+    // extraCostIndex below (0-based, i.e. extraCostIndex 0 = tier 1).
+    schema.extraManaCosts = new fields.ArrayField(new fields.SchemaField({
+      label: new fields.StringField({ required: true, blank: true }),
+      manaCost: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+    }));
+
     // Manakern's own flat FP grant (to the "manaCore" skill) whenever this
     // spell is cast - a designer-set value on the item itself, not a GM-
     // configured rate. See helpers/skillFp.mjs#grantFlatSkillFp.
@@ -208,11 +221,16 @@ export default class SKSKSpell extends SKSKItemBase {
     schema.damages = new fields.ArrayField(new fields.SchemaField({
       formula: new fields.StringField({ required: true, blank: true, initial: "1d6" }),
       damageType: new fields.StringField({ required: true, blank: false, initial: "fire" }),
+      // "extraCost": gated on extraManaCosts (see above) instead of the
+      // attack roll/a saving throw/nothing - applies whenever the tier paid
+      // at cast time is at least extraCostIndex + 1 (cumulative, so a higher
+      // paid tier also includes every lower-indexed "extraCost" entry).
       trigger: new fields.StringField({
         required: true, blank: false, initial: "unconditional",
-        choices: ["attack", "save", "unconditional"]
+        choices: ["attack", "save", "unconditional", "extraCost"]
       }),
       savingThrowIndex: new fields.NumberField({ required: false, nullable: true, integer: true, initial: null }),
+      extraCostIndex: new fields.NumberField({ required: false, nullable: true, integer: true, initial: null }),
       attributeBonuses: new fields.ArrayField(new fields.SchemaField({
         attribute: new fields.StringField({ required: true, blank: false, initial: "str" }),
         useModifier: new fields.BooleanField({ initial: true }),

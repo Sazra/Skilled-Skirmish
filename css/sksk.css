@@ -1090,10 +1090,43 @@ body.theme-light .application.sksk.actor {
 }
 
 /* Totem dialog rows carry up to three icons (Effects/Toggle/Delete) once
-   bound - items-list-compact's single-icon 32px column is too narrow. */
-.sksk .totem-dialog .items-list-compact .item-controls {
+   bound - items-list-compact's single-icon 32px column is too narrow.
+   DEFAULT_OPTIONS.classes puts "sksk" and "totem-dialog" on the SAME root
+   element (class="application sksk totem-dialog"), so this must be one
+   compound selector (no space) - ".sksk .totem-dialog" would ask for
+   "totem-dialog" as a DESCENDANT of a separate "sksk" element, which never
+   exists, and silently never matches anything. */
+.sksk.totem-dialog .items-list-compact .item-controls {
   flex: 0 0 96px;
   justify-content: flex-end;
+}
+
+/* Technique dialog rows likewise carry up to three icons (Activate/Effect/
+   Delete) - same widening as the Totem dialog above, same compound-
+   selector reasoning (see the comment there). */
+.sksk.technique-dialog .items-list-compact .item-controls {
+  flex: 0 0 96px;
+  justify-content: flex-end;
+}
+
+/* The "Effekt bearbeiten" icon (apps/technique-dialog.mjs) only applies to
+   "stand"/"effect" category Techniques (see techniqueShowsEffectButton) -
+   its <a> is always rendered (never removed from the DOM) so every row
+   reserves the same three icon slots regardless of category; this class
+   just hides that one slot in place for categories that don't support it,
+   keeping Activate/Delete's own positions identical across every row
+   instead of them sliding left when the middle icon is absent. */
+.sksk.technique-dialog .item-control-reserved {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* More breathing room between the Kosten and Abklingzeit columns (both
+   otherwise-identical fixed-width .spell-cost boxes sitting immediately
+   next to each other) than the plain .spell-cost/.spell-range convention
+   allows for elsewhere. */
+.sksk.technique-dialog .technique-cost {
+  margin-right: 20px;
 }
 
 .sksk .items-list .item {
@@ -1640,6 +1673,30 @@ span.sksk-critical-failure {
   width: 100%;
   text-align: center;
   text-transform: uppercase;
+}
+
+/* Zusätzliche Ressourcen row (general-overview.hbs): the Name input shares
+   its .item-name column with the small gear button opening apps/
+   custom-resource-mana-alternative-dialog.mjs - flex:1 so the input still
+   fills the available space instead of sizing to its own content, leaving
+   the icon button its own fixed-width slot alongside it. */
+.sksk .custom-resource-name-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sksk .custom-resource-name-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Always wide enough for 4 digits (e.g. a max of 9999) - same calc(Nch +
+   18px) convention as .skill-category-body input[name$=".points"] above,
+   accounting for this input's own border-box padding/border. */
+.sksk .custom-resource-amount {
+  width: calc(4ch + 18px);
+  text-align: center;
 }
 
 /* Weapon/Armor Model rows (Configure Models settings app, and the same

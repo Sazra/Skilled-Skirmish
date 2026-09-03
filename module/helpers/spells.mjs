@@ -359,11 +359,37 @@ export function computeRitualHours(spellSystem) {
 }
 
 /**
+ * Sum a spell's own "Es kann mehr Mana gezahlt werden" extra-cost tiers up
+ * through the paid tier (1-based, cumulative - tier 2 includes tier 1's own
+ * cost too, same as its damages entries - see data/spell.mjs#extraManaCosts).
+ * 0 (or below) means no extra tier paid at all.
+ * @param {object} spellSystem
+ * @param {number} tier
+ * @return {number}
+ */
+export function computeExtraManaCostSum(spellSystem, tier) {
+  if (tier <= 0) return 0;
+  const tiers = spellSystem.extraManaCosts ?? [];
+  return tiers.slice(0, tier).reduce((sum, entry) => sum + (entry.manaCost ?? 0), 0);
+}
+
+/**
+ * The highest "Es kann mehr Mana gezahlt werden" tier a spell defines -
+ * just its extraManaCosts array length, since tiers are 1-based and
+ * cumulative (see computeExtraManaCostSum). 0 if the spell has none.
+ * @param {object} spellSystem
+ * @return {number}
+ */
+export function computeMaxExtraCostTier(spellSystem) {
+  return spellSystem.extraManaCosts?.length ?? 0;
+}
+
+/**
  * The most times a caster may Überladen (Overcharge) a single spell cast -
  * 1, plus their Überladen skill level, plus overchargeMaxBonus (an
  * Active-Effect-only actor field - see data/actor-base.mjs). See helpers/
- * spell-rolls.mjs#chooseOverchargeCount, which offers exactly this many
- * buttons.
+ * spell-rolls.mjs#chooseSpellCastOptions, which offers exactly this many
+ * Überladen buttons (plus one more for "cast without Überladen").
  * @param {Actor} actor
  * @return {number}
  */
@@ -388,6 +414,12 @@ export function computeOverchargedRanges(ranges, overchargeCount) {
 
 /**
  * Compute the actual mana cost an actor pays to cast a spell, factoring in:
+ * - Its base manaCost, plus any "Es kann mehr Mana gezahlt werden" extra
+ *   cost tier paid (see computeExtraManaCostSum) - folded in FIRST, so
+ *   everything below (the Magic Control/Ritualism discount, and Überladen's
+ *   own surcharge) is computed against the combined base+extra amount, per
+ *   the design ("die erhöhten Manakosten (Basis-Kosten + Mehrkosten) gelten
+ *   als Grundlage").
  * - Simple/Advanced spells cast short of their magic school's required
  *   level (see checkSimpleOrAdvancedSpellPrerequisite) cost +100% per
  *   level of shortfall instead of getting any discount below.
@@ -412,13 +444,16 @@ export function computeOverchargedRanges(ranges, overchargeCount) {
  * @param {object} spellSystem   A spell's system data.
  * @param {Actor} actor          The would-be caster.
  * @param {number} [overchargeCount=0]
+ * @param {number} [extraCostTier=0]   Which "Es kann mehr Mana gezahlt
+ *   werden" tier was paid (1-based, cumulative) - see
+ *   computeExtraManaCostSum/computeMaxExtraCostTier.
  * @return {{cost: number, increased: boolean}}   increased is true only
  *   when the level-shortfall surcharge applied (regardless of whether
  *   other discounts brought the final number back below the base cost) -
  *   the UI uses it to flag the cost in red.
  */
-export function computeSpellManaCost(spellSystem, actor, overchargeCount = 0) {
-  let cost = spellSystem.manaCost ?? 0;
+export function computeSpellManaCost(spellSystem, actor, overchargeCount = 0, extraCostTier = 0) {
+  let cost = (spellSystem.manaCost ?? 0) + computeExtraManaCostSum(spellSystem, extraCostTier);
   let discountPercent = 0;
   let increased = false;
 

@@ -139,6 +139,17 @@
             "AddResource": "Ressource hinzufügen",
             "Abbreviation": "Kürzel",
             "AbbreviationHint": "Maximal 4 Buchstaben. Nutzbar in Würfelformeln als @<Kürzel>, z.B. @rage.",
+            "ManaAlternativeEnable": "Als Mana-Alternative nutzbar",
+            "ManaAlternativeEnableHint": "Diese Ressource kann anstelle von Mana ausgegeben werden - wählbar über das Shift-Klick-Menü bei Zauber-Würfen. Reicht die Ressource nicht aus, wird der Rest normal mit Mana bezahlt.",
+            "ManaAlternativeMode": {
+                "Rate": "Festes Verhältnis",
+                "SpellLevel": "1 Punkt = 1 Zauberstufe"
+            },
+            "ManaAlternativeRateLabel": "Verhältnis",
+            "ManaAlternativeRateUnit": "Punkt(e)",
+            "ManaAlternativeUsableFor": "Nutzbar für",
+            "ManaAlternativeSpellLevelHint": "1 Ressourcenpunkt ist eine Zauberstufe wert (maximal 10 Punkte gleichzeitig, für einen Stufe-10-Zauber). Gilt nur für Zauber.",
+            "ManaAlternativeDialogTitle": "Mana-Alternative",
             "Type": "Typ",
             "School": "Schule",
             "Skill": "Fertigkeit",
@@ -740,6 +751,8 @@
             "StyleApCostDiscount": "AP-Kosten-Rabatt",
             "StyleManaCostDiscount": "Mana-Kosten-Rabatt",
             "Status": "Status",
+            "CostLabel": "Kosten",
+            "CooldownLabel": "Abklingzeit",
             "StatusActive": "Aktiv (noch {rounds} Runden)",
             "StatusPrimed": "Vorbereitet - wartet auf nächsten Angriff",
             "StatusCooldown": "Abklingzeit (noch {rounds} Runden)",
@@ -1350,6 +1363,8 @@
             "UpkeepAutoDeactivated": "{name}: Wird nicht mehr aufrechterhalten - nicht genug Mana für die Kosten pro Runde.",
             "OverchargeAutoEffects": "Automatische Überladungs-Effekte",
             "OverchargeAutoEffectsHint": "Wenn aktiv, skalieren Rettungswurf-DC (+1), Reichweite (+20%) und Schaden (+50%) automatisch pro Überladung. Deaktivieren für Zauber mit handgeschriebenem Custom-Effekt - die erhöhten AP-/Mana-Kosten gelten trotzdem, aber die konkrete Wirkung wird dann manuell berechnet.",
+            "ExtraManaCostsLabel": "Es kann mehr Mana gezahlt werden",
+            "ExtraManaCostsHint": "Kumulative Stufen zusätzlicher Manakosten - wer Stufe 2 zahlen möchte, muss auch Stufe 1 mitzahlen. Wählbar beim Shift+Klick auf den Zauber, im selben Fenster wie Überladen. Eine Schadenswurf-Zeile kann über den Trigger \"Extra-Kosten\" an eine dieser Stufen gekoppelt werden.",
             "PrerequisiteNotMet": "Voraussetzung nicht erfüllt: {details}",
             "StatusEffectsLabel": "Statuseffekte",
             "FoundryEffectsLabel": "Effekte",
@@ -1419,12 +1434,16 @@
             "Trigger": {
                 "Attack": "Angriffswurf",
                 "Save": "Rettungswurf",
-                "Unconditional": "Bedingungslos"
+                "Unconditional": "Bedingungslos",
+                "ExtraCost": "Extra-Kosten"
             },
             "SavingThrow": {
                 "Numbered": "Rettungswurf {number}",
                 "Contest": "Wettstreit",
                 "ContestHint": "Statt eines festen SG würfelt der Zaubernde beim Wirken direkt seinen eigenen Wurf (W20 + Attributs-/Fertigkeitsboni dieses Rettungswurfs). Jeder, der danach den Knopf im Chat klickt, würfelt seinen eigenen Wurf dagegen statt gegen einen festen SG. Der Basis-Wert wird dabei ignoriert."
+            },
+            "ExtraManaCost": {
+                "Numbered": "Extra-Kosten {number}"
             },
             "Roll": {
                 "Attack": "Angriff {number}",
@@ -1455,7 +1474,15 @@
                 "OverchargeCount": "{count}× überladen",
                 "OverchargeActive": "Überladen (×{count}) - keine Reduzierung durch Spruchkürzung.",
                 "OverchargeRanges": "Reichweite (überladen): {ranges}",
-                "OverchargeDamage": "Überladen: {amount} Schaden"
+                "OverchargeDamage": "Überladen: {amount} Schaden",
+                "ExtraCostLabel": "Es kann mehr Mana gezahlt werden",
+                "ExtraCostNone": "Keine",
+                "ExtraCostActive": "Zusätzliche Manakosten gezahlt: {label} (+{amount} Mana)",
+                "CastWithoutOvercharge": "Ohne Überladen wirken",
+                "AltResourceLabel": "Alternativ-Ressource statt Mana",
+                "AltResourceNone": "Keine",
+                "AltResourcePreview": "{spent} Punkte, deckt {covered} Mana",
+                "AltResourcePaid": "{name}: {spent} Punkte eingesetzt, deckt {covered} Mana"
             }
         },
         "DamageType": {

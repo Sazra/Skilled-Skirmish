@@ -5,7 +5,10 @@ import {
   prepareActiveEffectCategories,
 } from '../helpers/effects.mjs';
 import { getSkillBonusChoices } from '../helpers/skills.mjs';
-import { computeSavingThrowValue, computeSavingThrowBonusSum, computeDamageBonus, computeCombinedSchoolOverrideLevel } from '../helpers/spells.mjs';
+import {
+  computeSavingThrowValue, computeSavingThrowBonusSum, computeDamageBonus, computeCombinedSchoolOverrideLevel,
+  computeExtraManaCostSum,
+} from '../helpers/spells.mjs';
 import { getMaterials, getMaterial, isDurabilityEnabled } from '../helpers/materials.mjs';
 import { getWeaponModels, getArmorModels, getWeaponModel, getArmorModel, getOverridablePropertiesFor } from '../helpers/models.mjs';
 import { computeEffectiveProperties } from '../helpers/properties.mjs';
@@ -46,6 +49,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       removeArrayEntry: SKSKItemSheet.#removeArrayEntry,
       addAbilityEffect: SKSKItemSheet.#addAbilityEffect,
       addRange: SKSKItemSheet.#addRange,
+      addExtraManaCost: SKSKItemSheet.#addExtraManaCost,
       addCombinedSkill: SKSKItemSheet.#addCombinedSkill,
       addSavingThrow: SKSKItemSheet.#addSavingThrow,
       addSavingThrowAttributeBonus: SKSKItemSheet.#addSavingThrowAttributeBonus,
@@ -635,6 +639,10 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       context.attributeChoices = CONFIG.SKSK.attributes;
       context.damageTypeChoices = CONFIG.SKSK.damageTypes;
       context.spellTriggerChoices = CONFIG.SKSK.spellTriggers;
+      // Damage entries additionally allow the "extraCost" trigger (see
+      // data/spell.mjs#damages.extraCostIndex) - Status/Foundry effects
+      // keep using spellTriggerChoices above, which doesn't include it.
+      context.damageTriggerChoices = CONFIG.SKSK.damageTriggers;
       // Choices for the "which saving throw" selector on Damage/Status
       // Effect entries whose trigger is "save"; falls back to a numbered
       // label when the saving throw itself has none set.
@@ -642,6 +650,20 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
         value: index,
         label: entry.label || game.i18n.format('SKSK.Spell.SavingThrow.Numbered', { number: index + 1 }),
       }));
+      // Choices for the "which extra-cost tier" selector on Damage entries
+      // whose trigger is "extraCost" - falls back to a numbered label, same
+      // pattern as savingThrowChoices above.
+      context.extraCostChoices = (item.system.extraManaCosts ?? []).map((entry, index) => ({
+        value: index,
+        label: entry.label || game.i18n.format('SKSK.Spell.ExtraManaCost.Numbered', { number: index + 1 }),
+      }));
+      // The running total Mana cost through each extra-cost tier (tier 1 =
+      // just that tier's own cost, tier 2 = tier 1 + tier 2, etc.) - shown
+      // next to each row so the GM can see the cumulative cost without doing
+      // the math by hand. Pure arithmetic, no actor needed.
+      context.extraManaCostCumulative = (item.system.extraManaCosts ?? []).map(
+        (_, index) => computeExtraManaCostSum(item.system, index + 1)
+      );
       // The statusEffects sub-tab's own predefined-status-effect picker -
       // see apps/status-effects-config.mjs's own identical pattern (also
       // reused by Technique's own effectStatusEffects list).
@@ -811,6 +833,10 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
     await this.#addArrayEntry('ranges', { distance: 10, indicator: 'projectile' });
   }
 
+  static async #addExtraManaCost(event, target) {
+    await this.#addArrayEntry('extraManaCosts', { label: '', manaCost: 0 });
+  }
+
   static async #addCombinedSkill(event, target) {
     await this.#addArrayEntry('combinedSkills', { skill: 'axe', level: 1 });
   }
@@ -845,7 +871,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
     skillBonuses.push({ skill: 'magicControl', formula: '@value' });
 
     await this.#addArrayEntry('damages', {
-      formula: '1d6', damageType: 'fire', trigger: 'unconditional', savingThrowIndex: null,
+      formula: '1d6', damageType: 'fire', trigger: 'unconditional', savingThrowIndex: null, extraCostIndex: null,
       attributeBonuses, skillBonuses,
     });
   }

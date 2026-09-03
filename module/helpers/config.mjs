@@ -468,6 +468,23 @@ SKSK.spellTriggers = {
   unconditional: 'SKSK.Spell.Trigger.Unconditional',
 };
 
+// Damage entries additionally allow gating on a paid "Es kann mehr Mana
+// gezahlt werden" tier (see data/spell.mjs#extraManaCosts/damages) -
+// Status/Foundry effects don't support this trigger, so they keep using
+// spellTriggers above instead.
+SKSK.damageTriggers = {
+  ...SKSK.spellTriggers,
+  extraCost: 'SKSK.Spell.Trigger.ExtraCost',
+};
+
+// A custom resource's own "used instead of Mana" mode - see
+// data/actor-base.mjs#customResources.manaAlternativeMode /
+// helpers/customResources.mjs#computeManaAlternativeCoverage.
+SKSK.manaAlternativeModes = {
+  rate: 'SKSK.General.ManaAlternativeMode.Rate',
+  spellLevel: 'SKSK.General.ManaAlternativeMode.SpellLevel',
+};
+
 // How a Martial Arts Attack's selected attribute switches (see
 // data/actor-base.mjs#martialArtsAttacks) combine into a single modifier -
 // mirrors the Refined/Masterful/Specialized Model properties' wording,
