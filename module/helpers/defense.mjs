@@ -243,34 +243,6 @@ export function getMagicResistanceBreakdown(actor) {
   return computeMagicResistanceComponents(actor);
 }
 
-// Species creatureCategories (data/species.mjs) that opt an actor OUT of
-// life-damage-heals-by-default (see actorAbsorbsLifeDamageByDefault) -
-// Lebensmagie's own healing spells are dealt as "life"-type damage (per
-// design decision) and expected to heal most living creatures outright.
-const NON_LIVING_CREATURE_CATEGORIES = ['undead', 'elemental', 'construct'];
-
-/**
- * Whether "life"-type damage (Lebensmagie's own healing spells) should heal
- * this actor outright instead of harming them, absent an explicit
- * lifeAbsorption skill unlock (see applyElementalDefense below) - most
- * living creatures do; Undead/Elemental/Construct (by their equipped
- * Species' own creatureCategories) don't - either default can be overridden
- * per-actor via the GM tab's lifeAbsorptionOverride switch (data/
- * actor-base.mjs), regardless of species.
- * @param {Actor} actor
- * @return {boolean}
- */
-function actorAbsorbsLifeDamageByDefault(actor) {
-  const override = actor.system.lifeAbsorptionOverride;
-  if (override === 'force') return true;
-  if (override === 'deny') return false;
-
-  const categories = actor.items
-    .filter(i => i.type === 'species')
-    .flatMap(i => i.system.creatureCategories ?? []);
-  return !categories.some(category => NON_LIVING_CREATURE_CATEGORIES.includes(category));
-}
-
 /**
  * How a given amount of one element's damage is modified by the
  * defender's Resistance/Weakness/Immunity/Absorption skills for that same
@@ -287,6 +259,15 @@ function actorAbsorbsLifeDamageByDefault(actor) {
  *   10) and Weakness (stackable, +100%/stack) net together on the same
  *   amount: floor(amount * (1 + weaknessStacks - resistancePercent/100)),
  *   floored at 0.
+ *
+ * "life"-type damage (Lebensmagie's own healing spells) is additionally
+ * gated by the actor's own lifeAbsorptionOverride (data/actor-base.mjs, GM
+ * tab): "force" heals outright regardless of the lifeAbsorption skill;
+ * "deny" ignores it entirely (falls through to Immunity/Resistance as
+ * usual); "default" (the normal case) just defers to whether lifeAbsorption
+ * is actually unlocked - typically via a Species' own skillBonuses grant
+ * (see data/species.mjs#skillBonuses, helpers/skills.mjs#
+ * isActorSkillUnlocked), same as every other Absorption skill.
  * @param {Actor} actor
  * @param {string} damageType   A CONFIG.SKSK.damageTypes key.
  * @param {number} amount       Positive raw damage before defenses.
@@ -295,8 +276,9 @@ function actorAbsorbsLifeDamageByDefault(actor) {
 export function applyElementalDefense(actor, damageType, amount) {
   if (amount <= 0) return { amount: 0, healing: false };
 
-  if (isActorSkillUnlocked(actor, `${damageType}Absorption`)) return { amount, healing: true };
-  if (damageType === 'life' && actorAbsorbsLifeDamageByDefault(actor)) return { amount, healing: true };
+  const lifeOverride = damageType === 'life' ? actor.system.lifeAbsorptionOverride : 'default';
+  if (lifeOverride === 'force') return { amount, healing: true };
+  if (lifeOverride !== 'deny' && isActorSkillUnlocked(actor, `${damageType}Absorption`)) return { amount, healing: true };
   if (isActorSkillUnlocked(actor, `${damageType}Immunity`)) return { amount: 0, healing: false };
 
   const resistancePercent = Math.min(99, getActorSkillLevel(actor, `${damageType}Resistance`) * 10);

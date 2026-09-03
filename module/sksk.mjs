@@ -215,6 +215,33 @@ Hooks.once('ready', async function () {
     foundry.utils.setProperty(changes, 'system.attributeOverride.attributes', clampedMap);
   });
 
+  // A Species item's own default Lebens-Absorption skillBonuses grant (see
+  // data/species.mjs#skillBonuses) is swapped for Todes-Absorption the
+  // moment "undead" is newly added to its creatureCategories - however that
+  // happens (sheet checkbox, drag-drop, API) - Elemental/Construct (or any
+  // other category) trigger no such swap, and nothing happens if the
+  // Lebens-Absorption entry was already removed by the time this fires.
+  // Runs in preUpdate so the swap lands in the very same write, no second
+  // update needed; preUpdate hooks aren't broadcast, so no game.user.id
+  // guard is needed here unlike the post-update hooks below.
+  Hooks.on('preUpdateItem', (item, changes, options, userId) => {
+    if (item.type !== 'species') return;
+    const incomingCategories = foundry.utils.getProperty(changes, 'system.creatureCategories');
+    if (!incomingCategories) return;
+    const wasUndead = (item.system.creatureCategories ?? []).includes('undead');
+    if (wasUndead || !incomingCategories.includes('undead')) return;
+
+    const incomingSkillBonuses = foundry.utils.getProperty(changes, 'system.skillBonuses');
+    const skillBonuses = foundry.utils.deepClone(incomingSkillBonuses ?? item.system.skillBonuses ?? []);
+    let swapped = false;
+    for (const entry of skillBonuses) {
+      if (entry.skill !== 'lifeAbsorption') continue;
+      entry.skill = 'deathAbsorption';
+      swapped = true;
+    }
+    if (swapped) foundry.utils.setProperty(changes, 'system.skillBonuses', skillBonuses);
+  });
+
   // Aura is otherwise a normal user-editable attribute, but the moment a
   // Species item is added (main or sub - however it got there: sheet
   // button, drag-drop, compendium import), it's overwritten with the sum

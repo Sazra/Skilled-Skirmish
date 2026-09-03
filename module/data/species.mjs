@@ -62,13 +62,23 @@ export default class SKSKSpecies extends SKSKItemBase {
     }));
 
     // Starting bonuses to skills, always granted. Player-extensible list;
-    // "skill" holds a key from CONFIG.SKSK.skills (multi-level skills only).
-    // "bonus" is a number of whole skill LEVELS granted (e.g. bonus 1 on
-    // Axe grants Axe at level 1), not skill points.
+    // "skill" holds a key from CONFIG.SKSK.skills - either a multi-level
+    // skill ("bonus" is a number of whole skill LEVELS granted, e.g. bonus 1
+    // on Axe grants Axe at level 1, not skill points), or one of the binary
+    // Immunity/Absorption skills (a bonus of at least 1 unlocks it outright
+    // - see helpers/skills.mjs#isActorSkillUnlocked). Defaults to a single
+    // Lebens-Absorption grant (most living creatures heal from "life"-type
+    // damage - see helpers/defense.mjs#applyElementalDefense) - removable
+    // like any other entry, and automatically swapped for Todes-Absorption
+    // the moment "undead" is added to creatureCategories below (see
+    // sksk.mjs's own preUpdateItem hook) - Elemental/Construct (or any other
+    // category) trigger no such swap.
     schema.skillBonuses = new fields.ArrayField(new fields.SchemaField({
       skill: new fields.StringField({ required: true, blank: false, initial: "axe" }),
       bonus: new fields.NumberField({ ...requiredInteger, initial: 1 })
-    }));
+    }), {
+      initial: [{ skill: "lifeAbsorption", bonus: 1 }]
+    });
 
     // 1-3 species abilities, each a freeform description (passive or
     // actively used).

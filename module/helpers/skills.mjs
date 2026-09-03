@@ -118,18 +118,24 @@ function evaluateArithmetic(expression) {
 
 /**
  * Flat, UI-friendly list of skill choices for the skill-bonus pickers on
- * Species and Class items. Restricted to multi-level (5 or 10) skills;
- * binary (maxLevel 1) skills like Chantless, Immunity or Absorption don't
- * take level bonuses, and stackable skills like Weaknesses aren't leveled
- * skills at all. Each entry carries a `group` (its category) so a single
- * `<select>` can render them as `<optgroup>`s instead of one long flat list.
+ * Species and Class items. Restricted to multi-level (5 or 10) skills, plus
+ * the binary (maxLevel 1) Immunity/Absorption skills specifically (a bonus
+ * of (at least) 1 on one of those unlocks it outright - see
+ * isActorSkillUnlocked below); other binary skills like Chantless don't
+ * take a bonus grant this way, and stackable skills like Weaknesses aren't
+ * leveled skills at all. Each entry carries a `group` (its category) so a
+ * single `<select>` can render them as `<optgroup>`s instead of one long
+ * flat list.
  * @return {Array<{value: string, label: string, group: string}>}
  */
 export function getSkillBonusChoices() {
   const choices = [];
   for (const [category, categorySkills] of Object.entries(CONFIG.SKSK.skills)) {
+    const isBinaryDefenseCategory = category === 'immunity' || category === 'absorb';
     for (const [key, def] of Object.entries(categorySkills)) {
-      if (def.maxLevel !== 5 && def.maxLevel !== 10) continue;
+      const isLeveled = def.maxLevel === 5 || def.maxLevel === 10;
+      const isBinaryDefense = def.maxLevel === 1 && isBinaryDefenseCategory;
+      if (!isLeveled && !isBinaryDefense) continue;
       choices.push({ value: key, label: def.label, group: CONFIG.SKSK.skillCategories[category] });
     }
   }
@@ -245,10 +251,12 @@ export function getActorSkillLevel(actor, skillKey) {
 }
 
 /**
- * Whether a binary (maxLevel 1) skill is currently active for an actor -
- * character: its own toggle; NPC: whether its formula currently evaluates
- * to 1. Not meaningful for anything but a binary skill - always false
- * otherwise.
+ * Whether a binary (maxLevel 1) skill is currently active for an actor - a
+ * Species/Talent/first-Class item's own skillBonuses grant of (at least) 1
+ * on it (see computeSkillBonusTotals - e.g. Species' own default Lebens-
+ * Absorption grant, data/species.mjs#skillBonuses), OR: character - its own
+ * toggle; NPC - whether its formula currently evaluates to 1. Not
+ * meaningful for anything but a binary skill - always false otherwise.
  * @param {Actor} actor
  * @param {string} skillKey
  * @return {boolean}
@@ -256,6 +264,8 @@ export function getActorSkillLevel(actor, skillKey) {
 export function isActorSkillUnlocked(actor, skillKey) {
   const def = findSkillDefinition(skillKey);
   if (!def || def.maxLevel !== 1) return false;
+
+  if ((computeSkillBonusTotals(actor)[skillKey] ?? 0) >= 1) return true;
 
   const data = actor.system.skills?.[skillKey] ?? {};
   if (actor.type === 'npc') {
