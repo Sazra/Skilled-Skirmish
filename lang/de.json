@@ -1074,21 +1074,21 @@
                 "SleightOfHand": "Fingerfertigkeit"
             },
             "MagicSchool": {
-                "Fire": "Feuer",
-                "Water": "Wasser",
-                "Earth": "Erde",
-                "Air": "Luft",
-                "Light": "Licht",
-                "Dark": "Dunkelheit",
-                "Life": "Leben",
-                "Death": "Tod",
+                "Fire": "Feuermagie",
+                "Water": "Wassermagie",
+                "Earth": "Erdmagie",
+                "Air": "Luftmagie",
+                "Light": "Lichtmagie",
+                "Dark": "Dunkelmagie",
+                "Life": "Lebensmagie",
+                "Death": "Todesmagie",
                 "Trickery": "Trickkunst",
-                "Nature": "Natur",
+                "Nature": "Naturmagie",
                 "Bardic": "Bardenmagie",
                 "Divination": "Wahrsagung",
-                "Space": "Raum",
-                "Time": "Zeit",
-                "Blood": "Blut"
+                "Space": "Raummagie",
+                "Time": "Zeitmagie",
+                "Blood": "Blutmagie"
             },
             "Magic": {
                 "Concentration": "Konzentration",
