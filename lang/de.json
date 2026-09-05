@@ -555,6 +555,7 @@
             "Roll": "Würfeln",
             "NotEnoughAP": "Nicht genug Aktionspunkte.",
             "NotEnoughRP": "Nicht genug Reaktionspunkte.",
+            "FreeOutsideCombat": "Außerhalb des Kampfes kostenlos genutzt (keine AP/RP verbraucht).",
             "UseApCost": "AP-Kosten (Einsetzen)",
             "UseRpCost": "RP-Kosten (Einsetzen, außerhalb des Zuges - 0 spiegelt die AP-Kosten)",
             "RangedReactionBlocked": "Fernkampfwaffen können nicht als Reaktion außerhalb des eigenen Zuges eingesetzt werden.",

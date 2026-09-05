@@ -6,7 +6,7 @@ import {
 import { getActorSkillLevel, getSkillLabel } from './skills.mjs';
 import {
   applyD20Malus, canCastMovementSpell, getStatusStacks, setStatusStacks, payManaCost, negativeLifeOverflowHTML,
-  isActorsOwnTurn,
+  isActorsOwnTurn, isCombatActive,
 } from './statusEffects.mjs';
 import {
   computeSpellAttackBonus, rollAttackPair, renderAttackPairHTML, getDamageDieSizes,
@@ -634,19 +634,27 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
       const apCost = computeSpellApCost(system, actor, overchargeCount);
       parts.push(`<div class="sksk-roll-ap-cost"><strong>${game.i18n.localize('SKSK.Spell.APCost')}:</strong> ${apCost}</div>`);
 
-      const ap = actor.system.actionPoints.value;
-      const paidNow = Math.min(ap, apCost);
-      const remaining = apCost - paidNow;
-      if (paidNow) {
-        await actor.update({ 'system.actionPoints.value': ap - paidNow });
-        parts.push(formatSkillFpGrantLine(await checkReflexActionTrigger(actor)));
-      }
+      if (!isCombatActive()) {
+        // Outside Combat, AP is never actually spent (see helpers/
+        // statusEffects.mjs#isCombatActive) - no partial payment/AP-debt
+        // tracking, no Concentration, no Reflexe FP (nothing was actually
+        // spent to react to).
+        parts.push(`<div class="sksk-roll-line">${game.i18n.localize('SKSK.Action.FreeOutsideCombat')}</div>`);
+      } else {
+        const ap = actor.system.actionPoints.value;
+        const paidNow = Math.min(ap, apCost);
+        const remaining = apCost - paidNow;
+        if (paidNow) {
+          await actor.update({ 'system.actionPoints.value': ap - paidNow });
+          parts.push(formatSkillFpGrantLine(await checkReflexActionTrigger(actor)));
+        }
 
-      if (remaining > 0) {
-        await actor.update({ 'system.pendingSpell': { itemId: item.id, apCost: remaining, roundsRemaining: 0, overchargeCount, extraCostTier } });
-        await setStatusStacks(actor, 'concentration', 1);
-        parts.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.ApOwed', { paid: paidNow, remaining })}</div>`);
-        deferred = true;
+        if (remaining > 0) {
+          await actor.update({ 'system.pendingSpell': { itemId: item.id, apCost: remaining, roundsRemaining: 0, overchargeCount, extraCostTier } });
+          await setStatusStacks(actor, 'concentration', 1);
+          parts.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.ApOwed', { paid: paidNow, remaining })}</div>`);
+          deferred = true;
+        }
       }
     }
 

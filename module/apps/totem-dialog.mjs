@@ -2,6 +2,7 @@ import { grantSkillUsageFp } from '../helpers/skillFp.mjs';
 import { getSkillLabel } from '../helpers/skills.mjs';
 import { postActionChatCard } from '../helpers/actions.mjs';
 import { getResizedTotems } from '../helpers/totem.mjs';
+import { isCombatActive } from '../helpers/statusEffects.mjs';
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
@@ -146,8 +147,12 @@ export class SKSKTotemDialog extends HandlebarsApplicationMixin(ApplicationV2) {
       return;
     }
 
+    // Outside of Combat entirely (see helpers/statusEffects.mjs#
+    // isCombatActive), AP is never checked/spent at all - only Mana still
+    // applies normally, mirroring helpers/technique-rolls.mjs#payTechniqueCost.
+    const combatActive = isCombatActive();
     const ap = this.actor.system.actionPoints.value;
-    if (ap < 2) return ui.notifications.warn(game.i18n.localize('SKSK.Action.NotEnoughAP'));
+    if (combatActive && ap < 2) return ui.notifications.warn(game.i18n.localize('SKSK.Action.NotEnoughAP'));
     const mana = this.actor.system.mana.value;
     if (mana < entry.manaCostPerRound) return ui.notifications.warn(game.i18n.localize('SKSK.TotemDialog.NotEnoughMana'));
 
@@ -155,7 +160,7 @@ export class SKSKTotemDialog extends HandlebarsApplicationMixin(ApplicationV2) {
     totems[index] = { ...entry, active: true };
     await this.actor.update({
       'system.totems': totems,
-      'system.actionPoints.value': ap - 2,
+      ...(combatActive ? { 'system.actionPoints.value': ap - 2 } : {}),
       'system.mana.value': mana - entry.manaCostPerRound,
     });
 

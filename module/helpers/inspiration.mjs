@@ -2,6 +2,7 @@ import { getActorSkillLevel } from './skills.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
 import { postActionChatCard } from './actions.mjs';
 import { resolveClickDefender } from './damageApplication.mjs';
+import { isCombatActive } from './statusEffects.mjs';
 
 /**
  * Inspiration die face counts by the granting actor's own Inspiration skill
@@ -31,9 +32,15 @@ export function getInspirationDieSize(actor) {
  * @return {Promise<boolean>}
  */
 async function payInspirationCost(actor) {
+  // Outside of Combat entirely (see helpers/statusEffects.mjs#
+  // isCombatActive), AP is never checked/spent at all - the Inspiration
+  // charge itself is a resource cost like Mana, not AP/RP, so it's still
+  // always consumed regardless (mirrors helpers/technique-rolls.mjs#
+  // payTechniqueCost's own Mana-still-applies handling).
+  const combatActive = isCombatActive();
   const apCost = actor.system.inspirationApCost ?? 0;
   const ap = actor.system.actionPoints.value;
-  if (ap < apCost) {
+  if (combatActive && ap < apCost) {
     ui.notifications.warn(game.i18n.localize('SKSK.Action.NotEnoughAP'));
     return false;
   }
@@ -43,7 +50,7 @@ async function payInspirationCost(actor) {
     return false;
   }
   await actor.update({
-    'system.actionPoints.value': ap - apCost,
+    ...(combatActive ? { 'system.actionPoints.value': ap - apCost } : {}),
     'system.inspirationCharges.value': charges - 1,
   });
   return true;

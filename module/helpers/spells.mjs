@@ -497,7 +497,11 @@ export function computeSpellManaCost(spellSystem, actor, overchargeCount = 0, ex
  *   only while the cost is still above 2 - Chant Shortening alone can never
  *   push it below 2 (so it can only ever reach 1 if the earlier flat
  *   reductions already got it there first).
- * AP cost is never allowed below 1, from any combination of sources.
+ * AP cost is never allowed below 1, from any combination of sources -
+ * UNLESS the spell also has its own independent rpCost set (see data/
+ * spell.mjs#rpCost), in which case it may drop all the way to 0, signaling
+ * this spell has no real AP payment path of its own and is meant to only
+ * ever actually be cast via that RP cost.
  *
  * Überladen (Overcharge) forgoes Chant Shortening's own reduction step
  * entirely (the increased cost is the point) and adds +1 AP per
@@ -520,5 +524,6 @@ export function computeSpellApCost(spellSystem, actor, overchargeCount = 0) {
     }
   }
 
-  return Math.max(1, Math.floor(apCost)) + overchargeCount;
+  const floor = (spellSystem.rpCost ?? 0) > 0 ? 0 : 1;
+  return Math.max(floor, Math.floor(apCost)) + overchargeCount;
 }

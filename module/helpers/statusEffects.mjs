@@ -675,6 +675,25 @@ export function isActorsOwnTurn(actor) {
 }
 
 /**
+ * Whether a Combat encounter is currently active/started at all, regardless
+ * of whose turn it is - false outside of Combat entirely (no encounter, or
+ * one that hasn't been started yet via the Combat Tracker's own "Begin
+ * Combat" button). Every AP/RP cost check in the system (see helpers/
+ * actions.mjs#hasEnoughActionPoints/spendActionPoints/
+ * hasEnoughReactionPoints/spendReactionPoints and every caller that mirrors
+ * them - spells, Techniques, Soul Path abilities, Source, Totem,
+ * Inspiration) is waived while this is false: every such action can be
+ * freely used with no AP/RP actually deducted, and a Technique it triggers
+ * never starts its own cooldown either (see helpers/technique-rolls.mjs) -
+ * mana and every other resource cost are NOT affected by this and still
+ * apply normally regardless of Combat state.
+ * @return {boolean}
+ */
+export function isCombatActive() {
+  return !!game.combat?.started;
+}
+
+/**
  * Flag (or unflag) one specific active status instance to bypass Spezial-
  * Boni on its own automatic save - Poison (per severity), Concentration,
  * and Restrained are the only predefined statuses with such a save (see
@@ -812,14 +831,18 @@ export async function attemptRestrainedEscapeManual(actor, ignoreSpecial = false
   const effect = getStatusEffect(actor, 'restrained');
   if (!effect) return;
 
+  // Outside of Combat entirely (see isCombatActive above), AP is never
+  // checked/spent at all - mirrors helpers/technique-rolls.mjs#
+  // payTechniqueCost's own outside-Combat waiver.
+  const combatActive = isCombatActive();
   const apCost = effect.getFlag('sksk', 'apCost') ?? 0;
   const ap = actor.system.actionPoints.value;
-  if (apCost > 0 && ap < apCost) return ui.notifications.warn(game.i18n.localize('SKSK.Action.NotEnoughAP'));
+  if (combatActive && apCost > 0 && ap < apCost) return ui.notifications.warn(game.i18n.localize('SKSK.Action.NotEnoughAP'));
 
   const mode = await chooseGenericRollMode();
   if (!mode) return;
 
-  if (apCost > 0) await actor.update({ 'system.actionPoints.value': ap - apCost });
+  if (combatActive && apCost > 0) await actor.update({ 'system.actionPoints.value': ap - apCost });
   await attemptRestrainedEscape(actor, mode, ignoreSpecial);
 }
 

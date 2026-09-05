@@ -1,7 +1,7 @@
 import { getActorSkillLevel } from "./skills.mjs";
 import { getClassAbilityLevels, actorHasAdvancedClass } from "./abilities.mjs";
 import { computeMovementSpeeds } from "./movement.mjs";
-import { canUseWeaponAttack, canMove, applyAdrenalinDamage, isActorsOwnTurn } from "./statusEffects.mjs";
+import { canUseWeaponAttack, canMove, applyAdrenalinDamage, isActorsOwnTurn, isCombatActive } from "./statusEffects.mjs";
 import {
   computeWeaponAttackBonus, computeWeaponAttributeBonus, computeMartialArtsAttackBonus, rollAttackPair, renderAttackPairHTML,
   getDamageDieSizes, getWeaponDamageType,
@@ -217,12 +217,15 @@ export async function rollWeaponItem(item) {
 /**
  * Whether an actor currently has at least apCost Action Points - warns and
  * returns false otherwise, aborting the calling action before anything is
- * rolled or deducted.
+ * rolled or deducted. Always true outside of Combat (see helpers/
+ * statusEffects.mjs#isCombatActive) - every AP-costing action can be freely
+ * used without actually affording it while there's no active encounter.
  * @param {Actor} actor
  * @param {number} apCost
  * @return {boolean}
  */
-function hasEnoughActionPoints(actor, apCost) {
+export function hasEnoughActionPoints(actor, apCost) {
+  if (!isCombatActive()) return true;
   if ((actor.system.actionPoints?.value ?? 0) >= apCost) return true;
   ui.notifications.warn(game.i18n.localize('SKSK.Action.NotEnoughAP'));
   return false;
@@ -231,27 +234,31 @@ function hasEnoughActionPoints(actor, apCost) {
 /**
  * Deduct a flat AP cost from an actor - a plain object patch, not yet
  * applied; merge into whatever else the calling action also updates so
- * both land in a single actor.update() call.
+ * both land in a single actor.update() call. A no-op outside of Combat
+ * (see helpers/statusEffects.mjs#isCombatActive) - AP is never actually
+ * spent there, regardless of apCost.
  * @param {Actor} actor
  * @param {number} apCost
  * @return {object}
  */
-function spendActionPoints(actor, apCost) {
-  if (!apCost) return {};
+export function spendActionPoints(actor, apCost) {
+  if (!apCost || !isCombatActive()) return {};
   return { 'system.actionPoints.value': Math.max(0, (actor.system.actionPoints?.value ?? 0) - apCost) };
 }
 
 /**
  * Whether an actor currently has at least rpCost Reaction Points - warns
  * and returns false otherwise, aborting the calling action before anything
- * is rolled or deducted. Mirrors hasEnoughActionPoints above; see
- * helpers/statusEffects.mjs#isActorsOwnTurn - callers only ever reach this
- * off the actor's own turn, RP's only spendable context.
+ * is rolled or deducted. Mirrors hasEnoughActionPoints above (including the
+ * outside-of-Combat waiver); see helpers/statusEffects.mjs#isActorsOwnTurn
+ * - callers only ever reach this off the actor's own turn, RP's only
+ * spendable context.
  * @param {Actor} actor
  * @param {number} rpCost
  * @return {boolean}
  */
-function hasEnoughReactionPoints(actor, rpCost) {
+export function hasEnoughReactionPoints(actor, rpCost) {
+  if (!isCombatActive()) return true;
   if ((actor.system.reactionPoints?.value ?? 0) >= rpCost) return true;
   ui.notifications.warn(game.i18n.localize('SKSK.Action.NotEnoughRP'));
   return false;
@@ -261,13 +268,13 @@ function hasEnoughReactionPoints(actor, rpCost) {
  * Deduct a flat RP cost from an actor - a plain object patch, not yet
  * applied; merge into whatever else the calling action also updates so
  * both land in a single actor.update() call. Mirrors spendActionPoints
- * above.
+ * above, including the outside-of-Combat waiver.
  * @param {Actor} actor
  * @param {number} rpCost
  * @return {object}
  */
-function spendReactionPoints(actor, rpCost) {
-  if (!rpCost) return {};
+export function spendReactionPoints(actor, rpCost) {
+  if (!rpCost || !isCombatActive()) return {};
   return { 'system.reactionPoints.value': Math.max(0, (actor.system.reactionPoints?.value ?? 0) - rpCost) };
 }
 

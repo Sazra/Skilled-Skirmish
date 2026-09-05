@@ -555,6 +555,7 @@
       "Roll": "Roll",
       "NotEnoughAP": "Not enough Action Points.",
       "NotEnoughRP": "Not enough Reaction Points.",
+      "FreeOutsideCombat": "Used for free outside Combat (no AP/RP spent).",
       "UseApCost": "AP Cost (Use)",
       "UseRpCost": "RP Cost (Use, off-turn - 0 mirrors the AP Cost)",
       "RangedReactionBlocked": "Ranged weapons can't be used as a reaction outside your own turn.",

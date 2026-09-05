@@ -1,5 +1,6 @@
 import { grantSkillUsageFp, formatSkillFpGrantText } from '../helpers/skillFp.mjs';
 import { postActionChatCard } from '../helpers/actions.mjs';
+import { isCombatActive } from '../helpers/statusEffects.mjs';
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
@@ -68,8 +69,12 @@ export class SKSKSourceDialog extends HandlebarsApplicationMixin(ApplicationV2) 
    * @return {Promise<boolean>} Whether the cost was successfully paid.
    */
   static async #payCost(actor, apCost, manaCost) {
+    // Outside of Combat entirely (see helpers/statusEffects.mjs#
+    // isCombatActive), AP is never checked/spent at all - only Mana still
+    // applies normally, mirroring helpers/technique-rolls.mjs#payTechniqueCost.
+    const combatActive = isCombatActive();
     const ap = actor.system.actionPoints.value;
-    if (ap < apCost) {
+    if (combatActive && ap < apCost) {
       ui.notifications.warn(game.i18n.localize('SKSK.Action.NotEnoughAP'));
       return false;
     }
@@ -78,7 +83,8 @@ export class SKSKSourceDialog extends HandlebarsApplicationMixin(ApplicationV2) 
       ui.notifications.warn(game.i18n.localize('SKSK.SourceDialog.NotEnoughMana'));
       return false;
     }
-    await actor.update({ 'system.actionPoints.value': ap - apCost, 'system.mana.value': mana - manaCost });
+    const apUpdate = combatActive ? { 'system.actionPoints.value': ap - apCost } : {};
+    await actor.update({ ...apUpdate, 'system.mana.value': mana - manaCost });
     return true;
   }
 

@@ -1,4 +1,5 @@
 import { postActionChatCard } from './actions.mjs';
+import { isCombatActive } from './statusEffects.mjs';
 
 /**
  * The 5 progression stages, in order - must stay in sync with
@@ -270,11 +271,16 @@ export async function togglePathAbility(actor, item, index) {
   const entry = abilities[index];
   if (!entry || entry.type !== 'active') return;
 
+  const combatActive = isCombatActive();
+
   if (entry.active) {
     const effect = entry.effectId ? actor.effects.get(entry.effectId) : null;
     if (effect) await effect.update({ disabled: true });
     const updated = foundry.utils.deepClone(abilities);
-    updated[index] = { ...updated[index], active: false, roundsRemaining: entry.cooldownRounds };
+    // Outside of Combat entirely (see helpers/statusEffects.mjs#
+    // isCombatActive), deactivating never starts a cooldown either - same
+    // waiver as Techniques (helpers/technique-rolls.mjs#resolveCooldownStart).
+    updated[index] = { ...updated[index], active: false, roundsRemaining: combatActive ? entry.cooldownRounds : 0 };
     await item.update({ 'system.pathAbilities': updated });
     return postActionChatCard(actor, game.i18n.format('SKSK.SoulPath.PathAbilityDeactivated', { name: entry.name }), null, 0);
   }
@@ -283,8 +289,11 @@ export async function togglePathAbility(actor, item, index) {
     return ui.notifications.warn(game.i18n.format('SKSK.Technique.OnCooldown', { name: entry.name, rounds: entry.roundsRemaining }));
   }
 
+  // Outside of Combat, AP is never checked/spent at all (see
+  // helpers/statusEffects.mjs#isCombatActive) - only Mana still applies
+  // normally, mirroring helpers/technique-rolls.mjs#payTechniqueCost.
   const ap = actor.system.actionPoints.value;
-  if (ap < entry.apCost) return ui.notifications.warn(game.i18n.localize('SKSK.SoulPath.NotEnoughAP'));
+  if (combatActive && ap < entry.apCost) return ui.notifications.warn(game.i18n.localize('SKSK.SoulPath.NotEnoughAP'));
   const mana = actor.system.mana.value;
   if (mana < entry.manaCost) return ui.notifications.warn(game.i18n.localize('SKSK.SoulPath.NotEnoughMana'));
 
@@ -295,7 +304,8 @@ export async function togglePathAbility(actor, item, index) {
   const updated = foundry.utils.deepClone(item.system.pathAbilities);
   updated[index] = { ...updated[index], active: true, roundsRemaining: entry.durationRounds };
   await item.update({ 'system.pathAbilities': updated });
-  await actor.update({ 'system.actionPoints.value': ap - entry.apCost, 'system.mana.value': mana - entry.manaCost });
+  const apUpdate = combatActive ? { 'system.actionPoints.value': ap - entry.apCost } : {};
+  await actor.update({ ...apUpdate, 'system.mana.value': mana - entry.manaCost });
 
   return postActionChatCard(actor, game.i18n.format('SKSK.SoulPath.PathAbilityActivated', { name: entry.name }), null, 0);
 }

@@ -69,7 +69,13 @@ export default class SKSKSpell extends SKSKItemBase {
     // since Duration below is freeform text, not a tracked countdown, this
     // transition isn't automatic.
     schema.sustaining = new fields.BooleanField({ initial: false });
-    schema.apCost = new fields.NumberField({ ...requiredInteger, initial: 1, min: 1 });
+    // min 0 (not 1): a spell that also has its own rpCost set below may
+    // have this dropped all the way to 0, signaling it has no real AP
+    // payment path of its own at all - it's meant to only ever actually be
+    // cast via that RP cost instead (see helpers/spells.mjs#
+    // computeSpellApCost, which enforces the usual floor of 1 for every
+    // other spell).
+    schema.apCost = new fields.NumberField({ ...requiredInteger, initial: 1, min: 0 });
     // What apCost's own number actually counts - a flat AP amount (the
     // default), a casting time in minutes/hours/days, or a flat RP amount
     // (unit "rp" - see rpCost below for the different, additive-RP case).

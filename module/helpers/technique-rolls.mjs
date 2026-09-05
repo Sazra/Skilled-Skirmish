@@ -1,6 +1,6 @@
 import { getCombatStyleName } from './combatStyles.mjs';
 import { resolveClickDefender, applyTechniqueEffectBundle } from './damageApplication.mjs';
-import { applyD20Malus, isActorsOwnTurn } from './statusEffects.mjs';
+import { applyD20Malus, isActorsOwnTurn, isCombatActive } from './statusEffects.mjs';
 import {
   resolveCheckSuccess, wrapCriticalBlock, wrapCriticalInline,
   chooseGenericRollMode, evaluateD20WithMode, formatD20ModeSummaryLine,
@@ -27,6 +27,23 @@ import { formatRollCardHeading } from './rollCard.mjs';
  */
 export function computeTechniqueCooldownStart(cooldownRounds) {
   return cooldownRounds > 0 ? cooldownRounds + 1 : 0;
+}
+
+/**
+ * The cooldown to actually start on activation/deactivation/consumption -
+ * computeTechniqueCooldownStart above, waived to 0 (no cooldown at all)
+ * entirely outside of Combat (see helpers/statusEffects.mjs#
+ * isCombatActive) - "Techniken werden nicht auf Cooldown gesetzt" per the
+ * design's own outside-Combat waiver, mirroring payTechniqueCost's own AP/
+ * RP waiver above. FP is unaffected either way - see helpers/
+ * statusEffects.mjs#handleTechniqueTurnStart, which only ever grants
+ * techniqueCooldownRound FP for an ACTUAL cooldown tick, something that can
+ * only happen once a real Combat round elapses.
+ * @param {number} cooldownRounds
+ * @return {number}
+ */
+function resolveCooldownStart(cooldownRounds) {
+  return isCombatActive() ? computeTechniqueCooldownStart(cooldownRounds) : 0;
 }
 
 /**
@@ -91,21 +108,28 @@ async function payTechniqueCost(actor, item) {
   // Outside the actor's own turn, this Technique is paid from RP instead
   // of AP - its own rpCost if explicitly set (0 = "not set"), otherwise
   // mirroring the (already style-discounted) apCost above 1:1. Mana is
-  // paid the same way regardless of turn.
+  // paid the same way regardless of turn. Outside of Combat entirely (see
+  // helpers/statusEffects.mjs#isCombatActive - which also means offTurn is
+  // always false, since isActorsOwnTurn treats "no Combat" as "your own
+  // turn"), neither AP nor RP is checked or spent at all - only Mana still
+  // applies normally.
+  const combatActive = isCombatActive();
   const offTurn = !isActorsOwnTurn(actor);
   const rpCost = (item.system.rpCost ?? 0) > 0 ? item.system.rpCost : apCost;
 
-  if (offTurn) {
-    const rp = actor.system.reactionPoints.value;
-    if (rp < rpCost) {
-      ui.notifications.warn(game.i18n.localize('SKSK.Action.NotEnoughRP'));
-      return false;
-    }
-  } else {
-    const ap = actor.system.actionPoints.value;
-    if (ap < apCost) {
-      ui.notifications.warn(game.i18n.localize('SKSK.Action.NotEnoughAP'));
-      return false;
+  if (combatActive) {
+    if (offTurn) {
+      const rp = actor.system.reactionPoints.value;
+      if (rp < rpCost) {
+        ui.notifications.warn(game.i18n.localize('SKSK.Action.NotEnoughRP'));
+        return false;
+      }
+    } else {
+      const ap = actor.system.actionPoints.value;
+      if (ap < apCost) {
+        ui.notifications.warn(game.i18n.localize('SKSK.Action.NotEnoughAP'));
+        return false;
+      }
     }
   }
   const mana = actor.system.mana.value;
@@ -113,9 +137,9 @@ async function payTechniqueCost(actor, item) {
     ui.notifications.warn(game.i18n.localize('SKSK.Technique.NotEnoughMana'));
     return false;
   }
-  const costUpdate = offTurn
+  const costUpdate = !combatActive ? {} : (offTurn
     ? { 'system.reactionPoints.value': actor.system.reactionPoints.value - rpCost }
-    : { 'system.actionPoints.value': actor.system.actionPoints.value - apCost };
+    : { 'system.actionPoints.value': actor.system.actionPoints.value - apCost });
   await actor.update({ ...costUpdate, 'system.mana.value': mana - manaCost });
   return true;
 }
@@ -221,7 +245,7 @@ async function toggleDurationTechnique(actor, item) {
   if (item.system.active) {
     const effect = item.system.effectId ? actor.effects.get(item.system.effectId) : null;
     if (effect) await effect.update({ disabled: true });
-    await item.update({ 'system.active': false, 'system.roundsRemaining': computeTechniqueCooldownStart(item.system.cooldownRounds) });
+    await item.update({ 'system.active': false, 'system.roundsRemaining': resolveCooldownStart(item.system.cooldownRounds) });
     return postTechniqueActionCard(actor, item, game.i18n.localize('SKSK.Technique.StatusLine.Deactivated'));
   }
 
@@ -340,7 +364,7 @@ export async function activateDirectEffectTechnique(actor, item) {
   if (!(await payTechniqueCost(actor, item))) return;
 
   await ensureLinkedEffect(item);
-  await item.update({ 'system.roundsRemaining': computeTechniqueCooldownStart(item.system.cooldownRounds) });
+  await item.update({ 'system.roundsRemaining': resolveCooldownStart(item.system.cooldownRounds) });
 
   const statusText = game.i18n.localize('SKSK.Technique.StatusLine.Activated');
   if (item.system.effectSavingThrowEnabled) {
@@ -455,7 +479,7 @@ export async function consumePrimedTechnique(actor, contextType = null) {
   const bonuses = getActiveStyleBonuses(actor, item.system.combatStyle);
   const isAttackBonus = item.system.category === 'attackBonus';
   const isEffect = item.system.category === 'effect';
-  await item.update({ 'system.active': false, 'system.roundsRemaining': computeTechniqueCooldownStart(item.system.cooldownRounds) });
+  await item.update({ 'system.active': false, 'system.roundsRemaining': resolveCooldownStart(item.system.cooldownRounds) });
 
   return {
     item,
