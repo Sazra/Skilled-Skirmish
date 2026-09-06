@@ -107,6 +107,14 @@
     </div>
   </details>
 
+  {{!-- Every plain-number input below that's also a real Active Effect
+    target (see helpers/effect-key-reference.mjs) MUST read its value from
+    data.system (actor.toObject(), pre-effects source), never system
+    (actor.system, post-effects derived) - binding to the derived value
+    would resubmit the effect's own contribution back as the new stored
+    base on every single form submit anywhere on the sheet, compounding it
+    further each time (this is exactly how assassinationBonusDice once
+    silently climbed into the dozens on a live character). --}}
   <details class="gm-section" data-sync="gm-section-combat-values" open>
     <summary class="resource-label">{{localize 'SKSK.GM.CombatValuesSectionTitle'}}</summary>
 
@@ -115,7 +123,7 @@
         <label class="resource-label" title="{{localize 'SKSK.GM.NaturalMaterialBonusHint'}}">
           {{localize 'SKSK.GM.NaturalMaterialBonus'}}
         </label>
-        <input type="text" name="system.naturalMaterialBonus.adjustment" value="{{system.naturalMaterialBonus.adjustment}}"
+        <input type="text" name="system.naturalMaterialBonus.adjustment" value="{{data.system.naturalMaterialBonus.adjustment}}"
           data-dtype="Number" />
       </div>
       <div class="grid-span-1">
@@ -129,19 +137,19 @@
         <label class="resource-label" title="{{localize 'SKSK.GM.BaseArmorClassHint'}}">
           {{localize 'SKSK.GM.BaseArmorClass'}}
         </label>
-        <input type="text" name="system.baseArmorClass" value="{{system.baseArmorClass}}" data-dtype="Number" />
+        <input type="text" name="system.baseArmorClass" value="{{data.system.baseArmorClass}}" data-dtype="Number" />
       </div>
       <div class="grid-span-1">
         <label class="resource-label" title="{{localize 'SKSK.GM.CustomArmorClassBonusHint'}}">
           {{localize 'SKSK.GM.CustomArmorClassBonus'}}
         </label>
-        <input type="text" name="system.customArmorClassBonus" value="{{system.customArmorClassBonus}}" data-dtype="Number" />
+        <input type="text" name="system.customArmorClassBonus" value="{{data.system.customArmorClassBonus}}" data-dtype="Number" />
       </div>
       <div class="grid-span-1">
         <label class="resource-label" title="{{localize 'SKSK.GM.CustomMagicResistanceBonusHint'}}">
           {{localize 'SKSK.GM.CustomMagicResistanceBonus'}}
         </label>
-        <input type="text" name="system.customMagicResistanceBonus" value="{{system.customMagicResistanceBonus}}" data-dtype="Number" />
+        <input type="text" name="system.customMagicResistanceBonus" value="{{data.system.customMagicResistanceBonus}}" data-dtype="Number" />
       </div>
     </div>
 
@@ -150,13 +158,13 @@
         <label class="resource-label" title="{{localize 'SKSK.GM.CriticalHitThresholdHint'}}">
           {{localize 'SKSK.GM.CriticalHitThreshold'}}
         </label>
-        <input type="text" name="system.criticalHitThreshold" value="{{system.criticalHitThreshold}}" data-dtype="Number" />
+        <input type="text" name="system.criticalHitThreshold" value="{{data.system.criticalHitThreshold}}" data-dtype="Number" />
       </div>
       <div class="grid-span-1">
         <label class="resource-label" title="{{localize 'SKSK.GM.CriticalFailureThresholdHint'}}">
           {{localize 'SKSK.GM.CriticalFailureThreshold'}}
         </label>
-        <input type="text" name="system.criticalFailureThreshold" value="{{system.criticalFailureThreshold}}" data-dtype="Number" />
+        <input type="text" name="system.criticalFailureThreshold" value="{{data.system.criticalFailureThreshold}}" data-dtype="Number" />
       </div>
     </div>
 
@@ -164,7 +172,7 @@
       <label class="resource-label" title="{{localize 'SKSK.GM.AssassinationBonusDiceHint'}}">
         {{localize 'SKSK.GM.AssassinationBonusDice'}}
       </label>
-      <input type="text" name="system.assassinationBonusDice" value="{{system.assassinationBonusDice}}" data-dtype="Number" />
+      <input type="text" name="system.assassinationBonusDice" value="{{data.system.assassinationBonusDice}}" data-dtype="Number" />
     </div>
 
     <div class="resource">
@@ -185,13 +193,13 @@
         <label class="resource-label" title="{{localize 'SKSK.GM.ManaCapacityAccumulatorHint'}}">
           {{localize 'SKSK.GM.ManaCapacityAccumulator'}}
         </label>
-        <input type="text" name="system.manaCapacityAccumulator" value="{{system.manaCapacityAccumulator}}" data-dtype="Number" />
+        <input type="text" name="system.manaCapacityAccumulator" value="{{data.system.manaCapacityAccumulator}}" data-dtype="Number" />
       </div>
       <div class="grid-span-1">
         <label class="resource-label" title="{{localize 'SKSK.GM.ManaRegenerationAccumulatorHint'}}">
           {{localize 'SKSK.GM.ManaRegenerationAccumulator'}}
         </label>
-        <input type="text" name="system.manaRegenerationAccumulator" value="{{system.manaRegenerationAccumulator}}" data-dtype="Number" />
+        <input type="text" name="system.manaRegenerationAccumulator" value="{{data.system.manaRegenerationAccumulator}}" data-dtype="Number" />
       </div>
     </div>
 
@@ -200,13 +208,13 @@
         <label class="resource-label" title="{{localize 'SKSK.GM.SummonSlotsBonusHint'}}">
           {{localize 'SKSK.GM.SummonSlotsBonus'}}
         </label>
-        <input type="text" name="system.summonSlotsBonus" value="{{system.summonSlotsBonus}}" data-dtype="Number" />
+        <input type="text" name="system.summonSlotsBonus" value="{{data.system.summonSlotsBonus}}" data-dtype="Number" />
       </div>
       <div class="grid-span-1">
         <label class="resource-label" title="{{localize 'SKSK.GM.SummonSlotsMultiplierHint'}}">
           {{localize 'SKSK.GM.SummonSlotsMultiplier'}}
         </label>
-        <input type="text" name="system.summonSlotsMultiplier" value="{{system.summonSlotsMultiplier}}" data-dtype="Number" />
+        <input type="text" name="system.summonSlotsMultiplier" value="{{data.system.summonSlotsMultiplier}}" data-dtype="Number" />
       </div>
     </div>
 
@@ -215,13 +223,13 @@
         <label class="resource-label" title="{{localize 'SKSK.GM.TotemSlotsBonusHint'}}">
           {{localize 'SKSK.GM.TotemSlotsBonus'}}
         </label>
-        <input type="text" name="system.totemSlotsBonus" value="{{system.totemSlotsBonus}}" data-dtype="Number" />
+        <input type="text" name="system.totemSlotsBonus" value="{{data.system.totemSlotsBonus}}" data-dtype="Number" />
       </div>
       <div class="grid-span-1">
         <label class="resource-label" title="{{localize 'SKSK.GM.TotemSlotsMultiplierHint'}}">
           {{localize 'SKSK.GM.TotemSlotsMultiplier'}}
         </label>
-        <input type="text" name="system.totemSlotsMultiplier" value="{{system.totemSlotsMultiplier}}" data-dtype="Number" />
+        <input type="text" name="system.totemSlotsMultiplier" value="{{data.system.totemSlotsMultiplier}}" data-dtype="Number" />
       </div>
     </div>
   </details>
