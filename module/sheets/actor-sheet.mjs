@@ -35,6 +35,7 @@ import { computeWeaponAttackBonus, computeWeaponRangeLabel } from '../helpers/at
 import { renderBreakdownHtml } from '../helpers/tooltips.mjs';
 import { rollMartialArtsAttack, rollRegeneration, rollMeditation, rollAdrenalin, useMove, useDodge, useItem, postActionChatCard } from '../helpers/actions.mjs';
 import { chooseSpellCastOptions } from '../helpers/spell-rolls.mjs';
+import { captureScrollPositions, restoreScrollPositions } from '../helpers/scrollPreservation.mjs';
 import { SKSKRestDialog } from '../apps/rest-dialog.mjs';
 import { SKSKTrainingDialog } from '../apps/training-dialog.mjs';
 import { SKSKReligionDialog } from '../apps/religion-dialog.mjs';
@@ -511,6 +512,15 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
    * @type {boolean}
    */
   #toolbarCollapsed = false;
+
+  /**
+   * Every scrollable PART's own scrollTop, captured in _preRender and
+   * reapplied at the end of _onRender (after every nested tab group has
+   * been reactivated) - see helpers/scrollPreservation.mjs for why Foundry's
+   * own built-in restoration alone isn't enough here.
+   * @type {Map<string, number>}
+   */
+  #scrollPositions = new Map();
 
   #createDragDropHandlers() {
     return this.options.dragDrop.map(config => {
@@ -1439,6 +1449,16 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
   /* -------------------------------------------- */
 
   /** @override */
+  async _preRender(context, options) {
+    await super._preRender(context, options);
+    // Captured here (DOM still the OLD, live element) and reapplied at the
+    // end of _onRender below, once every nested tab group has been
+    // reactivated - see helpers/scrollPreservation.mjs for why Foundry's
+    // own built-in scroll restoration alone isn't enough on this sheet.
+    this.#scrollPositions = captureScrollPositions(this);
+  }
+
+  /** @override */
   async _onRender(context, options) {
     await super._onRender(context, options);
 
@@ -1455,6 +1475,10 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
         this.changeTab(active, group, { force: true, updatePosition: false });
       }
     }
+
+    // Must run AFTER the tab reactivation above - see helpers/
+    // scrollPreservation.mjs's own doc comment for why.
+    restoreScrollPositions(this, this.#scrollPositions);
 
     // Drag events for macros. A draggable row otherwise hijacks click-drag
     // gestures that start inside a nested field, breaking native text

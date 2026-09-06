@@ -23,6 +23,7 @@ import {
 import { ensureLinkedSpellEffect } from '../helpers/spell-rolls.mjs';
 import { SKSKSoulPathElementsDialog } from '../apps/soul-path-elements-dialog.mjs';
 import { getWorldDeities } from '../helpers/religion.mjs';
+import { captureScrollPositions, restoreScrollPositions } from '../helpers/scrollPreservation.mjs';
 
 /**
  * Extend the basic ItemSheet with some very simple modifications
@@ -735,6 +736,21 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
 
   /* -------------------------------------------- */
 
+  /**
+   * Every scrollable PART's own scrollTop, captured in _preRender and
+   * reapplied at the end of _onRender (after every nested tab group has
+   * been reactivated) - see helpers/scrollPreservation.mjs for why Foundry's
+   * own built-in restoration alone isn't enough here.
+   * @type {Map<string, number>}
+   */
+  #scrollPositions = new Map();
+
+  /** @override */
+  async _preRender(context, options) {
+    await super._preRender(context, options);
+    this.#scrollPositions = captureScrollPositions(this);
+  }
+
   /** @override */
   async _onRender(context, options) {
     await super._onRender(context, options);
@@ -761,6 +777,10 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
         this.changeTab(activeSection, "spellSections", { force: true, updatePosition: false });
       }
     }
+
+    // Must run AFTER the tab reactivation above - see helpers/
+    // scrollPreservation.mjs's own doc comment for why.
+    restoreScrollPositions(this, this.#scrollPositions);
 
     if (this.item.type === 'weapon' || this.item.type === 'armor') {
       // The Property Overrides switches aren't named form fields (their
