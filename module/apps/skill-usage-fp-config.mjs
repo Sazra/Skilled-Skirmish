@@ -128,14 +128,14 @@ const SKILL_SPECIFIC_TRIGGERS = {
     { key: 'pickpocket', label: 'SKSK.SkillFpConfig.Pickpocket' },
   ],
 
-  // Magic (Magiefertigkeiten). Concentration's own check (helpers/
-  // statusEffects.mjs#checkConcentration) is split into two separately
-  // GM-configured rates by whether a Combat is currently active
-  // (isCombatActive), same split as Magic Schools' own spellCastPerLevel
-  // trigger above.
+  // Magic (Magiefertigkeiten). Concentration's own automatic, damage-
+  // triggered check (helpers/statusEffects.mjs#checkConcentration) only
+  // gets its own dedicated rate while a Combat is active (isCombatActive) -
+  // outside of Combat it's granted the same "skillCheck" FP as a manually
+  // rolled Concentration check (the universal field below), since the two
+  // are considered equivalent there.
   concentration: [
     { key: 'concentrationCheckInCombat', label: 'SKSK.SkillFpConfig.ConcentrationCheckInCombat' },
-    { key: 'concentrationCheckOutOfCombat', label: 'SKSK.SkillFpConfig.ConcentrationCheckOutOfCombat' },
   ],
   meditation: [{ key: 'meditationUsed', label: 'SKSK.SkillFpConfig.MeditationUsed' }],
   summoning: [

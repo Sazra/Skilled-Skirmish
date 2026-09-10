@@ -301,7 +301,6 @@
       "LockPicked": "FP / Lock Picked",
       "Pickpocket": "FP / Pickpocket Performed",
       "ConcentrationCheckInCombat": "FP / Concentration Check (In Combat)",
-      "ConcentrationCheckOutOfCombat": "FP / Concentration Check (Out of Combat)",
       "MeditationUsed": "FP / Meditation Die Used",
       "SummonLevel": "FP / Summoned Creature Level",
       "SummonExistenceDay": "FP / Day of Summon's Existence",

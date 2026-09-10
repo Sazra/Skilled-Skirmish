@@ -301,7 +301,6 @@
             "LockPicked": "FP / Schloss geknackt",
             "Pickpocket": "FP / Taschendiebstahl durchgeführt",
             "ConcentrationCheckInCombat": "FP / Konzentrationswurf (im Kampf)",
-            "ConcentrationCheckOutOfCombat": "FP / Konzentrationswurf (außerhalb des Kampfes)",
             "MeditationUsed": "FP / Genutzter Meditationswürfel",
             "SummonLevel": "FP / Stufe der beschworenen Kreatur",
             "SummonExistenceDay": "FP / Tag der Beschwörungs-Existenz",

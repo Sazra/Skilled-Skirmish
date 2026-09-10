@@ -1258,10 +1258,11 @@ export async function checkConcentration(actor, damage) {
     : criticalType === 'failure' ? 'SKSK.Spell.Roll.CriticalFailure'
     : success ? 'SKSK.Spell.Roll.Success' : 'SKSK.Spell.Roll.Failure';
   const outcome = game.i18n.localize(outcomeKey);
-  // Split into two separately GM-configured rates by whether a Combat is
-  // currently active - same isCombatActive split as Magic Schools' own
-  // spellCastPerLevel trigger (helpers/spell-rolls.mjs#rollSpellItem).
-  const concentrationTrigger = isCombatActive() ? 'concentrationCheckInCombat' : 'concentrationCheckOutOfCombat';
+  // Its own dedicated rate only while a Combat is active (isCombatActive) -
+  // outside of Combat this counts as a plain "skillCheck", same as a
+  // manually rolled Concentration check (helpers/skillRolls.mjs#
+  // rollSkillCheck), since the two are considered equivalent there.
+  const concentrationTrigger = isCombatActive() ? 'concentrationCheckInCombat' : 'skillCheck';
   const fpGrant = await grantSkillUsageFp(actor, 'concentration', concentrationTrigger);
   // Luck's own "criticalRoll"/"doubleCriticalRoll" FP - any generic (non-
   // Angriffswurf) D20 roll's critical success/double critical, see
