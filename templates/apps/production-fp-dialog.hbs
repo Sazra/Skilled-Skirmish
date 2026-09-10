@@ -17,8 +17,20 @@
 
   <div class="resource">
     <label class="resource-label">{{localize 'SKSK.ProductionFp.Crafting'}}</label>
-    <label class="resource-label">{{localize 'SKSK.ProductionFp.Quality'}}</label>
-    <input type="text" name="craftingQuality" value="100" data-dtype="Number" />
+    <div class="grid grid-3col">
+      <div class="grid-span-1">
+        <label class="resource-label">{{localize 'SKSK.ProductionFp.MaterialLevel'}}</label>
+        <input type="text" name="craftingMaterialLevel" value="0" data-dtype="Number" />
+      </div>
+      <div class="grid-span-1">
+        <label class="resource-label">{{localize 'SKSK.ProductionFp.ModelLevel'}}</label>
+        <input type="text" name="craftingModelLevel" value="0" data-dtype="Number" />
+      </div>
+      <div class="grid-span-1">
+        <label class="resource-label">{{localize 'SKSK.ProductionFp.Quality'}}</label>
+        <input type="text" name="craftingQuality" value="100" data-dtype="Number" />
+      </div>
+    </div>
     <button type="button" data-action="grantCrafting">{{localize 'SKSK.ProductionFp.Grant'}}</button>
   </div>
 

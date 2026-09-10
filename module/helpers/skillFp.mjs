@@ -141,7 +141,7 @@ export function getSkillFpRate(skillKey, trigger) {
  * @param {Actor} actor
  * @param {string} skillKey
  * @param {string} trigger        E.g. "skillCheck", "weaponAttack", "hitTaken",
- *   "spellCastPerLevel", "attributeRoll" - see apps/skill-usage-fp-config.mjs.
+ *   "spellCastPerLevelInCombat", "attributeRoll" - see apps/skill-usage-fp-config.mjs.
  * @param {number} [multiplier=1]
  * @return {Promise<{label: string, amount: number}|null>} What was granted,
  *   for the caller to append a chat line with (see formatSkillFpGrantLine) -

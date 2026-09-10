@@ -1,4 +1,4 @@
-import { grantSkillUsageFp } from './skillFp.mjs';
+import { grantSkillUsageFp, grantFlatSkillFp, getSkillFpRate } from './skillFp.mjs';
 
 /**
  * Alchemy's own "Essenzen im Brauprozess verarbeitet" trigger - the
@@ -16,15 +16,24 @@ export async function grantAlchemyFp(actor, essenceCount, qualityPercent) {
 }
 
 /**
- * Herstellung's (Crafting's) own "Gegenstand hergestellt" trigger, scaled by
- * the crafted item's own quality - always one item at a time, no separate
- * count field.
+ * Herstellung's (Crafting's) own "Gegenstand hergestellt" trigger - unlike
+ * every other Production skill, not a flat rate scaled by a single
+ * multiplier: the GM-configured rate (still stored under the "itemCrafted"
+ * trigger key - see apps/skill-usage-fp-config.mjs) acts as a BONUS added to
+ * both the player-entered material level and model level before they're
+ * multiplied together, then scaled by the crafted item's own quality (a
+ * percentage, unbounded above 100 for exceptional results) - always one item
+ * at a time, no separate count field.
  * @param {Actor} actor
+ * @param {number} materialLevel
+ * @param {number} modelLevel
  * @param {number} qualityPercent
- * @return {Promise<{skillKey: string, trigger: string, amount: number, capped: boolean}|null>}
+ * @return {Promise<{label: string, amount: number}|null>}
  */
-export async function grantCraftingFp(actor, qualityPercent) {
-  return grantSkillUsageFp(actor, 'crafting', 'itemCrafted', qualityPercent / 100);
+export async function grantCraftingFp(actor, materialLevel, modelLevel, qualityPercent) {
+  const bonus = getSkillFpRate('crafting', 'itemCrafted');
+  const amount = (materialLevel + bonus) * (modelLevel + bonus) * (qualityPercent / 100);
+  return grantFlatSkillFp(actor, 'crafting', amount);
 }
 
 /**
@@ -69,7 +78,7 @@ export async function grantEnchantingFp(actor, qualityPercent, hours) {
  * the result; malformed JSON returns null rather than throwing, so a future
  * caller can show a plain "couldn't read that" warning instead of crashing.
  * @param {string} text
- * @return {{alchemy?: {essences: number, quality: number}, crafting?: {quality: number}, cooking?: {quality: number}, enchanting?: {quality: number, hours: number}}|null}
+ * @return {{alchemy?: {essences: number, quality: number}, crafting?: {materialLevel: number, modelLevel: number, quality: number}, cooking?: {quality: number}, enchanting?: {quality: number, hours: number}}|null}
  */
 export function parseProductionFpImport(text) {
   let data;
@@ -84,7 +93,13 @@ export function parseProductionFpImport(text) {
   if (data.alchemy) {
     result.alchemy = { essences: Number(data.alchemy.essences) || 0, quality: Number(data.alchemy.quality) || 0 };
   }
-  if (data.crafting) result.crafting = { quality: Number(data.crafting.quality) || 0 };
+  if (data.crafting) {
+    result.crafting = {
+      materialLevel: Number(data.crafting.materialLevel) || 0,
+      modelLevel: Number(data.crafting.modelLevel) || 0,
+      quality: Number(data.crafting.quality) || 0,
+    };
+  }
   if (data.cooking) result.cooking = { quality: Number(data.cooking.quality) || 0 };
   if (data.enchanting) {
     result.enchanting = { quality: Number(data.enchanting.quality) || 0, hours: Number(data.enchanting.hours) || 0 };

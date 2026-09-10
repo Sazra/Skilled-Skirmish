@@ -9,9 +9,12 @@ const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
  * own sheet header - one section per Production skill (Alchemie/
  * Herstellung/Kochen/Verzauberung), each a plain, non-persisted number
  * input or two (quality%, and for Alchemie/Verzauberung an essence count/
- * ritual-hours field) read fresh off the DOM on click - no cost, no usage
- * limit, matching apps/source-dialog.mjs's own repeat-use convention. See
- * helpers/productionFp.mjs for the actual FP math.
+ * ritual-hours field; Herstellung additionally has a material level and a
+ * model level field, since its own formula multiplies them instead of just
+ * scaling a rate by quality - see helpers/productionFp.mjs#grantCraftingFp)
+ * read fresh off the DOM on click - no cost, no usage limit, matching apps/
+ * source-dialog.mjs's own repeat-use convention. See helpers/productionFp.mjs
+ * for the actual FP math.
  */
 export class SKSKProductionFpDialog extends HandlebarsApplicationMixin(ApplicationV2) {
   constructor(actor, options = {}) {
@@ -52,8 +55,10 @@ export class SKSKProductionFpDialog extends HandlebarsApplicationMixin(Applicati
   }
 
   static async #onGrantCrafting() {
+    const materialLevel = Number(this.element.querySelector('[name="craftingMaterialLevel"]').value) || 0;
+    const modelLevel = Number(this.element.querySelector('[name="craftingModelLevel"]').value) || 0;
     const quality = Number(this.element.querySelector('[name="craftingQuality"]').value) || 0;
-    const grant = await grantCraftingFp(this.actor, quality);
+    const grant = await grantCraftingFp(this.actor, materialLevel, modelLevel, quality);
     const grantText = formatSkillFpGrantText(grant);
     const line = `<div class="sksk-roll-line">${grantText || game.i18n.localize('SKSK.ProductionFp.NoGain')}</div>`;
     await postActionChatCard(this.actor, game.i18n.localize('SKSK.ProductionFp.Crafting'), null, 0, line);

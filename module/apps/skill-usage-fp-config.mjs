@@ -31,7 +31,8 @@ const CATEGORY_FIELDS = {
   magicSchools: {
     hintKey: 'SKSK.SkillFpConfig.MagicSchoolsHint',
     fields: [
-      { key: 'spellCastPerLevel', label: 'SKSK.SkillFpConfig.SpellCastPerLevel' },
+      { key: 'spellCastPerLevelInCombat', label: 'SKSK.SkillFpConfig.SpellCastPerLevelInCombat' },
+      { key: 'spellCastPerLevelOutOfCombat', label: 'SKSK.SkillFpConfig.SpellCastPerLevelOutOfCombat' },
     ],
   },
   attribute: {
@@ -82,9 +83,13 @@ const SKILL_SPECIFIC_TRIGGERS = {
   // Alchemy, essence count) and the dialog scales the rate below by it - see
   // helpers/productionFp.mjs. Enchanting additionally grants Ritualism's own
   // "ritualHour" trigger (see the magic category below) for the same
-  // session's ritual duration, if any.
+  // session's ritual duration, if any. Crafting is the one exception - its
+  // rate (still stored under the "itemCrafted" key) isn't a per-item
+  // multiplier but a flat BONUS added to both the player-entered material
+  // level and model level before they're multiplied together and scaled by
+  // quality: (materialLevel + bonus) * (modelLevel + bonus) * (quality/100).
   alchemy: [{ key: 'essenceProcessed', label: 'SKSK.SkillFpConfig.EssenceProcessed' }],
-  crafting: [{ key: 'itemCrafted', label: 'SKSK.SkillFpConfig.ItemCrafted' }],
+  crafting: [{ key: 'itemCrafted', label: 'SKSK.SkillFpConfig.CraftingBonus' }],
   cooking: [{ key: 'dishCooked', label: 'SKSK.SkillFpConfig.DishCooked' }],
   enchanting: [{ key: 'enchantmentLevel', label: 'SKSK.SkillFpConfig.EnchantmentLevel' }],
 

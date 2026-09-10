@@ -701,13 +701,18 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
     // belong to exactly one (Combined/Systemless spells have none - see
     // CONFIG.SKSK.simpleMagicSchools/advancedMagicSchools). Granted now,
     // at cast time, regardless of whether its AP cost is still owed above.
+    // Split into two separately GM-configured rates by whether a Combat is
+    // currently active (isCombatActive - same started/not-yet-started
+    // distinction every AP/RP waiver in the system already uses), not by
+    // whether THIS cast itself was part of a combat action.
     if (system.spellType === 'simple' || system.spellType === 'advanced') {
-      const fpGrant = await grantSkillUsageFp(actor, system.magicSchool, 'spellCastPerLevel', system.spellLevel);
+      const trigger = isCombatActive() ? 'spellCastPerLevelInCombat' : 'spellCastPerLevelOutOfCombat';
+      const fpGrant = await grantSkillUsageFp(actor, system.magicSchool, trigger, system.spellLevel);
       parts.push(formatSkillFpGrantLine(fpGrant));
 
       // Bardic magic (an Advanced school) is also Singing's own "using
       // Bardic magic" trigger - a flat grant alongside Bardic's own
-      // spellCastPerLevel above, not instead of it.
+      // spellCastPerLevelInCombat/OutOfCombat above, not instead of it.
       if (system.magicSchool === 'bardic') {
         parts.push(formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'singing', 'bardicSpellCast')));
       }
