@@ -313,7 +313,7 @@
       "SourceAbilityUsed": "FP / Source Ability Used",
       "SourceOpened": "FP / Source Opened",
       "RegenerationUsed": "FP / Regeneration Die Used",
-      "CombatMovement": "FP / 20m Moved in Combat",
+      "CombatMovement": "FP / Meter Moved in Combat",
       "TechniqueCooldownRound": "FP / Round of Technique Cooldown",
       "DodgeUsed": "FP / Dodge Used",
       "ReflexActionUsed": "FP / Reflexaktion (4+ AP Spent in One Turn)",

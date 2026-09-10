@@ -313,7 +313,7 @@
             "SourceAbilityUsed": "FP / Genutzte Quellenfähigkeit",
             "SourceOpened": "FP / Geöffnete Quelle",
             "RegenerationUsed": "FP / Genutzter Trefferwürfel",
-            "CombatMovement": "FP / 20m Bewegung im Kampf",
+            "CombatMovement": "FP / Meter Bewegung im Kampf",
             "TechniqueCooldownRound": "FP / Runde Abklingzeit der Techniken",
             "DodgeUsed": "FP / Genutztes Ausweichen",
             "ReflexActionUsed": "FP / Reflexaktion (4+ AP in einem Zug verbraucht)",

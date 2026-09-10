@@ -542,8 +542,9 @@ export async function useMove(actor, movementType) {
   // Stamina's own "distance moved in combat" FP trigger - only while an
   // actual Combat is tracking rounds, per the design spreadsheet's
   // "im Kampf" wording; not for free exploration movement outside Combat.
+  // Scaled per meter (not per 20m band) of the move's own speed.
   const fpGrant = round !== null
-    ? await grantSkillUsageFp(actor, 'stamina', 'combatMovement', Math.ceil(speed / 20))
+    ? await grantSkillUsageFp(actor, 'stamina', 'combatMovement', speed)
     : null;
 
   const label = game.i18n.localize(CONFIG.SKSK.movementTypes[movementType] ?? movementType);
