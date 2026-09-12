@@ -63,6 +63,19 @@ export function registerSettings() {
     default: false,
   });
 
+  // Whether Beschwörung's "Tag der Beschwörungs-Existenz" and Manakapazität/
+  // -regeneration's "Tagesabrechnung" FP settle automatically on every real
+  // calendar day change via the optional Calendaria module, instead of only
+  // at the next manually confirmed Anpassungs-/Genesungspause - see helpers/
+  // calendarIntegration.mjs. Off by default (and inert without Calendaria
+  // active regardless), so existing worlds see no behavior change.
+  game.settings.register('sksk', 'calendariaDailySettlementEnabled', {
+    scope: 'world',
+    config: false,
+    type: Boolean,
+    default: false,
+  });
+
   // GM-only menu bundling the four plain settings above into one dialog -
   // see apps/general-settings-config.mjs. Registered first so its button is
   // the first entry in the Skilled Skirmish settings list.

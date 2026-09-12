@@ -3,6 +3,7 @@ import { postActionChatCard, getRegenerationDieSizes } from './actions.mjs';
 import { getStatusStacks, decreaseStatusStacks, getAdrenalinDamage, reduceAdrenalinDamage } from './statusEffects.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantText } from './skillFp.mjs';
 import { countActiveSummons } from './summoning.mjs';
+import { isCalendariaDailySettlementEnabled } from './calendarIntegration.mjs';
 
 /**
  * A time segment - the atomic unit "spending time" is measured in.
@@ -302,33 +303,36 @@ export async function applyRest(actor, options) {
         lines.push(game.i18n.format('SKSK.Rest.LevelGained', { level: newLevel }));
       }
 
-      // Manakapazität/Manaregeneration's own "Tagesabrechnung" FP - the
-      // accumulated real mana cost paid / mana actually restored since the
-      // last qualifying Pause (see helpers/skillFp.mjs, helpers/spell-
-      // rolls.mjs#rollSpellItem, helpers/actions.mjs#rollMeditation),
-      // multiplied by the skillUsageFp "dailyManaSpent" rate and floored,
-      // then reset for the next period regardless of the result.
-      const manaCapacityFpText = formatSkillFpGrantText(
-        await grantSkillUsageFp(actor, 'manaCapacity', 'dailyManaSpent', actor.system.manaCapacityAccumulator ?? 0)
-      );
-      if (manaCapacityFpText) lines.push(manaCapacityFpText);
-      updates['system.manaCapacityAccumulator'] = 0;
-
-      const manaRegenFpText = formatSkillFpGrantText(
-        await grantSkillUsageFp(actor, 'manaRegeneration', 'dailyManaSpent', manaRegenerationAccumulator)
-      );
-      if (manaRegenFpText) lines.push(manaRegenFpText);
-      manaRegenerationAccumulator = 0;
-
-      // Beschwörung's own "Tagesabrechnung" - one "summonExistenceDay" FP
-      // grant per currently-active (summoned) list entry, combined into a
-      // single scaled grant (rate x count) - see apps/summoning-dialog.mjs.
-      const activeSummons = countActiveSummons(actor);
-      if (activeSummons > 0) {
-        const summoningFpText = formatSkillFpGrantText(
-          await grantSkillUsageFp(actor, 'summoning', 'summonExistenceDay', activeSummons)
+      // Manakapazität/Manaregeneration's own "Tagesabrechnung" FP and
+      // Beschwörung's own "Tag der Beschwörungs-Existenz" FP (one grant per
+      // currently-active (summoned) list entry, combined into a single
+      // scaled grant - see apps/summoning-dialog.mjs) - skipped here
+      // entirely once the optional Calendaria integration is settling both
+      // automatically on every real calendar day change instead (see
+      // helpers/calendarIntegration.mjs#settleDailyAccumulators), so a
+      // Pause taken in between two day changes doesn't double-grant them.
+      // Without Calendaria (or with its world setting off), both still
+      // settle here exactly as before.
+      if (!isCalendariaDailySettlementEnabled()) {
+        const manaCapacityFpText = formatSkillFpGrantText(
+          await grantSkillUsageFp(actor, 'manaCapacity', 'dailyManaSpent', actor.system.manaCapacityAccumulator ?? 0)
         );
-        if (summoningFpText) lines.push(summoningFpText);
+        if (manaCapacityFpText) lines.push(manaCapacityFpText);
+        updates['system.manaCapacityAccumulator'] = 0;
+
+        const manaRegenFpText = formatSkillFpGrantText(
+          await grantSkillUsageFp(actor, 'manaRegeneration', 'dailyManaSpent', manaRegenerationAccumulator)
+        );
+        if (manaRegenFpText) lines.push(manaRegenFpText);
+        manaRegenerationAccumulator = 0;
+
+        const activeSummons = countActiveSummons(actor);
+        if (activeSummons > 0) {
+          const summoningFpText = formatSkillFpGrantText(
+            await grantSkillUsageFp(actor, 'summoning', 'summonExistenceDay', activeSummons)
+          );
+          if (summoningFpText) lines.push(summoningFpText);
+        }
       }
 
       const exhaustionMax = computeExhaustionChargeMax(actor, tier);

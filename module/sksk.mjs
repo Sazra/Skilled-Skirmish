@@ -19,6 +19,7 @@ import {
   ensurePredefinedStatusEffects, registerConfigStatusEffects, handleCombatTurnStart, handleCombatTurnEnd,
 } from './helpers/statusEffects.mjs';
 import { clampSingleAttributeSelection } from './helpers/models.mjs';
+import { registerCalendariaIntegration } from './helpers/calendarIntegration.mjs';
 import * as models from './data/_module.mjs';
 
 Hooks.once('init', function () {
@@ -108,6 +109,11 @@ Hooks.once('ready', async function () {
   // seeding write before reading the setting back for registration.
   await ensurePredefinedStatusEffects();
   registerConfigStatusEffects();
+
+  // Optional Calendaria (github.com/Sayshal/calendaria) integration - see
+  // helpers/calendarIntegration.mjs. Safe to call even when Calendaria
+  // isn't installed; the hook it listens for then simply never fires.
+  registerCalendariaIntegration();
 
   Hooks.on('hotbarDrop', (bar, data, slot) => createItemMacro(data, slot));
 
