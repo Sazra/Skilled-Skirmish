@@ -135,12 +135,13 @@ Hooks.once('ready', async function () {
   });
 
   // Angriffswurf (attack roll) chat cards' "Evaluate" button - see
-  // helpers/attackRolls.mjs#resolveHitEvaluationFromChat.
+  // helpers/attackRolls.mjs#resolveHitEvaluationFromChat. Shift+click force-
+  // hits with no defender resolved, instead of the usual block/warning.
   document.addEventListener('click', (event) => {
     const button = event.target.closest('[data-action="resolveHitEvaluation"]');
     if (!button) return;
     event.preventDefault();
-    resolveHitEvaluationFromChat(button);
+    resolveHitEvaluationFromChat(button, event.shiftKey);
   });
 
   // Any damage roll's "Apply Damage" button - see

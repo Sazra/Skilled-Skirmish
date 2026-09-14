@@ -7,7 +7,7 @@ import {
 import {
   evaluateSkillFormula, computeSkillBonusTotals, getActorSkillLevel, isActorSkillUnlocked, getSkillStacks,
 } from '../helpers/skills.mjs';
-import { getSkillCheckDefinition, rollSkillCheck, nonEmptyAttributeSubsets, chooseSkillRollVariant } from '../helpers/skillRolls.mjs';
+import { getSkillCheckDefinition, rollSkillCheck, chooseSkillRollVariant, chooseSkillRollAttributeAndMode } from '../helpers/skillRolls.mjs';
 import {
   getVisibleAttributeBonusDropdowns, getResolvedAttributeBonuses, chooseAttributeBonus,
   resetAttributeBonusChoice, resetAllAttributeBonusChoices, applyPendingAutoGrants,
@@ -31,6 +31,7 @@ import { getLifeBreakdown, getNegativeLifeBreakdown } from '../helpers/life.mjs'
 import { getManaBreakdown } from '../helpers/mana.mjs';
 import { daysToBreakdown, applyPendingLongevityGrowth, adjustLongevity, resetLongevityToFull } from '../helpers/longevity.mjs';
 import { getArmorClassBreakdown, getMagicResistanceBreakdown, computeArmorPieceBonus } from '../helpers/defense.mjs';
+import { isDurabilityEnabled } from '../helpers/materials.mjs';
 import { computeWeaponAttackBonus, computeWeaponRangeLabel } from '../helpers/attackRolls.mjs';
 import { renderBreakdownHtml } from '../helpers/tooltips.mjs';
 import { rollMartialArtsAttack, rollRegeneration, rollMeditation, rollAdrenalin, useMove, useDodge, useItem, postActionChatCard } from '../helpers/actions.mjs';
@@ -121,6 +122,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     actions: {
       editItem: SKSKActorSheet.#editItem,
       createItem: SKSKActorSheet.#createItem,
+      toggleCreateItemMenu: SKSKActorSheet.#toggleCreateItemMenu,
       deleteItem: SKSKActorSheet.#deleteItem,
       create: SKSKActorSheet.#onEffectAction,
       edit: SKSKActorSheet.#onEffectAction,
@@ -924,6 +926,11 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
 
     // Assign and return
     context.gear = gear;
+    // Gates the Items tab's own Haltbarkeit (Durability) column - see
+    // templates/actor/parts/actor-items.hbs and helpers/materials.mjs#
+    // isDurabilityEnabled. Every gear type (item/weapon/armor) already
+    // carries its own system.durability.value/maxDurability regardless.
+    context.durabilityEnabled = isDurabilityEnabled();
     context.features = features;
     context.talents = talents;
     context.classes = classes;
@@ -1577,6 +1584,37 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       event.preventDefault();
       await copyEffectKeyToClipboard(target.dataset.effectKey);
     });
+
+    // Items tab's own "+" popup menu (actor-items.hbs) closes itself on any
+    // click that isn't the toggle button that owns it - both an outside
+    // click AND a menu-option pick (createItem's own handler still fires
+    // normally on that same click, the menu being hidden doesn't stop it).
+    // Capture phase, so this runs BEFORE the click reaches #toggleCreateItemMenu
+    // (a normal bubble-phase action handler) - otherwise a click that OPENS
+    // a menu would immediately see its own bubble-phase click "escape" here
+    // afterwards and re-close it. A menu the toggle button itself owns is
+    // deliberately left untouched here (the "continue" below), so
+    // #toggleCreateItemMenu's own open/close toggle always wins for it.
+    this.element.addEventListener('click', event => {
+      const openMenus = this.element.querySelectorAll('.item-create-menu:not([hidden])');
+      if (!openMenus.length) return;
+      const toggle = event.target.closest('[data-action="toggleCreateItemMenu"]');
+      for (const menu of openMenus) {
+        if (toggle && menu.closest('.item-create-dropdown').contains(toggle)) continue;
+        menu.hidden = true;
+      }
+    }, true);
+
+    // A right-click anywhere closes any open "+" popup menu without
+    // creating anything - suppresses Foundry's own context menu only while
+    // a menu is actually open, so a plain right-click elsewhere on the
+    // sheet is unaffected.
+    this.element.addEventListener('contextmenu', event => {
+      const openMenus = this.element.querySelectorAll('.item-create-menu:not([hidden])');
+      if (!openMenus.length) return;
+      event.preventDefault();
+      openMenus.forEach(menu => { menu.hidden = true; });
+    });
   }
 
   /**
@@ -1641,6 +1679,20 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     delete itemData.system['type'];
     delete itemData.system['action'];
     return await Item.create(itemData, { parent: this.actor });
+  }
+
+  /**
+   * Toggle the Items tab's own "+" popup menu (Item/Weapon/Armor - see
+   * actor-items.hbs) open/closed. Closing again (on an outside click, a
+   * menu-option pick, or a right-click) is handled separately in _onRender,
+   * not here - see its own comment for why the two can't collide.
+   * @param {PointerEvent} event
+   * @param {HTMLElement} target
+   * @private
+   */
+  static #toggleCreateItemMenu(event, target) {
+    const menu = target.closest('.item-create-dropdown').querySelector('.item-create-menu');
+    menu.hidden = !menu.hidden;
   }
 
   /**
@@ -2283,14 +2335,16 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
    * SKILL_ROLL_VARIANTS) first prompt for which variant of their roll is
    * being made (e.g. Fallen: setting vs. disarming a trap) - same roll,
    * different flavor/FP trigger; skipped entirely for skills with none
-   * defined. Skills with a single fixed attribute then roll immediately.
-   * Skills with more than one possible attribute prompt with one button
-   * per valid option - clicking a button both makes the choice and rolls
-   * with it in the same action, closing the dialog. An "oder" skill
-   * (attributeMode "choice") offers one button per individual attribute;
-   * an "und/oder" skill ("combine") instead offers one button per
-   * non-empty combination of its attributes (each summed together), since
-   * the player may want any subset, not just single attributes.
+   * defined. A skill with a single fixed attribute then only prompts for
+   * the roll mode (Neutral/Vorteil/Nachteil - rollSkillCheck's own
+   * chooseGenericRollMode dialog). A skill with more than one possible
+   * attribute instead prompts for attribute AND mode together, in one
+   * dialog with a single "Würfeln" button (see helpers/skillRolls.mjs#
+   * chooseSkillRollAttributeAndMode) - An "oder" skill (attributeMode
+   * "choice") offers one option per individual attribute; an "und/oder"
+   * skill ("combine") offers one option per non-empty combination of its
+   * attributes (each summed together), since the player may want any
+   * subset, not just a single attribute.
    * @param {PointerEvent} event   The originating click event.
    * @param {HTMLElement} target   The capturing HTML element, carrying data-skill.
    * @private
@@ -2313,23 +2367,9 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       return rollSkillCheck(this.actor, skillKey, attributes, variant, ignoreSpecial);
     }
 
-    const isCombine = def.attributeMode === 'combine';
-    const options = isCombine ? nonEmptyAttributeSubsets(attributes) : attributes.map(a => [a]);
-    const buttons = options.map((option, index) => ({
-      action: `option${index}`,
-      label: option.map(a => game.i18n.localize(CONFIG.SKSK.attributes[a])).join(' + '),
-      callback: () => option,
-    }));
-
-    const promptKey = isCombine ? 'SKSK.Skill.CombineAttributePrompt' : 'SKSK.Skill.ChooseAttributePrompt';
-    const chosenAttributes = await foundry.applications.api.DialogV2.wait({
-      window: { title: game.i18n.localize(def.label) },
-      content: `<p>${game.i18n.localize(promptKey)}</p>`,
-      buttons,
-      rejectClose: false,
-    });
-    if (!chosenAttributes?.length) return;
-    return rollSkillCheck(this.actor, skillKey, chosenAttributes, variant, ignoreSpecial);
+    const choice = await chooseSkillRollAttributeAndMode(skillKey, def);
+    if (!choice) return;
+    return rollSkillCheck(this.actor, skillKey, choice.attributes, variant, ignoreSpecial, choice.mode);
   }
 
   /**

@@ -1,6 +1,6 @@
 import { getActorSkillLevel } from './skills.mjs';
 import { applyD20Malus, computeDazedAttributeMalus } from './statusEffects.mjs';
-import { chooseGenericRollMode, evaluateD20WithMode, formatD20ModeSummaryLine } from './criticalRolls.mjs';
+import { chooseGenericRollMode, evaluateD20WithMode, formatD20ModeSummaryLine, GENERIC_ROLL_MODES } from './criticalRolls.mjs';
 import { postActionChatCard } from './actions.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
 import { computePatronRollBonus } from './religion.mjs';
@@ -130,6 +130,65 @@ export async function chooseSkillRollVariant(skillKey, def) {
 }
 
 /**
+ * Combined "which attribute(s), then which roll mode" prompt for a skill
+ * with more than one possible attribute (def.attributes.length > 1 - see
+ * sheets/actor-sheet.mjs#rollSkill) - both choices in ONE dialog with a
+ * single "Würfeln" button, instead of an attribute-choice dialog
+ * immediately followed by rollSkillCheck's own separate Neutral/Vorteil/
+ * Nachteil one (chooseGenericRollMode). A skill with only one fixed
+ * attribute has nothing to combine this with, so it still only ever shows
+ * that one mode dialog on its own, unchanged - see #rollSkill.
+ *
+ * An "oder" skill (attributeMode "choice") offers one option per individual
+ * attribute; an "und/oder" skill ("combine") instead offers one option per
+ * non-empty combination of its attributes (each summed together, see
+ * nonEmptyAttributeSubsets), since the player may want any subset, not just
+ * a single attribute.
+ * @param {string} skillKey
+ * @param {object} def   The skill's own CONFIG.SKSK.skills[...] entry.
+ * @return {Promise<{attributes: string[], mode: string}|null>} null if the
+ *   dialog was closed without confirming - the caller should abort.
+ */
+export async function chooseSkillRollAttributeAndMode(skillKey, def) {
+  const isCombine = def.attributeMode === 'combine';
+  const options = isCombine ? nonEmptyAttributeSubsets(def.attributes) : def.attributes.map(a => [a]);
+  const attributeOptionsHTML = options.map((option, index) =>
+    `<option value="${index}">${option.map(a => game.i18n.localize(CONFIG.SKSK.attributes[a])).join(' + ')}</option>`
+  ).join('');
+  const modeOptionsHTML = GENERIC_ROLL_MODES.map(mode =>
+    `<option value="${mode.id}">${game.i18n.localize(mode.label)}</option>`
+  ).join('');
+
+  const promptKey = isCombine ? 'SKSK.Skill.CombineAttributePrompt' : 'SKSK.Skill.ChooseAttributePrompt';
+  const content = `
+    <div class="form-group">
+      <label>${game.i18n.localize(promptKey)}</label>
+      <select name="attributeOption">${attributeOptionsHTML}</select>
+    </div>
+    <div class="form-group">
+      <label>${game.i18n.localize('SKSK.GenericRoll.ChooseModePrompt')}</label>
+      <select name="mode">${modeOptionsHTML}</select>
+    </div>
+  `;
+
+  const result = await foundry.applications.api.DialogV2.wait({
+    window: { title: game.i18n.localize(def.label) },
+    content,
+    buttons: [{
+      action: 'roll',
+      label: game.i18n.localize('SKSK.Skill.RollButton'),
+      default: true,
+      callback: (event, button) => ({
+        attributes: options[Number(button.form.elements.attributeOption.value)],
+        mode: button.form.elements.mode.value,
+      }),
+    }],
+    rejectClose: false,
+  });
+  return result ?? null;
+}
+
+/**
  * Roll a skill check: 1d20 + the skill's current level + the modifier(s)
  * of the chosen attribute(s). "Oder" skills (CONFIG.SKSK.skills[...]
  * .attributeMode "choice") pass a single chosen attribute; "und/oder"
@@ -145,13 +204,19 @@ export async function chooseSkillRollVariant(skillKey, def) {
  *   sheets/actor-sheet.mjs#rollSkill) - excludes Spezial-Boni from every
  *   chosen attribute's modifier for this one roll (Modifikator-Boni still
  *   apply).
+ * @param {string|null} [presetMode]   A roll mode already chosen alongside
+ *   the attribute(s) themselves, for a skill with more than one possible
+ *   attribute (see chooseSkillRollAttributeAndMode) - skips this function's
+ *   own chooseGenericRollMode dialog entirely rather than asking twice. A
+ *   skill with only one fixed attribute never has one, and still prompts
+ *   here as before.
  * @return {Promise<ChatMessage|void>}
  */
-export async function rollSkillCheck(actor, skillKey, chosenAttributes, variant = null, ignoreSpecial = false) {
+export async function rollSkillCheck(actor, skillKey, chosenAttributes, variant = null, ignoreSpecial = false, presetMode = null) {
   const def = getSkillCheckDefinition(skillKey);
   if (!def || !chosenAttributes?.length) return;
 
-  const mode = await chooseGenericRollMode();
+  const mode = presetMode ?? await chooseGenericRollMode();
   if (!mode) return;
 
   const level = getActorSkillLevel(actor, skillKey) + (actor.system.skillRollBonus?.[skillKey] ?? 0)

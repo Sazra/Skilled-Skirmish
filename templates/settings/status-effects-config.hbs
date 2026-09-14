@@ -194,9 +194,10 @@
                     {{selectOptions ../../fpGainBonusTypeChoices selected=row.bonusType localize=true}}
                   </select>
                 </div>
-                <div class="item-name">
+                <div class="item-name fp-gain-bonus-amount">
                   <input type="text" name="statusEffects.{{index}}.fpGainBonuses.{{rowIndex}}.amount"
-                    value="{{row.amount}}" data-dtype="Number" />
+                    value="{{row.amount}}" data-dtype="Number" title="{{localize 'SKSK.FpGainBonus.AmountHint'}}" />
+                  {{#if (eq row.bonusType "multiplicative")}}<span class="fp-gain-bonus-unit">%</span>{{/if}}
                 </div>
                 <div class="item-name">
                   <input type="checkbox" name="statusEffects.{{index}}.fpGainBonuses.{{rowIndex}}.allowZero"

@@ -466,7 +466,8 @@ export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor
       data-roll-a="${rollA.total}" data-roll-b="${rollB.total}" data-comparison-type="${comparisonType}"
       data-crit-a="${critA ?? ''}" data-crit-b="${critB ?? ''}" data-attacker-uuid="${actor?.uuid ?? ''}"
       data-damage-dice="${encodeURIComponent(JSON.stringify(damageDice))}"
-      data-kill-skill="${killSkillKey ?? ''}" data-flanking="${flanking}">
+      data-kill-skill="${killSkillKey ?? ''}" data-flanking="${flanking}"
+      title="${game.i18n.localize('SKSK.AttackRoll.EvaluateShiftHint')}">
       ${game.i18n.localize('SKSK.AttackRoll.Evaluate')}
     </button>
   `;
@@ -501,7 +502,8 @@ export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor
  * (see helpers/skillFp.mjs) to every armor-category skill the defender
  * currently has equipped (body armor + Shield - see helpers/defense.mjs#
  * getEquippedArmorSkillKeys), regardless of hit or miss (suffering an
- * evaluated attack against one's own AC at all is what counts here).
+ * evaluated attack against one's own AC at all is what counts here) - both
+ * skipped entirely with no defender resolved (see forceHit below).
  *
  * The chosen roll's own final outcome grants further FP: "attackHit"
  * (Trefferkorrektur) to the attacker on a hit, "attackDefended"
@@ -510,12 +512,24 @@ export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor
  * which roll was chosen, a bonus "doubleCriticalHit" grant if BOTH raw d20s
  * were natural criticals AND the mode was Vorteil or Nachteil (never
  * Neutral, where Roll B was never really part of the attack to begin with).
+ *
+ * Normally aborts with a warning (no chat message) if no defender could be
+ * resolved (no target, no controlled token, no assigned character) - a
+ * Shift+click (forceHit) bypasses that block instead: the attack counts as
+ * a hit unconditionally UNLESS the chosen roll is itself a natural critical
+ * failure (which always misses regardless of any defender's stat), and every
+ * defender-dependent step above (the AC/MR comparison itself, Tactic's
+ * flanking-defense bonus, the defender's own "hitTaken"/"attackDefended" FP)
+ * is skipped rather than touching a null defender - everything attacker-side
+ * (Präzision, Brutality, Attentat, "attackHit"/"criticalHit" FP) still runs
+ * exactly as with a real defender, since none of it depends on one.
  * @param {HTMLElement} button
+ * @param {boolean} [forceHit=false]   Shift+click - see above.
  * @return {Promise<ChatMessage|void>}
  */
-export async function resolveHitEvaluationFromChat(button) {
+export async function resolveHitEvaluationFromChat(button, forceHit = false) {
   const defender = resolveClickDefender();
-  if (!defender) return ui.notifications.warn(game.i18n.localize('SKSK.AttackRoll.NoDefender'));
+  if (!defender && !forceHit) return ui.notifications.warn(game.i18n.localize('SKSK.AttackRoll.NoDefender'));
 
   const mode = await chooseAttackMode(button.dataset.flanking === 'true' ? 'advantage' : null);
   if (!mode) return;
@@ -546,15 +560,24 @@ export async function resolveHitEvaluationFromChat(button) {
   // bonus specifically against an attacker it is itself flanking - checked
   // from the defender's own side, symmetric to the attacker's own flanking
   // bonus above. AC-only, never applies to a magicResistance comparison.
-  const defenderFlanks = comparisonType === 'armorClass' && attacker
+  // Not applicable at all with no defender resolved (forceHit).
+  const defenderFlanks = !!defender && comparisonType === 'armorClass' && attacker
     && getActorSkillLevel(defender, 'tactic') >= 10 && checkFlanking(defender, attacker).flanking;
-  const statValue = (comparisonType === 'magicResistance' ? defender.system.magicResistance : defender.system.armorClass)
-    + (defenderFlanks ? FLANKING_AC_BONUS : 0);
+  const statValue = defender
+    ? (comparisonType === 'magicResistance' ? defender.system.magicResistance : defender.system.armorClass)
+      + (defenderFlanks ? FLANKING_AC_BONUS : 0)
+    : null;
 
-  const hit = resolveCheckSuccess(chosenTotal, statValue, criticalType);
+  // With no defender to compare against (forceHit), the attack counts as a
+  // hit unconditionally - except a natural critical failure, which always
+  // misses regardless of any target's stat, same as with a real defender.
+  const hit = defender ? resolveCheckSuccess(chosenTotal, statValue, criticalType) : criticalType !== 'failure';
   let extraHTML = defenderFlanks
     ? `<div class="sksk-roll-line">${game.i18n.format('SKSK.AttackRoll.FlankingDefenseBonus', { bonus: FLANKING_AC_BONUS, defender: defender.name })}</div>`
     : '';
+  if (!defender) {
+    extraHTML += `<div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.NoDefenderForcedHit')}</div>`;
+  }
 
   if (criticalType === null && hit) {
     const precision = await maybeRollPrecision(attacker, true);
@@ -615,12 +638,16 @@ export async function resolveHitEvaluationFromChat(button) {
   const outcome = wrapCriticalInline(game.i18n.localize(outcomeKey), criticalType);
   const modeLabel = game.i18n.localize(ATTACK_MODES.find(m => m.id === mode).label);
   const rollLabel = `${game.i18n.localize(`SKSK.AttackRoll.${labelKey}`)} (${modeLabel})`;
-  const line = `<div class="sksk-roll-line">${game.i18n.format('SKSK.AttackRoll.EvaluationLine', {
-    label: rollLabel, total: chosenTotal, statLabel, statValue, outcome,
-  })}</div>${extraHTML}`;
+  const line = defender
+    ? `<div class="sksk-roll-line">${game.i18n.format('SKSK.AttackRoll.EvaluationLine', {
+        label: rollLabel, total: chosenTotal, statLabel, statValue, outcome,
+      })}</div>${extraHTML}`
+    : `<div class="sksk-roll-line">${game.i18n.format('SKSK.AttackRoll.EvaluationLineNoDefender', {
+        label: rollLabel, total: chosenTotal, outcome,
+      })}</div>${extraHTML}`;
 
   let fpHTML = '';
-  if (comparisonType === 'armorClass') {
+  if (defender && comparisonType === 'armorClass') {
     for (const skillKey of getEquippedArmorSkillKeys(defender)) {
       fpHTML += formatSkillFpGrantLine(await grantSkillUsageFp(defender, skillKey, 'hitTaken'));
     }
@@ -629,13 +656,15 @@ export async function resolveHitEvaluationFromChat(button) {
     fpHTML += formatSkillFpGrantLine(await grantSkillUsageFp(attacker, 'precision', 'doubleCriticalHit'));
   }
 
-  const title = game.i18n.format('SKSK.AttackRoll.EvaluationTitle', { defender: defender.name });
+  const title = defender
+    ? game.i18n.format('SKSK.AttackRoll.EvaluationTitle', { defender: defender.name })
+    : game.i18n.localize('SKSK.AttackRoll.EvaluationTitleNoDefender');
   const content = `<div class="sksk-chat-card sksk-action-card">`
     + formatRollCardHeading(title) + line + fpHTML
     + `</div>`;
 
   const messageData = {
-    speaker: ChatMessage.getSpeaker({ actor: defender }),
+    speaker: ChatMessage.getSpeaker({ actor: defender ?? attacker }),
     flavor: title,
     content,
   };

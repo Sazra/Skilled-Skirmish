@@ -1361,6 +1361,23 @@ body.theme-light .application.sksk.actor {
   font-size: 12px;
 }
 
+/* Current/max Haltbarkeit (Durability) column - only rendered at all while
+   the durabilityEnabled world setting is on, see actor-items.hbs. */
+.sksk .item-durability {
+  flex: 0 0 55px;
+  text-align: center;
+  font-size: 12px;
+}
+
+/* An item row's own image now opens its sheet (data-action="editItem")
+   instead of rolling - the "Name" heading is the roll trigger instead (see
+   actor-items.hbs), same shape as the Fertigkeiten tab's own skill-name
+   rollable convention. No .rollable class here (that class's hover glow
+   implies "click to roll"), just a plain pointer cursor. */
+.sksk .items-list .item .item-name .item-image a {
+  cursor: pointer;
+}
+
 /* Actions tab's own weapon list - Reach/Ranged parenthetical next to each
    weapon's name (see helpers/attackRolls.mjs#computeWeaponRangeLabel). */
 .sksk .weapon-range-label {
@@ -2467,4 +2484,58 @@ span.sksk-critical-failure {
 
 .sksk .soul-path-description {
   margin-bottom: 8px;
+}
+
+/* An FP-Gewinn-Boni row's "amount" field (item-sheet gm-*.hbs partials,
+   settings/status-effects-config.hbs) - its unit differs by bonusType (a
+   flat FP amount for Positiv/Negativ, a percentage for Multiplikativ), so a
+   "%" suffix appears next to it only for a Multiplikativ row, to head off
+   entering e.g. "2" meaning "double" when the field actually adds 2%. */
+.sksk .fp-gain-bonus-amount {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sksk .fp-gain-bonus-amount .fp-gain-bonus-unit {
+  opacity: 0.7;
+  font-size: 0.85em;
+}
+
+/* Items tab's single "+" button (actor-items.hbs) - opens a small popup
+   menu to pick which of Item/Weapon/Armor to create, replacing three
+   separate "+" icons. Closed by default (the "hidden" attribute in the
+   template); toggled/closed again by actor-sheet.mjs#_onRender's own click/
+   contextmenu listeners. */
+.sksk .item-create-dropdown {
+  position: relative;
+  display: inline-flex;
+}
+
+.sksk .item-create-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 10;
+  min-width: 120px;
+  margin: 2px 0 0;
+  padding: 4px 0;
+  list-style: none;
+  background: var(--sksk-sheet-bg);
+  border: 1px solid var(--color-border-dark-primary, #191813);
+  border-radius: 3px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+.sksk .item-create-menu li a {
+  display: block;
+  padding: 4px 10px;
+  text-align: left;
+  font-size: 12px;
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.sksk .item-create-menu li a:hover {
+  color: var(--color-text-hyperlink);
 }

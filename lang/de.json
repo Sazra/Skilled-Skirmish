@@ -183,7 +183,12 @@
             "QuantityAbbr": "Anz.",
             "Description": "Beschreibung",
             "Consumable": "Verbrauchbar",
-            "ConsumableAbbr": "Verbr."
+            "ConsumableAbbr": "Verbr.",
+            "RollHint": "Klicken zum Würfeln/Benutzen",
+            "CreateNew": "Neuen Gegenstand hinzufügen",
+            "CreateItem": "Gegenstand",
+            "CreateWeapon": "Waffe",
+            "CreateArmor": "Rüstung"
         },
         "Charges": {
             "Enabled": "Hat Ladungen",
@@ -191,6 +196,8 @@
             "Max": "Maximale Ladungen"
         },
         "Durability": {
+            "Name": "Haltbarkeit",
+            "Abbr": "Halt.",
             "Value": "Haltbarkeit",
             "Max": "Maximale Haltbarkeit"
         },
@@ -598,7 +605,8 @@
                 "ForceZero": "Forciere 0"
             },
             "AllowZero": "Nullpunkt erlaubt",
-            "AllowZeroHint": "Nur relevant bei Negativ/Multiplikativ: aktiviert erlaubt diesem Eintrag, den FP-Gewinn auf 0 zu senken; deaktiviert begrenzt ihn stattdessen auf mindestens 1."
+            "AllowZeroHint": "Nur relevant bei Negativ/Multiplikativ: aktiviert erlaubt diesem Eintrag, den FP-Gewinn auf 0 zu senken; deaktiviert begrenzt ihn stattdessen auf mindestens 1.",
+            "AmountHint": "Bei Positiv/Negativ ein fester FP-Betrag. Bei Multiplikativ ein PROZENTSATZ, der zum FP-Gewinn addiert/subtrahiert wird (z.B. 100 = Verdopplung, 50 = +50%, -50 = Halbierung) - kein direkter Multiplikationsfaktor."
         },
         "EffectKeyReference": {
             "Hint": "Jeder echte system.*-Pfad, den das \"Attribute Key\"-Feld eines Foundry-Effekts auf einem Akteur ansprechen kann. Klicke das Kopieren-Symbol, oder Strg+Rechtsklick auf ein bereits im Charakterbogen angezeigtes Feld (eine Attribut-Box, eine Ressource, eine Fertigkeitszeile), um dessen eigenen Schlüssel direkt zu kopieren.",
@@ -981,6 +989,7 @@
             "RollA": "Wurf A",
             "RollB": "Wurf B",
             "Evaluate": "Treffer auswerten",
+            "EvaluateShiftHint": "Shift+Klick: Automatisch als Treffer werten, auch ohne ausgewähltes Ziel.",
             "ChooseModePrompt": "Welcher Wurf zählt?",
             "ModeNeutral": "Neutral",
             "ModeAdvantage": "Vorteil",
@@ -990,8 +999,11 @@
             "ReloadDescription": "{name} lädt {weapon} nach.",
             "FlankingDefenseBonus": "{defender} flankiert den Angreifer: +{bonus} Rüstungsklasse",
             "NoDefender": "Du hast weder ein Ziel ausgewählt noch einen zugewiesenen Charakter - kann nicht ausgewertet werden.",
+            "NoDefenderForcedHit": "Kein Ziel ausgewählt - automatisch als Treffer gewertet (Shift+Klick).",
             "EvaluationTitle": "Trefferauswertung ({defender})",
+            "EvaluationTitleNoDefender": "Trefferauswertung (kein Ziel)",
             "EvaluationLine": "{label} ({total}) gegen {statLabel} ({statValue}): {outcome}",
+            "EvaluationLineNoDefender": "{label} ({total}): {outcome}",
             "Hit": "Treffer",
             "Miss": "Verfehlt",
             "CriticalHit": "Kritischer Treffer",

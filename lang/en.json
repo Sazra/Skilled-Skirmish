@@ -183,7 +183,12 @@
       "QuantityAbbr": "Qty",
       "Description": "Description",
       "Consumable": "Consumable",
-      "ConsumableAbbr": "Cons."
+      "ConsumableAbbr": "Cons.",
+      "RollHint": "Click to roll/use",
+      "CreateNew": "Add new item",
+      "CreateItem": "Item",
+      "CreateWeapon": "Weapon",
+      "CreateArmor": "Armor"
     },
     "Charges": {
       "Enabled": "Has Charges",
@@ -191,6 +196,8 @@
       "Max": "Max Charges"
     },
     "Durability": {
+      "Name": "Durability",
+      "Abbr": "Dur.",
       "Value": "Durability",
       "Max": "Max Durability"
     },
@@ -598,7 +605,8 @@
         "ForceZero": "Force Zero"
       },
       "AllowZero": "Allow Zero",
-      "AllowZeroHint": "Only relevant for Negative/Multiplicative: checked lets this entry's reduction bring the FP gain down to 0; unchecked floors it at 1 instead."
+      "AllowZeroHint": "Only relevant for Negative/Multiplicative: checked lets this entry's reduction bring the FP gain down to 0; unchecked floors it at 1 instead.",
+      "AmountHint": "A flat FP amount for Positive/Negative. A PERCENTAGE added to/subtracted from the FP gain for Multiplicative (e.g. 100 = doubles it, 50 = +50%, -50 = halves it) - not a direct multiplication factor."
     },
     "EffectKeyReference": {
       "Hint": "Every real system.* path a Foundry Active Effect's own \"Attribute Key\" field can target on an actor. Click the copy icon, or Ctrl+Right-click a field already shown on a Character sheet (an attribute box, a resource, a skill row) to copy its own key directly.",
@@ -981,6 +989,7 @@
       "RollA": "Roll A",
       "RollB": "Roll B",
       "Evaluate": "Evaluate Hit",
+      "EvaluateShiftHint": "Shift+click: automatically counts as a hit, even without a selected target.",
       "ChooseModePrompt": "Which roll counts?",
       "ModeNeutral": "Neutral",
       "ModeAdvantage": "Advantage",
@@ -990,8 +999,11 @@
       "ReloadDescription": "{name} reloads {weapon}.",
       "FlankingDefenseBonus": "{defender} is flanking the attacker: +{bonus} AC",
       "NoDefender": "You have no target selected and no assigned character - cannot evaluate.",
+      "NoDefenderForcedHit": "No target selected - automatically counted as a hit (Shift+click).",
       "EvaluationTitle": "Hit Evaluation ({defender})",
+      "EvaluationTitleNoDefender": "Hit Evaluation (no target)",
       "EvaluationLine": "{label} ({total}) vs {statLabel} ({statValue}): {outcome}",
+      "EvaluationLineNoDefender": "{label} ({total}): {outcome}",
       "Hit": "Hit",
       "Miss": "Miss",
       "CriticalHit": "Critical Hit",

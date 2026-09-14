@@ -138,7 +138,7 @@ export function rollQuality(total, criticalType) {
  * (mode chosen BEFORE rolling, then rolled and evaluated immediately) rather
  * than an Angriffswurf's own roll-first-evaluate-later flow.
  */
-const GENERIC_ROLL_MODES = [
+export const GENERIC_ROLL_MODES = [
   { id: 'neutral', label: 'SKSK.GenericRoll.ModeNeutral' },
   { id: 'advantage', label: 'SKSK.GenericRoll.ModeAdvantage' },
   { id: 'disadvantage', label: 'SKSK.GenericRoll.ModeDisadvantage' },
