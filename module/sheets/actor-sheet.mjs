@@ -1832,15 +1832,22 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
   }
 
   /**
-   * Use the Move action for the movement type currently chosen in the
-   * Actions tab's selector - see helpers/actions.mjs#useMove.
+   * Use the Move action - either for the movement type currently chosen in
+   * the Actions tab's own selector (clicked element carries no
+   * movementType of its own, see general-actions.hbs), or, clicked
+   * directly from one of the General tab's own Movement Speeds labels
+   * (general-overview.hbs), for that entry's own type outright - both
+   * paths share the exact same helpers/actions.mjs#useMove mechanic (first
+   * use per Combat round free, further ones cost AP/RP).
    * @param {PointerEvent} event
-   * @param {HTMLElement} target   The clicked Move button.
+   * @param {HTMLElement} target   The clicked Move button or speed label.
    * @private
    */
   static async #useMove(event, target) {
-    const select = target.closest('.action-row')?.querySelector('.move-type-select');
-    await useMove(this.actor, select?.value ?? 'walking');
+    const movementType = target.dataset.movementType
+      ?? target.closest('.action-row')?.querySelector('.move-type-select')?.value
+      ?? 'walking';
+    await useMove(this.actor, movementType);
   }
 
   /** @private */

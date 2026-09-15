@@ -512,6 +512,9 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
     // helpers/movement.mjs#computeMovementSpeeds.
     if (item.type === 'species') {
       context.movementBonusModeChoices = CONFIG.SKSK.movementBonusModes;
+      // The species' own dedicated base-speed fields (data/species.mjs#
+      // movement) - unlike movementTypeChoices above, no "all" entry here.
+      context.movementSpeedTypeChoices = CONFIG.SKSK.movementTypes;
     }
 
     // Charge bonuses (Meditation/Regeneration/Inspiration/Adrenalin max

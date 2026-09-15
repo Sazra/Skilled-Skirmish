@@ -25,13 +25,40 @@ const SIZE_MOVEMENT_MINIMUMS = {
 };
 
 /**
+ * The actor's main Species item's own innate base speeds (data/species.mjs#
+ * movement) - walking/flying/hovering used exactly as set; climbing/
+ * swimming fall back to floor(walking / 2) whenever the Species leaves them
+ * at 0 (its own field default acting as an "unset" sentinel), and digging
+ * falls back to max(0, floor(Strength modifier / 2)) under the same
+ * condition. Per the design, only the MAIN Species counts, same as Aura/
+ * sizeCategory (see getMainSpeciesItem below).
+ * @param {Item} speciesItem
+ * @param {Actor} actor
+ * @return {Object<string, number>}
+ */
+function computeSpeciesBaseMovement(speciesItem, actor) {
+  const base = speciesItem.system.movement;
+  const strMod = actor.system.attributes?.str?.mod ?? 0;
+  return {
+    walking: base.walking,
+    flying: base.flying,
+    hovering: base.hovering,
+    climbing: base.climbing || Math.floor(base.walking / 2),
+    swimming: base.swimming || Math.floor(base.walking / 2),
+    digging: base.digging || Math.max(0, Math.floor(strMod / 2)),
+  };
+}
+
+/**
  * Compute an actor's effective speed for every movement type
- * (CONFIG.SKSK.movementTypes): the base value entered on the actor,
- * replaced by any Species "override"-mode entry, plus every "bonus"-mode
- * movementBonuses entry across their Talent/Class/Species/Item/Armor/Weapon
- * items - an entry with movementType "all" applies to every type at once,
- * in addition to any type-specific entries. Finally, any movement type a
- * Species has "unlocked" is floored to a size-based minimum (see
+ * (CONFIG.SKSK.movementTypes): the base value entered on the actor (or, if
+ * they have a main Species, that Species' own innate base speeds instead -
+ * see computeSpeciesBaseMovement above), replaced by any Species
+ * "override"-mode entry, plus every "bonus"-mode movementBonuses entry
+ * across their Talent/Class/Species/Item/Armor/Weapon items - an entry with
+ * movementType "all" applies to every type at once, in addition to any
+ * type-specific entries. Finally, any movement type a Species has
+ * "unlocked" is floored to a size-based minimum (see
  * SIZE_MOVEMENT_MINIMUMS above).
  * @param {Actor} actor
  * @return {Object<string, number>}   Final speed per movement type key.
@@ -41,6 +68,9 @@ export function computeMovementSpeeds(actor) {
   for (const key of Object.keys(CONFIG.SKSK.movementTypes)) {
     speeds[key] = actor.system.movement?.[key] ?? 0;
   }
+
+  const mainSpecies = getMainSpeciesItem(actor);
+  if (mainSpecies) Object.assign(speeds, computeSpeciesBaseMovement(mainSpecies, actor));
 
   const bonusEntries = [];
   const unlockedTypes = new Set();

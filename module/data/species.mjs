@@ -48,6 +48,25 @@ export default class SKSKSpecies extends SKSKItemBase {
       choices: ["tiny", "small", "medium", "large", "huge", "gigantic", "titanic"]
     });
 
+    // This species' own innate base movement speeds (meters), one per
+    // CONFIG.SKSK.movementTypes - unlike movementBonuses below (a flexible,
+    // player-extensible list covering every bonus-granting item type),
+    // these are the species' own direct, always-present base values, shown
+    // as a fixed row on the Species tab. Walking defaults to 5m; every
+    // other type defaults to 0m, which (for climbing/swimming/digging only
+    // - see helpers/movement.mjs#computeMovementSpeeds) acts as an "unset"
+    // sentinel: an actor whose main Species leaves climbing or swimming at
+    // 0 still gets floor(walking / 2) for it, and one whose main Species
+    // leaves digging at 0 still gets max(0, floor(Strength modifier / 2)).
+    // Flying/hovering have no such fallback - they stay 0 until a Species
+    // actually sets them. Only the actor's MAIN Species counts here, same
+    // as Aura/sizeCategory above.
+    schema.movement = new fields.SchemaField(
+      Object.fromEntries(Object.keys(CONFIG.SKSK.movementTypes).map(key => [
+        key, new fields.NumberField({ ...requiredInteger, initial: key === "walking" ? 5 : 0, min: 0 }),
+      ]))
+    );
+
     // Zero or more creature categories (CONFIG.SKSK.creatureCategories) this
     // species belongs to - e.g. Naga is both Humanoid and Beast. Shown on
     // the Species tab, player-extensible list.

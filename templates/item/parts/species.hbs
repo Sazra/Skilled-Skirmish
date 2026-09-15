@@ -32,6 +32,19 @@
   </div>
 
   <div class="resource">
+    <label class="resource-label">{{localize 'SKSK.General.MovementSpeeds'}}</label>
+    <div class="grid grid-6col">
+      {{#each movementSpeedTypeChoices as |label key|}}
+      <div class="grid-span-1">
+        <label class="resource-label">{{localize label}}</label>
+        <input type="text" name="system.movement.{{key}}" value="{{lookup ../system.movement key}}"
+          data-dtype="Number" />
+      </div>
+      {{/each}}
+    </div>
+  </div>
+
+  <div class="resource">
     <label class="resource-label">{{localize 'SKSK.Species.CreatureCategories'}}</label>
     <ol class="items-list items-list-compact">
       {{#each system.creatureCategories as |entry index|}}
