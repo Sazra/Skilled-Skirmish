@@ -1129,6 +1129,31 @@ body.theme-light .application.sksk.actor {
   margin-right: 20px;
 }
 
+/* Skill-roll dialog (apps/skill-roll-dialog.mjs): Neutral/Vorteil/Nachteil
+   is a toggle group, not a one-shot button choice - clicking one just
+   switches which mode is "active" (normal opacity) while the other two
+   stay dimmed, without closing the dialog. The attribute buttons below
+   always render at full opacity; clicking one rolls immediately with
+   whichever mode is currently active. */
+.sksk.skill-roll-dialog .sksk-mode-buttons {
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.sksk.skill-roll-dialog .sksk-mode-button {
+  flex: 1 1 0;
+  opacity: 0.5;
+}
+
+.sksk.skill-roll-dialog .sksk-mode-button.active {
+  opacity: 1;
+  font-weight: bold;
+}
+
+.sksk.skill-roll-dialog .sksk-attribute-buttons {
+  gap: 4px;
+}
+
 .sksk .items-list .item {
   align-items: center;
   padding: 0 2px;
@@ -1369,12 +1394,12 @@ body.theme-light .application.sksk.actor {
   font-size: 12px;
 }
 
-/* An item row's own image now opens its sheet (data-action="editItem")
-   instead of rolling - the "Name" heading is the roll trigger instead (see
-   actor-items.hbs), same shape as the Fertigkeiten tab's own skill-name
-   rollable convention. No .rollable class here (that class's hover glow
-   implies "click to roll"), just a plain pointer cursor. */
-.sksk .items-list .item .item-name .item-image a {
+/* An Items-tab row triggers no roll at all - clicking either its own image
+   (data-action="editItem") or its name heading (see actor-items.hbs) just
+   opens the Item's own sheet. No .rollable class on either (that class's
+   hover glow implies "click to roll"), just a plain pointer cursor. */
+.sksk .items-list .item .item-name .item-image a,
+.sksk .items-list .item .item-name .item-name-heading {
   cursor: pointer;
 }
 
@@ -1652,6 +1677,24 @@ li.chat-message:has(.sksk-chat-card) .flavor-text {
   width: auto;
   line-height: normal;
   margin: 2px auto 6px;
+}
+
+/* Once helpers/attackRolls.mjs#autoResolveAttackForTargets has already
+   resolved an attack against every targeted token, the Evaluate/Apply
+   Damage buttons that triggered it stay fully clickable (e.g. to resolve
+   against some OTHER/further target) but are visually dimmed so a GM can
+   tell at a glance they're now optional. */
+.sksk-chat-card .sksk-manual-eval-dimmed {
+  opacity: 0.5;
+}
+
+/* The auto-resolved result block itself - one heading+outcome section per
+   targeted defender, set apart from the manual buttons above it with a
+   light top border. */
+.sksk-chat-card .sksk-auto-resolved {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px dashed var(--color-border-light-tertiary, #b5b3a4);
 }
 
 /* Critical successes/failures (see helpers/criticalRolls.mjs): green/red on
@@ -2050,6 +2093,40 @@ span.sksk-critical-failure {
 
 .sksk.lehren-config nav.tabs a,
 .sksk.lehren-dialog nav.tabs a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Configure Skill Roll AP Cost settings app - same fixed-tab-bar/
+   scrolling-content pattern as .sksk.skill-usage-fp-config above. */
+.application.sksk.skill-roll-ap-cost-config .window-content {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.application.sksk.skill-roll-ap-cost-config.minimized .window-content {
+  display: none;
+}
+
+.sksk.skill-roll-ap-cost-config .window-content>section.tab {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 8px;
+}
+
+.sksk.skill-roll-ap-cost-config nav.tabs {
+  display: grid;
+  grid-template-rows: repeat(2, 1fr);
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 2px;
+}
+
+.sksk.skill-roll-ap-cost-config nav.tabs a {
   display: flex;
   align-items: center;
   justify-content: center;

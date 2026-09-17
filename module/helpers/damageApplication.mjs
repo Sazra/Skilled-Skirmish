@@ -200,57 +200,49 @@ export function renderApplyDamageButton(attacker, damageEntries, killSkillKey = 
 }
 
 /**
- * Handle a click on an "Apply Damage" button (see renderApplyDamageButton):
- * resolves the defender (helpers/attackRolls.mjs#resolveClickDefender),
- * runs each carried {damageType, amount} entry through
- * helpers/defense.mjs#applyElementalDefense, nets the results (damage
- * negative, healing positive) into one applyLifeChange call, and - if that
- * leaves the defender's Life AND Negative Life both at their own floor
- * (Life 0, Negative Life 0 - its buffer fully drained, "true death", see
- * helpers/statusEffects.mjs#applyLifeChange) and it wasn't ALREADY true beforehand
- * (so re-applying damage to an already-dead target, e.g. overkill, never
- * grants Kill FP a second time) - grants the attacker a Kill FP for
- * killSkillKey, plus (if the attacker is currently Concealed - Attentat/
- * Assassination, see helpers/attackRolls.mjs#resolveHitEvaluationFromChat)
- * an additional "assassinationKill" FP to their Attentat skill, regardless
- * of which Apply-Damage button of the attack (base weapon damage, Brutal
- * bonus, or Attentat bonus) actually delivered the killing blow. Also
- * grants the defender's own "<type>Resistance" skill
- * its "damageTaken" FP for every entry that actually dealt damage (not
- * fully prevented by Immunity, nor converted into healing by Absorption -
- * a Resistance row is hidden from the Skills tab entirely while either is
- * active anyway, see sheets/actor-sheet.mjs#_prepareSkills, so there's
- * nothing to reward it for reducing in those cases) - subject to
- * Resistance's own special gain cap (see helpers/skillFp.mjs#
- * capResistanceGain). Conversely, an entry Absorption converts into
- * healing instead grants the ATTACKER (not the defender) Healer's own
- * "healedCreature" FP, scaled by the healed amount - detecting an
- * Absorption-driven heal this way needs no dedicated "heal" action of its
- * own, since every heal-via-Absorption necessarily passes through here.
- * Posts a chat summary either way.
- * @param {HTMLElement} button
- * @return {Promise<ChatMessage|void>}
+ * The shared core of "Apply Damage"/"Apply Effect" (see
+ * renderApplyDamageButton above and applyDamageFromChat below): runs each
+ * carried {damageType, amount} entry through helpers/defense.mjs#
+ * applyElementalDefense, nets the results (damage negative, healing
+ * positive) into one applyLifeChange call, applies a linked Technique
+ * effect bundle if any (applyTechniqueEffectBundle above), and grants
+ * every FP trigger a real click of the button would - "<type>Resistance"'s
+ * "damageTaken" per entry that actually dealt damage, Healer's own
+ * "healedCreature" to the ATTACKER for any entry Absorption converted into
+ * healing instead, and - if this leaves the defender's Life AND Negative
+ * Life both at their own floor (Life 0, Negative Life 0, "true death" - see
+ * helpers/statusEffects.mjs#applyLifeChange) and it wasn't ALREADY true
+ * beforehand (so re-applying damage to an already-dead target, e.g.
+ * overkill, never grants Kill FP a second time) - a Kill FP to the
+ * attacker for killSkillKey, plus (if the attacker is currently Concealed -
+ * Attentat/Assassination) an additional "assassinationKill" FP to their
+ * Attentat skill. Also wears down the defender's own Durability, same as
+ * ever (see helpers/materials.mjs#isDurabilityEnabled) - once per call,
+ * regardless of how many entries it carries (a single hit, not one tick
+ * per entry), uniformly for every damage source that funnels through here
+ * (weapon/Martial Arts attacks, spells, techniques).
+ *
+ * Doesn't post any chat message itself, nor resolve the defender - the
+ * caller (a manual "Apply Damage" button click below, or
+ * helpers/attackRolls.mjs#autoResolveAttackForTargets) decides both.
+ * @param {Actor} defender
+ * @param {Actor|null} attacker
+ * @param {Array<{damageType: string, amount: number}>} entries
+ * @param {string|null} killSkillKey   The attacker's own skill to credit a
+ *   Kill to, if this ends up being the killing blow - null for sources with
+ *   no configured "kill" rate.
+ * @param {string|null} [techniqueItemUuid]   A consumed "effect"/
+ *   "attackTarget" Technique's own payload (see renderApplyDamageButton's
+ *   own techniqueEffect param) - applied unconditionally alongside the
+ *   damage entries above, same as a real button click always has.
+ * @return {Promise<{lines: string[]}>}
  */
-export async function applyDamageFromChat(button) {
-  const defender = resolveClickDefender();
-  if (!defender) return ui.notifications.warn(game.i18n.localize('SKSK.AttackRoll.NoDefender'));
-
-  // Haltbarkeit (Durability) - a confirmed hit (this click) costs 1 to the
-  // defender's own worn body armor AND every equipped Shield, once each
-  // per click regardless of how many damage entries it carries (a single
-  // hit, not one tick per entry) - uniformly for every damage source that
-  // funnels through this shared button (weapon/Martial Arts attacks,
-  // spells, techniques). A no-op entirely while the mechanic is switched
-  // off (see helpers/materials.mjs#isDurabilityEnabled).
+export async function applyResolvedDamageEntries(defender, attacker, entries, killSkillKey, techniqueItemUuid = null) {
   if (isDurabilityEnabled()) {
     for (const armorItem of getDurabilityAffectedArmor(defender)) {
       await armorItem.update({ 'system.durability.value': Math.max(0, armorItem.system.durability.value - 1) });
     }
   }
-
-  const attacker = button.dataset.attackerUuid ? await fromUuid(button.dataset.attackerUuid) : null;
-  const entries = JSON.parse(decodeURIComponent(button.dataset.damageEntries || '[]'));
-  const killSkillKey = button.dataset.killSkill || null;
 
   let netDelta = 0;
   const lines = [];
@@ -271,8 +263,8 @@ export async function applyDamageFromChat(button) {
     }
   }
 
-  if (button.dataset.techniqueItemUuid) {
-    lines.push(await applyTechniqueEffectBundle(button.dataset.techniqueItemUuid, defender));
+  if (techniqueItemUuid) {
+    lines.push(await applyTechniqueEffectBundle(techniqueItemUuid, defender));
   }
 
   const wasAlreadyDead = defender.system.life.value === 0 && defender.system.negativeLife.value <= 0;
@@ -280,12 +272,12 @@ export async function applyDamageFromChat(button) {
   lines.push(negativeLifeOverflowHTML(negativeLifeDelta));
   // Concentration's own damage-response check (see helpers/statusEffects.mjs#
   // checkConcentration) - a no-op unless the defender is actually
-  // Concentrating and this click's own net Life change was real damage
-  // (not a pure heal). Posts its own separate chat card. Deliberately NOT
-  // wired into Adrenalinschaden/Kauterisierung (helpers/statusEffects.mjs#
+  // Concentrating and this call's own net Life change was real damage (not
+  // a pure heal). Posts its own separate chat card. Deliberately NOT wired
+  // into Adrenalinschaden/Kauterisierung (helpers/statusEffects.mjs#
   // applyAdrenalinDamage/applyCauterization) - those reduce max Life via a
-  // standing ActiveEffect rather than ever landing here as a damageEntries
-  // click, so they're naturally excluded without any extra guard.
+  // standing ActiveEffect rather than ever landing here, so they're
+  // naturally excluded without any extra guard.
   await checkConcentration(defender, damageDealtFrom({ lifeDelta, negativeLifeDelta }));
 
   const isDead = defender.system.life.value === 0 && defender.system.negativeLife.value <= 0;
@@ -296,6 +288,29 @@ export async function applyDamageFromChat(button) {
       lines.push(formatSkillFpGrantLine(await grantSkillUsageFp(attacker, 'assassination', 'assassinationKill')));
     }
   }
+
+  return { lines };
+}
+
+/**
+ * Handle a click on an "Apply Damage" button (see renderApplyDamageButton):
+ * resolves the defender (helpers/attackRolls.mjs#resolveClickDefender),
+ * applies the button's own carried entries/Technique payload through
+ * applyResolvedDamageEntries above, and posts a chat summary either way.
+ * @param {HTMLElement} button
+ * @return {Promise<ChatMessage|void>}
+ */
+export async function applyDamageFromChat(button) {
+  const defender = resolveClickDefender();
+  if (!defender) return ui.notifications.warn(game.i18n.localize('SKSK.AttackRoll.NoDefender'));
+
+  const attacker = button.dataset.attackerUuid ? await fromUuid(button.dataset.attackerUuid) : null;
+  const entries = JSON.parse(decodeURIComponent(button.dataset.damageEntries || '[]'));
+  const killSkillKey = button.dataset.killSkill || null;
+
+  const { lines } = await applyResolvedDamageEntries(
+    defender, attacker, entries, killSkillKey, button.dataset.techniqueItemUuid || null
+  );
 
   const messageData = {
     speaker: ChatMessage.getSpeaker({ actor: defender }),

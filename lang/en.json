@@ -69,6 +69,11 @@
         "Hint": "How many FP a Character generates for using a skill (skill checks, weapon attacks, spells cast, attribute rolls, ...) - Characters only, per skill category.",
         "Label": "Configure Skill Usage FP"
       },
+      "SkillRollApCost": {
+        "Name": "AP Cost: Skill/Attribute Rolls",
+        "Hint": "How much AP (on the actor's own turn) or RP (off it) rolling a skill or a raw attribute in Combat costs - split by skill (and its own usage options) and by attribute. 2 by default, always free outside of Combat.",
+        "Label": "Configure Roll AP Costs"
+      },
       "Lehren": {
         "Name": "Lehren",
         "Hint": "The catalog of Lehren (Lore) available per skill - each Character freely distributes a shared pool of 5 levels across one skill's own Lehren, gated per-Lehre by its own minimum skill level.",
@@ -184,7 +189,6 @@
       "Description": "Description",
       "Consumable": "Consumable",
       "ConsumableAbbr": "Cons.",
-      "RollHint": "Click to roll/use",
       "CreateNew": "Add new item",
       "CreateItem": "Item",
       "CreateWeapon": "Weapon",
@@ -364,6 +368,12 @@
       "AttackHit": "FP / Attack Landed",
       "AttackDefended": "FP / Attack Defended Against"
     },
+    "SkillRollApCostConfig": {
+      "Hint": "AP cost (on the actor's own turn) or RP cost (off it) for rolling each skill, split by its own usage options and - for skills with more than one possible attribute (e.g. Survival) - further by whichever attribute is chosen. Default 2, always free outside of Combat. Adjustable by SKSK effects via the two modifier fields (see the Effect Key Reference).",
+      "BaseCheck": "Skill Check",
+      "RawAttributes": "Raw Attributes (Direct Attribute Roll)",
+      "RawAttributesHint": "AP/RP cost for a direct roll on a raw attribute (clicking the attribute value/modifier in the header) - independent of rolling the matching \"Unlimited X\" skill above, which has its own cost."
+    },
     "LehrenConfig": {
       "NamePlaceholder": "Name",
       "DescriptionPlaceholder": "Description",
@@ -517,6 +527,12 @@
       "SoulPowerResourceEnabledHint": "Shows the Soul Power resource on the sidebar even before Soulforce reaches its own max level (5) - it's shown regardless once that level is reached, so this only matters earlier. Off by default. Targetable by Active Effects.",
       "SoulPowerMechanicEnabled": "Soulforce: Enable New Mechanic (reserved)",
       "SoulPowerMechanicEnabledHint": "Reserved for Soul Power's own trade-in mechanic (its \"Soul Power Traded\" FP trigger) - not yet designed or wired up, to be tackled once every skill-usage FP trigger is fully implemented. Has no effect yet. Targetable by Active Effects.",
+      "ImprovedMagicResistance": "Improved Magic Resistance",
+      "ImprovedMagicResistanceHint": "A spell attack roll that misses this actor normally still deals half damage (rounded down) anyway - with this switch on, Magic Resistance blocks that damage entirely on a miss instead. Targetable by Active Effects.",
+      "ConcealmentBreaksOnlyOnHit": "Concealment doesn't break unless the attack hits",
+      "ConcealmentBreaksOnlyOnHitHint": "Attacking from Concealment normally lifts it immediately regardless of hit or miss - with this switch on, Concealment stays up after a miss instead. Assassination attacks are always calculated normally either way (based on Concealment at the moment of the attack). Targetable by Active Effects.",
+      "ConcealmentNeverBreaksOnAttack": "Concealment doesn't break on attack",
+      "ConcealmentNeverBreaksOnAttackHint": "Disables the automatic Concealment break from attacking entirely (overrides the switch above too) - Assassination attacks are always calculated normally either way. Targetable by Active Effects.",
       "LifeAbsorptionOverrideLabel": "Life Damage Heals",
       "LifeAbsorptionOverride": {
         "Default": "By Creature Category (Default)",
@@ -623,6 +639,10 @@
         "DamageBonus": "Damage Type Bonuses",
         "AttributeRoll": "Attribute Roll Bonuses",
         "SkillRoll": "Skill Roll Bonuses",
+        "SkillRollApCost": "Skill Roll: AP Cost",
+        "SkillRollRpCost": "Skill Roll: RP Cost",
+        "AttributeRollApCost": "Attribute Roll: AP Cost",
+        "AttributeRollRpCost": "Attribute Roll: RP Cost",
         "SkillGain": "Skill FP Gain"
       }
     },
@@ -1015,7 +1035,10 @@
       "DamageApplied": "{type} damage applied: {amount}",
       "DamageAbsorbedIntoHealing": "{type} damage absorbed - {amount} healing instead",
       "DamageAppliedTitle": "Damage Applied ({defender})",
-      "KillConfirmed": "{defender} has been defeated!"
+      "KillConfirmed": "{defender} has been defeated!",
+      "SpellMissHalfDamage": "Miss - still deals half damage.",
+      "SpellMissResisted": "Miss - fully resisted by Improved Magic Resistance.",
+      "ConcealmentBroken": "Concealment broken by the attack."
     },
     "Gender": {
       "Male": "Male",

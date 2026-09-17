@@ -59,6 +59,12 @@ export class SKSKEffectKeyReference extends HandlebarsApplicationMixin(Applicati
     const skillRollBonusRows = Object.values(CONFIG.SKSK.skills)
       .flatMap(category => Object.keys(category))
       .map(key => ({ label: game.i18n.localize(getSkillLabel(key)), key: `system.skillRollBonus.${key}` }));
+    const skillRollApCostRows = Object.values(CONFIG.SKSK.skills)
+      .flatMap(category => Object.keys(category))
+      .map(key => ({ label: game.i18n.localize(getSkillLabel(key)), key: `system.skillRollApCostModifier.${key}` }));
+    const skillRollRpCostRows = Object.values(CONFIG.SKSK.skills)
+      .flatMap(category => Object.keys(category))
+      .map(key => ({ label: game.i18n.localize(getSkillLabel(key)), key: `system.skillRollRpCostModifier.${key}` }));
 
     context.categories = [
       {
@@ -101,6 +107,11 @@ export class SKSKEffectKeyReference extends HandlebarsApplicationMixin(Applicati
           { label: 'Schadensbonus: alle Waffen (inkl. Kampfkunst)', key: 'system.damageBonusAll' },
           { label: 'Trefferbonus: alle Zauber', key: 'system.spellAttackBonusAll' },
           { label: 'Schadensbonus: alle Zauber', key: 'system.spellDamageBonusAll' },
+          { label: 'Verbesserte Magieresistenz (Schalter)', key: 'system.improvedMagicResistance' },
+          { label: 'Tarnung bricht nicht solange nicht getroffen (Schalter)', key: 'system.concealmentBreaksOnlyOnHit' },
+          { label: 'Tarnung bricht nicht bei Angriff (Schalter)', key: 'system.concealmentNeverBreaksOnAttack' },
+          { label: 'AP-Kosten-Modifikator: alle Fertigkeits-/Attributswürfe', key: 'system.skillRollApCostModifierAll' },
+          { label: 'RP-Kosten-Modifikator: alle Fertigkeits-/Attributswürfe', key: 'system.skillRollRpCostModifierAll' },
         ],
       },
       {
@@ -133,6 +144,22 @@ export class SKSKEffectKeyReference extends HandlebarsApplicationMixin(Applicati
       {
         title: 'SKSK.EffectKeyReference.Category.SkillRoll',
         rows: skillRollBonusRows,
+      },
+      {
+        title: 'SKSK.EffectKeyReference.Category.SkillRollApCost',
+        rows: skillRollApCostRows,
+      },
+      {
+        title: 'SKSK.EffectKeyReference.Category.SkillRollRpCost',
+        rows: skillRollRpCostRows,
+      },
+      {
+        title: 'SKSK.EffectKeyReference.Category.AttributeRollApCost',
+        rows: vocabRows(CONFIG.SKSK.attributes, 'system.attributeRollApCostModifier.'),
+      },
+      {
+        title: 'SKSK.EffectKeyReference.Category.AttributeRollRpCost',
+        rows: vocabRows(CONFIG.SKSK.attributes, 'system.attributeRollRpCostModifier.'),
       },
       {
         title: 'SKSK.EffectKeyReference.Category.SkillGain',

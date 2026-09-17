@@ -42,7 +42,7 @@
           </a>
         </div>
         <i class="fas {{item.typeIcon}} item-type-icon" title="{{item.typeLabel}}"></i>
-        <h4 class="rollable" data-action="roll" data-roll-type="item" title="{{localize 'SKSK.Items.RollHint'}}">{{item.name}}</h4>
+        <h4 class="item-name-heading" data-action="editItem" title='{{localize "DOCUMENT.Update" type="Item"}}'>{{item.name}}</h4>
       </div>
       <div class='item-combat-bonus'>
         {{#if (eq item.type "armor")}}

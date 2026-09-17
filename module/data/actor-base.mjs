@@ -311,6 +311,36 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     schema.spellAttackBonusAll = new fields.NumberField({ ...requiredInteger, initial: 0 });
     schema.spellDamageBonusAll = new fields.NumberField({ ...requiredInteger, initial: 0 });
 
+    // Per-skill/per-attribute AP-cost modifiers for rolling a skill check or
+    // a raw attribute check in Combat (see helpers/skillRollCost.mjs, GM-
+    // configured per skill/trigger/attribute or per raw attribute via the
+    // "skillRollApCost" world setting - 2 by default) - purely Active
+    // Effect targets, same per-key convention as skillRollBonus/
+    // weaponAttackBonus above. Each also shifts the resulting RP cost (for
+    // an off-turn roll) by the same amount; the matching ...Rp... field
+    // then shifts RP further, independently of AP - e.g. an effect that
+    // discounts RP without touching AP at all. See applyRollCostModifiers.
+    schema.skillRollApCostModifier = new fields.SchemaField(Object.fromEntries(
+      Object.values(CONFIG.SKSK.skills).flatMap(category => Object.keys(category))
+        .map(key => [key, new fields.NumberField({ ...requiredInteger, initial: 0 })])
+    ));
+    schema.skillRollRpCostModifier = new fields.SchemaField(Object.fromEntries(
+      Object.values(CONFIG.SKSK.skills).flatMap(category => Object.keys(category))
+        .map(key => [key, new fields.NumberField({ ...requiredInteger, initial: 0 })])
+    ));
+    schema.attributeRollApCostModifier = new fields.SchemaField(Object.fromEntries(
+      Object.keys(CONFIG.SKSK.attributes).map(key => [key, new fields.NumberField({ ...requiredInteger, initial: 0 })])
+    ));
+    schema.attributeRollRpCostModifier = new fields.SchemaField(Object.fromEntries(
+      Object.keys(CONFIG.SKSK.attributes).map(key => [key, new fields.NumberField({ ...requiredInteger, initial: 0 })])
+    ));
+
+    // Flat "every skill/attribute roll at once" accumulators, summed in
+    // ALONGSIDE the per-key fields above rather than replacing them - same
+    // "...All" convention as weaponAttackBonusAll etc. further up.
+    schema.skillRollApCostModifierAll = new fields.NumberField({ ...requiredInteger, initial: 0 });
+    schema.skillRollRpCostModifierAll = new fields.NumberField({ ...requiredInteger, initial: 0 });
+
     schema.biography = new fields.StringField({ required: true, blank: true });
 
     // Character tab's "Data" section - free-flavor fields shown alongside
@@ -600,6 +630,26 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // configured rate being > 0) this one is disruptive enough to combat
     // pacing that the GM opted for an explicit extra switch on top.
     schema.soulforceMeditationCombatFpEnabled = new fields.BooleanField({ initial: false });
+    // GM-tab switch: a spell's own Angriffswurf that fails to exceed this
+    // actor's Magic Resistance normally still deals half its rolled damage
+    // (rounded down) anyway - see helpers/attackRolls.mjs#
+    // autoResolveAttackForTargets. On, that half-damage fallback is denied
+    // entirely (a miss blocks everything), same as a weapon/Martial Arts
+    // miss always has. Off by default. Targetable by Active Effects.
+    schema.improvedMagicResistance = new fields.BooleanField({ initial: false });
+    // GM-tab switches: attacking while Concealed (Tarnung) normally breaks
+    // that status automatically once the attack resolves - see helpers/
+    // attackRolls.mjs#evaluateHitAgainstDefender. Attentat's (Assassination's)
+    // own bonus damage is unaffected either way, since it's always computed
+    // against the PRE-break Concealed status (the moment the attack was
+    // actually made), never this outcome. concealmentBreaksOnlyOnHit
+    // ("Tarnung bricht nicht solange der Angriff nicht getroffen hat")
+    // narrows the break to a confirmed hit only - a miss leaves it
+    // standing; concealmentNeverBreaksOnAttack ("Tarnung bricht nicht bei
+    // Angriff") disables the whole mechanic outright, overriding the other
+    // switch too. Both off by default. Targetable by Active Effects.
+    schema.concealmentBreaksOnlyOnHit = new fields.BooleanField({ initial: false });
+    schema.concealmentNeverBreaksOnAttack = new fields.BooleanField({ initial: false });
     // Seelenstärke's own "Seelenmacht" (Soul Power) resource - a collection
     // pool with no maximum (like barrier above), spent wholesale on a
     // Seelenpfad's own Durchbruch attempts (see helpers/soulPathRolls.mjs#

@@ -5,6 +5,7 @@ import { SKSKTrainingMethodsConfig } from '../apps/training-methods-config.mjs';
 import { SKSKCombatStylesConfig } from '../apps/combat-styles-config.mjs';
 import { SKSKSettingsExportImport } from '../apps/settings-export-import.mjs';
 import { SKSKSkillUsageFpConfig } from '../apps/skill-usage-fp-config.mjs';
+import { SKSKSkillRollApCostConfig } from '../apps/skill-roll-ap-cost-config.mjs';
 import { SKSKLehrenConfig } from '../apps/lehren-config.mjs';
 import { SKSKEffectKeyReference } from '../apps/effect-key-reference.mjs';
 import { SKSKGeneralSettingsConfig } from '../apps/general-settings-config.mjs';
@@ -213,6 +214,28 @@ export function registerSettings() {
     label: 'SKSK.Settings.SkillUsageFp.Label',
     icon: 'fas fa-bolt',
     type: SKSKSkillUsageFpConfig,
+    restricted: true,
+  });
+
+  // GM-configurable AP/RP-cost rates for rolling a skill check or a raw
+  // attribute check while a Combat is active, keyed by skill+trigger or by
+  // attribute - see helpers/skillRollCost.mjs and apps/skill-roll-ap-cost-
+  // config.mjs. 2 by default wherever unconfigured (helpers/skillRollCost.mjs#
+  // DEFAULT_AP_COST), not 0 - unlike skillUsageFp above, an unconfigured
+  // rate here still costs something.
+  game.settings.register('sksk', 'skillRollApCost', {
+    scope: 'world',
+    config: false,
+    type: Object,
+    default: {},
+  });
+
+  game.settings.registerMenu('sksk', 'skillRollApCostMenu', {
+    name: 'SKSK.Settings.SkillRollApCost.Name',
+    hint: 'SKSK.Settings.SkillRollApCost.Hint',
+    label: 'SKSK.Settings.SkillRollApCost.Label',
+    icon: 'fas fa-shoe-prints',
+    type: SKSKSkillRollApCostConfig,
     restricted: true,
   });
 

@@ -1,0 +1,26 @@
+<div class="sksk-skill-roll-dialog flexcol">
+
+  <div class="resource">
+    <label class="resource-label">{{localize 'SKSK.GenericRoll.ChooseModePrompt'}}</label>
+    <div class="sksk-mode-buttons flexrow">
+      {{#each modes as |mode|}}
+      <button type="button" class="sksk-mode-button {{#if mode.active}}active{{/if}}"
+        data-action="chooseMode" data-mode="{{mode.id}}">
+        {{localize mode.label}}
+      </button>
+      {{/each}}
+    </div>
+  </div>
+
+  <div class="resource">
+    <label class="resource-label">{{localize promptKey}}</label>
+    <div class="sksk-attribute-buttons flexcol">
+      {{#each attributeOptions as |option|}}
+      <button type="button" class="sksk-attribute-button" data-action="rollAttribute" data-index="{{option.index}}">
+        {{option.label}}
+      </button>
+      {{/each}}
+    </div>
+  </div>
+
+</div>

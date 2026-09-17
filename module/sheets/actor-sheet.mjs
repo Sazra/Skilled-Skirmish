@@ -34,7 +34,10 @@ import { getArmorClassBreakdown, getMagicResistanceBreakdown, computeArmorPieceB
 import { isDurabilityEnabled } from '../helpers/materials.mjs';
 import { computeWeaponAttackBonus, computeWeaponRangeLabel } from '../helpers/attackRolls.mjs';
 import { renderBreakdownHtml } from '../helpers/tooltips.mjs';
-import { rollMartialArtsAttack, rollRegeneration, rollMeditation, rollAdrenalin, useMove, useDodge, useItem, postActionChatCard } from '../helpers/actions.mjs';
+import {
+  rollMartialArtsAttack, rollRegeneration, rollMeditation, rollAdrenalin, useMove, useDodge, useItem,
+  postActionChatCard, hasEnoughActionPoints, hasEnoughReactionPoints, spendActionPoints, spendReactionPoints,
+} from '../helpers/actions.mjs';
 import { chooseSpellCastOptions } from '../helpers/spell-rolls.mjs';
 import { captureScrollPositions, restoreScrollPositions } from '../helpers/scrollPreservation.mjs';
 import { SKSKRestDialog } from '../apps/rest-dialog.mjs';
@@ -63,10 +66,11 @@ import {
   getStatusEffectDefinitions, getStatusStacks, increaseStatusStacks, decreaseStatusStacks, applyD20Malus,
   getStatusEffect, getStatusInstances, getStatusInstancesTotal, addStatusInstance, applyCauterization,
   getAdrenalinDamage, setRestrainedConfig, attemptRestrainedEscapeManual, setStatusStacks,
-  setStatusIgnoreSpecialBonus,
+  setStatusIgnoreSpecialBonus, isActorsOwnTurn,
 } from '../helpers/statusEffects.mjs';
 import { wrapCriticalBlock, chooseGenericRollMode, evaluateD20WithMode, formatD20ModeSummaryLine } from '../helpers/criticalRolls.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine, tradeSoulPowerForFp } from '../helpers/skillFp.mjs';
+import { computeAttributeRollCost } from '../helpers/skillRollCost.mjs';
 
 /**
  * Schema paths (relative to system.*) whose value input accepts the "+N"/
@@ -2293,6 +2297,17 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     // universal D20 malus and Dazed's Str/Dex/Con/App-specific one (see
     // helpers/statusEffects.mjs) can be folded in.
     if (dataset.roll) {
+      // Rolling a raw attribute in Combat costs its own AP (on the actor's
+      // own turn) or RP (off it) - see helpers/skillRollCost.mjs#
+      // computeAttributeRollCost, waived entirely outside of Combat.
+      // Checked before anything else so an unaffordable roll aborts up
+      // front, same as helpers/skillRolls.mjs#rollSkillCheck.
+      const offTurn = !isActorsOwnTurn(this.actor);
+      const { apCost, rpCost } = dataset.attributeKey
+        ? computeAttributeRollCost(this.actor, dataset.attributeKey)
+        : { apCost: 0, rpCost: 0 };
+      if (offTurn ? !hasEnoughReactionPoints(this.actor, rpCost) : !hasEnoughActionPoints(this.actor, apCost)) return;
+
       const mode = await chooseGenericRollMode();
       if (!mode) return;
 
@@ -2304,6 +2319,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       const formula = applyD20Malus(rollFormula, this.actor, dataset.attributeKey ?? null);
       const result = await evaluateD20WithMode(formula, this.actor.getRollData(), mode);
       const { roll, criticalType, doubleCritical } = result;
+      await this.actor.update(offTurn ? spendReactionPoints(this.actor, rpCost) : spendActionPoints(this.actor, apCost));
 
       // A pure attribute roll (not a skill check) generates FP for that
       // attribute's own "Unbegrenzte X" skill, if configured - see
@@ -2324,10 +2340,16 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
         fpHTML += formatSkillFpGrantLine(await grantSkillUsageFp(this.actor, 'luck', 'doubleCriticalRoll'));
       }
 
+      const apCostHTML = !offTurn && apCost
+        ? `<div class="sksk-roll-ap-cost"><strong>${game.i18n.localize('SKSK.Spell.APCost')}:</strong> ${apCost}</div>`
+        : '';
+      const rpCostHTML = offTurn && rpCost
+        ? `<div class="sksk-roll-rp-cost"><strong>${game.i18n.localize('SKSK.Spell.RPCost')}:</strong> ${rpCost}</div>`
+        : '';
       const messageData = {
         speaker: ChatMessage.getSpeaker({ actor: this.actor }),
         flavor: label,
-        content: `<div class="sksk-chat-card sksk-action-card">${formatRollCardHeading(dataset.label ?? label)}${wrapCriticalBlock(await roll.render(), criticalType)}${fpHTML}</div>`,
+        content: `<div class="sksk-chat-card sksk-action-card">${formatRollCardHeading(dataset.label ?? label)}${apCostHTML}${rpCostHTML}${wrapCriticalBlock(await roll.render(), criticalType)}${fpHTML}</div>`,
         rolls: [roll],
       };
       ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));
@@ -2346,8 +2368,11 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
    * the roll mode (Neutral/Vorteil/Nachteil - rollSkillCheck's own
    * chooseGenericRollMode dialog). A skill with more than one possible
    * attribute instead prompts for attribute AND mode together, in one
-   * dialog with a single "Würfeln" button (see helpers/skillRolls.mjs#
-   * chooseSkillRollAttributeAndMode) - An "oder" skill (attributeMode
+   * dialog (see helpers/skillRolls.mjs#chooseSkillRollAttributeAndMode /
+   * apps/skill-roll-dialog.mjs): a Neutral/Vorteil/Nachteil toggle row
+   * (Neutral active by default) plus one button per attribute option below
+   * it - clicking an attribute button rolls immediately with whichever
+   * mode is currently toggled active. An "oder" skill (attributeMode
    * "choice") offers one option per individual attribute; an "und/oder"
    * skill ("combine") offers one option per non-empty combination of its
    * attributes (each summed together), since the player may want any

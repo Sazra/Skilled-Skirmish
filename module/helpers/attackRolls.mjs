@@ -3,12 +3,12 @@ import { computeDurabilityRatio } from './materials.mjs';
 import { computeLehrenTargetBonus } from './lehren.mjs';
 import { getSpellSchool } from './spells.mjs';
 import { computeNaturalMaterialBonus } from './defense.mjs';
-import { applyD20Malus, getStatusStacks } from './statusEffects.mjs';
+import { applyD20Malus, getStatusStacks, setStatusStacks } from './statusEffects.mjs';
 import { getAttackCriticalType, resolveCheckSuccess, wrapCriticalBlock, wrapCriticalInline, rollQuality } from './criticalRolls.mjs';
 import { formatRollCardHeading } from './rollCard.mjs';
 import { getEquippedArmorSkillKeys } from './defense.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
-import { resolveClickDefender, renderApplyDamageButton } from './damageApplication.mjs';
+import { resolveClickDefender, renderApplyDamageButton, applyResolvedDamageEntries } from './damageApplication.mjs';
 import { checkFlanking } from './flanking.mjs';
 import { computePatronRollBonus } from './religion.mjs';
 
@@ -474,28 +474,32 @@ export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor
 }
 
 /**
- * Handle a click on an Angriffswurf's "Evaluate" button: resolves the
- * defender (see helpers/damageApplication.mjs#resolveClickDefender), then
- * prompts for which of the attack's two already-rolled d20s actually counts
- * (see chooseAttackMode) - Neutral always picks Roll A, Vorteil/Nachteil
- * pick whichever of the two ranks better/worse (see rollQuality). Aborts
- * silently (no chat message) if either no defender could be resolved or the
- * mode dialog was closed without a choice.
+ * The shared core of an Angriffswurf's hit resolution against ONE specific
+ * defender (or null, for a Shift+click forceHit with none) - given an
+ * already-chosen mode (see chooseAttackMode) and the attack's own two
+ * already-rolled d20s. Used by both resolveHitEvaluationFromChat (a manual
+ * Evaluate click, one defender resolved from the click itself) and
+ * autoResolveAttackForTargets below (one call per user-targeted token,
+ * reusing the SAME rolls/mode across all of them - only this function's own
+ * per-defender outcome, and the RNG it triggers along the way, actually
+ * varies between calls).
  *
  * The chosen roll alone is compared against the defender's Armor Class or
- * Magic Resistance (per the button's own data-comparison-type) - a critical
- * success/failure there always hits/always misses regardless of the total.
- * An ordinary (non-critical) hit additionally gives the attacker's own
- * Präzision a chance to retroactively promote it to a critical success (see
- * maybeRollPrecision); either way, a critical success here rolls Brutality's
- * bonus damage (see rollCriticalBonusDamage) - always deferred to this one
- * moment, never at roll time, since which roll even counts wasn't known
- * until now. Independently, ANY confirmed hit (crit or not) while the
- * attacker has the Concealed status rolls Attentat's (Assassination's) own
- * bonus damage too (see rollAssassinationBonusDamage), of the attack's own
- * first damage type - stacks with Brutality's bonus rather than replacing it.
- * For a weapon/Martial Arts attack specifically (killSkillKey set), this also
- * grants the attacker's Attentat skill its own "assassinationAttack" FP.
+ * Magic Resistance (per comparisonType) - a critical success/failure there
+ * always hits/always misses regardless of the totals. An ordinary (non-
+ * critical) hit additionally gives the attacker's own Präzision a chance to
+ * retroactively promote it to a critical success (see maybeRollPrecision);
+ * either way, a critical success here rolls Brutality's bonus damage (see
+ * rollCriticalBonusDamage) - always deferred to this one moment, never at
+ * roll time, since which roll even counts wasn't known until now, and (for
+ * autoResolveAttackForTargets) since whether THIS defender's own comparison
+ * is even an ordinary hit at all varies per defender. Independently, ANY
+ * confirmed hit (crit or not) while the attacker has the Concealed status
+ * rolls Attentat's (Assassination's) own bonus damage too (see
+ * rollAssassinationBonusDamage), of the attack's own first damage type -
+ * stacks with Brutality's bonus rather than replacing it. For a weapon/
+ * Martial Arts attack specifically (killSkillKey set), this also grants the
+ * attacker's Attentat skill its own "assassinationAttack" FP.
  *
  * For a weapon/Martial Arts attack (comparisonType "armorClass", not a
  * spell's "magicResistance"), this also grants the "hitTaken" FP trigger
@@ -503,7 +507,7 @@ export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor
  * currently has equipped (body armor + Shield - see helpers/defense.mjs#
  * getEquippedArmorSkillKeys), regardless of hit or miss (suffering an
  * evaluated attack against one's own AC at all is what counts here) - both
- * skipped entirely with no defender resolved (see forceHit below).
+ * skipped entirely with no defender resolved (forceHit).
  *
  * The chosen roll's own final outcome grants further FP: "attackHit"
  * (Trefferkorrektur) to the attacker on a hit, "attackDefended"
@@ -513,36 +517,30 @@ export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor
  * were natural criticals AND the mode was Vorteil or Nachteil (never
  * Neutral, where Roll B was never really part of the attack to begin with).
  *
- * Normally aborts with a warning (no chat message) if no defender could be
- * resolved (no target, no controlled token, no assigned character) - a
- * Shift+click (forceHit) bypasses that block instead: the attack counts as
- * a hit unconditionally UNLESS the chosen roll is itself a natural critical
- * failure (which always misses regardless of any defender's stat), and every
- * defender-dependent step above (the AC/MR comparison itself, Tactic's
- * flanking-defense bonus, the defender's own "hitTaken"/"attackDefended" FP)
- * is skipped rather than touching a null defender - everything attacker-side
- * (Präzision, Brutality, Attentat, "attackHit"/"criticalHit" FP) still runs
- * exactly as with a real defender, since none of it depends on one.
- * @param {HTMLElement} button
- * @param {boolean} [forceHit=false]   Shift+click - see above.
- * @return {Promise<ChatMessage|void>}
+ * With no defender (forceHit), the attack counts as a hit unconditionally
+ * UNLESS the chosen roll is itself a natural critical failure (which always
+ * misses regardless of any defender's stat), and every defender-dependent
+ * step above (the AC/MR comparison itself, Tactic's flanking-defense bonus,
+ * the defender's own "hitTaken"/"attackDefended" FP) is skipped rather than
+ * touching a null defender - everything attacker-side (Präzision,
+ * Brutality, Attentat, "attackHit"/"criticalHit" FP) still runs exactly as
+ * with a real defender, since none of it depends on one.
+ * @param {object} context
+ * @param {Actor|null} context.defender
+ * @param {Actor|null} context.attacker
+ * @param {string} context.mode   One of ATTACK_MODES' own ids.
+ * @param {number} context.rollA
+ * @param {number} context.rollB
+ * @param {string|null} context.critA
+ * @param {string|null} context.critB
+ * @param {"armorClass"|"magicResistance"} context.comparisonType
+ * @param {Array<{damageType: string, dieSizes: number[]}>} context.damageDice
+ * @param {string|null} context.killSkillKey
+ * @return {Promise<{hit: boolean, criticalType: string|null, line: string, fpHTML: string, title: string}>}
  */
-export async function resolveHitEvaluationFromChat(button, forceHit = false) {
-  const defender = resolveClickDefender();
-  if (!defender && !forceHit) return ui.notifications.warn(game.i18n.localize('SKSK.AttackRoll.NoDefender'));
-
-  const mode = await chooseAttackMode(button.dataset.flanking === 'true' ? 'advantage' : null);
-  if (!mode) return;
-
-  const attacker = button.dataset.attackerUuid ? await fromUuid(button.dataset.attackerUuid) : null;
-  const damageDice = JSON.parse(decodeURIComponent(button.dataset.damageDice || '[]'));
-  const killSkillKey = button.dataset.killSkill || null;
-
-  const rollA = Number(button.dataset.rollA);
-  const rollB = Number(button.dataset.rollB);
-  const critA = button.dataset.critA || null;
-  const critB = button.dataset.critB || null;
-
+async function evaluateHitAgainstDefender({
+  defender, attacker, mode, rollA, rollB, critA, critB, comparisonType, damageDice, killSkillKey,
+}) {
   let chosenTotal = rollA;
   let criticalType = critA;
   let labelKey = 'RollA';
@@ -553,7 +551,6 @@ export async function resolveHitEvaluationFromChat(button, forceHit = false) {
     if (pickB) { chosenTotal = rollB; criticalType = critB; labelKey = 'RollB'; }
   }
 
-  const comparisonType = button.dataset.comparisonType;
   const statLabel = game.i18n.localize(comparisonType === 'magicResistance' ? 'SKSK.Resource.MR' : 'SKSK.Resource.AC');
 
   // Tactic level 10 (see helpers/flanking.mjs): the defender gets a flat AC
@@ -623,6 +620,20 @@ export async function resolveHitEvaluationFromChat(button, forceHit = false) {
     }
   }
 
+  // Tarnung (Concealment) breaks automatically once the attacker attacks
+  // from it - checked AFTER Attentat's own bonus above, which always uses
+  // the PRE-break Concealed status (the attack itself, not this outcome) -
+  // unless the attacker's own "concealmentNeverBreaksOnAttack" GM-tab
+  // switch is on (never breaks at all, overriding the other switch too),
+  // or "concealmentBreaksOnlyOnHit" is on (only breaks on a confirmed hit -
+  // a miss leaves it standing). See data/actor-base.mjs. A no-op if the
+  // attacker isn't Concealed to begin with.
+  if (attacker && getStatusStacks(attacker, 'concealed') > 0 && !attacker.system.concealmentNeverBreaksOnAttack
+    && (hit || !attacker.system.concealmentBreaksOnlyOnHit)) {
+    await setStatusStacks(attacker, 'concealed', 0);
+    extraHTML += `<div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.ConcealmentBroken')}</div>`;
+  }
+
   if (hit) {
     extraHTML += formatSkillFpGrantLine(await grantSkillUsageFp(attacker, 'hitCorrection', 'attackHit'));
   } else {
@@ -659,6 +670,45 @@ export async function resolveHitEvaluationFromChat(button, forceHit = false) {
   const title = defender
     ? game.i18n.format('SKSK.AttackRoll.EvaluationTitle', { defender: defender.name })
     : game.i18n.localize('SKSK.AttackRoll.EvaluationTitleNoDefender');
+
+  return { hit, criticalType, line, fpHTML, title };
+}
+
+/**
+ * Handle a click on an Angriffswurf's "Evaluate" button: resolves the
+ * defender (see helpers/damageApplication.mjs#resolveClickDefender), then
+ * prompts for which of the attack's two already-rolled d20s actually counts
+ * (see chooseAttackMode) - Neutral always picks Roll A, Vorteil/Nachteil
+ * pick whichever of the two ranks better/worse (see rollQuality). Aborts
+ * silently (no chat message) if either no defender could be resolved (a
+ * Shift+click/forceHit bypasses that particular block, see
+ * evaluateHitAgainstDefender's own doc comment) or the mode dialog was
+ * closed without a choice. The actual resolution against that one defender
+ * is evaluateHitAgainstDefender above - shared with autoResolveAttackForTargets
+ * below, which instead loops it over every user-targeted token.
+ * @param {HTMLElement} button
+ * @param {boolean} [forceHit=false]   Shift+click - see
+ *   evaluateHitAgainstDefender's own doc comment.
+ * @return {Promise<ChatMessage|void>}
+ */
+export async function resolveHitEvaluationFromChat(button, forceHit = false) {
+  const defender = resolveClickDefender();
+  if (!defender && !forceHit) return ui.notifications.warn(game.i18n.localize('SKSK.AttackRoll.NoDefender'));
+
+  const mode = await chooseAttackMode(button.dataset.flanking === 'true' ? 'advantage' : null);
+  if (!mode) return;
+
+  const attacker = button.dataset.attackerUuid ? await fromUuid(button.dataset.attackerUuid) : null;
+  const damageDice = JSON.parse(decodeURIComponent(button.dataset.damageDice || '[]'));
+  const killSkillKey = button.dataset.killSkill || null;
+
+  const { line, fpHTML, title } = await evaluateHitAgainstDefender({
+    defender, attacker, mode,
+    rollA: Number(button.dataset.rollA), rollB: Number(button.dataset.rollB),
+    critA: button.dataset.critA || null, critB: button.dataset.critB || null,
+    comparisonType: button.dataset.comparisonType, damageDice, killSkillKey,
+  });
+
   const content = `<div class="sksk-chat-card sksk-action-card">`
     + formatRollCardHeading(title) + line + fpHTML
     + `</div>`;
@@ -670,4 +720,140 @@ export async function resolveHitEvaluationFromChat(button, forceHit = false) {
   };
   ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));
   return ChatMessage.create(messageData);
+}
+
+/**
+ * Every OTHER token the current user has targeted with Foundry's own
+ * targeting tool (game.user.targets) - the attacker's own token (if it
+ * happens to be targeted too) is excluded, as is any target with no
+ * assigned Actor at all; de-duplicated, since the same Actor can be
+ * represented by more than one Token on the scene.
+ * @param {Actor|null} attacker
+ * @return {Actor[]}
+ */
+function getOtherTargetedActors(attacker) {
+  const seen = new Set();
+  const actors = [];
+  for (const token of game.user.targets ?? []) {
+    const targetActor = token.actor;
+    if (!targetActor || targetActor === attacker || seen.has(targetActor.uuid)) continue;
+    seen.add(targetActor.uuid);
+    actors.push(targetActor);
+  }
+  return actors;
+}
+
+/**
+ * Halves a set of already-rolled {damageType, amount} entries, rounded
+ * down, dropping any that floor to 0 - Spells' own "still deals half
+ * damage on a miss, unless Verbesserte Magieresistenz" rule (see
+ * autoResolveAttackForTargets below).
+ * @param {Array<{damageType: string, amount: number}>} entries
+ * @return {Array<{damageType: string, amount: number}>}
+ */
+function halveDamageEntries(entries) {
+  return entries.map(entry => ({ ...entry, amount: Math.floor(entry.amount / 2) })).filter(entry => entry.amount > 0);
+}
+
+/**
+ * Visually dims an already-rendered Evaluate/Apply Damage button's own
+ * HTML fragment - a plain substitution on both buttons' own fixed, static
+ * class names (renderAttackPairHTML above / helpers/damageApplication.mjs#
+ * renderApplyDamageButton - never anything derived from user input), used
+ * once autoResolveAttackForTargets has already resolved the SAME attack
+ * against every targeted token, so a GM can tell at a glance these buttons
+ * are now only needed to manually resolve against some OTHER/further
+ * defender - still fully clickable, never actually disabled.
+ * @param {string} html
+ * @return {string}
+ */
+export function greyOutManualEvalButtons(html) {
+  return html
+    .replace('class="sksk-roll-hit-eval"', 'class="sksk-roll-hit-eval sksk-manual-eval-dimmed"')
+    .replace('class="sksk-apply-damage"', 'class="sksk-apply-damage sksk-manual-eval-dimmed"');
+}
+
+/**
+ * Convenience auto-resolution for a just-rolled Angriffswurf: if the
+ * current user has one or more OTHER tokens targeted (see
+ * getOtherTargetedActors), immediately resolves the SAME already-rolled
+ * roll pair against each of them in turn - no manual Evaluate/Apply Damage
+ * click needed - and returns the combined result HTML the caller should
+ * append to its own card (right after its own Evaluate button and damage
+ * roll/Apply Damage button, which stay in place regardless - see
+ * greyOutManualEvalButtons above), or "" if nothing was auto-resolved (no
+ * targets, or the mode dialog below was dismissed), in which case the
+ * caller's own manual buttons remain the ONLY way to resolve this attack,
+ * entirely unaffected.
+ *
+ * The attack MODE (Neutral/Vorteil/Nachteil - see chooseAttackMode) is
+ * chosen only ONCE for the whole attack, exactly like a manual Evaluate
+ * click - not re-asked per target, since it's the same two already-rolled
+ * d20s throughout; a suggested mode (from flanking) applies the same way.
+ *
+ * Everything else, though, runs freshly PER target via
+ * evaluateHitAgainstDefender above: hit/miss against that target's own
+ * AC/MR, Präzision's retroactive crit promotion, Brutality's and
+ * Attentat's own bonus damage (each may or may not trigger depending on
+ * whether THIS target's own comparison was a hit).
+ *
+ * The already-rolled base damageEntries (the very ones the sibling Apply
+ * Damage button carries) are applied automatically too (via helpers/
+ * damageApplication.mjs#applyResolvedDamageEntries), gated on that
+ * target's own hit/miss: a weapon/Martial Arts attack (comparisonType
+ * "armorClass") that misses deals nothing, same as a manual Apply Damage
+ * click always required the GM's own hit/miss judgment to skip; a SPELL
+ * (comparisonType "magicResistance") that misses instead still deals HALF
+ * that damage (see halveDamageEntries) UNLESS the target's own "Verbesserte
+ * Magieresistenz" switch (system.improvedMagicResistance - GM tab, Active-
+ * Effect-targetable, see data/actor-base.mjs) is on, in which case it
+ * blocks the attack entirely instead, same as a weapon/Martial Arts miss. A
+ * linked Technique effect (techniqueItemUuid) only ever applies on an
+ * actual hit, never on a miss (halved-damage or fully-resisted alike).
+ * @param {[Roll, Roll]} rolls
+ * @param {"armorClass"|"magicResistance"} comparisonType
+ * @param {Actor|null} attacker
+ * @param {{damageEntries?: Array<{damageType: string, amount: number}>, damageDice?: Array<{damageType: string, dieSizes: number[]}>, killSkillKey?: string|null, flanking?: boolean, techniqueItemUuid?: string|null}} [options]
+ * @return {Promise<string>}
+ */
+export async function autoResolveAttackForTargets([rollA, rollB], comparisonType, attacker, options = {}) {
+  const { damageEntries = [], damageDice = [], killSkillKey = null, flanking = false, techniqueItemUuid = null } = options;
+  const defenders = getOtherTargetedActors(attacker);
+  if (!defenders.length) return '';
+
+  const mode = await chooseAttackMode(flanking ? 'advantage' : null);
+  if (!mode) return '';
+
+  const critA = getAttackCriticalType(rollA, attacker);
+  const critB = getAttackCriticalType(rollB, attacker);
+
+  const blocks = [];
+  for (const defender of defenders) {
+    const { hit, line, fpHTML, title } = await evaluateHitAgainstDefender({
+      defender, attacker, mode,
+      rollA: rollA.total, rollB: rollB.total, critA, critB,
+      comparisonType, damageDice, killSkillKey,
+    });
+
+    let damageHTML = '';
+    if (hit) {
+      if (damageEntries.length || techniqueItemUuid) {
+        const { lines } = await applyResolvedDamageEntries(defender, attacker, damageEntries, killSkillKey, techniqueItemUuid);
+        damageHTML = lines.join('');
+      }
+    } else if (comparisonType === 'magicResistance' && !defender.system.improvedMagicResistance) {
+      const halved = halveDamageEntries(damageEntries);
+      if (halved.length) {
+        damageHTML += `<div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.SpellMissHalfDamage')}</div>`;
+        const { lines } = await applyResolvedDamageEntries(defender, attacker, halved, killSkillKey, null);
+        damageHTML += lines.join('');
+      }
+    } else if (comparisonType === 'magicResistance') {
+      damageHTML += `<div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.SpellMissResisted')}</div>`;
+    }
+
+    blocks.push(formatRollCardHeading(title) + line + fpHTML + damageHTML);
+  }
+
+  return `<div class="sksk-auto-resolved">${blocks.join('')}</div>`;
 }

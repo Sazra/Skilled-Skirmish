@@ -1,0 +1,14 @@
+<section class="tab {{tab.cssClass}}" data-group="primary" data-tab="{{tab.id}}">
+  <p class="hint">{{localize 'SKSK.SkillRollApCostConfig.RawAttributesHint'}}</p>
+
+  <div class="resource">
+    <div class="grid grid-4col">
+      {{#each attributes as |attr|}}
+      <div class="grid-span-1">
+        <label class="resource-label">{{localize attr.label}}</label>
+        <input type="text" name="attributes.{{attr.key}}" value="{{attr.value}}" data-dtype="Number" placeholder="2" />
+      </div>
+      {{/each}}
+    </div>
+  </div>
+</section>

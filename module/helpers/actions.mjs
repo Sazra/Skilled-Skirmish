@@ -4,7 +4,7 @@ import { computeMovementSpeeds } from "./movement.mjs";
 import { canUseWeaponAttack, canMove, applyAdrenalinDamage, isActorsOwnTurn, isCombatActive } from "./statusEffects.mjs";
 import {
   computeWeaponAttackBonus, computeWeaponAttributeBonus, computeMartialArtsAttackBonus, rollAttackPair, renderAttackPairHTML,
-  getDamageDieSizes, getWeaponDamageType,
+  getDamageDieSizes, getWeaponDamageType, autoResolveAttackForTargets, greyOutManualEvalButtons,
 } from "./attackRolls.mjs";
 import { wrapCriticalBlock } from "./criticalRolls.mjs";
 import { formatRollCardHeading } from "./rollCard.mjs";
@@ -146,15 +146,20 @@ export async function rollWeaponItem(item) {
   // applies to the attack roll below; its own attackBonus payload (if
   // any) applies to the damage roll further down.
   const technique = actor ? await consumePrimedTechnique(actor, 'weapon') : null;
+  const techniqueEffect = getTechniqueEffectPayload(technique);
 
+  let rolls = null;
+  let flank = { flanking: false };
+  let attackBlockIndex = -1;
   if (actor) {
-    const flank = resolveAttackFlanking(actor);
+    flank = resolveAttackFlanking(actor);
     const flankBonus = flank.flanking ? getActorSkillLevel(actor, 'tactic') : 0;
     const attackBonus = computeWeaponAttackBonus(actor, item) + (technique?.styleAttackBonus ?? 0) + (technique?.hitBonusAmount ?? 0) + flankBonus;
-    const rolls = await rollAttackPair(attackBonus, actor);
+    rolls = await rollAttackPair(attackBonus, actor);
     const rendered = await renderAttackPairHTML(rolls, 'armorClass', actor, {
       damageDice, killSkillKey: item.system.weaponType, flanking: flank.flanking,
     });
+    attackBlockIndex = parts.length;
     parts.push(`<div class="sksk-roll-attack"><strong>${game.i18n.localize('SKSK.AttackRoll.Attack')}</strong></div>${rendered}`);
     parts.push(formatFlankingBonusLine(flank, flankBonus));
 
@@ -163,6 +168,7 @@ export async function rollWeaponItem(item) {
     if (flank.flanking) parts.push(formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'tactic', 'flankAttack')));
   }
 
+  let applyButtonIndex = -1;
   if (item.system.formula) {
     const attributeBonus = actor ? computeWeaponAttributeBonus(actor, item.system) : 0;
     const lehrenDamageBonus = actor
@@ -180,15 +186,34 @@ export async function rollWeaponItem(item) {
     const { total, line } = await applyTechniqueBonusDamage(roll.total, technique, item.getRollData());
     parts.push(line);
     damageEntries.push({ damageType, amount: total });
-    parts.push(renderApplyDamageButton(actor, damageEntries, item.system.weaponType, getTechniqueEffectPayload(technique)));
+    applyButtonIndex = parts.length;
+    parts.push(renderApplyDamageButton(actor, damageEntries, item.system.weaponType, techniqueEffect));
     parts.push(renderTechniqueSavingThrowHTML(technique));
   } else if (item.system.description) {
     const descriptionHTML = await foundry.applications.ux.TextEditor.implementation.enrichHTML(
       item.system.description ?? '', { relativeTo: item, secrets: item.isOwner }
     );
     parts.push(`<div class="sksk-roll-description">${descriptionHTML}</div>`);
-    parts.push(renderApplyDamageButton(actor, [], item.system.weaponType, getTechniqueEffectPayload(technique)));
+    applyButtonIndex = parts.length;
+    parts.push(renderApplyDamageButton(actor, [], item.system.weaponType, techniqueEffect));
     parts.push(renderTechniqueSavingThrowHTML(technique));
+  }
+
+  // Convenience: if the user has one or more OTHER tokens targeted, resolve
+  // this attack against every one of them right away, no manual Evaluate/
+  // Apply Damage click needed - see helpers/attackRolls.mjs#
+  // autoResolveAttackForTargets. The manual buttons above stay in place
+  // either way, just visually dimmed once this actually did something.
+  if (actor && rolls) {
+    const autoResolveHTML = await autoResolveAttackForTargets(rolls, 'armorClass', actor, {
+      damageEntries, damageDice, killSkillKey: item.system.weaponType, flanking: flank.flanking,
+      techniqueItemUuid: techniqueEffect?.itemUuid ?? null,
+    });
+    if (autoResolveHTML) {
+      if (attackBlockIndex >= 0) parts[attackBlockIndex] = greyOutManualEvalButtons(parts[attackBlockIndex]);
+      if (applyButtonIndex >= 0) parts[applyButtonIndex] = greyOutManualEvalButtons(parts[applyButtonIndex]);
+      parts.push(autoResolveHTML);
+    }
   }
 
   // Haltbarkeit (Durability) - every actual shot/swing costs 1, regardless
@@ -335,7 +360,7 @@ export async function rollMartialArtsAttack(actor, index) {
   const flankBonus = flank.flanking ? getActorSkillLevel(actor, 'tactic') : 0;
   const attackBonus = computeMartialArtsAttackBonus(actor, attack) + (technique?.styleAttackBonus ?? 0) + (technique?.hitBonusAmount ?? 0) + flankBonus;
   const rolls = await rollAttackPair(attackBonus, actor);
-  const attackHTML = `<div class="sksk-roll-attack"><strong>${game.i18n.localize('SKSK.AttackRoll.Attack')}</strong></div>${await renderAttackPairHTML(rolls, 'armorClass', actor, {
+  let attackHTML = `<div class="sksk-roll-attack"><strong>${game.i18n.localize('SKSK.AttackRoll.Attack')}</strong></div>${await renderAttackPairHTML(rolls, 'armorClass', actor, {
     damageDice, killSkillKey: 'martialArts', flanking: flank.flanking,
   })}${formatFlankingBonusLine(flank, flankBonus)}`;
 
@@ -351,8 +376,23 @@ export async function rollMartialArtsAttack(actor, index) {
   const renderedDamage = await roll.render();
   const { total: damageTotal, line: techniqueLine } = await applyTechniqueBonusDamage(roll.total, technique, actor.getRollData());
   const damageEntries = [{ damageType: attack.damageType, amount: damageTotal }];
-  const applyDamageHTML = renderApplyDamageButton(actor, damageEntries, 'martialArts', getTechniqueEffectPayload(technique))
+  const techniqueEffect = getTechniqueEffectPayload(technique);
+  let applyDamageHTML = renderApplyDamageButton(actor, damageEntries, 'martialArts', techniqueEffect)
     + renderTechniqueSavingThrowHTML(technique);
+
+  // Convenience: if the user has one or more OTHER tokens targeted, resolve
+  // this attack against every one of them right away, no manual Evaluate/
+  // Apply Damage click needed - see helpers/attackRolls.mjs#
+  // autoResolveAttackForTargets. The manual buttons above stay in place
+  // either way, just visually dimmed once this actually did something.
+  const autoResolveHTML = await autoResolveAttackForTargets(rolls, 'armorClass', actor, {
+    damageEntries, damageDice, killSkillKey: 'martialArts', flanking: flank.flanking,
+    techniqueItemUuid: techniqueEffect?.itemUuid ?? null,
+  });
+  if (autoResolveHTML) {
+    attackHTML = greyOutManualEvalButtons(attackHTML);
+    applyDamageHTML = greyOutManualEvalButtons(applyDamageHTML);
+  }
 
   await actor.update(offTurn ? spendReactionPoints(actor, attack.apCost) : spendActionPoints(actor, attack.apCost));
   let fpHTML = formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'martialArts', 'weaponAttack'));
@@ -372,7 +412,7 @@ export async function rollMartialArtsAttack(actor, index) {
   const messageData = {
     speaker: ChatMessage.getSpeaker({ actor }),
     flavor: title,
-    content: `<div class="sksk-chat-card sksk-action-card">${formatRollCardHeading(title)}${apCostHTML}${attackHTML}${renderedDamage}${techniqueLine}${applyDamageHTML}${fpHTML}</div>`,
+    content: `<div class="sksk-chat-card sksk-action-card">${formatRollCardHeading(title)}${apCostHTML}${attackHTML}${renderedDamage}${techniqueLine}${applyDamageHTML}${fpHTML}${autoResolveHTML}</div>`,
     rolls: [roll],
   };
   ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));

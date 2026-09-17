@@ -10,6 +10,7 @@ import {
 } from './statusEffects.mjs';
 import {
   computeSpellAttackBonus, rollAttackPair, renderAttackPairHTML, getDamageDieSizes,
+  autoResolveAttackForTargets, greyOutManualEvalButtons,
 } from './attackRolls.mjs';
 import {
   resolveCheckSuccess, wrapCriticalBlock, wrapCriticalInline, chooseGenericRollMode, evaluateD20WithMode,
@@ -412,6 +413,7 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
     for (let i = 1; i <= system.attackRoll.count; i++) {
       const rolls = await rollAttackPair(attackBonus, actor);
       const rendered = await renderAttackPairHTML(rolls, 'magicResistance', actor, { damageDice });
+      const attackBlockIndex = parts.length;
       parts.push(`<div class="sksk-roll-attack"><strong>${game.i18n.format('SKSK.Spell.Roll.Attack', { number: i })}</strong></div>${rendered}`);
 
       const damageEntries = [];
@@ -420,7 +422,29 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
         parts.push(html);
         damageEntries.push(entry);
       }
-      parts.push(renderApplyDamageButton(actor, damageEntries, null, takeTechniqueEffect()));
+      const techniqueEffect = takeTechniqueEffect();
+      const applyButtonIndex = parts.length;
+      parts.push(renderApplyDamageButton(actor, damageEntries, null, techniqueEffect));
+
+      // Convenience: if the user has one or more OTHER tokens targeted,
+      // resolve this attack against every one of them right away, no
+      // manual Evaluate/Apply Damage click needed - see helpers/
+      // attackRolls.mjs#autoResolveAttackForTargets. Unlike weapon/Martial
+      // Arts attacks, a spell that misses still deals half this damage
+      // (rounded down) unless the target's own Verbesserte Magieresistenz
+      // switch is on - see that function's own doc comment. The manual
+      // buttons above stay in place either way, just visually dimmed once
+      // this actually did something.
+      if (actor) {
+        const autoResolveHTML = await autoResolveAttackForTargets(rolls, 'magicResistance', actor, {
+          damageEntries, damageDice, killSkillKey: null, techniqueItemUuid: techniqueEffect?.itemUuid ?? null,
+        });
+        if (autoResolveHTML) {
+          parts[attackBlockIndex] = greyOutManualEvalButtons(parts[attackBlockIndex]);
+          parts[applyButtonIndex] = greyOutManualEvalButtons(parts[applyButtonIndex]);
+          parts.push(autoResolveHTML);
+        }
+      }
     }
   }
 

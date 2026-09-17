@@ -1,9 +1,13 @@
 import { getActorSkillLevel } from './skills.mjs';
-import { applyD20Malus, computeDazedAttributeMalus } from './statusEffects.mjs';
-import { chooseGenericRollMode, evaluateD20WithMode, formatD20ModeSummaryLine, GENERIC_ROLL_MODES } from './criticalRolls.mjs';
-import { postActionChatCard } from './actions.mjs';
+import { applyD20Malus, computeDazedAttributeMalus, isActorsOwnTurn } from './statusEffects.mjs';
+import { chooseGenericRollMode, evaluateD20WithMode, formatD20ModeSummaryLine } from './criticalRolls.mjs';
+import {
+  postActionChatCard, hasEnoughActionPoints, hasEnoughReactionPoints, spendActionPoints, spendReactionPoints,
+} from './actions.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
 import { computePatronRollBonus } from './religion.mjs';
+import { computeSkillRollCost } from './skillRollCost.mjs';
+import { SKSKSkillRollDialog } from '../apps/skill-roll-dialog.mjs';
 
 /**
  * The skill's own config entry (CONFIG.SKSK.skills[category][skillKey]) if
@@ -63,9 +67,11 @@ function pickMalusAttribute(actor, attributes) {
  * A variant's own "trigger" is looked up in the skillUsageFp world setting
  * exactly like any other (see helpers/skillFp.mjs) - "skillCheck" itself
  * is a valid variant trigger (Fingerfertigkeit's own base roll), used here
- * just like any bespoke one.
+ * just like any bespoke one. Exported so apps/skill-roll-ap-cost-config.mjs
+ * can reuse the exact same list of options for its own AP-cost fields,
+ * rather than duplicating it.
  */
-const SKILL_ROLL_VARIANTS = {
+export const SKILL_ROLL_VARIANTS = {
   // Fallen: setting a trap and disarming one are the same roll, but never
   // its own plain "skillCheck" FP - see apps/skill-usage-fp-config.mjs.
   traps: [
@@ -132,8 +138,8 @@ export async function chooseSkillRollVariant(skillKey, def) {
 /**
  * Combined "which attribute(s), then which roll mode" prompt for a skill
  * with more than one possible attribute (def.attributes.length > 1 - see
- * sheets/actor-sheet.mjs#rollSkill) - both choices in ONE dialog with a
- * single "Würfeln" button, instead of an attribute-choice dialog
+ * sheets/actor-sheet.mjs#rollSkill) - both choices in ONE dialog (see
+ * apps/skill-roll-dialog.mjs), instead of an attribute-choice dialog
  * immediately followed by rollSkillCheck's own separate Neutral/Vorteil/
  * Nachteil one (chooseGenericRollMode). A skill with only one fixed
  * attribute has nothing to combine this with, so it still only ever shows
@@ -152,47 +158,25 @@ export async function chooseSkillRollVariant(skillKey, def) {
 export async function chooseSkillRollAttributeAndMode(skillKey, def) {
   const isCombine = def.attributeMode === 'combine';
   const options = isCombine ? nonEmptyAttributeSubsets(def.attributes) : def.attributes.map(a => [a]);
-  const attributeOptionsHTML = options.map((option, index) =>
-    `<option value="${index}">${option.map(a => game.i18n.localize(CONFIG.SKSK.attributes[a])).join(' + ')}</option>`
-  ).join('');
-  const modeOptionsHTML = GENERIC_ROLL_MODES.map(mode =>
-    `<option value="${mode.id}">${game.i18n.localize(mode.label)}</option>`
-  ).join('');
-
+  const attributeOptions = options.map((option, index) => ({
+    index, label: option.map(a => game.i18n.localize(CONFIG.SKSK.attributes[a])).join(' + '),
+  }));
   const promptKey = isCombine ? 'SKSK.Skill.CombineAttributePrompt' : 'SKSK.Skill.ChooseAttributePrompt';
-  const content = `
-    <div class="form-group">
-      <label>${game.i18n.localize(promptKey)}</label>
-      <select name="attributeOption">${attributeOptionsHTML}</select>
-    </div>
-    <div class="form-group">
-      <label>${game.i18n.localize('SKSK.GenericRoll.ChooseModePrompt')}</label>
-      <select name="mode">${modeOptionsHTML}</select>
-    </div>
-  `;
 
-  const result = await foundry.applications.api.DialogV2.wait({
-    window: { title: game.i18n.localize(def.label) },
-    content,
-    buttons: [{
-      action: 'roll',
-      label: game.i18n.localize('SKSK.Skill.RollButton'),
-      default: true,
-      callback: (event, button) => ({
-        attributes: options[Number(button.form.elements.attributeOption.value)],
-        mode: button.form.elements.mode.value,
-      }),
-    }],
-    rejectClose: false,
-  });
-  return result ?? null;
+  const result = await SKSKSkillRollDialog.wait(game.i18n.localize(def.label), promptKey, attributeOptions);
+  if (!result) return null;
+  return { attributes: options[result.index], mode: result.mode };
 }
 
 /**
  * Roll a skill check: 1d20 + the skill's current level + the modifier(s)
- * of the chosen attribute(s). "Oder" skills (CONFIG.SKSK.skills[...]
- * .attributeMode "choice") pass a single chosen attribute; "und/oder"
- * skills ("combine") may pass several, each summed in - see
+ * of the chosen attribute(s). Costs its own AP (on the actor's own turn)
+ * or RP (off it) while a Combat is active - see helpers/skillRollCost.mjs#
+ * computeSkillRollCost, waived entirely outside of Combat - aborting with
+ * a warning (no roll, no cost deducted) if unaffordable. "Oder" skills
+ * (CONFIG.SKSK.skills[...].attributeMode "choice") pass a single chosen
+ * attribute; "und/oder" skills ("combine") may pass several, each summed
+ * in - see
  * sheets/actor-sheet.mjs#rollSkill for where that choice is gathered.
  * @param {Actor} actor
  * @param {string} skillKey
@@ -216,6 +200,16 @@ export async function rollSkillCheck(actor, skillKey, chosenAttributes, variant 
   const def = getSkillCheckDefinition(skillKey);
   if (!def || !chosenAttributes?.length) return;
 
+  // Rolling a skill in Combat costs its own AP (on the actor's own turn) or
+  // RP (off it) - see helpers/skillRollCost.mjs, waived entirely outside of
+  // Combat (hasEnoughActionPoints/hasEnoughReactionPoints's own convention).
+  // Checked before anything else so an unaffordable roll aborts up front,
+  // same as every other AP/RP-costing action in the system.
+  const trigger = variant?.trigger ?? 'skillCheck';
+  const offTurn = !isActorsOwnTurn(actor);
+  const { apCost, rpCost } = computeSkillRollCost(actor, skillKey, trigger, chosenAttributes);
+  if (offTurn ? !hasEnoughReactionPoints(actor, rpCost) : !hasEnoughActionPoints(actor, apCost)) return;
+
   const mode = presetMode ?? await chooseGenericRollMode();
   if (!mode) return;
 
@@ -228,13 +222,14 @@ export async function rollSkillCheck(actor, skillKey, chosenAttributes, variant 
 
   const result = await evaluateD20WithMode(formula, actor.getRollData(), mode);
   const { roll, criticalType, doubleCritical } = result;
+  await actor.update(offTurn ? spendReactionPoints(actor, rpCost) : spendActionPoints(actor, apCost));
   // The heading is always just the skill's own name (see rollCard.mjs#
   // formatRollCardHeading) - a chosen variant's own "what's being done"
   // sentence goes in the description instead, see below, rather than
   // parenthesized onto the heading.
   const label = game.i18n.localize(def.label);
 
-  const fpGrant = await grantSkillUsageFp(actor, skillKey, variant?.trigger ?? 'skillCheck');
+  const fpGrant = await grantSkillUsageFp(actor, skillKey, trigger);
   const descriptionKey = variant ? SKILL_ROLL_VARIANT_DESCRIPTIONS[variant.trigger] : null;
   const descriptionHTML = descriptionKey
     ? `<div class="sksk-roll-description">${game.i18n.format(descriptionKey, { name: actor.name })}</div>`
@@ -249,5 +244,7 @@ export async function rollSkillCheck(actor, skillKey, chosenAttributes, variant 
   if (doubleCritical) {
     extraHTML += formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'luck', 'doubleCriticalRoll'));
   }
-  return postActionChatCard(actor, `[skill] ${label}`, roll, 0, extraHTML, criticalType);
+  return postActionChatCard(
+    actor, `[skill] ${label}`, roll, offTurn ? 0 : apCost, extraHTML, criticalType, offTurn ? rpCost : 0
+  );
 }

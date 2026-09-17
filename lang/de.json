@@ -69,6 +69,11 @@
                 "Hint": "Wie viele FP ein Charakter durch das Nutzen einer Fertigkeit generiert (Fertigkeitswürfe, Waffenangriffe, gewirkte Zauber, Attributswürfe, ...) - nur Charaktere, unterteilt nach Fertigkeiten-Kategorie.",
                 "Label": "Fertigkeitsnutzungs-FP konfigurieren"
             },
+            "SkillRollApCost": {
+                "Name": "AP-Kosten: Fertigkeits-/Attributswürfe",
+                "Hint": "Wie viele AP (im eigenen Zug) bzw. RP (außerhalb des eigenen Zuges) das Würfeln einer Fertigkeit oder eines rohen Attributs im Kampf kostet - unterteilt nach Fertigkeit (und deren Nutzungsmöglichkeiten) sowie nach Attribut. Standardmäßig 2, außerhalb eines Kampfes stets kostenlos.",
+                "Label": "AP-Kosten für Würfe konfigurieren"
+            },
             "Lehren": {
                 "Name": "Lehren",
                 "Hint": "Der Katalog der pro Fertigkeit verfügbaren Lehren - jeder Charakter verteilt einen gemeinsamen Pool von 5 Stufen frei auf die Lehren einer Fertigkeit, wobei jede Lehre eine eigene Mindest-Fertigkeitsstufe voraussetzt.",
@@ -184,7 +189,6 @@
             "Description": "Beschreibung",
             "Consumable": "Verbrauchbar",
             "ConsumableAbbr": "Verbr.",
-            "RollHint": "Klicken zum Würfeln/Benutzen",
             "CreateNew": "Neuen Gegenstand hinzufügen",
             "CreateItem": "Gegenstand",
             "CreateWeapon": "Waffe",
@@ -364,6 +368,12 @@
             "AttackHit": "FP / Gelandeter Angriff",
             "AttackDefended": "FP / Abgewehrter Angriff"
         },
+        "SkillRollApCostConfig": {
+            "Hint": "AP-Kosten (im eigenen Zug) bzw. RP-Kosten (außerhalb des eigenen Zuges) für das Würfeln jeder Fertigkeit, unterteilt nach deren eigenen Nutzungsmöglichkeiten und - bei Fertigkeiten mit mehr als einem möglichen Attribut (z.B. Überleben) - zusätzlich nach dem jeweils gewählten Attribut. Standardwert 2, außerhalb eines Kampfes stets kostenlos. Von SKSK-Effekten über die beiden Modifikator-Felder beeinflussbar (siehe Effekt-Schlüssel-Referenz).",
+            "BaseCheck": "Fertigkeitswurf",
+            "RawAttributes": "Rohattribute (direkter Attributswurf)",
+            "RawAttributesHint": "AP-/RP-Kosten für einen direkten Wurf auf ein rohes Attribut (Klick auf den Attributswert/-modifikator im Kopfbereich) - unabhängig vom Würfeln der zugehörigen \"Unbegrenzte X\"-Fertigkeit oben, die ihre eigenen Kosten hat."
+        },
         "LehrenConfig": {
             "NamePlaceholder": "Name",
             "DescriptionPlaceholder": "Beschreibung",
@@ -517,6 +527,12 @@
             "SoulPowerResourceEnabledHint": "Zeigt die Seelenmacht-Ressource in der Seitenleiste bereits an, bevor Seelenstärke ihre eigene maximale Stufe (5) erreicht hat - sie wird ohnehin angezeigt, sobald diese Stufe erreicht ist, daher wirkt sich dieser Schalter nur vorher aus. Standardmäßig aus. Von Active Effects ansteuerbar.",
             "SoulPowerMechanicEnabled": "Seelenstärke: Neue Mechanik aktivieren (reserviert)",
             "SoulPowerMechanicEnabledHint": "Reserviert für Seelenmachts eigene Eintausch-Mechanik (ihren \"Eingetauschte Seelenmacht\"-FP-Trigger) - noch nicht entworfen oder angebunden, wird angegangen sobald jeder Fertigkeitsnutzungs-FP-Trigger vollständig implementiert ist. Hat aktuell keine Auswirkung. Von Active Effects ansteuerbar.",
+            "ImprovedMagicResistance": "Verbesserte Magieresistenz",
+            "ImprovedMagicResistanceHint": "Ein Zauber-Angriffswurf, der diesen Akteur nicht trifft, verursacht normalerweise trotzdem halbierten Schaden (abgerundet) - bei aktiviertem Schalter verhindert die Magieresistenz den Schaden bei einem Fehlschlag stattdessen vollständig. Von Active Effects ansteuerbar.",
+            "ConcealmentBreaksOnlyOnHit": "Tarnung bricht nicht solange der Angriff nicht getroffen hat",
+            "ConcealmentBreaksOnlyOnHitHint": "Ein Angriff aus der Tarnung heraus hebt diese normalerweise sofort auf, unabhängig von Treffer oder Fehlschlag - bei aktiviertem Schalter bleibt die Tarnung bei einem Fehlschlag stattdessen bestehen. Attentats-Angriffe werden unabhängig davon immer normal berechnet (anhand der Tarnung zum Zeitpunkt des Angriffs). Von Active Effects ansteuerbar.",
+            "ConcealmentNeverBreaksOnAttack": "Tarnung bricht nicht bei Angriff",
+            "ConcealmentNeverBreaksOnAttackHint": "Deaktiviert das automatische Aufheben der Tarnung durch einen Angriff vollständig (überschreibt auch den Schalter oben) - Attentats-Angriffe werden unabhängig davon immer normal berechnet. Von Active Effects ansteuerbar.",
             "LifeAbsorptionOverrideLabel": "Lebensschaden heilt",
             "LifeAbsorptionOverride": {
                 "Default": "Nach Kreaturenkategorie (Standard)",
@@ -623,6 +639,10 @@
                 "DamageBonus": "Schadenstyp-Boni",
                 "AttributeRoll": "Attributswurf-Boni",
                 "SkillRoll": "Fertigkeitswurf-Boni",
+                "SkillRollApCost": "Fertigkeitswurf: AP-Kosten",
+                "SkillRollRpCost": "Fertigkeitswurf: RP-Kosten",
+                "AttributeRollApCost": "Attributswurf: AP-Kosten",
+                "AttributeRollRpCost": "Attributswurf: RP-Kosten",
                 "SkillGain": "Fertigkeiten-FP-Gewinn"
             }
         },
@@ -1015,7 +1035,10 @@
             "DamageApplied": "{type}-Schaden angewendet: {amount}",
             "DamageAbsorbedIntoHealing": "{type}-Schaden absorbiert - stattdessen {amount} Heilung",
             "DamageAppliedTitle": "Schaden angewendet ({defender})",
-            "KillConfirmed": "{defender} wurde besiegt!"
+            "KillConfirmed": "{defender} wurde besiegt!",
+            "SpellMissHalfDamage": "Verfehlt - wirkt trotzdem mit halbiertem Schaden.",
+            "SpellMissResisted": "Verfehlt - durch Verbesserte Magieresistenz vollständig abgewehrt.",
+            "ConcealmentBroken": "Tarnung durch den Angriff aufgehoben."
         },
         "Gender": {
             "Male": "Männlich",
