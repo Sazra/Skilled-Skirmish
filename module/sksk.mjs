@@ -20,6 +20,7 @@ import {
 } from './helpers/statusEffects.mjs';
 import { clampSingleAttributeSelection } from './helpers/models.mjs';
 import { registerCalendariaIntegration } from './helpers/calendarIntegration.mjs';
+import { applyCustomActiveEffectChange, addPhaseSelectToActiveEffectChanges } from './helpers/effects.mjs';
 import * as models from './data/_module.mjs';
 
 Hooks.once('init', function () {
@@ -116,6 +117,26 @@ Hooks.once('ready', async function () {
   registerCalendariaIntegration();
 
   Hooks.on('hotbarDrop', (bar, data, slot) => createItemMacro(data, slot));
+
+  // Makes an Active Effect change's "Custom" type actually do something -
+  // see helpers/effects.mjs#applyCustomActiveEffectChange. Foundry itself
+  // never applies a Custom change on its own; it only fires this hook.
+  Hooks.on('applyActiveEffect', applyCustomActiveEffectChange);
+
+  // Adds a visible Phase (Initial/Final) dropdown to every Change row in
+  // the stock Active Effect Config sheet - see helpers/effects.mjs#
+  // addPhaseSelectToActiveEffectChanges for why that matters. Also widens
+  // the sheet once (a flag on the app instance - this hook re-fires on
+  // every render, including a partial one like "Add Change", and the
+  // width must not keep compounding on those) to fit the new column
+  // alongside the existing ones without the row overflowing/scrolling.
+  Hooks.on('renderActiveEffectConfig', (app, element) => {
+    addPhaseSelectToActiveEffectChanges(element);
+    if (!app._sksk_widenedForPhase) {
+      app._sksk_widenedForPhase = true;
+      app.setPosition({ width: app.position.width + 100 });
+    }
+  });
 
   // Delegated (not per-message-render) so it keeps working for every chat
   // card regardless of how/when each one gets rendered.

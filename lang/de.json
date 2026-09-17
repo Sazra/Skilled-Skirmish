@@ -625,7 +625,7 @@
             "AmountHint": "Bei Positiv/Negativ ein fester FP-Betrag. Bei Multiplikativ ein PROZENTSATZ, der zum FP-Gewinn addiert/subtrahiert wird (z.B. 100 = Verdopplung, 50 = +50%, -50 = Halbierung) - kein direkter Multiplikationsfaktor."
         },
         "EffectKeyReference": {
-            "Hint": "Jeder echte system.*-Pfad, den das \"Attribute Key\"-Feld eines Foundry-Effekts auf einem Akteur ansprechen kann. Klicke das Kopieren-Symbol, oder Strg+Rechtsklick auf ein bereits im Charakterbogen angezeigtes Feld (eine Attribut-Box, eine Ressource, eine Fertigkeitszeile), um dessen eigenen Schlüssel direkt zu kopieren.",
+            "Hint": "Jeder echte system.*-Pfad, den das \"Attribute Key\"-Feld eines Foundry-Effekts auf einem Akteur ansprechen kann. Klicke das Kopieren-Symbol, oder Strg+Rechtsklick auf ein bereits im Charakterbogen angezeigtes Feld (eine Attribut-Box, eine Ressource, eine Fertigkeitszeile), um dessen eigenen Schlüssel direkt zu kopieren. Tipp: Als \"Value\" eines Effekts akzeptiert Foundry auch @-Formeln (z.B. \"@attributes.dex.mod\"), um einen Wert um den aktuellen Wert eines anderen Schlüssels zu erhöhen - beim Modus \"Add\"/\"Override\" funktioniert das direkt für jeden echten Schlüssel hier in der Liste; bei einer @-Formel, die sich auf einen erst später berechneten Wert bezieht (z.B. \"@attributes.dex.mod\" - egal ob mit Modus \"Add\"/\"Override\" oder \"Custom\"), muss dafür zusätzlich die Phase des Changes (im Changes-Tab des Effekts direkt auswählbar) auf \"Final\" gesetzt werden, sonst wird der Bezug stillschweigend als 0 aufgelöst.",
             "SearchPlaceholder": "Nach Label oder Schlüssel suchen...",
             "Copy": "Kopieren",
             "Copied": "Kopiert: {key}",
@@ -645,6 +645,10 @@
                 "AttributeRollRpCost": "Attributswurf: RP-Kosten",
                 "SkillGain": "Fertigkeiten-FP-Gewinn"
             }
+        },
+        "EffectPhase": {
+            "Label": "Phase",
+            "Hint": "Wann dieser Change angewendet wird. \"Initial\": vor der Attribut-/Ressourcen-Berechnung (Standard) - eine @-Formel, die sich auf einen erst dort berechneten Wert bezieht (z.B. \"@attributes.dex.mod\"), liest an dieser Stelle noch keinen aktuellen Wert. \"Final\": danach - notwendig, damit eine solche @-Formel zuverlässig den fertig berechneten Wert liefert."
         },
         "Rest": {
             "Title": "Zeit verbringen",

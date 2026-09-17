@@ -625,7 +625,7 @@
       "AmountHint": "A flat FP amount for Positive/Negative. A PERCENTAGE added to/subtracted from the FP gain for Multiplicative (e.g. 100 = doubles it, 50 = +50%, -50 = halves it) - not a direct multiplication factor."
     },
     "EffectKeyReference": {
-      "Hint": "Every real system.* path a Foundry Active Effect's own \"Attribute Key\" field can target on an actor. Click the copy icon, or Ctrl+Right-click a field already shown on a Character sheet (an attribute box, a resource, a skill row) to copy its own key directly.",
+      "Hint": "Every real system.* path a Foundry Active Effect's own \"Attribute Key\" field can target on an actor. Click the copy icon, or Ctrl+Right-click a field already shown on a Character sheet (an attribute box, a resource, a skill row) to copy its own key directly. Tip: an effect's own \"Value\" also accepts @-formulas (e.g. \"@attributes.dex.mod\") to increase a value by another key's current value - with \"Add\"/\"Override\" mode this works directly for any real key listed here; for an @-formula referencing a value that's only computed later (e.g. \"@attributes.dex.mod\" - regardless of \"Add\"/\"Override\" or \"Custom\" mode), the change's own Phase (selectable directly in the effect's Changes tab) must also be set to \"Final\", or the reference silently resolves to 0.",
       "SearchPlaceholder": "Search by label or key...",
       "Copy": "Copy",
       "Copied": "Copied: {key}",
@@ -645,6 +645,10 @@
         "AttributeRollRpCost": "Attribute Roll: RP Cost",
         "SkillGain": "Skill FP Gain"
       }
+    },
+    "EffectPhase": {
+      "Label": "Phase",
+      "Hint": "When this change applies. \"Initial\": before attribute/resource computation (the default) - an @-formula referencing a value only computed there (e.g. \"@attributes.dex.mod\") doesn't yet read a current value at this point. \"Final\": afterward - required for such an @-formula to reliably read the fully computed value."
     },
     "Rest": {
       "Title": "Spend Time",
