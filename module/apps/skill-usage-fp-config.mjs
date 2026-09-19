@@ -435,6 +435,16 @@ export class SKSKSkillUsageFpConfig extends HandlebarsApplicationMixin(Applicati
       ...skill,
       values: stored[skill.key] ?? {},
     }));
+    // Magieschulen also carries one extra, non-skill row: the rate for a
+    // Combined spell's own "cast" FP (helpers/spells.mjs#
+    // computeCombinedSpellFpTargets decides which real skill(s) actually
+    // receive it - Combined spells belong to no single magic-school skill
+    // of their own, unlike every other row here). Same two fields
+    // (spellCastPerLevelInCombat/OutOfCombat) as every real school, reusing
+    // this category's own generic table/submit handling as-is.
+    if (partId === 'magicSchools') {
+      context.skills.push({ key: 'combinedMagic', label: 'SKSK.SkillFpConfig.CombinedMagic', values: stored.combinedMagic ?? {} });
+    }
     return context;
   }
 

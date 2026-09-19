@@ -138,33 +138,151 @@ export function computeCombinedSchoolOverrideLevel(override, actor) {
 }
 
 /**
- * The highest spell level an actor is granted permission to cast in a given
- * combined magic school, bypassing that school's spells' own combinedSkills
- * prerequisite entirely - e.g. a Priest of Light casting Miracles up to
- * their Light skill's level, regardless of what any individual Miracle
- * spell's own combinedSkills demands. Every matching override across every
- * Class/Species/Talent item on the actor is evaluated; the actor gets the
- * highest of them.
+ * Find the single BEST-granting source (one combinedSchoolOverrides entry,
+ * or a Patron) for a given actor+combinedSchool, across every Class/
+ * Species/Talent item plus any active Patron (see helpers/religion.mjs#
+ * getActivePatronCombinedSchoolLevel - the actor's own Religion choice, or
+ * any Glaubensklasse's own effective Patron, granting up to their Glaube
+ * (Faith) skill level). Shared by getCombinedSchoolOverrideLevel (just the
+ * level) and getCombinedSchoolOverrideTarget (which skill this cast's own
+ * FP should be credited to) so the two always agree on which single source
+ * "won" - see helpers/spell-rolls.mjs#rollSpellItem.
  * @param {Actor} actor
- * @param {string} combinedSchool   A key from CONFIG.SKSK.combinedMagicSchools.
- * @return {number|null}   The granted max level, or null if nothing grants one.
+ * @param {string} combinedSchool
+ * @return {{level: number, source: object|'patron'}|null}
  */
-export function getCombinedSchoolOverrideLevel(actor, combinedSchool) {
+function findBestCombinedSchoolOverride(actor, combinedSchool) {
   let best = null;
   for (const item of actor.items) {
     if (!COMBINED_SCHOOL_OVERRIDE_ITEM_TYPES.includes(item.type)) continue;
     for (const override of item.system.combinedSchoolOverrides ?? []) {
       if (override.combinedSchool !== combinedSchool) continue;
       const level = computeCombinedSchoolOverrideLevel(override, actor);
-      if (best === null || level > best) best = level;
+      if (!best || level > best.level) best = { level, source: override };
     }
   }
-  // A Patron granting this combined school (see helpers/religion.mjs) - the
-  // actor's own Religion choice, or any Glaubensklasse's own effective
-  // Patron - grants it up to their Glaube (faith) skill level.
   const patronLevel = getActivePatronCombinedSchoolLevel(actor, combinedSchool);
-  if (patronLevel !== null && (best === null || patronLevel > best)) best = patronLevel;
+  if (patronLevel !== null && (!best || patronLevel > best.level)) {
+    best = { level: patronLevel, source: 'patron' };
+  }
   return best;
+}
+
+/**
+ * The highest spell level an actor is granted permission to cast in a given
+ * combined magic school, bypassing that school's spells' own combinedSkills
+ * prerequisite entirely - e.g. a Priest of Light casting Miracles up to
+ * their Light skill's level, regardless of what any individual Miracle
+ * spell's own combinedSkills demands.
+ * @param {Actor} actor
+ * @param {string} combinedSchool   A key from CONFIG.SKSK.combinedMagicSchools.
+ * @return {number|null}   The granted max level, or null if nothing grants one.
+ */
+export function getCombinedSchoolOverrideLevel(actor, combinedSchool) {
+  return findBestCombinedSchoolOverride(actor, combinedSchool)?.level ?? null;
+}
+
+/**
+ * Which single skill a Combined spell's own "cast" FP (see helpers/spell-
+ * rolls.mjs#rollSpellItem) should be credited to, when an override (rather
+ * than the spell's own combinedSkills requirement) is what makes it
+ * castable at its own spellLevel - the actor-wide BEST override for this
+ * school (see findBestCombinedSchoolOverride, so this always agrees with
+ * what checkCombinedSpellPrerequisite already allowed), then within that
+ * ONE winning entry, whichever single skill- or attribute-bonus
+ * contributed the MOST to its own granted level - never split across
+ * several, unlike the combinedSkills fallback (see
+ * computeCombinedSpellFpTargets). Ties broken by the lowest current skill
+ * level among the tied contributors, then by declaration order. A winning
+ * Patron grant (source "patron") has no item-level bonus breakdown at all -
+ * it's always credited to Glaube (Faith) itself, the skill its own granted
+ * level is directly equal to.
+ *
+ * Returns null when no override reaches this spellLevel at all, OR when
+ * the winning entry has no skill-/attribute-bonus whatsoever (a pure flat
+ * baseFormula, e.g. "L", granting a level with nothing underneath it) - in
+ * the latter case the caller should fall back to the spell's own
+ * combinedSkills exactly as if no override applied, since there's no real
+ * skill here to credit despite the override making the cast possible.
+ * @param {Actor} actor
+ * @param {string} combinedSchool
+ * @param {number} spellLevel
+ * @return {string|null}
+ */
+export function getCombinedSchoolOverrideTarget(actor, combinedSchool, spellLevel) {
+  const best = findBestCombinedSchoolOverride(actor, combinedSchool);
+  if (!best || spellLevel > best.level) return null;
+  if (best.source === 'patron') return 'faith';
+
+  const candidates = [];
+  for (const entry of best.source.attributeBonuses ?? []) {
+    const attribute = actor.system.attributes?.[entry.attribute];
+    if (!attribute) continue;
+    const raw = entry.useModifier ? attribute.mod : attribute.value;
+    const skill = CONFIG.SKSK.unlimitedAttributeSkills[entry.attribute];
+    if (skill) candidates.push({ skill, contribution: evaluateBonusFormula(entry.formula, raw), level: getActorSkillLevel(actor, skill) });
+  }
+  for (const entry of best.source.skillBonuses ?? []) {
+    const level = getActorSkillLevel(actor, entry.skill);
+    candidates.push({ skill: entry.skill, contribution: evaluateBonusFormula(entry.formula, level), level });
+  }
+  if (!candidates.length) return null;
+
+  candidates.sort((a, b) => b.contribution - a.contribution || a.level - b.level);
+  return candidates[0].skill;
+}
+
+/**
+ * Split totalAmount across whichever of the given skills currently sit at
+ * the LOWEST level (only those, not every skill) - as evenly as whole
+ * numbers allow: floor(totalAmount / recipientCount) each, with the
+ * remainder (totalAmount % recipientCount) going one at a time to the
+ * first that many recipients in their own declaration order. E.g. three
+ * skills all at level 3 splitting 10 FP: 4/3/3; splitting 11: 4/4/3.
+ * @param {Actor} actor
+ * @param {string[]} skills   May contain duplicates; each entry gets its own share.
+ * @param {number} totalAmount
+ * @return {Array<{skill: string, amount: number}>}
+ */
+function splitAmountAcrossLowestSkills(actor, skills, totalAmount) {
+  const levels = skills.map(skill => getActorSkillLevel(actor, skill));
+  const minLevel = Math.min(...levels);
+  const recipients = skills.filter((_, i) => levels[i] === minLevel);
+
+  const base = Math.floor(totalAmount / recipients.length);
+  const remainder = totalAmount % recipients.length;
+  return recipients.map((skill, i) => ({ skill, amount: base + (i < remainder ? 1 : 0) }));
+}
+
+/**
+ * Which skill(s) a Combined spell's own "cast" FP should be credited to,
+ * and how much of totalAmount each gets - see helpers/spell-rolls.mjs#
+ * rollSpellItem, which computes totalAmount from the "combinedMagic"
+ * skillUsageFp rate (see apps/skill-usage-fp-config.mjs's Magieschulen tab)
+ * times the spell's own level, then grants each entry here via
+ * helpers/skillFp.mjs#grantFlatSkillFp.
+ *
+ * If an override makes this cast possible at its own level (see
+ * getCombinedSchoolOverrideTarget), the WHOLE amount goes to that one
+ * skill. Otherwise (no override, or one with nothing to credit), it's
+ * split across the spell's own combinedSkills requirement instead - see
+ * splitAmountAcrossLowestSkills. A spell with no combinedSkills entries at
+ * all (and no override either) has nothing to credit, so this grants
+ * nothing.
+ * @param {object} spellSystem   A combined spell's system data.
+ * @param {Actor} actor
+ * @param {number} totalAmount
+ * @return {Array<{skill: string, amount: number}>}
+ */
+export function computeCombinedSpellFpTargets(spellSystem, actor, totalAmount) {
+  if (totalAmount <= 0) return [];
+
+  const overrideTarget = getCombinedSchoolOverrideTarget(actor, spellSystem.combinedSchool, spellSystem.spellLevel);
+  if (overrideTarget) return [{ skill: overrideTarget, amount: totalAmount }];
+
+  const skills = (spellSystem.combinedSkills ?? []).map(entry => entry.skill).filter(Boolean);
+  if (!skills.length) return [];
+  return splitAmountAcrossLowestSkills(actor, skills, totalAmount);
 }
 
 /**

@@ -1,7 +1,7 @@
 import {
   computeDamageBonus, computeSavingThrowValue, computeSavingThrowBonusSum, computeSpellManaCost, computeSpellApCost,
   computeRitualHours, computeMaxOverchargeCount, computeOverchargedRanges, computeExtraManaCostSum,
-  computeMaxExtraCostTier,
+  computeMaxExtraCostTier, computeCombinedSpellFpTargets,
 } from './spells.mjs';
 import { getActorSkillLevel, getSkillLabel } from './skills.mjs';
 import {
@@ -16,7 +16,7 @@ import {
   resolveCheckSuccess, wrapCriticalBlock, wrapCriticalInline, chooseGenericRollMode, evaluateD20WithMode,
   formatD20ModeSummaryLine,
 } from './criticalRolls.mjs';
-import { grantSkillUsageFp, formatSkillFpGrantLine, grantFlatSkillFp, checkReflexActionTrigger } from './skillFp.mjs';
+import { grantSkillUsageFp, formatSkillFpGrantLine, grantFlatSkillFp, checkReflexActionTrigger, getSkillFpRate } from './skillFp.mjs';
 import { getManaAlternativeResources, computeManaAlternativeCoverage, payWithManaAlternative } from './customResources.mjs';
 import { renderApplyDamageButton, resolveClickDefender, applySpellEffectGroup } from './damageApplication.mjs';
 import {
@@ -722,7 +722,7 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
 
     // FP for casting a spell (per its own spellLevel) belongs to its magic
     // school - only meaningful for Simple/Advanced spells, which each
-    // belong to exactly one (Combined/Systemless spells have none - see
+    // belong to exactly one (Systemless spells have none - see
     // CONFIG.SKSK.simpleMagicSchools/advancedMagicSchools). Granted now,
     // at cast time, regardless of whether its AP cost is still owed above.
     // Split into two separately GM-configured rates by whether a Combat is
@@ -739,6 +739,20 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
       // spellCastPerLevelInCombat/OutOfCombat above, not instead of it.
       if (system.magicSchool === 'bardic') {
         parts.push(formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'singing', 'bardicSpellCast')));
+      }
+    } else if (system.spellType === 'combined') {
+      // Combined spells belong to no single magic-school skill, so their
+      // own per-level "cast" FP uses its own GM-configured rate (the
+      // "combinedMagic" pseudo-skill row on the Magieschulen tab, see
+      // apps/skill-usage-fp-config.mjs) rather than grantSkillUsageFp's own
+      // skill-keyed one, then gets credited to whichever real skill(s)
+      // actually enabled this cast - see helpers/spells.mjs#
+      // computeCombinedSpellFpTargets for the override-vs-combinedSkills
+      // split logic.
+      const trigger = isCombatActive() ? 'spellCastPerLevelInCombat' : 'spellCastPerLevelOutOfCombat';
+      const totalAmount = Math.floor(getSkillFpRate('combinedMagic', trigger) * system.spellLevel);
+      for (const { skill, amount } of computeCombinedSpellFpTargets(system, actor, totalAmount)) {
+        parts.push(formatSkillFpGrantLine(await grantFlatSkillFp(actor, skill, amount)));
       }
     }
 
