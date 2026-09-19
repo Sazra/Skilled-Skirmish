@@ -127,6 +127,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       editItem: SKSKActorSheet.#editItem,
       createItem: SKSKActorSheet.#createItem,
       toggleCreateItemMenu: SKSKActorSheet.#toggleCreateItemMenu,
+      toggleSpellSustaining: SKSKActorSheet.#toggleSpellSustaining,
       deleteItem: SKSKActorSheet.#deleteItem,
       create: SKSKActorSheet.#onEffectAction,
       edit: SKSKActorSheet.#onEffectAction,
@@ -986,6 +987,10 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       // turns green in this case; mana cost turns red instead whenever the
       // surcharge does apply (see manaCostIncreased above).
       item.costGood = item.castable && !item.manaCostIncreased;
+      // Gates the Spells tab's own quick sustaining toggle (see
+      // #toggleSpellSustaining/actor-spells.hbs) - only a spell with a real
+      // ongoing cost to actually start/stop shows it at all.
+      item.canSustain = !!(item.system.manaCostPerRound || item.system.upkeep);
     }
 
     const sortSpells = (list) => list.slice().sort((a, b) => {
@@ -1697,6 +1702,25 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
   static #toggleCreateItemMenu(event, target) {
     const menu = target.closest('.item-create-dropdown').querySelector('.item-create-menu');
     menu.hidden = !menu.hidden;
+  }
+
+  /**
+   * Toggle a Spell item's own "Wird aufrechterhalten" (sustaining) flag
+   * directly from the Spells tab's row controls - a quick end (or resume)
+   * for its own per-round Mana drain/Unterhalt (see data/spell.mjs#
+   * sustaining/manaCostPerRound/upkeep, helpers/mana.mjs#
+   * computeActiveSpellUpkeepTotal, helpers/statusEffects.mjs#
+   * handleSpellUpkeepTurnStart) without opening the full Spell item sheet.
+   * Only ever rendered at all for a spell with manaCostPerRound or upkeep
+   * set (see _prepareSpells' own item.canSustain) - see actor-spells.hbs.
+   * @param {PointerEvent} event
+   * @param {HTMLElement} target
+   * @private
+   */
+  static async #toggleSpellSustaining(event, target) {
+    const li = target.closest('.item');
+    const item = this.actor.items.get(li.dataset.itemId);
+    await item.update({ 'system.sustaining': !item.system.sustaining });
   }
 
   /**

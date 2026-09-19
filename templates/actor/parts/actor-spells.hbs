@@ -82,6 +82,12 @@
                 {{/if}}
               </div>
               <div class="item-controls">
+                {{#if item.canSustain}}
+                <a class="item-control item-sustaining-toggle" data-action="toggleSpellSustaining"
+                  title="{{#if item.system.sustaining}}{{localize 'SKSK.Spell.ToggleSustainingOff'}}{{else}}{{localize 'SKSK.Spell.ToggleSustainingOn'}}{{/if}}">
+                  <i class="fas {{#if item.system.sustaining}}fa-toggle-on{{else}}fa-toggle-off{{/if}}"></i>
+                </a>
+                {{/if}}
                 <a class="item-control item-edit" data-action="editItem" title="{{localize 'DOCUMENT.Update' type='Item'}}">
                   <i class="fas fa-edit"></i>
                 </a>
@@ -166,6 +172,12 @@
                 {{/if}}
               </div>
               <div class="item-controls">
+                {{#if item.canSustain}}
+                <a class="item-control item-sustaining-toggle" data-action="toggleSpellSustaining"
+                  title="{{#if item.system.sustaining}}{{localize 'SKSK.Spell.ToggleSustainingOff'}}{{else}}{{localize 'SKSK.Spell.ToggleSustainingOn'}}{{/if}}">
+                  <i class="fas {{#if item.system.sustaining}}fa-toggle-on{{else}}fa-toggle-off{{/if}}"></i>
+                </a>
+                {{/if}}
                 <a class="item-control item-edit" data-action="editItem" title="{{localize 'DOCUMENT.Update' type='Item'}}">
                   <i class="fas fa-edit"></i>
                 </a>
@@ -250,6 +262,12 @@
                 {{/if}}
               </div>
               <div class="item-controls">
+                {{#if item.canSustain}}
+                <a class="item-control item-sustaining-toggle" data-action="toggleSpellSustaining"
+                  title="{{#if item.system.sustaining}}{{localize 'SKSK.Spell.ToggleSustainingOff'}}{{else}}{{localize 'SKSK.Spell.ToggleSustainingOn'}}{{/if}}">
+                  <i class="fas {{#if item.system.sustaining}}fa-toggle-on{{else}}fa-toggle-off{{/if}}"></i>
+                </a>
+                {{/if}}
                 <a class="item-control item-edit" data-action="editItem" title="{{localize 'DOCUMENT.Update' type='Item'}}">
                   <i class="fas fa-edit"></i>
                 </a>
@@ -331,6 +349,12 @@
                 {{/if}}
               </div>
               <div class="item-controls">
+                {{#if item.canSustain}}
+                <a class="item-control item-sustaining-toggle" data-action="toggleSpellSustaining"
+                  title="{{#if item.system.sustaining}}{{localize 'SKSK.Spell.ToggleSustainingOff'}}{{else}}{{localize 'SKSK.Spell.ToggleSustainingOn'}}{{/if}}">
+                  <i class="fas {{#if item.system.sustaining}}fa-toggle-on{{else}}fa-toggle-off{{/if}}"></i>
+                </a>
+                {{/if}}
                 <a class="item-control item-edit" data-action="editItem" title="{{localize 'DOCUMENT.Update' type='Item'}}">
                   <i class="fas fa-edit"></i>
                 </a>

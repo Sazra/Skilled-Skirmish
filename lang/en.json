@@ -1411,6 +1411,8 @@
       "Sustaining": "Sustaining",
       "SustainingHint": "Marks this spell as currently active (e.g. after its normal Duration has run out and the caster keeps it going via a \"can be sustained\" duration) - arms Mana Cost Per Round and Upkeep.",
       "UpkeepAutoDeactivated": "{name}: No longer sustained - not enough mana for the per-round cost.",
+      "ToggleSustainingOn": "Start sustaining",
+      "ToggleSustainingOff": "Stop sustaining",
       "OverchargeAutoEffects": "Automatic Overcharge Effects",
       "OverchargeAutoEffectsHint": "When on, saving throw DC (+1), range (+20%) and damage (+50%) all scale automatically per Überladung. Turn off for a spell with a hand-written Custom Effect - the increased AP/Mana cost still applies either way, but the actual effect is then calculated manually.",
       "ExtraManaCostsLabel": "More Mana Can Be Paid",

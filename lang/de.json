@@ -1411,6 +1411,8 @@
             "Sustaining": "Wird aufrechterhalten",
             "SustainingHint": "Markiert diesen Zauber als aktuell aktiv (z.B. nachdem seine normale Wirkungsdauer abgelaufen ist und der Zaubernde ihn per \"kann aufrecht erhalten werden\" weiterlaufen lässt) - schaltet Manakosten pro Runde und Unterhalt scharf.",
             "UpkeepAutoDeactivated": "{name}: Wird nicht mehr aufrechterhalten - nicht genug Mana für die Kosten pro Runde.",
+            "ToggleSustainingOn": "Aufrechterhaltung aktivieren",
+            "ToggleSustainingOff": "Aufrechterhaltung beenden",
             "OverchargeAutoEffects": "Automatische Überladungs-Effekte",
             "OverchargeAutoEffectsHint": "Wenn aktiv, skalieren Rettungswurf-DC (+1), Reichweite (+20%) und Schaden (+50%) automatisch pro Überladung. Deaktivieren für Zauber mit handgeschriebenem Custom-Effekt - die erhöhten AP-/Mana-Kosten gelten trotzdem, aber die konkrete Wirkung wird dann manuell berechnet.",
             "ExtraManaCostsLabel": "Es kann mehr Mana gezahlt werden",
