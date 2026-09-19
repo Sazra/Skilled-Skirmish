@@ -564,8 +564,10 @@
         "Action": {
             "Regeneration": "Regeneration",
             "RegenerateLifeDescription": "{name} regeneriert Leben",
+            "NotEnoughRegenerationCharges": "Keine Regenerationsladungen mehr übrig.",
             "Meditation": "Meditation",
             "RegenerateManaDescription": "{name} regeneriert Mana",
+            "NotEnoughMeditationCharges": "Keine Meditationsladungen mehr übrig.",
             "Adrenalin": "Adrenalin",
             "AdrenalinHint": "Kostet keine AP, reduziert aber die Adrenalin-Ladungen um 1 und stellt 1 AP wieder her. Jede Nutzung würfelt (Nutzungen insgesamt - 1)d4 als neuen Schaden am maximalen Leben - die erste Nutzung kostet noch kein maximales Leben.",
             "AdrenalinDescription": "{name} nutzt Adrenalin, stellt damit 1 AP her und nimmt Adrenalinschaden.",

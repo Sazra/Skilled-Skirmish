@@ -447,13 +447,23 @@ export function getRegenerationDieSizes(actor) {
  * Roll a Regeneration die to restore Life: 1d[first Class's life value] +
  * 1d[second Class's life value, once unlocked] + Constitution modifier +
  * Health skill level - restoring the result (clamped to max Life), and
- * deducting system.regenerationApCost (which may be 0).
+ * deducting system.regenerationApCost (which may be 0) and 1 Regeneration
+ * charge (system.regenerationCharges - see helpers/generalResources.mjs#
+ * computeMaxRegenerationCharges/helpers/rest.mjs#applyRest for how it's
+ * capped/restored). The charge is a resource cost like Mana, not AP/RP, so
+ * it's always consumed regardless of Combat state - mirrors helpers/
+ * inspiration.mjs#payInspirationCost's own charge handling.
  * @param {Actor} actor
  * @return {Promise<ChatMessage|void>}
  */
 export async function rollRegeneration(actor) {
   const apCost = actor.system.regenerationApCost ?? 0;
   if (!hasEnoughActionPoints(actor, apCost)) return;
+
+  const charges = actor.system.regenerationCharges.value;
+  if (charges < 1) {
+    return ui.notifications.warn(game.i18n.localize('SKSK.Action.NotEnoughRegenerationCharges'));
+  }
 
   const dice = getRegenerationDieSizes(actor).map(size => `1d${size}`);
   const conMod = actor.system.attributes?.con?.mod ?? 0;
@@ -463,7 +473,11 @@ export async function rollRegeneration(actor) {
 
   const life = actor.system.life;
   const newValue = Math.min(life.max, life.value + roll.total);
-  await actor.update({ ...spendActionPoints(actor, apCost), 'system.life.value': newValue });
+  await actor.update({
+    ...spendActionPoints(actor, apCost),
+    'system.life.value': newValue,
+    'system.regenerationCharges.value': charges - 1,
+  });
   const fpGrant = await grantSkillUsageFp(actor, 'health', 'regenerationUsed');
   const descriptionHTML = `<div class="sksk-roll-description">${game.i18n.format('SKSK.Action.RegenerateLifeDescription', { name: actor.name })}</div>`;
   const extraHTML = descriptionHTML + formatSkillFpGrantLine(fpGrant) + formatSkillFpGrantLine(await checkReflexActionTrigger(actor));
@@ -474,13 +488,23 @@ export async function rollRegeneration(actor) {
  * Roll a Meditation die to restore Mana: 1d[Aura value] + Mana
  * Regeneration skill level + Source Bound skill level - restoring the
  * result (clamped to max Mana), and deducting system.meditationApCost
- * (which may be 0).
+ * (which may be 0) and 1 Meditation charge (system.meditationCharges - see
+ * helpers/generalResources.mjs#computeMaxMeditationCharges/helpers/
+ * rest.mjs#applyRest for how it's capped/restored). The charge is a
+ * resource cost like Mana, not AP/RP, so it's always consumed regardless
+ * of Combat state - mirrors helpers/inspiration.mjs#payInspirationCost's
+ * own charge handling.
  * @param {Actor} actor
  * @return {Promise<ChatMessage|void>}
  */
 export async function rollMeditation(actor) {
   const apCost = actor.system.meditationApCost ?? 0;
   if (!hasEnoughActionPoints(actor, apCost)) return;
+
+  const charges = actor.system.meditationCharges.value;
+  if (charges < 1) {
+    return ui.notifications.warn(game.i18n.localize('SKSK.Action.NotEnoughMeditationCharges'));
+  }
 
   const aura = actor.system.attributes?.aur?.value ?? 0;
   const skillBonus = getActorSkillLevel(actor, 'manaRegeneration') + getActorSkillLevel(actor, 'sourceBound');
@@ -493,6 +517,7 @@ export async function rollMeditation(actor) {
   await actor.update({
     ...spendActionPoints(actor, apCost),
     'system.mana.value': newValue,
+    'system.meditationCharges.value': charges - 1,
     // Manaregeneration's own FP accumulator (see helpers/rest.mjs#
     // applyRest, which turns this into FP on the next Anpassungs-/
     // Genesungspause) - only the amount actually restored (post-cap), not

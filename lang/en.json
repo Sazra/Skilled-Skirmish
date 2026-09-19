@@ -564,8 +564,10 @@
     "Action": {
       "Regeneration": "Regeneration",
       "RegenerateLifeDescription": "{name} regenerates Life",
+      "NotEnoughRegenerationCharges": "No Regeneration charges left.",
       "Meditation": "Meditation",
       "RegenerateManaDescription": "{name} regenerates Mana",
+      "NotEnoughMeditationCharges": "No Meditation charges left.",
       "Adrenalin": "Adrenalin",
       "AdrenalinHint": "Costs no AP, but reduces Adrenalin charges by 1 and restores 1 AP. Each use rolls (lifetime uses - 1)d4 as new Max Life Damage - the first use costs no max Life yet.",
       "AdrenalinDescription": "{name} uses Adrenalin, restoring 1 AP and taking Adrenalin damage.",
