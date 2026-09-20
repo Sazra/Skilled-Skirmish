@@ -184,6 +184,22 @@ export default class SKSKClass extends SKSKItemBase {
       allowZero: new fields.BooleanField({ initial: false }),
     }));
 
+    // Zero or more einfache Magieschulen (CONFIG.SKSK.simpleMagicSchools)
+    // this Class specializes an actor's Elementarladungen in, each gated by
+    // its own minLevel (the actor's system.resources.level.value must be at
+    // least this to count) - unlike data/species.mjs's/data/talent.mjs's
+    // identical-shaped fields (always active, no level gate), a Class-
+    // granted specialization is something grown into. See helpers/
+    // elementalChargeEffects.mjs#getElementalSpecializations, which unions
+    // every entry (across every Class/Species/Talent the actor holds) whose
+    // own gate (if any) is currently met. Doubles that school's own passive
+    // charge effect. Freely player/GM-editable, like every other array on
+    // this document.
+    schema.elementalSpecializations = new fields.ArrayField(new fields.SchemaField({
+      school: new fields.StringField({ required: true, blank: false, initial: "fire" }),
+      minLevel: new fields.NumberField({ ...requiredInteger, initial: 1, min: 1 }),
+    }));
+
     return schema;
   }
 }

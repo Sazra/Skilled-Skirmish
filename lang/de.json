@@ -1367,7 +1367,9 @@
             },
             "GmNotes": "GM-Notizen",
             "CreatureCategories": "Kreaturenkategorien",
-            "AddCreatureCategory": "Kreaturenkategorie hinzufügen"
+            "AddCreatureCategory": "Kreaturenkategorie hinzufügen",
+            "ElementalSpecializations": "Elementarladungen-Spezialisierung",
+            "ElementalSpecializationsHint": "Einfache Magieschulen, deren Elementarladungen-Effekt diese Spezies verdoppelt - immer aktiv, kein Mindestlevel (siehe die Klassen-eigene Version mit Mindestlevel). Frei editierbar."
         },
         "Class": {
             "Type": {
@@ -1385,7 +1387,10 @@
             "NoPatronOverride": "Vom Akteur übernehmen",
             "PatronAbility": "Patron-Fähigkeit",
             "NoPatronAbility": "Keine",
-            "PatronAbilityNumbered": "Fähigkeit {number}"
+            "PatronAbilityNumbered": "Fähigkeit {number}",
+            "ElementalSpecializations": "Elementarladungen-Spezialisierung",
+            "ElementalSpecializationsHint": "Einfache Magieschulen, deren Elementarladungen-Effekt diese Klasse verdoppelt, jeweils erst ab dem eingestellten Mindestlevel des Akteurs aktiv. Frei editierbar.",
+            "ElementalSpecializationMinLevel": "Mindestlevel"
         },
         "Talent": {
             "Type": {

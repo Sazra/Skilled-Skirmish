@@ -74,6 +74,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       addAttributeMaxModifier: SKSKItemSheet.#addAttributeMaxModifier,
       addFpGainBonus: SKSKItemSheet.#addFpGainBonus,
       addElementalSpecialization: SKSKItemSheet.#addElementalSpecialization,
+      addClassElementalSpecialization: SKSKItemSheet.#addClassElementalSpecialization,
       activateTechnique: SKSKItemSheet.#activateTechnique,
       openTechniqueEffect: SKSKItemSheet.#openTechniqueEffect,
       addTechniqueStatusEffect: SKSKItemSheet.#addTechniqueStatusEffect,
@@ -985,14 +986,26 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
   }
 
   /**
-   * The Elementarist ability's own specialization list (see
-   * data/talent.mjs#elementalSpecializations, helpers/
-   * elementalChargeEffects.mjs) - a plain array of simpleMagicSchools keys,
-   * same shape as #addCreatureCategory above.
+   * The Elementarist ability's own specialization list on Species/Talent
+   * (see data/species.mjs and data/talent.mjs's identical
+   * elementalSpecializations field, helpers/elementalChargeEffects.mjs) - a
+   * plain array of simpleMagicSchools keys, same shape as
+   * #addCreatureCategory above.
    * @private
    */
   static async #addElementalSpecialization(event, target) {
     await this.#addArrayEntry('elementalSpecializations', 'fire');
+  }
+
+  /**
+   * Class's own version of #addElementalSpecialization above - a
+   * {school, minLevel} entry (data/class.mjs#elementalSpecializations)
+   * rather than a plain string, since a Class-granted specialization is
+   * gated by the actor's level.
+   * @private
+   */
+  static async #addClassElementalSpecialization(event, target) {
+    await this.#addArrayEntry('elementalSpecializations', { school: 'fire', minLevel: 1 });
   }
 
   /**

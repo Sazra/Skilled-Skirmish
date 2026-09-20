@@ -14,34 +14,47 @@ import { getElementalChargeCounts } from './elementalCharges.mjs';
  *
  * Design choice (no dedicated Item type exists for "this actor is an
  * Elementarist"): every charge always grants its base per-charge effect
- * regardless of whether this actor owns any matching Talent at all (mirrors
- * the charge-generation switch itself being a generic, class-agnostic GM-
- * tab/Active-Effect opt-in - see elementalChargesEnabled) - only the
- * DOUBLING for a specialized school requires actually owning a Talent that
- * lists it, via getElementalSpecializations below.
+ * regardless of whether this actor owns any matching Species/Class/Talent
+ * at all (mirrors the charge-generation switch itself being a generic,
+ * class-agnostic GM-tab/Active-Effect opt-in - see elementalChargesEnabled)
+ * - only the DOUBLING for a specialized school requires actually owning a
+ * Species/Class/Talent that lists it (a Class's own entry additionally
+ * gated by its minLevel), via getElementalSpecializations below.
  */
 
 // Item types whose elementalSpecializations entries count as a
 // specialization - mirrors helpers/spells.mjs#COMBINED_SCHOOL_OVERRIDE_ITEM_TYPES's
-// multi-item-type union, but Talent only (see data/talent.mjs - this is
-// specifically framed as "diese Fähigkeit", a personal choice, not an
-// innate Species/Class trait).
-const ELEMENTAL_SPECIALIZATION_ITEM_TYPES = ['talent'];
+// multi-item-type union. Species/Talent share the same plain-string-array
+// shape (data/species.mjs, data/talent.mjs, both always active); Class's
+// own copy (data/class.mjs) instead holds {school, minLevel} entries, only
+// active once the actor's level reaches minLevel - see the type-specific
+// handling in getElementalSpecializations below.
+const ELEMENTAL_SPECIALIZATION_ITEM_TYPES = ['species', 'class', 'talent'];
 
 /**
- * The union of every simpleMagicSchools key this actor is specialized in,
- * across every Talent they own - taking the Elementarist Talent a second
- * time (a second Item, each with its own array) naturally raises this to up
- * to 3 without any separate "taken twice" bookkeeping, per the ability's own
- * "Sollte diese Kreatur diese Fähigkeit zweimal besitzen..." line.
+ * The union of every simpleMagicSchools key this actor is currently
+ * specialized in, across every Species/Class/Talent they own - Species and
+ * Talent entries always count; a Class entry only counts once the actor's
+ * own level meets its minLevel. Taking the same Talent (or Class) a second
+ * time (a second Item, each with its own array) naturally raises this
+ * further without any separate "taken twice" bookkeeping, per the
+ * Elementarist ability's own "Sollte diese Kreatur diese Fähigkeit zweimal
+ * besitzen..." line.
  * @param {Actor} actor
  * @return {Set<string>}
  */
 export function getElementalSpecializations(actor) {
   const schools = new Set();
+  const level = actor.system.resources?.level?.value ?? 1;
   for (const item of actor.items) {
     if (!ELEMENTAL_SPECIALIZATION_ITEM_TYPES.includes(item.type)) continue;
-    for (const school of item.system.elementalSpecializations ?? []) schools.add(school);
+    if (item.type === 'class') {
+      for (const entry of item.system.elementalSpecializations ?? []) {
+        if (level >= entry.minLevel) schools.add(entry.school);
+      }
+    } else {
+      for (const school of item.system.elementalSpecializations ?? []) schools.add(school);
+    }
   }
   return schools;
 }

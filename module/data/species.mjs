@@ -237,6 +237,17 @@ export default class SKSKSpecies extends SKSKItemBase {
       allowZero: new fields.BooleanField({ initial: false }),
     }));
 
+    // Zero or more einfache Magieschulen (CONFIG.SKSK.simpleMagicSchools)
+    // this Species specializes an actor's Elementarladungen in, always
+    // active (unlike Class's own version below, this has no minLevel gate -
+    // an innate species trait, not something grown into) - see
+    // helpers/elementalChargeEffects.mjs#getElementalSpecializations, which
+    // unions this array with every Class/Talent one the actor also holds.
+    // Doubles that school's own passive charge effect. Same "e.g. an
+    // Elementarist Talent" ability - see data/talent.mjs's own copy of this
+    // field for the full doc comment.
+    schema.elementalSpecializations = new fields.ArrayField(new fields.StringField({ required: true, blank: false, initial: "fire" }));
+
     return schema;
   }
 

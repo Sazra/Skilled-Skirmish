@@ -1367,7 +1367,9 @@
       },
       "GmNotes": "GM Notes",
       "CreatureCategories": "Creature Categories",
-      "AddCreatureCategory": "Add creature category"
+      "AddCreatureCategory": "Add creature category",
+      "ElementalSpecializations": "Elemental Charge Specialization",
+      "ElementalSpecializationsHint": "Simple magic schools whose Elemental Charge effect this Species doubles - always active, no minimum level (see Class's own version with a minimum level). Freely editable."
     },
     "Class": {
       "Type": {
@@ -1385,7 +1387,10 @@
       "NoPatronOverride": "Inherit from Actor",
       "PatronAbility": "Patron Ability",
       "NoPatronAbility": "None",
-      "PatronAbilityNumbered": "Ability {number}"
+      "PatronAbilityNumbered": "Ability {number}",
+      "ElementalSpecializations": "Elemental Charge Specialization",
+      "ElementalSpecializationsHint": "Simple magic schools whose Elemental Charge effect this Class doubles, each only active once the actor reaches its own configured minimum level. Freely editable.",
+      "ElementalSpecializationMinLevel": "Min. Level"
     },
     "Talent": {
       "Type": {
