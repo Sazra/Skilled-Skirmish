@@ -714,6 +714,42 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       // resolvePendingSpell.
       extraCostTier: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
     });
+    // Elementarladungen - an opt-in Bottom-Bar widget (see templates/actor/
+    // parts/elemental-charges-bar.hbs) easing certain elemental-focused
+    // classes' bookkeeping: one round "slot" per point of Willenskraft's
+    // own modifier, filled round-robin (left to right, wrapping back to the
+    // start once full) with the magic school of each Einfache-Magieschule
+    // spell this actor casts - see helpers/elementalCharges.mjs#
+    // registerElementalCharge, called from helpers/spell-rolls.mjs#
+    // rollSpellItem. GM-tab switch, also targetable by Active Effects like
+    // every other GM-tab BooleanField here.
+    schema.elementalChargesEnabled = new fields.BooleanField({ initial: false });
+    schema.elementalCharges = new fields.SchemaField({
+      // One entry per slot, in display order - a magicSchool key ("fire",
+      // ...) once charged, or "" while still empty. Never itself clamped to
+      // maxSlots (below) - if Willenskraft's modifier since dropped, the
+      // excess entries are simply not rendered rather than discarded, so
+      // they reappear intact if the modifier rises again.
+      slots: new fields.ArrayField(new fields.StringField({ required: true, blank: true, initial: "" }), { initial: [] }),
+      // Round-robin write cursor into slots - the index the NEXT charge
+      // will overwrite, wrapping at maxSlots (not slots.length) every time
+      // it advances - see helpers/elementalCharges.mjs#registerElementalCharge.
+      nextIndex: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+      // Derived every data preparation from Willenskraft's own modifier
+      // (see prepareDerivedData below) - never hand-edited, not itself an
+      // Active Effect target (Willenskraft's modifier already is one).
+      maxSlots: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+      // game.time.worldTime (seconds) at the last charge generated - see
+      // helpers/elementalCharges.mjs#registerElementalCharge. Every slot
+      // read (display AND the Elementarist ability's own passive effects,
+      // see helpers/elementalChargeEffects.mjs) treats all charges as gone
+      // once 10 in-game minutes have passed since this without a new one,
+      // per that ability's own "Sollte diese Kreatur für 10 Minuten keine
+      // Ladung mehr generieren, dann gehen alle Ladungen verloren" line -
+      // a lazy, read-time check rather than a scheduled cleanup, so it
+      // stays correct regardless of whether Combat is even active.
+      lastChargeTime: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+    });
 
     const attributeKeys = Object.keys(CONFIG.SKSK.attributes);
     const attributesSchema = {};
@@ -891,6 +927,9 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       this.inspirationCharges.max = computeMaxInspirationCharges(this.parent);
       this.adrenalinCharges.max = computeMaxAdrenalinCharges(this.parent);
       this.luckCharges.max = computeMaxLuckCharges(this.parent);
+      // Depends on Willenskraft's own mod, just computed in the attributes
+      // loop above - see helpers/elementalCharges.mjs.
+      this.elementalCharges.maxSlots = Math.max(0, this.attributes.wil?.mod ?? 0);
     }
   }
 

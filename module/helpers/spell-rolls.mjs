@@ -17,6 +17,8 @@ import {
   formatD20ModeSummaryLine,
 } from './criticalRolls.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine, grantFlatSkillFp, checkReflexActionTrigger, getSkillFpRate } from './skillFp.mjs';
+import { registerElementalCharge } from './elementalCharges.mjs';
+import { getElementalAirRangeBonus } from './elementalChargeEffects.mjs';
 import { getManaAlternativeResources, computeManaAlternativeCoverage, payWithManaAlternative } from './customResources.mjs';
 import { renderApplyDamageButton, resolveClickDefender, applySpellEffectGroup } from './damageApplication.mjs';
 import {
@@ -391,8 +393,12 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
     parts.push(`<div class="sksk-roll-line"><strong>${game.i18n.format('SKSK.Spell.Roll.ExtraCostActive', { label: tierLabel, amount: sum })}</strong></div>`);
   }
   if (effectiveOvercharge > 0 && system.ranges?.length) {
+    // The Elementarist ability's own Luft-Ladungen bonus (helpers/
+    // elementalChargeEffects.mjs) applies on top of Überladen's own
+    // percentage scaling, not before it.
+    const airChargeBonus = actor ? getElementalAirRangeBonus(actor) : 0;
     const rangeLabel = computeOverchargedRanges(system.ranges, effectiveOvercharge)
-      .map(r => `${r.distance}m ${game.i18n.localize(CONFIG.SKSK.rangeIndicators[r.indicator] ?? r.indicator)}`)
+      .map(r => `${r.distance + airChargeBonus}m ${game.i18n.localize(CONFIG.SKSK.rangeIndicators[r.indicator] ?? r.indicator)}`)
       .join(', ');
     parts.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.OverchargeRanges', { ranges: rangeLabel })}</div>`);
   }
@@ -740,6 +746,13 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
       if (system.magicSchool === 'bardic') {
         parts.push(formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'singing', 'bardicSpellCast')));
       }
+
+      // Elementarladungen Bottom-Bar widget (opt-in, see helpers/
+      // elementalCharges.mjs) - only Einfache Magieschulen charge a slot,
+      // not Advanced ones.
+      if (system.spellType === 'simple') {
+        await registerElementalCharge(actor, system.magicSchool);
+      }
     } else if (system.spellType === 'combined') {
       // Combined spells belong to no single magic-school skill, so their
       // own per-level "cast" FP uses its own GM-configured rate (the
@@ -781,8 +794,12 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
 
   // 5. Ranges + indicator.
   if (system.ranges?.length) {
+    // The Elementarist ability's own Luft-Ladungen bonus (helpers/
+    // elementalChargeEffects.mjs) - +2m per charge on top of the spell's
+    // own stored range.
+    const airChargeBonus = actor ? getElementalAirRangeBonus(actor) : 0;
     const rangesLabel = system.ranges
-      .map(r => `${r.distance}m ${game.i18n.localize(CONFIG.SKSK.rangeIndicators[r.indicator] ?? r.indicator)}`)
+      .map(r => `${r.distance + airChargeBonus}m ${game.i18n.localize(CONFIG.SKSK.rangeIndicators[r.indicator] ?? r.indicator)}`)
       .join(', ');
     parts.push(`<div class="sksk-roll-line"><strong>${game.i18n.localize('SKSK.Spell.Ranges')}:</strong> ${rangesLabel}</div>`);
   }

@@ -2285,6 +2285,69 @@ span.sksk-critical-failure {
   font-size: 20px;
 }
 
+/* Elementarladungen Bottom-Bar widget (helpers/elementalCharges.mjs) - same
+   out-of-flow docking technique as .header-toolbar above, just anchored to
+   the bottom edge instead of the top, so it never changes the window's own
+   height either. Opt-in per actor (elementalChargesEnabled, GM tab or an
+   Active Effect) and only rendered once Willenskraft's own modifier is
+   above 0 - see elemental-charges-bar.hbs. */
+.sksk.actor .elemental-charges-bar {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  z-index: 2;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  padding: 6px 8px;
+  background: var(--sksk-sheet-bg);
+  border: 2px solid var(--color-border-dark, #000);
+  border-radius: 4px;
+}
+
+.sksk.actor .elemental-charges-bar-hidden {
+  display: none;
+}
+
+/* Empty slot: the sheet's normal background plus the same slightly grey,
+   slightly opaque overlay every idle input field already uses
+   (--sksk-field-idle-bg, see the root variables above), with a border that
+   is plain black in the Bright theme and plain white in the Dark theme -
+   light-dark() resolves against Foundry's own real color-scheme, same
+   technique the root variables above rely on. */
+.sksk .elemental-charge-slot {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+  background: var(--sksk-field-idle-bg);
+  border: 2px solid light-dark(#000, #fff);
+  color: var(--color-text-primary);
+}
+
+.sksk .elemental-charge-abbr {
+  pointer-events: none;
+}
+
+/* Charged slot: the grey overlay above is replaced outright by the magic
+   school's own color (CONFIG.SKSK.simpleMagicSchools' 10 keys). */
+.sksk .elemental-charge-slot-fire { background: #c0392b; color: #fff; }
+.sksk .elemental-charge-slot-water { background: #2980b9; color: #fff; }
+.sksk .elemental-charge-slot-earth { background: #7a5230; color: #fff; }
+.sksk .elemental-charge-slot-air { background: #8fd694; color: #10310f; }
+.sksk .elemental-charge-slot-life { background: #27ae60; color: #fff; }
+.sksk .elemental-charge-slot-death { background: #454545; color: #fff; }
+.sksk .elemental-charge-slot-light { background: #f1c40f; color: #3a3000; }
+.sksk .elemental-charge-slot-nature { background: #1e5631; color: #fff; }
+.sksk .elemental-charge-slot-dark { background: #4b0082; color: #fff; }
+.sksk .elemental-charge-slot-trickery { background: #c9a0dc; color: #35203f; }
+
 /* Minimized-state attribute-roll bar (see actor-sheet.mjs#_renderFrame) -
    inserted as a sibling right after .window-header, NOT inside
    .window-content, so it survives the minimize collapse (which only

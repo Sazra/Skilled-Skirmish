@@ -397,4 +397,34 @@
       {{/each}}
     </ol>
   </div>
+
+  <div class="resource">
+    <label class="resource-label" title="{{localize 'SKSK.Talent.ElementalSpecializationsHint'}}">
+      {{localize 'SKSK.Talent.ElementalSpecializations'}}
+    </label>
+    <ol class="items-list items-list-compact">
+      {{#each system.elementalSpecializations as |entry index|}}
+      <li class="item flexrow">
+        <div class="item-name">
+          <select name="system.elementalSpecializations.{{index}}">
+            {{selectOptions ../simpleMagicSchoolChoices selected=entry localize=true}}
+          </select>
+        </div>
+        <div class="item-controls">
+          <a class="item-control item-delete" data-action="removeArrayEntry" data-field="elementalSpecializations"
+            data-index="{{index}}" title="Remove">
+            <i class="fas fa-trash"></i>
+          </a>
+        </div>
+      </li>
+      {{/each}}
+      <li class="item flexrow">
+        <div class="item-controls">
+          <a class="item-control item-create" data-action="addElementalSpecialization" title="{{localize 'SKSK.Talent.AddElementalSpecialization'}}">
+            <i class="fas fa-plus"></i> {{localize 'SKSK.Talent.AddElementalSpecialization'}}
+          </a>
+        </div>
+      </li>
+    </ol>
+  </div>
 </section>

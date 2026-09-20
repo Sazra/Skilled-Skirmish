@@ -1,0 +1,19 @@
+{{!-- Elementarladungen Bottom-Bar widget (opt-in via the GM tab's own
+     elementalChargesEnabled switch, also an Active Effect target) - docked
+     BELOW the sheet, same out-of-flow technique as .header-toolbar (see
+     header-toolbar.hbs) but anchored to the bottom edge. One round "slot"
+     per point of Willenskraft's own modifier, filled round-robin with the
+     magic school of each Einfache-Magieschule spell cast - see
+     helpers/elementalCharges.mjs.
+     ApplicationV2 PARTS must always render exactly one root HTML element
+     (see the "must render a single HTML element" error otherwise), so the
+     disabled/no-slots case is hidden via a CSS class instead of an #if
+     wrapping the whole element away. --}}
+<div class="elemental-charges-bar{{#unless elementalChargeSlots.length}} elemental-charges-bar-hidden{{/unless}}{{#unless elementalChargesEnabled}} elemental-charges-bar-hidden{{/unless}}">
+  {{#each elementalChargeSlots as |slot|}}
+  <div class="elemental-charge-slot {{slot.cssClass}}"
+    {{#if slot.label}}data-tooltip="{{slot.label}}"{{/if}}>
+    {{#if slot.school}}<span class="elemental-charge-abbr">{{slot.abbr}}</span>{{/if}}
+  </div>
+  {{/each}}
+</div>

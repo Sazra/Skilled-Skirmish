@@ -5,6 +5,7 @@ import {
   checkConcentration, damageDealtFrom,
 } from './statusEffects.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
+import { getElementalDeathChargeHeal } from './elementalChargeEffects.mjs';
 
 /**
  * Resolve the "defender" for an Angriffswurf-related chat-button click
@@ -270,6 +271,16 @@ export async function applyResolvedDamageEntries(defender, attacker, entries, ki
   const wasAlreadyDead = defender.system.life.value === 0 && defender.system.negativeLife.value <= 0;
   const { lifeDelta, negativeLifeDelta } = await applyLifeChange(defender, netDelta);
   lines.push(negativeLifeOverflowHTML(negativeLifeDelta));
+  const damageDealt = damageDealtFrom({ lifeDelta, negativeLifeDelta });
+  // The Elementarist ability's own Todesmagie-Ladungen bonus (helpers/
+  // elementalChargeEffects.mjs) - the attacker heals whenever it deals real
+  // damage (not a pure heal, and not if it merely tickled an already-0
+  // Life/Negative Life target for 0 actual damage) to ANY defender, not
+  // just one this attack happened to kill.
+  if (attacker && damageDealt > 0) {
+    const deathChargeHeal = getElementalDeathChargeHeal(attacker);
+    if (deathChargeHeal > 0) await applyLifeChange(attacker, deathChargeHeal);
+  }
   // Concentration's own damage-response check (see helpers/statusEffects.mjs#
   // checkConcentration) - a no-op unless the defender is actually
   // Concentrating and this call's own net Life change was real damage (not
@@ -278,7 +289,7 @@ export async function applyResolvedDamageEntries(defender, attacker, entries, ki
   // applyAdrenalinDamage/applyCauterization) - those reduce max Life via a
   // standing ActiveEffect rather than ever landing here, so they're
   // naturally excluded without any extra guard.
-  await checkConcentration(defender, damageDealtFrom({ lifeDelta, negativeLifeDelta }));
+  await checkConcentration(defender, damageDealt);
 
   const isDead = defender.system.life.value === 0 && defender.system.negativeLife.value <= 0;
   if (isDead && !wasAlreadyDead && attacker && killSkillKey) {

@@ -451,6 +451,20 @@
             "AP": "AP",
             "RP": "RP"
         },
+        "ElementalCharges": {
+            "SchoolAbbr": {
+                "Fire": "FEU",
+                "Water": "WAS",
+                "Earth": "ERD",
+                "Air": "LUF",
+                "Life": "LEB",
+                "Death": "TOD",
+                "Light": "LIC",
+                "Nature": "NAT",
+                "Dark": "DUN",
+                "Trickery": "TRI"
+            }
+        },
         "Breakdown": {
             "Level": "Stufe",
             "ClassLife": "{name} (Leben)",
@@ -460,6 +474,7 @@
             "Subtotal": "Zwischensumme",
             "EffectsBonus": "Bonus (Effekte)",
             "LehrenBonus": "Bonus (Lehren)",
+            "ElementalChargeBonus": "Bonus (Elementarladungen)",
             "SpellUpkeep": "Unterhalt (aufrechterhaltene Zauber)",
             "Total": "Gesamt",
             "NegativeLifeBaseline": "Basiswert (geschützter Puffer)",
@@ -528,6 +543,8 @@
             "SoulPowerResourceEnabledHint": "Zeigt die Seelenmacht-Ressource in der Seitenleiste bereits an, bevor Seelenstärke ihre eigene maximale Stufe (5) erreicht hat - sie wird ohnehin angezeigt, sobald diese Stufe erreicht ist, daher wirkt sich dieser Schalter nur vorher aus. Standardmäßig aus. Von Active Effects ansteuerbar.",
             "SoulPowerMechanicEnabled": "Seelenstärke: Neue Mechanik aktivieren (reserviert)",
             "SoulPowerMechanicEnabledHint": "Reserviert für Seelenmachts eigene Eintausch-Mechanik (ihren \"Eingetauschte Seelenmacht\"-FP-Trigger) - noch nicht entworfen oder angebunden, wird angegangen sobald jeder Fertigkeitsnutzungs-FP-Trigger vollständig implementiert ist. Hat aktuell keine Auswirkung. Von Active Effects ansteuerbar.",
+            "ElementalChargesEnabled": "Elementarladungen-Leiste anzeigen",
+            "ElementalChargesEnabledHint": "Zeigt eine Leiste unterhalb des Actor-Sheets mit einem runden Feld je Punkt des Willenskraft-Modifikators. Jeder gewirkte Zauber einer einfachen Magieschule füllt (von links nach rechts, danach wieder von vorn beginnend) ein Feld mit der Farbe und Abkürzung des jeweiligen Elements. Standardmäßig aus. Von Active Effects ansteuerbar.",
             "ImprovedMagicResistance": "Verbesserte Magieresistenz",
             "ImprovedMagicResistanceHint": "Ein Zauber-Angriffswurf, der diesen Akteur nicht trifft, verursacht normalerweise trotzdem halbierten Schaden (abgerundet) - bei aktiviertem Schalter verhindert die Magieresistenz den Schaden bei einem Fehlschlag stattdessen vollständig. Von Active Effects ansteuerbar.",
             "ConcealmentBreaksOnlyOnHit": "Tarnung bricht nicht solange der Angriff nicht getroffen hat",
@@ -1381,7 +1398,10 @@
                 "Bloodline": "Blutlinie"
             },
             "Prerequisites": "Voraussetzung",
-            "GmNotes": "GM-Notizen"
+            "GmNotes": "GM-Notizen",
+            "ElementalSpecializations": "Elementarladungen-Spezialisierung",
+            "ElementalSpecializationsHint": "Einfache Magieschulen, deren Elementarladungen-Effekt (siehe unten) diese Fähigkeit verdoppelt. Frei editierbar - eine Änderung stellt das eintägige Ritual der Fähigkeit dar und wird nicht mechanisch erzwungen. Besitzt der Akteur diese Fähigkeit zweimal (zwei Talent-Items), gelten die Einträge beider Items zusammen (bis zu drei Spezialisierungen).",
+            "AddElementalSpecialization": "Spezialisierung hinzufügen"
         },
         "Ability": {
             "LifeBonusFormula": "Lebens-Bonus (skalierend)",
@@ -1618,6 +1638,8 @@
             "TurnStartHealing": "{amount} Heilung durch {status}",
             "TurnStartManaGain": "Mana +{amount} durch {status}",
             "TurnStartManaLoss": "Mana -{amount} durch {status}",
+            "ElementalChargeLifeHeal": "{amount} Heilung durch Elementarladungen (Lebensmagie)",
+            "ElementalChargeManaGen": "Mana +{amount} durch Elementarladungen (Naturmagie)",
             "MovementSpellBlocked": "Kann keinen Zauber mit der Wirkweise Bewegung wirken, während umgeworfen oder festgehalten.",
             "AttackBlocked": "Kann nicht angreifen, während umgeworfen oder festgehalten.",
             "MoveBlocked": "Kann sich nicht bewegen, während festgehalten.",

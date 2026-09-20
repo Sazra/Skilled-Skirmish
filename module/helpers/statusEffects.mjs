@@ -10,6 +10,9 @@ import {
 import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
 import { computeLehrenTargetBonus } from './lehren.mjs';
 import { applyElementalDefense } from './defense.mjs';
+import {
+  getElementalLightStatusRollBonus, getElementalLifeChargeHeal, getElementalNatureManaGen,
+} from './elementalChargeEffects.mjs';
 
 /**
  * Movement types (CONFIG.SKSK.movementTypes) Dazed does NOT reduce.
@@ -772,7 +775,10 @@ async function resolveRestrainedEscapeCheck(actor, mode = null, forceIgnoreSpeci
   // own escape check - see setStatusIgnoreSpecialBonus.
   const ignoreSpecial = forceIgnoreSpecial || effect.getFlag('sksk', 'ignoreSpecialBonusOnSave');
   const strMod = actor.system.attributes?.str?.[ignoreSpecial ? 'modExcludingSpecial' : 'mod'] ?? 0;
-  const formula = applyD20Malus(`1d20 + ${strMod}`, actor, 'str');
+  // The Elementarist ability's own Himmlische-Magie(Licht)-Ladungen bonus -
+  // applies to every roll against a status effect (see also
+  // handlePoisonTurnStart/checkConcentration below).
+  const formula = applyD20Malus(`1d20 + ${strMod + getElementalLightStatusRollBonus(actor)}`, actor, 'str');
   const result = await evaluateD20WithMode(formula, actor.getRollData(), resolvedMode);
   const { roll, criticalType, doubleCritical } = result;
   const success = resolveCheckSuccess(roll.total, dc, criticalType);
@@ -1040,7 +1046,9 @@ async function handlePoisonTurnStart(actor, round) {
     // setStatusIgnoreSpecialBonus.
     const ignoreSpecial = effect.getFlag('sksk', 'ignoreSpecialBonusOnSave');
     const conMod = actor.system.attributes?.con?.[ignoreSpecial ? 'modExcludingSpecial' : 'mod'] ?? 0;
-    const checkFormula = applyD20Malus(`1d20 + ${conMod}`, actor, 'con');
+    // The Elementarist ability's own Himmlische-Magie(Licht)-Ladungen bonus
+    // - see resolveRestrainedEscapeCheck above.
+    const checkFormula = applyD20Malus(`1d20 + ${conMod + getElementalLightStatusRollBonus(actor)}`, actor, 'con');
     // Fully automatic (turn-start) check - uses the actor's own GM-tab
     // preset (system.genericCriticalRollMode) rather than a per-check
     // dialog, see helpers/criticalRolls.mjs#evaluateD20WithMode.
@@ -1232,7 +1240,9 @@ export async function checkConcentration(actor, damage) {
   const ignoreSpecial = getStatusEffect(actor, 'concentration')?.getFlag('sksk', 'ignoreSpecialBonusOnSave');
   const conMod = actor.system.attributes?.con?.[ignoreSpecial ? 'modExcludingSpecial' : 'mod'] ?? 0;
   const concentrationLevel = getActorSkillLevel(actor, 'concentration');
-  const formula = applyD20Malus(`1d20 + ${conMod} + ${concentrationLevel}`, actor, 'con');
+  // The Elementarist ability's own Himmlische-Magie(Licht)-Ladungen bonus -
+  // see resolveRestrainedEscapeCheck above.
+  const formula = applyD20Malus(`1d20 + ${conMod} + ${concentrationLevel} + ${getElementalLightStatusRollBonus(actor)}`, actor, 'con');
   // Fully automatic (damage-triggered) check - uses the actor's own GM-tab
   // preset (system.genericCriticalRollMode) rather than a per-check dialog,
   // see helpers/criticalRolls.mjs#evaluateD20WithMode.
@@ -1420,6 +1430,40 @@ async function handleTotemTurnStart(actor) {
   await actor.update(updates);
 
   return deactivatedNames.map(name => game.i18n.format('SKSK.TotemDialog.AutoDeactivated', { name }));
+}
+
+/**
+ * The Elementarist ability's own turn-start effects (helpers/
+ * elementalChargeEffects.mjs) - Lebensmagie-Ladungen heal 1 Leben each,
+ * Naturmagie-Ladungen generate 1 Mana each (both already scaled for
+ * Trickkunst-Ladungen/Spezialisierung by their own getter). Folded into the
+ * combined turn-start card like every other passive tick here, rather than
+ * posting its own.
+ * @param {Actor} actor
+ * @return {Promise<string[]>}   Description lines for any heal/Mana gained.
+ */
+async function handleElementalChargeTurnStart(actor) {
+  const lines = [];
+
+  const heal = getElementalLifeChargeHeal(actor);
+  if (heal > 0) {
+    const { lifeDelta } = await applyLifeChange(actor, heal);
+    if (lifeDelta > 0) {
+      lines.push(game.i18n.format('SKSK.StatusEffect.ElementalChargeLifeHeal', { amount: lifeDelta }));
+    }
+  }
+
+  const manaGen = getElementalNatureManaGen(actor);
+  if (manaGen > 0) {
+    const oldValue = actor.system.mana.value;
+    const newValue = Math.min(actor.system.mana.max, oldValue + manaGen);
+    if (newValue !== oldValue) {
+      await actor.update({ 'system.mana.value': newValue });
+      lines.push(game.i18n.format('SKSK.StatusEffect.ElementalChargeManaGen', { amount: newValue - oldValue }));
+    }
+  }
+
+  return lines;
 }
 
 /**
@@ -1621,7 +1665,9 @@ async function postCombatTurnStartCard(actor, descriptionLines, extraSections) {
  * Abilities' duration/cooldown ticking (helpers/soulPathRolls.mjs#
  * handlePathAbilityTurnStart, same shape as Technique's own stand ticking,
  * minus the cooldown-round FP grant - no such trigger exists for Path
- * Abilities) still posts its own separate card - not yet folded in.
+ * Abilities) still posts its own separate card - not yet folded in. The
+ * Elementarist ability's own Lebensmagie-heal/Naturmagie-Mana-Ladungen
+ * effects (see handleElementalChargeTurnStart) are folded in too.
  * @param {Actor} actor
  * @param {number} round
  * @return {Promise<void>}
@@ -1637,12 +1683,13 @@ export async function handleCombatTurnStart(actor, round) {
   const totemLines = await handleTotemTurnStart(actor);
   const techniqueLines = await handleTechniqueTurnStart(actor);
   const spellUpkeepLines = await handleSpellUpkeepTurnStart(actor);
+  const elementalChargeLines = await handleElementalChargeTurnStart(actor);
 
   const totalDamage = poison.damage + frostbite.damage + wound.damage + custom.damage;
   const descriptionLines = [
     ...dazedLines,
     ...poison.descriptionLines, ...frostbite.descriptionLines, ...wound.descriptionLines, ...custom.descriptionLines,
-    ...totemLines, ...techniqueLines, ...spellUpkeepLines,
+    ...totemLines, ...techniqueLines, ...spellUpkeepLines, ...elementalChargeLines,
   ];
   const extraSections = [
     ...poison.extraSections, ...frostbite.extraSections, ...wound.extraSections, ...custom.extraSections,

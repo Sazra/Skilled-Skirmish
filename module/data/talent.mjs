@@ -159,6 +159,18 @@ export default class SKSKTalent extends SKSKItemBase {
       allowZero: new fields.BooleanField({ initial: false }),
     }));
 
+    // Zero or more einfache Magieschulen (CONFIG.SKSK.simpleMagicSchools)
+    // this Talent specializes an actor's Elementarladungen in - see
+    // helpers/elementalChargeEffects.mjs#getElementalSpecializations, which
+    // unions this array across every Talent an actor owns (taking the same
+    // Talent a second time, per its own ability text, naturally raises the
+    // union from 1 to up to 3 specializations without any extra bookkeeping
+    // here). Doubles that school's own passive charge effect. Freely
+    // player/GM-editable, like every other array on this document - editing
+    // it IS the ability's own one-day ritual to change specialization, not
+    // mechanically enforced or time-gated.
+    schema.elementalSpecializations = new fields.ArrayField(new fields.StringField({ required: true, blank: false, initial: "fire" }));
+
     return schema;
   }
 }

@@ -1,6 +1,7 @@
 import { evaluateBonusFormula, evaluateSkillFormula, getActorSkillLevel, getSkillLabel } from './skills.mjs';
 import { computeLehrenTargetBonus } from './lehren.mjs';
 import { computePatronDamageBonus, getActivePatronCombinedSchoolLevel } from './religion.mjs';
+import { getElementalFireDamageBonus, getElementalDarkSaveDcBonus } from './elementalChargeEffects.mjs';
 
 /**
  * Sum a set of attribute- and skill-based bonuses for a given caster, each
@@ -35,7 +36,10 @@ function sumBonuses(attributeBonuses, skillBonuses, actor) {
  * Compute a spell saving throw's total value for a given caster: its flat
  * base, plus 1 per Überladung (Überladen/Overcharge - see
  * computeMaxOverchargeCount) if the cast was overcharged, plus every
- * attribute- and skill-based bonus.
+ * attribute- and skill-based bonus, plus the Elementarist ability's own
+ * Dunkle-Magie-Ladungen bonus (helpers/elementalChargeEffects.mjs#
+ * getElementalDarkSaveDcBonus) - applies to every saving throw this actor
+ * causes, not just spells cast from the Dunkel school itself.
  * @param {object} savingThrow   An entry from SKSKSpell#savingThrows.
  * @param {Actor} actor          The actor casting the spell.
  * @param {number} [overchargeCount=0]
@@ -43,7 +47,8 @@ function sumBonuses(attributeBonuses, skillBonuses, actor) {
  */
 export function computeSavingThrowValue(savingThrow, actor, overchargeCount = 0) {
   return (savingThrow.baseValue ?? 0) + overchargeCount
-    + sumBonuses(savingThrow.attributeBonuses, savingThrow.skillBonuses, actor);
+    + sumBonuses(savingThrow.attributeBonuses, savingThrow.skillBonuses, actor)
+    + (actor ? getElementalDarkSaveDcBonus(actor) : 0);
 }
 
 /**
@@ -57,7 +62,8 @@ export function computeSavingThrowValue(savingThrow, actor, overchargeCount = 0)
  * @return {number}
  */
 export function computeSavingThrowBonusSum(savingThrow, actor) {
-  return sumBonuses(savingThrow.attributeBonuses, savingThrow.skillBonuses, actor);
+  return sumBonuses(savingThrow.attributeBonuses, savingThrow.skillBonuses, actor)
+    + (actor ? getElementalDarkSaveDcBonus(actor) : 0);
 }
 
 /**
@@ -85,7 +91,11 @@ export function computeDamageBonus(damage, actor, spellSystem = null) {
   const patronBonus = actor && spellSystem
     ? computeSpellPatronDamageBonus(spellSystem, actor, damage.damageType)
     : 0;
-  return sumBonuses(damage.attributeBonuses, damage.skillBonuses, actor) + lehrenBonus + damageTypeBonus + patronBonus + allSpellsDamageBonus;
+  // The Elementarist ability's own Feuer-Ladungen bonus (helpers/
+  // elementalChargeEffects.mjs) - general "extra damage", not scoped to
+  // fire-type damage specifically, so it applies to any spell's damage.
+  const fireChargeBonus = actor ? getElementalFireDamageBonus(actor) : 0;
+  return sumBonuses(damage.attributeBonuses, damage.skillBonuses, actor) + lehrenBonus + damageTypeBonus + patronBonus + allSpellsDamageBonus + fireChargeBonus;
 }
 
 /**

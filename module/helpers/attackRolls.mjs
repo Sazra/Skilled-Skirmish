@@ -11,6 +11,7 @@ import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
 import { resolveClickDefender, renderApplyDamageButton, applyResolvedDamageEntries } from './damageApplication.mjs';
 import { checkFlanking } from './flanking.mjs';
 import { computePatronRollBonus } from './religion.mjs';
+import { getElementalAirRangeBonus } from './elementalChargeEffects.mjs';
 
 /**
  * Tactic level 10's own flat AC bonus (see helpers/flanking.mjs) - a
@@ -196,15 +197,21 @@ export function getWeaponDamageType(weaponSystem) {
  * so both can show together. Blank if none of these properties apply at
  * all.
  * @param {Item} weaponItem
+ * @param {Actor|null} [actor]   The wielding actor, for the Elementarist
+ *   ability's own Luft-Ladungen range bonus (helpers/
+ *   elementalChargeEffects.mjs) - +2m per charge, Ranged weapons only (per
+ *   that ability's own "Reichweite ... der Fernkampfwaffenangriffe" line,
+ *   melee Reach is unaffected). Omit for a context with no specific
+ *   wielder (e.g. an unequipped Item sheet preview).
  * @return {string}  E.g. "(10m)", "(Lang)", "(10m, Sehr Lang)", "(40m/80m)", or "".
  */
-export function computeWeaponRangeLabel(weaponItem) {
+export function computeWeaponRangeLabel(weaponItem, actor = null) {
   const properties = weaponItem.system.effectiveProperties ?? [];
   const find = key => properties.find(p => p.property === key);
 
   const rangedEntry = find('ranged');
   if (rangedEntry) {
-    const range = rangedEntry.value ?? 0;
+    const range = (rangedEntry.value ?? 0) + (actor ? getElementalAirRangeBonus(actor) : 0);
     return `(${range}m/${range * 2}m)`;
   }
 

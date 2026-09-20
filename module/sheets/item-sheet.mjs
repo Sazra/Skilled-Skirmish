@@ -73,6 +73,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       addChargeBonus: SKSKItemSheet.#addChargeBonus,
       addAttributeMaxModifier: SKSKItemSheet.#addAttributeMaxModifier,
       addFpGainBonus: SKSKItemSheet.#addFpGainBonus,
+      addElementalSpecialization: SKSKItemSheet.#addElementalSpecialization,
       activateTechnique: SKSKItemSheet.#activateTechnique,
       openTechniqueEffect: SKSKItemSheet.#openTechniqueEffect,
       addTechniqueStatusEffect: SKSKItemSheet.#addTechniqueStatusEffect,
@@ -981,6 +982,17 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
   /** @private */
   static async #addFpGainBonus(event, target) {
     await this.#addArrayEntry('fpGainBonuses', { skill: 'axe', bonusType: 'positive', amount: 0, allowZero: false });
+  }
+
+  /**
+   * The Elementarist ability's own specialization list (see
+   * data/talent.mjs#elementalSpecializations, helpers/
+   * elementalChargeEffects.mjs) - a plain array of simpleMagicSchools keys,
+   * same shape as #addCreatureCategory above.
+   * @private
+   */
+  static async #addElementalSpecialization(event, target) {
+    await this.#addArrayEntry('elementalSpecializations', 'fire');
   }
 
   /**

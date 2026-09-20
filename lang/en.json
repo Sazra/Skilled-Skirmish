@@ -451,6 +451,20 @@
       "AP": "AP",
       "RP": "RP"
     },
+    "ElementalCharges": {
+      "SchoolAbbr": {
+        "Fire": "FIR",
+        "Water": "WAT",
+        "Earth": "EAR",
+        "Air": "AIR",
+        "Life": "LIF",
+        "Death": "DEA",
+        "Light": "LIG",
+        "Nature": "NAT",
+        "Dark": "DAR",
+        "Trickery": "TRI"
+      }
+    },
     "Breakdown": {
       "Level": "Level",
       "ClassLife": "{name} (Life)",
@@ -460,6 +474,7 @@
       "Subtotal": "Subtotal",
       "EffectsBonus": "Bonus (Effects)",
       "LehrenBonus": "Bonus (Lehren)",
+      "ElementalChargeBonus": "Bonus (Elemental Charges)",
       "SpellUpkeep": "Upkeep (sustained spells)",
       "Total": "Total",
       "NegativeLifeBaseline": "Baseline (protected buffer)",
@@ -528,6 +543,8 @@
       "SoulPowerResourceEnabledHint": "Shows the Soul Power resource on the sidebar even before Soulforce reaches its own max level (5) - it's shown regardless once that level is reached, so this only matters earlier. Off by default. Targetable by Active Effects.",
       "SoulPowerMechanicEnabled": "Soulforce: Enable New Mechanic (reserved)",
       "SoulPowerMechanicEnabledHint": "Reserved for Soul Power's own trade-in mechanic (its \"Soul Power Traded\" FP trigger) - not yet designed or wired up, to be tackled once every skill-usage FP trigger is fully implemented. Has no effect yet. Targetable by Active Effects.",
+      "ElementalChargesEnabled": "Show Elemental Charges Bar",
+      "ElementalChargesEnabledHint": "Shows a bar below the Actor sheet with one round slot per point of the Willpower modifier. Every spell cast from a simple magic school fills a slot (left to right, wrapping back to the start once full) with that element's color and abbreviation. Off by default. Targetable by Active Effects.",
       "ImprovedMagicResistance": "Improved Magic Resistance",
       "ImprovedMagicResistanceHint": "A spell attack roll that misses this actor normally still deals half damage (rounded down) anyway - with this switch on, Magic Resistance blocks that damage entirely on a miss instead. Targetable by Active Effects.",
       "ConcealmentBreaksOnlyOnHit": "Concealment doesn't break unless the attack hits",
@@ -1381,7 +1398,10 @@
         "Bloodline": "Bloodline"
       },
       "Prerequisites": "Prerequisites",
-      "GmNotes": "GM Notes"
+      "GmNotes": "GM Notes",
+      "ElementalSpecializations": "Elemental Charge Specialization",
+      "ElementalSpecializationsHint": "Simple magic schools whose Elemental Charge effect (see below) this ability doubles. Freely editable - changing it represents the ability's own one-day ritual and isn't mechanically enforced. If the actor owns this ability twice (two Talent Items), both items' entries apply together (up to three specializations).",
+      "AddElementalSpecialization": "Add Specialization"
     },
     "Ability": {
       "LifeBonusFormula": "Life Bonus (scaling)",
@@ -1618,6 +1638,8 @@
       "TurnStartHealing": "{amount} healing from {status}",
       "TurnStartManaGain": "Mana +{amount} from {status}",
       "TurnStartManaLoss": "Mana -{amount} from {status}",
+      "ElementalChargeLifeHeal": "{amount} healing from Elemental Charges (Life Magic)",
+      "ElementalChargeManaGen": "Mana +{amount} from Elemental Charges (Nature Magic)",
       "MovementSpellBlocked": "Can't cast a Movement spell while Prone or Restrained.",
       "AttackBlocked": "Can't attack while Prone or Restrained.",
       "MoveBlocked": "Can't move while Restrained.",

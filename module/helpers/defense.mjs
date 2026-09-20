@@ -1,6 +1,7 @@
 import { getActorSkillLevel, isActorSkillUnlocked, getSkillStacks } from "./skills.mjs";
 import { computeLehrenTargetBonus } from "./lehren.mjs";
 import { computeDurabilityRatio } from "./materials.mjs";
+import { getElementalEarthArmorBonus, getElementalWaterResistanceBonus } from "./elementalChargeEffects.mjs";
 
 /**
  * The level-based component of a creature's "natural" material bonus -
@@ -164,6 +165,9 @@ function computeArmorClassComponents(actor) {
 
   rows.push({ label: game.i18n.localize('SKSK.GM.CustomArmorClassBonus'), perLevel: null, value: system.customArmorClassBonus ?? 0 });
   rows.push({ label: game.i18n.localize('SKSK.Breakdown.LehrenBonus'), perLevel: null, value: computeLehrenTargetBonus(actor, 'armorClass') });
+  // The Elementarist ability's own Erde-Ladungen bonus - see
+  // helpers/elementalChargeEffects.mjs.
+  rows.push({ label: game.i18n.localize('SKSK.Breakdown.ElementalChargeBonus'), perLevel: null, value: getElementalEarthArmorBonus(actor) });
 
   return { rows, total: Math.round(rows.reduce((sum, row) => sum + row.value, 0)) };
 }
@@ -196,6 +200,9 @@ function computeMagicResistanceComponents(actor) {
 
   rows.push({ label: game.i18n.localize('SKSK.GM.CustomMagicResistanceBonus'), perLevel: null, value: system.customMagicResistanceBonus ?? 0 });
   rows.push({ label: game.i18n.localize('SKSK.Breakdown.LehrenBonus'), perLevel: null, value: computeLehrenTargetBonus(actor, 'magicResistance') });
+  // The Elementarist ability's own Wasser-Ladungen bonus - see
+  // helpers/elementalChargeEffects.mjs.
+  rows.push({ label: game.i18n.localize('SKSK.Breakdown.ElementalChargeBonus'), perLevel: null, value: getElementalWaterResistanceBonus(actor) });
 
   return { rows, total: Math.round(rows.reduce((sum, row) => sum + row.value, 0)) };
 }

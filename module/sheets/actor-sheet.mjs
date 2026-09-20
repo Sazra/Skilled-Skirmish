@@ -32,6 +32,7 @@ import { getManaBreakdown } from '../helpers/mana.mjs';
 import { daysToBreakdown, applyPendingLongevityGrowth, adjustLongevity, resetLongevityToFull } from '../helpers/longevity.mjs';
 import { getArmorClassBreakdown, getMagicResistanceBreakdown, computeArmorPieceBonus } from '../helpers/defense.mjs';
 import { isDurabilityEnabled } from '../helpers/materials.mjs';
+import { prepareElementalChargeSlots } from '../helpers/elementalCharges.mjs';
 import { computeWeaponAttackBonus, computeWeaponRangeLabel } from '../helpers/attackRolls.mjs';
 import { renderBreakdownHtml } from '../helpers/tooltips.mjs';
 import {
@@ -344,6 +345,9 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     toolbar: {
       template: "systems/sksk/templates/actor/parts/header-toolbar.hbs",
     },
+    elementalChargesBar: {
+      template: "systems/sksk/templates/actor/parts/elemental-charges-bar.hbs",
+    },
     resources: {
       template: "systems/sksk/templates/actor/parts/resources.hbs",
     },
@@ -572,6 +576,9 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     context.tabs = this._prepareTabs('primary');
     // Header icon toolbar's own collapsed/expanded state - see #toolbarCollapsed.
     context.toolbarCollapsed = this.#toolbarCollapsed;
+    // Elementarladungen Bottom-Bar widget - see helpers/elementalCharges.mjs.
+    context.elementalChargesEnabled = actor.system.elementalChargesEnabled;
+    context.elementalChargeSlots = prepareElementalChargeSlots(actor);
     // The GM tab holds background information/switches irrelevant to
     // players - hidden from the tab bar entirely for non-GM users.
     if (!game.user.isGM) delete context.tabs.gm;
@@ -598,7 +605,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     context.equippedWeapons = actor.items.filter(i => i.type === 'weapon' && i.system.equipped);
     // Range/reach parenthetical shown next to each weapon's own name - see
     // helpers/attackRolls.mjs#computeWeaponRangeLabel.
-    context.equippedWeapons.forEach(w => { w.rangeLabel = computeWeaponRangeLabel(w); });
+    context.equippedWeapons.forEach(w => { w.rangeLabel = computeWeaponRangeLabel(w, actor); });
     context.usableItems = actor.items.filter(i => i.type === 'item' && i.system.isUsable);
     context.skillTabs = Object.values(this._prepareTabs('skillCategories'));
     context.spellTypeTabs = Object.values(this._prepareTabs('spellTypes'));

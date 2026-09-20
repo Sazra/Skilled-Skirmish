@@ -18,6 +18,7 @@ import { checkFlanking } from "./flanking.mjs";
 import { computeLehrenTargetBonus } from "./lehren.mjs";
 import { isDurabilityEnabled } from "./materials.mjs";
 import { computePatronDamageBonus } from "./religion.mjs";
+import { getElementalFireDamageBonus } from "./elementalChargeEffects.mjs";
 
 /**
  * The intended target's flanking result (see helpers/flanking.mjs) for an
@@ -177,7 +178,12 @@ export async function rollWeaponItem(item) {
     const damageTypeBonus = actor?.system.damageBonus?.[damageType] ?? 0;
     const allWeaponsDamageBonus = actor?.system.damageBonusAll ?? 0;
     const patronDamageBonus = actor ? computePatronDamageBonus(actor, { skillKey: item.system.weaponType, damageType }) : 0;
-    const totalDamageBonus = attributeBonus + lehrenDamageBonus + damageTypeBonus + patronDamageBonus + allWeaponsDamageBonus;
+    // The Elementarist ability's own Feuer-Ladungen bonus (helpers/
+    // elementalChargeEffects.mjs) - general "extra damage", applies to
+    // weapon damage the same as spell damage (see helpers/spells.mjs#
+    // computeDamageBonus).
+    const fireChargeBonus = actor ? getElementalFireDamageBonus(actor) : 0;
+    const totalDamageBonus = attributeBonus + lehrenDamageBonus + damageTypeBonus + patronDamageBonus + allWeaponsDamageBonus + fireChargeBonus;
     const damageFormulaBase = totalDamageBonus ? `${item.system.formula} + ${totalDamageBonus}` : item.system.formula;
     const damageFormula = applyTechniqueDiceIncrease(damageFormulaBase, technique);
     const roll = await new Roll(damageFormula, item.getRollData()).evaluate();
@@ -369,7 +375,10 @@ export async function rollMartialArtsAttack(actor, index) {
   const damageTypeBonus = actor.system.damageBonus?.[attack.damageType] ?? 0;
   const allWeaponsDamageBonus = actor.system.damageBonusAll ?? 0;
   const patronDamageBonus = computePatronDamageBonus(actor, { skillKey: 'martialArts', damageType: attack.damageType });
-  const bonus = attributeBonus + lehrenDamageBonus + damageTypeBonus + patronDamageBonus + allWeaponsDamageBonus;
+  // The Elementarist ability's own Feuer-Ladungen bonus - see the identical
+  // comment above rollWeaponItem's own totalDamageBonus.
+  const fireChargeBonus = getElementalFireDamageBonus(actor);
+  const bonus = attributeBonus + lehrenDamageBonus + damageTypeBonus + patronDamageBonus + allWeaponsDamageBonus + fireChargeBonus;
   const formulaBase = bonus ? `${attack.formula} + ${bonus}` : attack.formula;
   const formula = applyTechniqueDiceIncrease(formulaBase, technique);
   const roll = await new Roll(formula, actor.getRollData()).evaluate();
