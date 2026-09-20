@@ -102,8 +102,17 @@ export function computeRestPreview(actor, state) {
   const segments = Math.max(1, Number(state.segments) || 1);
   const tier = state.isBreak ? determineRestTier(segments) : null;
 
+  // A qualifying Pause (any tier) normally doubles the passive rate - but
+  // an actor whose Aura modifier is below 1 instead gets a flat 1 Mana per
+  // segment, UNDOUBLED, as a minimum-mana-regeneration floor (their own
+  // computed rate would otherwise be 0 or negative - Aura modifier is the
+  // only way it can be, since manaRegeneration/sourceBound skill levels
+  // never go negative). Plain time-passing (no Pause) is unaffected either
+  // way - see applyRest below.
   const baseRate = computePassiveManaRegenPerSegment(actor);
-  const manaGain = segments * baseRate * (tier ? 2 : 1);
+  const auraMod = actor.system.attributes?.aur?.baseMod ?? 0;
+  const ratePerSegment = tier ? (auraMod >= 1 ? baseRate * 2 : 1) : baseRate;
+  const manaGain = segments * ratePerSegment;
 
   const medLevel = getActorSkillLevel(actor, 'meditation');
   const meditationRestore = tier === 'genesung' ? (2 + medLevel * 2) : tier === 'anpassung' ? (medLevel + 1) : 0;
@@ -228,8 +237,11 @@ export async function applyRest(actor, options) {
   // block), before either ever gets persisted.
   let manaRegenerationAccumulator = actor.system.manaRegenerationAccumulator ?? 0;
 
+  // See the identical comment in computeRestPreview above - keep in sync.
   const baseRate = computePassiveManaRegenPerSegment(actor);
-  const manaGain = segments * baseRate * (tier ? 2 : 1);
+  const auraMod = actor.system.attributes?.aur?.baseMod ?? 0;
+  const ratePerSegment = tier ? (auraMod >= 1 ? baseRate * 2 : 1) : baseRate;
+  const manaGain = segments * ratePerSegment;
   const mana = actor.system.mana;
   const newMana = Math.min(mana.max, mana.value + manaGain);
   if (newMana !== mana.value) {
