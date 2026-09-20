@@ -1703,6 +1703,10 @@
       "Concealed": {
         "Name": "Concealed",
         "Description": "This creature is concealed/hidden in combat. While active, it generates Stealth's own pending FP (if configured) at the start of each of its own Combat turns."
+      },
+      "ActiveManaCore": {
+        "Name": "Active Mana Core",
+        "Description": "Increases both maximum and current Mana by (Mana Core skill level * 50) and activates Concentration. If Concentration breaks, this status is automatically removed - any excess Mana (above the maximum without this effect) is lost in the process."
       }
     },
     "Models": {

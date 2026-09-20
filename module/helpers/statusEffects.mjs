@@ -1284,6 +1284,75 @@ export async function checkConcentration(actor, damage) {
 }
 
 /**
+ * Aktiver Manakern's own activation - grants max AND current Mana equal to
+ * (Manakern skill level * 50), then starts Concentration (unless already
+ * active from something else, e.g. a sustained spell), since this status'
+ * own upkeep depends entirely on Concentration staying up - see
+ * deactivateActiveManaCore/handleConcentrationEnded below for the reverse.
+ * The max-Mana portion is a real ActiveEffect change on this same effect
+ * (system.mana.bonus, ADD - see helpers/mana.mjs#computeMaxMana), applied
+ * first so the current-Mana clamp below already sees the raised max; the
+ * current-Mana portion is a direct actor update, since there's no "current
+ * value" concept an ActiveEffect change could represent.
+ *
+ * Fires from the "activeManaCore" createActiveEffect hook (see sksk.mjs),
+ * so this runs the same whether the status was toggled on from this
+ * system's own UI (helpers/statusEffects.mjs#setStatusStacks) or Foundry's
+ * native Token HUD (Actor#toggleStatusEffect) - both ultimately create the
+ * same kind of ActiveEffect, so hooking its own lifecycle covers every
+ * entry point uniformly rather than only the ones this system's own code
+ * happens to call directly.
+ * @param {Actor} actor
+ * @param {ActiveEffect} effect   The just-created activeManaCore effect.
+ * @return {Promise<void>}
+ */
+export async function activateActiveManaCore(actor, effect) {
+  const bonus = getActorSkillLevel(actor, 'manaCore') * 50;
+  await effect.update({
+    changes: [...(effect.changes ?? []), { key: 'system.mana.bonus', mode: CONST.ACTIVE_EFFECT_MODES.ADD, value: String(bonus) }],
+  });
+  const mana = actor.system.mana;
+  await actor.update({ 'system.mana.value': Math.min(mana.max, mana.value + bonus) });
+  if (getStatusStacks(actor, 'concentration') <= 0) {
+    await setStatusStacks(actor, 'concentration', 1);
+  }
+}
+
+/**
+ * Aktiver Manakern's own deactivation, however it happened (manually
+ * toggled off, or auto-cleared because Concentration broke - see
+ * handleConcentrationEnded below): its own Mana-capacity bonus is already
+ * gone by the time this runs (the backing ActiveEffect - and the
+ * system.mana.bonus change it carried, see activateActiveManaCore above -
+ * no longer exists), so current Mana simply clamps down to the new, lower
+ * max - "überschüssiges Mana über dem Wert ohne diesen Effekt geht
+ * verloren", rather than being preserved or refunded anywhere.
+ * @param {Actor} actor
+ * @return {Promise<void>}
+ */
+export async function deactivateActiveManaCore(actor) {
+  const mana = actor.system.mana;
+  if (mana.value > mana.max) await actor.update({ 'system.mana.value': mana.max });
+}
+
+/**
+ * If Concentration just ended (its own backing ActiveEffect deleted - see
+ * the "concentration" deleteActiveEffect hook in sksk.mjs) while Aktiver
+ * Manakern is currently active, that status depends entirely on
+ * Concentration staying up, so it's cleared too - which itself triggers
+ * deactivateActiveManaCore above, via that same status' own
+ * deleteActiveEffect hook (setStatusStacks deletes its backing effect,
+ * firing the hook again for THAT deletion).
+ * @param {Actor} actor
+ * @return {Promise<void>}
+ */
+export async function handleConcentrationEnded(actor) {
+  if (getStatusStacks(actor, 'activeManaCore') > 0) {
+    await setStatusStacks(actor, 'activeManaCore', 0);
+  }
+}
+
+/**
  * Schleichen's own "im Kampf getarnt" FP trigger: while the Concealed
  * status (see CONFIG.SKSK.predefinedStatusEffects) is active, grant
  * Stealth's "stealthRound" FP every time this actor's own Combat turn

@@ -17,6 +17,7 @@ import {
 } from './helpers/longevity.mjs';
 import {
   ensurePredefinedStatusEffects, registerConfigStatusEffects, handleCombatTurnStart, handleCombatTurnEnd,
+  activateActiveManaCore, deactivateActiveManaCore, handleConcentrationEnded,
 } from './helpers/statusEffects.mjs';
 import { clampSingleAttributeSelection } from './helpers/models.mjs';
 import { registerCalendariaIntegration } from './helpers/calendarIntegration.mjs';
@@ -117,6 +118,27 @@ Hooks.once('ready', async function () {
   registerCalendariaIntegration();
 
   Hooks.on('hotbarDrop', (bar, data, slot) => createItemMacro(data, slot));
+
+  // Aktiver Manakern (see helpers/statusEffects.mjs#activateActiveManaCore/
+  // deactivateActiveManaCore/handleConcentrationEnded) - hooked on the
+  // ActiveEffect lifecycle itself, rather than only the specific call sites
+  // this system's own UI uses (setStatusStacks), so it works identically
+  // whether a status was toggled from this system's own UI or Foundry's
+  // native Token HUD (Actor#toggleStatusEffect) - both ultimately create/
+  // delete the same kind of ActiveEffect. Only the client that actually
+  // made the change acts, so other connected clients don't also race to
+  // make the same follow-up update.
+  Hooks.on('createActiveEffect', (effect, options, userId) => {
+    if (game.user.id !== userId) return;
+    if (!(effect.parent instanceof Actor) || !effect.statuses.has('activeManaCore')) return;
+    activateActiveManaCore(effect.parent, effect);
+  });
+  Hooks.on('deleteActiveEffect', (effect, options, userId) => {
+    if (game.user.id !== userId) return;
+    if (!(effect.parent instanceof Actor)) return;
+    if (effect.statuses.has('concentration')) handleConcentrationEnded(effect.parent);
+    if (effect.statuses.has('activeManaCore')) deactivateActiveManaCore(effect.parent);
+  });
 
   // Makes an Active Effect change's "Custom" type actually do something -
   // see helpers/effects.mjs#applyCustomActiveEffectChange. Foundry itself

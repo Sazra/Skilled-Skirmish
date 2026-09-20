@@ -1703,6 +1703,10 @@
             "Concealed": {
                 "Name": "Tarnung",
                 "Description": "Diese Kreatur ist im Kampf getarnt/versteckt. Solange aktiv, generiert sie zu Beginn jedes eigenen Kampfzuges Schleichens eigene ausstehende FP (falls konfiguriert)."
+            },
+            "ActiveManaCore": {
+                "Name": "Aktiver Manakern",
+                "Description": "Erhöht maximales und momentanes Mana um (Fertigkeitsstufe Manakern * 50) und aktiviert Konzentration. Bricht die Konzentration, wird dieser Statuseffekt automatisch entfernt - überschüssiges Mana (über dem maximalen Wert ohne diesen Effekt) geht dabei verloren."
             }
         },
         "Models": {
