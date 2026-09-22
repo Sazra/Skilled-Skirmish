@@ -58,6 +58,7 @@ import { SKSKMassKillDialog } from '../apps/mass-kill-dialog.mjs';
 import { SKSKMartialArtsAttacksDialog } from '../apps/martial-arts-attacks-dialog.mjs';
 import { SKSKCustomResourceManaAlternativeDialog } from '../apps/custom-resource-mana-alternative-dialog.mjs';
 import { SKSKTechniqueDialog } from '../apps/technique-dialog.mjs';
+import { SKSKManualDamageDialog } from '../apps/manual-damage-dialog.mjs';
 import {
   getSoulPathItem, isPathAbilityVisible, getPathAbilityStatusLabel, getPathAbilityActionLabel,
   isBreakthroughUnlocked, isBreakthroughAttemptable, getBreakthroughEffectiveValues,
@@ -161,6 +162,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       openProductionFpDialog: SKSKActorSheet.#openProductionFpDialog,
       openLehrenDialog: SKSKActorSheet.#openLehrenDialog,
       toggleHeaderToolbar: SKSKActorSheet.#toggleHeaderToolbar,
+      openManualDamageDialog: SKSKActorSheet.#openManualDamageDialog,
       openTechniqueDialog: SKSKActorSheet.#openTechniqueDialog,
       grantPassivePerceptionFp: SKSKActorSheet.#grantPassivePerceptionFp,
       increaseStatusStack: SKSKActorSheet.#increaseStatusStack,
@@ -451,6 +453,21 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       button.dataset.action = 'toggleHeaderToolbar';
       button.dataset.tooltip = game.i18n.localize('SKSK.General.ToggleToolbar');
       button.setAttribute('aria-label', game.i18n.localize('SKSK.General.ToggleToolbar'));
+      this.window.controls?.insertAdjacentElement('beforebegin', button);
+    }
+    // Manual Damage button - opens apps/manual-damage-dialog.mjs, a
+    // freeform "enter one or more flat/formula damage amounts + element,
+    // then roll and apply" tool independent of any weapon/spell roll (e.g.
+    // narrative/environmental damage). Inserted the exact same way as the
+    // toolbar toggle above (right before window.controls), immediately
+    // after it, so it ends up as that button's own next sibling.
+    {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.classList.add('header-control', 'icon', 'fas', 'fa-heart-crack');
+      button.dataset.action = 'openManualDamageDialog';
+      button.dataset.tooltip = game.i18n.localize('SKSK.ManualDamage.Title');
+      button.setAttribute('aria-label', game.i18n.localize('SKSK.ManualDamage.Title'));
       this.window.controls?.insertAdjacentElement('beforebegin', button);
     }
     // Minimized-state attribute-roll bar (Character and NPC both) - a row
@@ -1995,6 +2012,16 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     const button = this.window.header?.querySelector('[data-action="toggleHeaderToolbar"]');
     button?.classList.toggle('fa-arrow-up', !this.#toolbarCollapsed);
     button?.classList.toggle('fa-arrow-down', this.#toolbarCollapsed);
+  }
+
+  /**
+   * Open the "Manueller Schaden" (Manual Damage) window (apps/manual-
+   * damage-dialog.mjs) - triggered from the frame button added in
+   * _renderFrame. Not bound to this.actor at all; the dialog resolves its
+   * own target only once its own Roll & Apply button is clicked.
+   */
+  static #openManualDamageDialog(event, target) {
+    new SKSKManualDamageDialog().render(true);
   }
 
   /**

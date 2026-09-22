@@ -1,0 +1,34 @@
+<div class="sksk-manual-damage-dialog">
+  <p class="hint">{{localize 'SKSK.ManualDamage.Hint'}}</p>
+
+  <ol class="items-list">
+    <li class="item flexrow items-header">
+      <div class="item-name">{{localize 'SKSK.ManualDamage.Formula'}}</div>
+      <div class="item-name">{{localize 'SKSK.ManualDamage.DamageType'}}</div>
+      <div class="item-controls">
+        <a class="item-control" data-action="addManualDamageEntry" title="{{localize 'SKSK.ManualDamage.Add'}}">
+          <i class="fas fa-plus"></i>
+        </a>
+      </div>
+    </li>
+    {{#each entries as |entry index|}}
+    <li class="item flexrow">
+      <input type="text" name="entries.{{index}}.formula" value="{{entry.formula}}"
+        placeholder="{{localize 'SKSK.ManualDamage.FormulaPlaceholder'}}" />
+      <select name="entries.{{index}}.damageType">
+        {{selectOptions ../damageTypeChoices selected=entry.damageType localize=true}}
+      </select>
+      <div class="item-controls">
+        <a class="item-control item-delete" data-action="removeManualDamageEntry" data-index="{{index}}"
+          title="{{localize 'SKSK.ManualDamage.Remove'}}">
+          <i class="fas fa-trash"></i>
+        </a>
+      </div>
+    </li>
+    {{/each}}
+  </ol>
+
+  <button type="button" data-action="rollAndApplyManualDamage">
+    <i class="fas fa-dice-d20"></i> {{localize 'SKSK.ManualDamage.RollAndApply'}}
+  </button>
+</div>

@@ -579,6 +579,20 @@
       "None": "No Martial Arts Attacks defined yet.",
       "OpenDialog": "Open Martial Arts Attacks"
     },
+    "ManualDamage": {
+      "Title": "Manual Damage",
+      "Hint": "Enter one or more damage amounts (a flat number or a dice formula), each with its own damage element - rolled on confirm and applied to your current target (or your own character otherwise), including Resistances/Weaknesses/Immunities/Absorption. Independent of any weapon/spell roll - e.g. for environmental or narrative damage.",
+      "Formula": "Amount/Formula",
+      "FormulaPlaceholder": "e.g. 2d6+3 or 5",
+      "DamageType": "Damage Element",
+      "Add": "Add Entry",
+      "Remove": "Remove",
+      "RollAndApply": "Roll & Apply",
+      "RolledEntry": "{type}: {formula}",
+      "NoEntries": "No valid damage entry (formula and damage element required).",
+      "InvalidFormula": "Invalid formula: {formula}",
+      "ChatTitle": "Manual damage for {defender}"
+    },
     "Action": {
       "Regeneration": "Regeneration",
       "RegenerateLifeDescription": "{name} regenerates Life",
@@ -1937,6 +1951,8 @@
       "EnchantmentTab": "Enchantment",
       "RollEnabled": "Roll Enabled",
       "RollFormulaLabel": "Roll Formula:",
+      "RollFlat": "Flat Formula Only (No Dice)",
+      "FlatFormula": "Formula",
       "DiceNum": "Number of Dice",
       "DiceSize": "Die Size",
       "DiceBonus": "Roll Modifier",

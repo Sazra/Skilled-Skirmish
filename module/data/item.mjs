@@ -47,13 +47,18 @@ export default class SKSKItem extends SKSKItemBase {
     // helpers/actions.mjs#rollItemUsage), independent of whether the item
     // is Usable in the first place (Consumable, or Equippable+Equipped+
     // Enchanted - see prepareDerivedData#isUsable below); diceNum/diceSize/
-    // diceBonus are only meaningful (and only shown on the sheet) once
-    // this is on.
+    // diceBonus (or flatFormula, once "flat" is on) are only meaningful
+    // (and only shown on the sheet) once this is on. "flat" switches the
+    // roll from the usual diceNum/diceSize/diceBonus dice term to a single
+    // freeform formula field instead - e.g. a pure flat bonus, or any
+    // other formula with no dice term of its own at all.
     schema.roll = new fields.SchemaField({
       enabled: new fields.BooleanField({ initial: false }),
+      flat: new fields.BooleanField({ initial: false }),
       diceNum: new fields.NumberField({ ...requiredInteger, initial: 1, min: 1 }),
       diceSize: new fields.StringField({ initial: "d20" }),
-      diceBonus: new fields.StringField({ initial: "+@abilities.str.mod+ceil(@lvl / 2)" })
+      diceBonus: new fields.StringField({ initial: "+@abilities.str.mod+ceil(@lvl / 2)" }),
+      flatFormula: new fields.StringField({ initial: "" })
     });
 
     schema.formula = new fields.StringField({ blank: true });
@@ -171,7 +176,9 @@ export default class SKSKItem extends SKSKItemBase {
     // mana capacity for every 0.1kg of this item's own weight.
     this.materialRollBonus = resolveMaterialBonus(this);
     const roll = this.roll;
-    this.formula = roll.enabled ? `${roll.diceNum}${roll.diceSize}${roll.diceBonus} + ${this.materialRollBonus}` : '';
+    this.formula = roll.enabled
+      ? `${roll.flat ? roll.flatFormula : `${roll.diceNum}${roll.diceSize}${roll.diceBonus}`} + ${this.materialRollBonus}`
+      : '';
     this.totalManaCapacity = computeTotalManaCapacity(this);
 
     // A Usable item is one that either can be Consumed, or is Equippable,

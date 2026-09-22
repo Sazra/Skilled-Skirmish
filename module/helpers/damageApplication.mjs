@@ -304,6 +304,63 @@ export async function applyResolvedDamageEntries(defender, attacker, entries, ki
 }
 
 /**
+ * The "Manueller Schaden" (Manual Damage) window's own confirm button (see
+ * apps/manual-damage-dialog.mjs) - rolls each freeform {formula,
+ * damageType} entry the GM/player typed in (a plain flat number and a dice
+ * formula both evaluate the same way through Roll, so neither needs its
+ * own special-casing), resolves a defender exactly like a chat "Apply
+ * Damage" button does (resolveClickDefender - the user's own current
+ * target, else a GM's own controlled token, else their assigned
+ * character), and applies the results through the exact same
+ * applyResolvedDamageEntries pipeline (Resistance/Weakness/Immunity/
+ * Absorption, Life/Negative Life netting) - with no attacker (this damage
+ * has no in-fiction source of its own) and no killSkillKey (nothing to
+ * credit a Kill to). Posts one chat card with every entry's own roll
+ * alongside the usual application summary; a no-op (just a warning, no
+ * chat message) if there's no resolvable defender, no entry has both a
+ * non-blank formula and a chosen damage type, or any formula fails to
+ * parse/evaluate.
+ * @param {Array<{formula: string, damageType: string}>} rawEntries
+ * @return {Promise<ChatMessage|void>}
+ */
+export async function rollAndApplyManualDamage(rawEntries) {
+  const defender = resolveClickDefender();
+  if (!defender) return ui.notifications.warn(game.i18n.localize('SKSK.AttackRoll.NoDefender'));
+
+  const rollData = defender.getRollData();
+  const resolvedEntries = [];
+  const rollLines = [];
+  const rolls = [];
+  for (const { formula, damageType } of rawEntries) {
+    if (!formula?.trim() || !damageType) continue;
+    let roll;
+    try {
+      roll = await new Roll(formula, rollData).evaluate();
+    } catch (error) {
+      return ui.notifications.error(game.i18n.format('SKSK.ManualDamage.InvalidFormula', { formula }));
+    }
+    rolls.push(roll);
+    resolvedEntries.push({ damageType, amount: roll.total });
+    const typeLabel = game.i18n.localize(CONFIG.SKSK.damageTypes[damageType] ?? damageType);
+    rollLines.push(
+      `<div class="sksk-roll-line">${game.i18n.format('SKSK.ManualDamage.RolledEntry', { type: typeLabel, formula })}</div>${await roll.render()}`
+    );
+  }
+  if (!resolvedEntries.length) return ui.notifications.warn(game.i18n.localize('SKSK.ManualDamage.NoEntries'));
+
+  const { lines } = await applyResolvedDamageEntries(defender, null, mergeDamageEntries(resolvedEntries), null);
+
+  const messageData = {
+    speaker: ChatMessage.getSpeaker({ actor: defender }),
+    flavor: game.i18n.format('SKSK.ManualDamage.ChatTitle', { defender: defender.name }),
+    content: `<div class="sksk-chat-card sksk-action-card">${rollLines.join('')}${lines.join('')}</div>`,
+    rolls,
+  };
+  ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));
+  return ChatMessage.create(messageData);
+}
+
+/**
  * Handle a click on an "Apply Damage" button (see renderApplyDamageButton):
  * resolves the defender (helpers/attackRolls.mjs#resolveClickDefender),
  * applies the button's own carried entries/Technique payload through

@@ -579,6 +579,20 @@
             "None": "Noch keine Kampfkunstangriffe definiert.",
             "OpenDialog": "Kampfkunstangriffe öffnen"
         },
+        "ManualDamage": {
+            "Title": "Manueller Schaden",
+            "Hint": "Ein oder mehrere Schadensbeträge (Zahl oder Würfelformel) mit jeweils einem Schadenselement eintragen - wird beim Bestätigen ausgewürfelt und dem aktuellen Ziel zugefügt (sonst dem eigenen Charakter), inklusive Resistenzen/Schwächen/Immunitäten/Absorption. Unabhängig von jedem Waffen-/Zauberwurf - z.B. für Umgebungs- oder erzählerischen Schaden.",
+            "Formula": "Betrag/Formel",
+            "FormulaPlaceholder": "z.B. 2d6+3 oder 5",
+            "DamageType": "Schadenselement",
+            "Add": "Eintrag hinzufügen",
+            "Remove": "Entfernen",
+            "RollAndApply": "Würfeln & Anwenden",
+            "RolledEntry": "{type}: {formula}",
+            "NoEntries": "Kein gültiger Schadenseintrag (Formel und Schadenselement erforderlich).",
+            "InvalidFormula": "Ungültige Formel: {formula}",
+            "ChatTitle": "Manueller Schaden für {defender}"
+        },
         "Action": {
             "Regeneration": "Regeneration",
             "RegenerateLifeDescription": "{name} regeneriert Leben",
@@ -1937,6 +1951,8 @@
             "EnchantmentTab": "Verzauberung",
             "RollEnabled": "Wurf aktiviert",
             "RollFormulaLabel": "Wurfformel:",
+            "RollFlat": "Nur Flat-Formel (ohne Würfel)",
+            "FlatFormula": "Formel",
             "DiceNum": "Anzahl Würfel",
             "DiceSize": "Würfelgröße",
             "DiceBonus": "Wurf-Modifikator",
