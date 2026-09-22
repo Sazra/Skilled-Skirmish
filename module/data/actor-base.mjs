@@ -296,6 +296,12 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // helpers/statusEffects.mjs#computeD20Malus/applyD20Malus.
     schema.allRollsBonus = new fields.NumberField({ ...requiredInteger, initial: 0 });
 
+    // A flat bonus added on top of Initiative rolls - purely an Active
+    // Effect target, not meant to be hand-edited. Exposed as "@initiativeBonus"
+    // in getRollData below, alongside Dexterity's own "@attributes.dex.mod",
+    // for CONFIG.Combat.initiative's formula (see sksk.mjs).
+    schema.initiativeBonus = new fields.NumberField({ ...requiredInteger, initial: 0 });
+
     // Four flat "everything of this kind" accumulators - purely Active
     // Effect targets, each summed in ALONGSIDE the existing per-type/per-
     // school fields above (weaponAttackBonus.<type>, damageBonus.<type>,
@@ -951,6 +957,10 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     }
 
     data.lvl = this.resources.level.value;
+
+    // For CONFIG.Combat.initiative's formula (see sksk.mjs) - the flat
+    // Active-Effect-only bonus defined above.
+    data.initiativeBonus = this.initiativeBonus ?? 0;
 
     // Every skill's current level, so world-configurable formulas (e.g.
     // the carry-weight setting) can reference "@skills.<key>" - 0 for

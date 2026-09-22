@@ -35,8 +35,11 @@ Hooks.once('init', function () {
 
   registerSettings();
 
+  // "@attributes.dex.mod" (not "@abilities...") per data/actor-base.mjs#
+  // getRollData; "@initiativeBonus" is that same method's flat Active-
+  // Effect-only bonus (data/actor-base.mjs#initiativeBonus).
   CONFIG.Combat.initiative = {
-    formula: '1d20 + @abilities.dex.mod',
+    formula: '1d20 + @attributes.dex.mod + @initiativeBonus',
     decimals: 2,
   };
 
