@@ -921,6 +921,14 @@ SKSK.pathAbilityTypes = {
   passive: 'SKSK.SoulPath.AbilityType.Passive',
 };
 
+// A Class/Species/Talent "Fähigkeit"'s own activation type - see
+// data/class.mjs#abilities.type/data/species.mjs#abilities.type/
+// data/talent.mjs#abilityType and helpers/abilityRolls.mjs.
+SKSK.abilityTypes = {
+  active: 'SKSK.SoulPath.AbilityType.Active',
+  passive: 'SKSK.SoulPath.AbilityType.Passive',
+};
+
 // A Durchbruch (breakthrough) entry's own repeat mode - see
 // data/soulPath.mjs.
 SKSK.soulPathBreakthroughModes = {

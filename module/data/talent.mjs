@@ -49,6 +49,26 @@ export default class SKSKTalent extends SKSKItemBase {
     schema.lifeBonusFormula = new fields.StringField({ required: true, blank: true, initial: "0" });
     schema.manaBonusFormula = new fields.StringField({ required: true, blank: true, initial: "0" });
 
+    // Whether this Talent's own single ability can be actively toggled
+    // on/off at all - same AP-/RP-/Mana-costed, duration-then-cooldown
+    // activation as Class/Species abilities (see data/class.mjs#abilities.
+    // type, helpers/abilityRolls.mjs#toggleTalentAbility) - "passive" (the
+    // default) shows no cost fields or toggle button at all. Prefixed
+    // "ability" (rather than reusing "type", which would shadow this
+    // Item's own document type "talent") since these all live directly on
+    // this schema's root rather than nested in an array like Class/Species.
+    schema.abilityType = new fields.StringField({ required: true, blank: false, initial: "passive", choices: ["passive", "active"] });
+    schema.abilityApCost = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+    schema.abilityRpCost = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+    schema.abilityManaCost = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+    schema.abilityDurationRounds = new fields.NumberField({ ...requiredInteger, initial: 1, min: 0 });
+    schema.abilityCooldownRounds = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+    // Runtime toggle state - not meant to be hand-edited, see
+    // helpers/abilityRolls.mjs#toggleTalentAbility.
+    schema.abilityActive = new fields.BooleanField({ initial: false });
+    schema.abilityRoundsRemaining = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+    schema.abilityEffectId = new fields.StringField({ required: true, blank: true, initial: "" });
+
     // Zero or more overrides granting the ability to cast spells from a
     // specific combined magic school (CONFIG.SKSK.combinedMagicSchools) up
     // to a computed max level, bypassing that school's spells' own

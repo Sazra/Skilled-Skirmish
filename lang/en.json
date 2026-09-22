@@ -541,8 +541,8 @@
       "SoulforceMeditationCombatFpEnabledHint": "Whether using a Meditation die while a Combat is active also grants Soulforce's own \"Meditation Used in Combat\" FP (still scaled by that trigger's own configured rate in the Skill Usage FP settings). Off by default. Targetable by Active Effects.",
       "SoulPowerResourceEnabled": "Soulforce: Show Soul Power Resource",
       "SoulPowerResourceEnabledHint": "Shows the Soul Power resource on the sidebar even before Soulforce reaches its own max level (5) - it's shown regardless once that level is reached, so this only matters earlier. Off by default. Targetable by Active Effects.",
-      "SoulPowerMechanicEnabled": "Soulforce: Enable New Mechanic (reserved)",
-      "SoulPowerMechanicEnabledHint": "Reserved for Soul Power's own trade-in mechanic (its \"Soul Power Traded\" FP trigger) - not yet designed or wired up, to be tackled once every skill-usage FP trigger is fully implemented. Has no effect yet. Targetable by Active Effects.",
+      "SoulPowerMechanicEnabled": "Soul Power: Enable Trade-In Mechanic",
+      "SoulPowerMechanicEnabledHint": "Unlocks the trade-in button on the Soul Power resource (only while Soulforce hasn't reached its own max level (5) yet) - converts the entire current Soul Power pool into Soulforce's own FP, at the GM-configured \"Soul Power Traded\" rate (see the Skill Usage FP settings). Off by default. Targetable by Active Effects.",
       "ElementalChargesEnabled": "Show Elemental Charges Bar",
       "ElementalChargesEnabledHint": "Shows a bar below the Actor sheet with one round slot per point of the Willpower modifier. Every spell cast from a simple magic school fills a slot (left to right, wrapping back to the start once full) with that element's color and abbreviation. Off by default. Targetable by Active Effects.",
       "ImprovedMagicResistance": "Improved Magic Resistance",
@@ -936,8 +936,7 @@
       "GmSectionTitle": "Soul Path",
       "Create": "Create Soul Path",
       "AlreadyHasOne": "This actor already has a Soul Path bound - remove it first.",
-      "PathAbilityExpired": "{name}: duration expired - deactivated.",
-      "TurnStartTitle": "Soul Path"
+      "PathAbilityExpired": "{name}: duration expired - deactivated."
     },
     "Religion": {
       "Title": "Religion",
@@ -1426,7 +1425,22 @@
       "LifeBonusFormula": "Life Bonus (scaling)",
       "LifeBonusFormulaHint": "Added to max life once this ability is unlocked. Supports \"L\" for the actor's level, e.g. \"L * 2\".",
       "ManaBonusFormula": "Mana Bonus (scaling)",
-      "ManaBonusFormulaHint": "Added to max mana once this ability is unlocked. Supports \"L\" for the actor's level, e.g. \"L * 2\"."
+      "ManaBonusFormulaHint": "Added to max mana once this ability is unlocked. Supports \"L\" for the actor's level, e.g. \"L * 2\".",
+      "ActivationType": "Activation",
+      "ApCost": "AP Cost",
+      "RpCost": "RP Cost",
+      "ManaCost": "Mana Cost",
+      "Duration": "Duration (Rounds)",
+      "Cooldown": "Cooldown (Rounds)",
+      "StatusActive": "Active ({rounds} rounds left)",
+      "StatusCooldown": "Cooldown ({rounds} rounds left)",
+      "StatusReady": "Ready",
+      "Activate": "Activate",
+      "Deactivate": "Deactivate",
+      "Activated": "{name} activated.",
+      "Deactivated": "{name} deactivated.",
+      "Expired": "{name}: duration expired - deactivated.",
+      "NotEnoughMana": "Not enough Mana."
     },
     "Spell": {
       "ManaCost": "Mana",

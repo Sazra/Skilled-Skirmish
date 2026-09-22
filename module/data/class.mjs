@@ -64,6 +64,27 @@ export default class SKSKClass extends SKSKItemBase {
       // this ability isn't tied to a Patron ability (plain NumberField, not
       // nullable, so "None" round-trips cleanly through a <select>).
       patronAbilityIndex: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+      // Whether this ability can be actively toggled on/off at all - an
+      // AP-/RP-/Mana-costed, duration-then-cooldown activation mirroring
+      // Soul Path's own active Path Abilities (see helpers/soulPathRolls.mjs#
+      // togglePathAbility and this system's own helpers/abilityRolls.mjs#
+      // toggleClassSpeciesAbility). "passive" (the default, preserving every
+      // existing ability's own purely-descriptive behavior) shows no cost
+      // fields or toggle button at all - see templates/actor/parts/
+      // abilities.hbs.
+      type: new fields.StringField({ required: true, blank: false, initial: "passive", choices: ["passive", "active"] }),
+      apCost: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+      // 0 = "not set", mirrors apCost 1:1 for an off-turn activation instead
+      // - same convention as data/technique.mjs#rpCost.
+      rpCost: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+      manaCost: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+      durationRounds: new fields.NumberField({ ...requiredInteger, initial: 1, min: 0 }),
+      cooldownRounds: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+      // Runtime toggle state - not meant to be hand-edited, see
+      // helpers/abilityRolls.mjs#toggleClassSpeciesAbility.
+      active: new fields.BooleanField({ initial: false }),
+      roundsRemaining: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+      effectId: new fields.StringField({ required: true, blank: true, initial: "" }),
     }), {
       initial: [
         { name: "", description: "", lifeBonusFormula: "0", manaBonusFormula: "0", patronAbilityIndex: 0 },

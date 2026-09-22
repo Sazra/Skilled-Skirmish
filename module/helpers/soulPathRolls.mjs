@@ -316,13 +316,16 @@ export async function togglePathAbility(actor, item, index) {
  * every active entry's duration counts down by 1, auto-deactivating
  * (disabling its own linked effect, starting its own cooldown) at 0; every
  * inactive-but-on-cooldown entry's cooldown also counts down by 1. Called
- * from statusEffects.mjs#handleCombatTurnStart.
+ * from, and folded into the combined turn-start card by,
+ * statusEffects.mjs#handleCombatTurnStart - same "return description
+ * lines, let the caller post the one shared card" shape as
+ * handleTechniqueTurnStart, rather than posting its own.
  * @param {Actor} actor
- * @return {Promise<void>}
+ * @return {Promise<string[]>} descriptionLines
  */
 export async function handlePathAbilityTurnStart(actor) {
   const item = getSoulPathItem(actor);
-  if (!item || !item.system.pathAbilities?.length) return;
+  if (!item || !item.system.pathAbilities?.length) return [];
 
   const abilities = foundry.utils.deepClone(item.system.pathAbilities);
   let changed = false;
@@ -342,7 +345,7 @@ export async function handlePathAbilityTurnStart(actor) {
         entry.active = false;
         entry.roundsRemaining = entry.cooldownRounds;
         changed = true;
-        lines.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.SoulPath.PathAbilityExpired', { name: entry.name })}</div>`);
+        lines.push(game.i18n.format('SKSK.SoulPath.PathAbilityExpired', { name: entry.name }));
       }
     } else if ((entry.roundsRemaining ?? 0) > 0) {
       entry.roundsRemaining -= 1;
@@ -351,5 +354,5 @@ export async function handlePathAbilityTurnStart(actor) {
   }
 
   if (changed) await item.update({ 'system.pathAbilities': abilities });
-  if (lines.length) await postActionChatCard(actor, game.i18n.localize('SKSK.SoulPath.TurnStartTitle'), null, 0, lines.join(''));
+  return lines;
 }

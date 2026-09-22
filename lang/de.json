@@ -541,8 +541,8 @@
             "SoulforceMeditationCombatFpEnabledHint": "Ob das Nutzen eines Meditationswürfels während eines aktiven Kampfes zusätzlich Seelenstärkes eigenes \"Genutzter Meditationswürfel im Kampf\"-FP gewährt (weiterhin skaliert mit der eigenen konfigurierten Rate dieses Triggers in den Fertigkeitsnutzungs-FP-Einstellungen). Standardmäßig aus. Von Active Effects ansteuerbar.",
             "SoulPowerResourceEnabled": "Seelenstärke: Seelenmacht-Ressource anzeigen",
             "SoulPowerResourceEnabledHint": "Zeigt die Seelenmacht-Ressource in der Seitenleiste bereits an, bevor Seelenstärke ihre eigene maximale Stufe (5) erreicht hat - sie wird ohnehin angezeigt, sobald diese Stufe erreicht ist, daher wirkt sich dieser Schalter nur vorher aus. Standardmäßig aus. Von Active Effects ansteuerbar.",
-            "SoulPowerMechanicEnabled": "Seelenstärke: Neue Mechanik aktivieren (reserviert)",
-            "SoulPowerMechanicEnabledHint": "Reserviert für Seelenmachts eigene Eintausch-Mechanik (ihren \"Eingetauschte Seelenmacht\"-FP-Trigger) - noch nicht entworfen oder angebunden, wird angegangen sobald jeder Fertigkeitsnutzungs-FP-Trigger vollständig implementiert ist. Hat aktuell keine Auswirkung. Von Active Effects ansteuerbar.",
+            "SoulPowerMechanicEnabled": "Seelenmacht: Eintausch-Mechanik aktivieren",
+            "SoulPowerMechanicEnabledHint": "Schaltet den Eintausch-Button bei der Seelenmacht-Ressource frei (nur solange Seelenstärke ihre eigene maximale Stufe (5) noch nicht erreicht hat) - wandelt den gesamten aktuellen Seelenmacht-Vorrat zur gewählten Zeit in Seelenstärkes eigene FP um, zur GM-konfigurierten \"Eingetauschte Seelenmacht\"-Rate (siehe Fertigkeitsnutzungs-FP-Einstellungen). Standardmäßig aus. Von Active Effects ansteuerbar.",
             "ElementalChargesEnabled": "Elementarladungen-Leiste anzeigen",
             "ElementalChargesEnabledHint": "Zeigt eine Leiste unterhalb des Actor-Sheets mit einem runden Feld je Punkt des Willenskraft-Modifikators. Jeder gewirkte Zauber einer einfachen Magieschule füllt (von links nach rechts, danach wieder von vorn beginnend) ein Feld mit der Farbe und Abkürzung des jeweiligen Elements. Standardmäßig aus. Von Active Effects ansteuerbar.",
             "ImprovedMagicResistance": "Verbesserte Magieresistenz",
@@ -936,8 +936,7 @@
             "GmSectionTitle": "Seelenpfad",
             "Create": "Seelenpfad erstellen",
             "AlreadyHasOne": "Dieser Akteur hat bereits einen gebundenen Seelenpfad - erst entfernen.",
-            "PathAbilityExpired": "{name}: Wirkungsdauer abgelaufen - deaktiviert.",
-            "TurnStartTitle": "Seelenpfad"
+            "PathAbilityExpired": "{name}: Wirkungsdauer abgelaufen - deaktiviert."
         },
         "Religion": {
             "Title": "Religion",
@@ -1426,7 +1425,22 @@
             "LifeBonusFormula": "Lebens-Bonus (skalierend)",
             "LifeBonusFormulaHint": "Wird zum maximalen Leben addiert, sobald diese Fähigkeit freigeschaltet ist. Unterstützt \"L\" für das Level des Akteurs, z.B. \"L * 2\".",
             "ManaBonusFormula": "Mana-Bonus (skalierend)",
-            "ManaBonusFormulaHint": "Wird zum maximalen Mana addiert, sobald diese Fähigkeit freigeschaltet ist. Unterstützt \"L\" für das Level des Akteurs, z.B. \"L * 2\"."
+            "ManaBonusFormulaHint": "Wird zum maximalen Mana addiert, sobald diese Fähigkeit freigeschaltet ist. Unterstützt \"L\" für das Level des Akteurs, z.B. \"L * 2\".",
+            "ActivationType": "Aktivierung",
+            "ApCost": "AP-Kosten",
+            "RpCost": "RP-Kosten",
+            "ManaCost": "Mana-Kosten",
+            "Duration": "Wirkungsdauer (Runden)",
+            "Cooldown": "Abklingzeit (Runden)",
+            "StatusActive": "Aktiv (noch {rounds} Runden)",
+            "StatusCooldown": "Abklingzeit (noch {rounds} Runden)",
+            "StatusReady": "Bereit",
+            "Activate": "Aktivieren",
+            "Deactivate": "Deaktivieren",
+            "Activated": "{name} aktiviert.",
+            "Deactivated": "{name} deaktiviert.",
+            "Expired": "{name}: Wirkungsdauer abgelaufen - deaktiviert.",
+            "NotEnoughMana": "Nicht genug Mana."
         },
         "Spell": {
             "ManaCost": "Mana",

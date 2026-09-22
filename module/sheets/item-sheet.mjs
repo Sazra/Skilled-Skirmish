@@ -20,6 +20,9 @@ import { getStatusEffectDefinitions } from '../helpers/statusEffects.mjs';
 import {
   togglePathAbility, getPathAbilityStatusLabel, getPathAbilityActionLabel,
 } from '../helpers/soulPathRolls.mjs';
+import {
+  toggleClassSpeciesAbility, toggleTalentAbility, getAbilityStatusLabel, getAbilityActionLabel,
+} from '../helpers/abilityRolls.mjs';
 import { ensureLinkedSpellEffect } from '../helpers/spell-rolls.mjs';
 import { SKSKSoulPathElementsDialog } from '../apps/soul-path-elements-dialog.mjs';
 import { getWorldDeities } from '../helpers/religion.mjs';
@@ -85,6 +88,8 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       openPathAbilityEffect: SKSKItemSheet.#openPathAbilityEffect,
       openBreakthroughEffect: SKSKItemSheet.#openBreakthroughEffect,
       openSoulPathElementsDialog: SKSKItemSheet.#openSoulPathElementsDialog,
+      toggleClassSpeciesAbility: SKSKItemSheet.#toggleClassSpeciesAbility,
+      toggleTalentAbility: SKSKItemSheet.#toggleTalentAbility,
     }
   };
 
@@ -463,6 +468,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
 
     if (item.type === 'species' || item.type === 'class' || item.type === 'talent') {
       context.skillBonusChoices = getSkillBonusChoices();
+      context.abilityTypeChoices = CONFIG.SKSK.abilityTypes;
     }
 
     // fpGainBonuses (Part of the GM tab on Item/Weapon/Armor/Species/Class/
@@ -478,6 +484,13 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       // Talent has only one ability, so unlike Species/Class's abilityEffects
       // (filtered per ability index), all of the item's effects belong to it.
       context.talentEffects = Array.from(item.effects);
+      // Only meaningful (and only shown) once this Talent is actually owned
+      // by an Actor - see templates/item/parts/talent.hbs's own {{#if
+      // item.actor}} guard and helpers/abilityRolls.mjs#toggleTalentAbility.
+      context.talentAbilityStatus = getAbilityStatusLabel({
+        type: item.system.abilityType, active: item.system.abilityActive, roundsRemaining: item.system.abilityRoundsRemaining,
+      });
+      context.talentAbilityActionLabel = getAbilityActionLabel({ active: item.system.abilityActive });
     }
 
     // Combined-school override entries (Class/Species/Talent granting the
@@ -624,6 +637,12 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       context.abilityEffects = (item.system.abilities ?? []).map((ability, index) =>
         item.effects.filter(effect => effect.getFlag('sksk', 'abilityIndex') === index)
       );
+      // Only meaningful (and only shown, per entry, gated on its own type
+      // "active") once this item is actually owned by an Actor - see
+      // templates/item/parts/class.hbs/species.hbs's own {{#if item.actor}}
+      // guard and helpers/abilityRolls.mjs#toggleClassSpeciesAbility.
+      context.abilityStatuses = (item.system.abilities ?? []).map(getAbilityStatusLabel);
+      context.abilityActionLabels = (item.system.abilities ?? []).map(getAbilityActionLabel);
     }
 
     if (item.type === 'spell') {
@@ -1068,6 +1087,26 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
   static async #togglePathAbility(event, target) {
     if (!this.item.actor) return ui.notifications.warn(game.i18n.localize('SKSK.Technique.NotOwned'));
     await togglePathAbility(this.item.actor, this.item, Number(target.dataset.index));
+  }
+
+  /**
+   * A Class/Species ability's own Activate/Deactivate button - see
+   * helpers/abilityRolls.mjs#toggleClassSpeciesAbility. A no-op if this
+   * Item isn't owned by an Actor (nothing to spend AP/Mana from).
+   */
+  static async #toggleClassSpeciesAbility(event, target) {
+    if (!this.item.actor) return ui.notifications.warn(game.i18n.localize('SKSK.Technique.NotOwned'));
+    await toggleClassSpeciesAbility(this.item.actor, this.item, Number(target.dataset.index));
+  }
+
+  /**
+   * A Talent's own single-ability Activate/Deactivate button - see
+   * helpers/abilityRolls.mjs#toggleTalentAbility. A no-op if this Item
+   * isn't owned by an Actor.
+   */
+  static async #toggleTalentAbility(event, target) {
+    if (!this.item.actor) return ui.notifications.warn(game.i18n.localize('SKSK.Technique.NotOwned'));
+    await toggleTalentAbility(this.item.actor, this.item);
   }
 
   /**

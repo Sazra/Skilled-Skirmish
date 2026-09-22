@@ -439,11 +439,13 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       manaAlternativeRateMana: new fields.NumberField({ ...requiredInteger, initial: 1, min: 1 }),
       manaAlternativeForSpells: new fields.BooleanField({ initial: true }),
       manaAlternativeForTechniques: new fields.BooleanField({ initial: false }),
-      // Not yet wired to any actual mechanic - Class/Species/Talent
-      // "Fähigkeiten" are purely descriptive (no cost of their own) and
-      // Soul Path's own active Pfadfähigkeiten aren't referred to as
-      // "Fähigkeiten" anywhere else in this system - reserved for a future
-      // costed "Fähigkeiten" mechanic.
+      // Gates a Class/Species/Talent "Fähigkeit" whose own type is "active"
+      // (data/class.mjs#abilities.type/data/species.mjs#abilities.type/
+      // data/talent.mjs#abilityType) - see helpers/abilityRolls.mjs's own
+      // payAbilityCost, which spends every eligible resource (in order)
+      // before falling back to real Mana. Soul Path's own active
+      // Pfadfähigkeiten are a separate mechanic (helpers/soulPathRolls.mjs)
+      // and don't consult this at all.
       manaAlternativeForAbilities: new fields.BooleanField({ initial: false }),
     }));
 

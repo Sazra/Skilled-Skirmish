@@ -65,6 +65,9 @@ import {
   attemptBreakthrough, togglePathAbility,
 } from '../helpers/soulPathRolls.mjs';
 import {
+  getAbilityStatusLabel, getAbilityActionLabel, toggleClassSpeciesAbility, toggleTalentAbility,
+} from '../helpers/abilityRolls.mjs';
+import {
   getStatusEffectDefinitions, getStatusStacks, increaseStatusStacks, decreaseStatusStacks, applyD20Malus,
   getStatusEffect, getStatusInstances, getStatusInstancesTotal, addStatusInstance, applyCauterization,
   getAdrenalinDamage, setRestrainedConfig, attemptRestrainedEscapeManual, setStatusStacks,
@@ -181,6 +184,8 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       configureToken: SKSKActorSheet.#configureToken,
       attemptBreakthrough: SKSKActorSheet.#attemptBreakthrough,
       togglePathAbility: SKSKActorSheet.#togglePathAbility,
+      toggleClassSpeciesAbility: SKSKActorSheet.#toggleClassSpeciesAbility,
+      toggleTalentAbility: SKSKActorSheet.#toggleTalentAbility,
       openPathAbilityEffect: SKSKActorSheet.#openPathAbilityEffect,
       openBreakthroughEffect: SKSKActorSheet.#openBreakthroughEffect,
       createSoulPath: SKSKActorSheet.#createSoulPath,
@@ -872,13 +877,20 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
           // sort below the item-collection loop.
           sortGroup: 1,
           requiredLevel,
+          // Activation state (only meaningful for type "active" - see
+          // helpers/abilityRolls.mjs#toggleClassSpeciesAbility, which this
+          // index addresses back into source.system.abilities).
+          index,
+          type: ability.type,
+          statusLabel: getAbilityStatusLabel(ability),
+          actionLabel: getAbilityActionLabel(ability),
         });
       });
     };
 
     const collectSpeciesAbilities = (source) => {
-      for (const ability of source.system.abilities ?? []) {
-        if (!ability.name && !ability.description) continue;
+      source.system.abilities?.forEach((ability, index) => {
+        if (!ability.name && !ability.description) return;
         classAndSpeciesAbilities.push({
           name: ability.name || source.name,
           description: ability.description,
@@ -889,8 +901,12 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
           // Always sorted first - see the sort below the item-collection loop.
           sortGroup: 0,
           requiredLevel: 0,
+          index,
+          type: ability.type,
+          statusLabel: getAbilityStatusLabel(ability),
+          actionLabel: getAbilityActionLabel(ability),
         });
-      }
+      });
     };
 
     // Iterate through items, allocating to containers
@@ -930,6 +946,12 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
         // sheet's own Type dropdown) to save space in the Abilities tab's
         // item-source column, which is shared with class/species abilities.
         i.typeLabel = game.i18n.localize(CONFIG.SKSK.talentTypes[i.system.talentType]).replace('Level ', 'Lvl ');
+        // Activation state (only meaningful for abilityType "active" - see
+        // helpers/abilityRolls.mjs#toggleTalentAbility).
+        i.abilityStatusLabel = getAbilityStatusLabel({
+          type: i.system.abilityType, active: i.system.abilityActive, roundsRemaining: i.system.abilityRoundsRemaining,
+        });
+        i.abilityActionLabel = getAbilityActionLabel({ active: i.system.abilityActive });
         talents.push(i);
       }
       // Append to classes.
@@ -2055,6 +2077,30 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     const item = getSoulPathItem(this.actor);
     if (!item) return;
     await togglePathAbility(this.actor, item, Number(target.dataset.index));
+  }
+
+  /**
+   * A Class/Species ability's own Activate/Deactivate button - see
+   * helpers/abilityRolls.mjs#toggleClassSpeciesAbility.
+   * @param {PointerEvent} event
+   * @param {HTMLElement} target   Carries data-item-id and data-index.
+   */
+  static async #toggleClassSpeciesAbility(event, target) {
+    const item = this.actor.items.get(target.dataset.itemId);
+    if (!item) return;
+    await toggleClassSpeciesAbility(this.actor, item, Number(target.dataset.index));
+  }
+
+  /**
+   * A Talent's own single-ability Activate/Deactivate button - see
+   * helpers/abilityRolls.mjs#toggleTalentAbility.
+   * @param {PointerEvent} event
+   * @param {HTMLElement} target   Carries data-item-id.
+   */
+  static async #toggleTalentAbility(event, target) {
+    const item = this.actor.items.get(target.dataset.itemId);
+    if (!item) return;
+    await toggleTalentAbility(this.actor, item);
   }
 
   /**

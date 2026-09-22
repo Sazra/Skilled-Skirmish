@@ -162,6 +162,43 @@
         <input type="text" name="system.abilities.{{index}}.manaBonusFormula" value="{{entry.manaBonusFormula}}"
           title="{{localize 'SKSK.Ability.ManaBonusFormulaHint'}}" placeholder="0" />
 
+        <label class="resource-label">{{localize 'SKSK.Ability.ActivationType'}}</label>
+        <select name="system.abilities.{{index}}.type">
+          {{selectOptions ../abilityTypeChoices selected=entry.type localize=true}}
+        </select>
+        {{#if (eq entry.type "active")}}
+        <div class="grid grid-4col">
+          <div class="grid-span-1">
+            <label class="resource-label">{{localize 'SKSK.Ability.ApCost'}}</label>
+            <input type="text" name="system.abilities.{{index}}.apCost" value="{{entry.apCost}}" data-dtype="Number" />
+          </div>
+          <div class="grid-span-1">
+            <label class="resource-label">{{localize 'SKSK.Ability.RpCost'}}</label>
+            <input type="text" name="system.abilities.{{index}}.rpCost" value="{{entry.rpCost}}" data-dtype="Number" />
+          </div>
+          <div class="grid-span-1">
+            <label class="resource-label">{{localize 'SKSK.Ability.ManaCost'}}</label>
+            <input type="text" name="system.abilities.{{index}}.manaCost" value="{{entry.manaCost}}" data-dtype="Number" />
+          </div>
+          <div class="grid-span-1">
+            <label class="resource-label">{{localize 'SKSK.Ability.Duration'}}</label>
+            <input type="text" name="system.abilities.{{index}}.durationRounds" value="{{entry.durationRounds}}" data-dtype="Number" />
+          </div>
+          <div class="grid-span-1">
+            <label class="resource-label">{{localize 'SKSK.Ability.Cooldown'}}</label>
+            <input type="text" name="system.abilities.{{index}}.cooldownRounds" value="{{entry.cooldownRounds}}" data-dtype="Number" />
+          </div>
+        </div>
+        {{#if ../item.actor}}
+        <div class="flexrow flex-center action-row-controls">
+          <span class="ap-cost-label">{{lookup ../abilityStatuses index}}</span>
+          <button type="button" data-action="toggleClassSpeciesAbility" data-item-id="{{../item.id}}" data-index="{{index}}">
+            {{localize (lookup ../abilityActionLabels index)}}
+          </button>
+        </div>
+        {{/if}}
+        {{/if}}
+
         <ol class="items-list ability-effects">
           {{#each (lookup ../abilityEffects index) as |effect|}}
           <li class="item effect flexrow" data-effect-id="{{effect.id}}">

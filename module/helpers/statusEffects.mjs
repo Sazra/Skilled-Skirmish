@@ -4,6 +4,7 @@ import { getClassAbilityLevels, actorHasAdvancedClass } from './abilities.mjs';
 import { getActorSkillLevel } from './skills.mjs';
 import { handlePendingSpellTurnStart } from './spell-rolls.mjs';
 import { handlePathAbilityTurnStart } from './soulPathRolls.mjs';
+import { handleAbilityTurnStart } from './abilityRolls.mjs';
 import {
   resolveCheckSuccess, wrapCriticalBlock, chooseGenericRollMode, evaluateD20WithMode, formatD20ModeSummaryLine,
 } from './criticalRolls.mjs';
@@ -1193,8 +1194,6 @@ async function handleCustomTurnStart(actor) {
  * only when its own configured timing is "start" - folded into the
  * combined turn-start card rather than posting its own (see
  * postCombatTurnStartCard), same treatment as Poison's own passive save.
- * The "end" timing (handleRestrainedTurnEnd below) still posts its own
- * separate card - not yet folded in.
  * @param {Actor} actor
  * @return {Promise<string[]>} extraSections
  */
@@ -1212,10 +1211,27 @@ async function handleRestrainedTurnStart(actor) {
   `];
 }
 
+/**
+ * Restrained's own combat-turn-end handling: an automatic escape check,
+ * only when its own configured timing is "end" - folded into the combined
+ * turn-end card (see postCombatTurnEndCard/handleCombatTurnEnd) rather than
+ * posting its own, mirroring handleRestrainedTurnStart's own identical
+ * "start" treatment.
+ * @param {Actor} actor
+ * @return {Promise<string[]>} extraSections
+ */
 async function handleRestrainedTurnEnd(actor) {
   const effect = getStatusEffect(actor, 'restrained');
-  if (!effect || effect.getFlag('sksk', 'timing') !== 'end') return;
-  await attemptRestrainedEscape(actor);
+  if (!effect || effect.getFlag('sksk', 'timing') !== 'end') return [];
+  const result = await resolveRestrainedEscapeCheck(actor);
+  if (!result) return [];
+  const { roll, criticalType, dc, outcome, luckHTML } = result;
+  const statusName = getStatusEffectName('restrained');
+  return [`
+    <div class="sksk-roll-line"><strong>${statusName}</strong> - ${game.i18n.format('SKSK.StatusEffect.RestrainedCheck', { dc })}: ${outcome}</div>
+    ${wrapCriticalBlock(await roll.render(), criticalType)}
+    ${luckHTML}
+  `];
 }
 
 /**
@@ -1665,9 +1681,11 @@ async function postCombatTurnStartCard(actor, descriptionLines, extraSections) {
  * Abilities' duration/cooldown ticking (helpers/soulPathRolls.mjs#
  * handlePathAbilityTurnStart, same shape as Technique's own stand ticking,
  * minus the cooldown-round FP grant - no such trigger exists for Path
- * Abilities) still posts its own separate card - not yet folded in. The
- * Elementarist ability's own Lebensmagie-heal/Naturmagie-Mana-Ladungen
- * effects (see handleElementalChargeTurnStart) are folded in too.
+ * Abilities) is folded in too, same as the Elementarist ability's own
+ * Lebensmagie-heal/Naturmagie-Mana-Ladungen effects (see
+ * handleElementalChargeTurnStart) and every active Class/Species/Talent
+ * "Fähigkeit"'s own identically-shaped duration/cooldown ticking (see
+ * helpers/abilityRolls.mjs#handleAbilityTurnStart).
  * @param {Actor} actor
  * @param {number} round
  * @return {Promise<void>}
@@ -1684,12 +1702,14 @@ export async function handleCombatTurnStart(actor, round) {
   const techniqueLines = await handleTechniqueTurnStart(actor);
   const spellUpkeepLines = await handleSpellUpkeepTurnStart(actor);
   const elementalChargeLines = await handleElementalChargeTurnStart(actor);
+  const pathAbilityLines = await handlePathAbilityTurnStart(actor);
+  const abilityLines = await handleAbilityTurnStart(actor);
 
   const totalDamage = poison.damage + frostbite.damage + wound.damage + custom.damage;
   const descriptionLines = [
     ...dazedLines,
     ...poison.descriptionLines, ...frostbite.descriptionLines, ...wound.descriptionLines, ...custom.descriptionLines,
-    ...totemLines, ...techniqueLines, ...spellUpkeepLines, ...elementalChargeLines,
+    ...totemLines, ...techniqueLines, ...spellUpkeepLines, ...elementalChargeLines, ...pathAbilityLines, ...abilityLines,
   ];
   const extraSections = [
     ...poison.extraSections, ...frostbite.extraSections, ...wound.extraSections, ...custom.extraSections,
@@ -1700,16 +1720,41 @@ export async function handleCombatTurnStart(actor, round) {
   await checkConcentration(actor, totalDamage);
   await handleStealthTurnStart(actor);
   await handleTenacityTurnStart(actor);
-  await handlePathAbilityTurnStart(actor);
+}
+
+/**
+ * Post the combined turn-end chat card, mirroring postCombatTurnStartCard's
+ * own shape but only ever called when there's actually something to show
+ * (unlike the turn-start card, there's no "begins their turn" filler line
+ * to fall back on here) - see handleCombatTurnEnd, currently its only
+ * caller.
+ * @param {Actor} actor
+ * @param {string[]} extraSections
+ * @return {Promise<ChatMessage>}
+ */
+async function postCombatTurnEndCard(actor, extraSections) {
+  const parts = [formatRollCardHeading(actor.name), ...extraSections];
+  const messageData = {
+    speaker: ChatMessage.getSpeaker({ actor }),
+    flavor: actor.name,
+    content: `<div class="sksk-chat-card sksk-action-card">${parts.join('')}</div>`,
+    rolls: [],
+  };
+  ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));
+  return ChatMessage.create(messageData);
 }
 
 /**
  * Called once for whichever actor's Combat turn is ending (the OUTGOING
  * combatant, right before the "combatTurn" hook's own turn advances) -
- * runs Restrained's automatic escape check (if timed to "end").
+ * runs Restrained's automatic escape check (if timed to "end"), folded into
+ * one combined turn-end card (see postCombatTurnEndCard) rather than
+ * posting its own - only posted at all when there's actually something to
+ * report (currently only ever Restrained's own check).
  * @param {Actor} actor
  * @return {Promise<void>}
  */
 export async function handleCombatTurnEnd(actor) {
-  await handleRestrainedTurnEnd(actor);
+  const extraSections = await handleRestrainedTurnEnd(actor);
+  if (extraSections.length) await postCombatTurnEndCard(actor, extraSections);
 }

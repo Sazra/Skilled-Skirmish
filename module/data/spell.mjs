@@ -162,9 +162,10 @@ export default class SKSKSpell extends SKSKItemBase {
     // just without any automatic scaling - the GM adjusts it manually.
     schema.overchargeAutoEffects = new fields.BooleanField({ initial: true });
 
-    // Whether the spell needs an attack roll at all (vs. the target's
-    // Magic Resistance) is left as a placeholder switch for now - the
-    // actual roll formula/resolution is built out in a later step. Some
+    // Whether the spell needs an attack roll at all, against the target's
+    // Magic Resistance - independent of, and combinable with, the saving
+    // throws below (see helpers/spell-rolls.mjs#renderSpellEffectParts,
+    // helpers/attackRolls.mjs#computeSpellAttackBonus/rollAttackPair). Some
     // spells fire more than one separate attack (e.g. multiple bolts),
     // hence a count rather than a plain toggle.
     schema.attackRoll = new fields.SchemaField({

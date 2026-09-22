@@ -23,6 +23,11 @@
       </div>
       <div class="item-description" title="{{ability.description}}">{{ability.description}}</div>
       <div class="item-controls">
+        {{#if (eq ability.type "active")}}
+        <span class="ap-cost-label">{{ability.statusLabel}}</span>
+        <button type="button" data-action="toggleClassSpeciesAbility" data-item-id="{{ability.sourceId}}"
+          data-index="{{ability.index}}">{{localize ability.actionLabel}}</button>
+        {{/if}}
         <a class="item-control item-edit" data-action="editItem" title="Open {{ability.sourceLabel}}">
           <i class="fas fa-edit"></i>
         </a>
@@ -43,6 +48,12 @@
       </div>
       <div class="item-description" title="{{talent.system.ability}}">{{talent.system.ability}}</div>
       <div class="item-controls">
+        {{#if (eq talent.system.abilityType "active")}}
+        <span class="ap-cost-label">{{talent.abilityStatusLabel}}</span>
+        <button type="button" data-action="toggleTalentAbility" data-item-id="{{talent._id}}">
+          {{localize talent.abilityActionLabel}}
+        </button>
+        {{/if}}
         <a class="item-control item-edit" data-action="editItem" title="{{localize 'DOCUMENT.Update' type='Talent'}}">
           <i class="fas fa-edit"></i>
         </a>
