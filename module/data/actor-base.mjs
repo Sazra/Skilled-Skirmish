@@ -541,10 +541,15 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // meditationApCost above. Shared by the grant/shift-consume/right-click
     // self-roll variants alike.
     schema.inspirationApCost = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
-    // The last Combat round the Move action was used for free in - not
-    // meant to be hand-edited. null outside of (or before ever using Move
-    // in) combat. See helpers/actions.mjs#useMove.
+    // The last Combat round the Move action was used for free in, plus the
+    // id of that Combat itself - not meant to be hand-edited. Both null
+    // outside of (or before ever using Move in) combat. The Combat id is
+    // needed alongside the round number because a new Combat's rounds start
+    // counting from 1 again, so without it a free move used on round 1 of
+    // one fight would wrongly look "already used" on round 1 of the very
+    // next fight. See helpers/actions.mjs#useMove.
     schema.lastFreeMoveRound = new fields.NumberField({ required: true, nullable: true, integer: true, initial: null });
+    schema.lastFreeMoveCombatId = new fields.StringField({ required: true, nullable: true, blank: false, initial: null });
     // Lifetime count of Adrenalin uses - never reset automatically (not
     // even by a Rest), since each use permanently costs more max Life than
     // the last. Not meant to be hand-edited. See helpers/actions.mjs#rollAdrenalin.

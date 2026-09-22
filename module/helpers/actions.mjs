@@ -603,14 +603,20 @@ export async function useMove(actor, movementType) {
   // an own-turn concept and doesn't apply.
   const offTurn = !isActorsOwnTurn(actor);
   const round = game.combat?.round ?? null;
-  const isFree = !offTurn && (round === null || actor.system.lastFreeMoveRound !== round);
+  const combatId = game.combat?.id ?? null;
+  const isFree = !offTurn && (round === null
+    || actor.system.lastFreeMoveRound !== round
+    || actor.system.lastFreeMoveCombatId !== combatId);
   const apCost = offTurn ? 0 : (isFree ? 0 : 1);
   const rpCost = offTurn ? 2 : 0;
   if (offTurn ? !hasEnoughReactionPoints(actor, rpCost) : !hasEnoughActionPoints(actor, apCost)) return;
 
   const speed = computeMovementSpeeds(actor)[movementType] ?? 0;
   const updates = offTurn ? spendReactionPoints(actor, rpCost) : spendActionPoints(actor, apCost);
-  if (!offTurn && isFree && round !== null) updates['system.lastFreeMoveRound'] = round;
+  if (!offTurn && isFree && round !== null) {
+    updates['system.lastFreeMoveRound'] = round;
+    updates['system.lastFreeMoveCombatId'] = combatId;
+  }
   if (Object.keys(updates).length) await actor.update(updates);
 
   // Stamina's own "distance moved in combat" FP trigger - only while an
