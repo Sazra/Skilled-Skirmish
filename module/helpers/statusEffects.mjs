@@ -251,13 +251,81 @@ export async function payManaCost(actor, cost) {
  * The extra chat line noting Negative Life overflow (see applyLifeChange),
  * or '' if none occurred - shared by every turn-start Life-damage handler
  * below (and by helpers/spell-rolls.mjs, for Mana shortfalls paid from
- * Life).
+ * Life). For an NPC, reports the overflow happened without the real amount
+ * - same secrecy as formatTurnStartLifeLine/helpers/damageApplication.mjs#
+ * applyResolvedDamageEntries, so players can't reverse-engineer its exact
+ * Life total from the chat log.
+ * @param {Actor} actor
  * @param {number} negativeLifeDelta
  * @return {string}
  */
-export function negativeLifeOverflowHTML(negativeLifeDelta) {
+export function negativeLifeOverflowHTML(actor, negativeLifeDelta) {
   if (!negativeLifeDelta) return '';
+  if (actor?.type === 'npc') {
+    return `<div class="sksk-roll-line">${game.i18n.localize('SKSK.StatusEffect.NpcNegativeLifeOverflow')}</div>`;
+  }
   return `<div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.NegativeLifeOverflow', { amount: negativeLifeDelta })}</div>`;
+}
+
+/**
+ * NPC-facing chat line per helpers/defense.mjs#applyElementalDefense
+ * outcome - mirrors helpers/damageApplication.mjs's own
+ * NPC_DAMAGE_OUTCOME_KEYS, just phrased for a turn-start tick line (which
+ * also names the status effect causing it) rather than an Apply-Damage
+ * button click.
+ */
+const NPC_TURN_START_OUTCOME_KEYS = {
+  normal: 'SKSK.StatusEffect.NpcTurnStartDamage',
+  resisted: 'SKSK.StatusEffect.NpcTurnStartResisted',
+  weakened: 'SKSK.StatusEffect.NpcTurnStartWeakened',
+  immune: 'SKSK.StatusEffect.NpcTurnStartImmune',
+  absorbed: 'SKSK.StatusEffect.NpcTurnStartAbsorbed',
+};
+
+/**
+ * Plain-text (no wrapping div) version of negativeLifeOverflowHTML above,
+ * for descriptionLines (see formatTurnStartLifeLine's own callers below) -
+ * that array is joined with spaces into a single shared div rather than
+ * one div per line, unlike the "lines"/"parts" arrays negativeLifeOverflowHTML
+ * itself feeds elsewhere.
+ * @param {Actor} actor
+ * @param {number} negativeLifeDelta
+ * @return {string}
+ */
+function formatNegativeLifeOverflowLine(actor, negativeLifeDelta) {
+  if (!negativeLifeDelta) return '';
+  return actor.type === 'npc'
+    ? game.i18n.localize('SKSK.StatusEffect.NpcNegativeLifeOverflow')
+    : game.i18n.format('SKSK.StatusEffect.NegativeLifeOverflow', { amount: negativeLifeDelta });
+}
+
+/**
+ * A single turn-start Life-change chat line (Poison/Frostbite/Wound/
+ * Custom status ticks below): the real signed amount for a Character, or
+ * (for an NPC) a qualitative-only outcome, so players can't reverse-
+ * engineer its exact Life total from the combined turn-start card - same
+ * secrecy helpers/damageApplication.mjs#applyResolvedDamageEntries already
+ * gives the "Apply Damage" button. Only Poison's own damage actually runs
+ * through helpers/defense.mjs#applyElementalDefense (Resistance/Weakness/
+ * Immunity/Absorption all being meaningful for its own damage type), so
+ * it's the only caller that ever passes a real outcome - every other tick
+ * hits Life directly and just reports the generic damage/healing case
+ * (outcome left null, which falls back to "normal"/its own healing key).
+ * @param {Actor} actor
+ * @param {number} amount   Positive.
+ * @param {boolean} healing
+ * @param {string} status
+ * @param {"normal"|"resisted"|"weakened"|"immune"|"absorbed"|null} [outcome]
+ * @return {string}
+ */
+function formatTurnStartLifeLine(actor, amount, healing, status, outcome = null) {
+  if (actor.type !== 'npc') {
+    const key = healing ? 'SKSK.StatusEffect.TurnStartHealing' : 'SKSK.StatusEffect.TurnStartDamage';
+    return game.i18n.format(key, { amount, status });
+  }
+  const key = outcome ? NPC_TURN_START_OUTCOME_KEYS[outcome]
+    : (healing ? 'SKSK.StatusEffect.NpcTurnStartHealing' : 'SKSK.StatusEffect.NpcTurnStartDamage');
+  return game.i18n.format(key, { status });
 }
 
 /**
@@ -1027,14 +1095,13 @@ async function handlePoisonTurnStart(actor, round) {
     const statusName = getStatusEffectName(severityId);
 
     const damageRoll = await new Roll(`1d${def.damageDie}`, actor.getRollData()).evaluate();
-    const { amount: adjustedAmount, healing } = applyElementalDefense(actor, 'poison', damageRoll.total);
+    const { amount: adjustedAmount, healing, outcome: damageOutcome } = applyElementalDefense(actor, 'poison', damageRoll.total);
     if (adjustedAmount > 0) {
       const lifeChange = await applyLifeChange(actor, healing ? adjustedAmount : -adjustedAmount);
       const { negativeLifeDelta } = lifeChange;
       totalDamage += damageDealtFrom(lifeChange);
-      const descriptionKey = healing ? 'SKSK.StatusEffect.TurnStartHealing' : 'SKSK.StatusEffect.TurnStartDamage';
-      descriptionLines.push(game.i18n.format(descriptionKey, { amount: adjustedAmount, status: statusName }));
-      if (negativeLifeDelta) descriptionLines.push(game.i18n.format('SKSK.StatusEffect.NegativeLifeOverflow', { amount: negativeLifeDelta }));
+      descriptionLines.push(formatTurnStartLifeLine(actor, adjustedAmount, healing, statusName, damageOutcome));
+      if (negativeLifeDelta) descriptionLines.push(formatNegativeLifeOverflowLine(actor, negativeLifeDelta));
       if (!healing) await grantSkillUsageFp(actor, 'poisonResistance', 'damageTaken', adjustedAmount);
     }
 
@@ -1101,9 +1168,9 @@ async function handleFrostbiteTurnStart(actor) {
   const lifeChange = await applyLifeChange(actor, -damage);
   const typeLabel = game.i18n.localize(CONFIG.SKSK.damageTypes.cold);
   const statusName = getStatusEffectName('frostbite');
-  const descriptionLines = [game.i18n.format('SKSK.StatusEffect.TurnStartDamage', { amount: damage, status: `${statusName} (${typeLabel})` })];
+  const descriptionLines = [formatTurnStartLifeLine(actor, damage, false, `${statusName} (${typeLabel})`)];
   if (lifeChange.negativeLifeDelta) {
-    descriptionLines.push(game.i18n.format('SKSK.StatusEffect.NegativeLifeOverflow', { amount: lifeChange.negativeLifeDelta }));
+    descriptionLines.push(formatNegativeLifeOverflowLine(actor, lifeChange.negativeLifeDelta));
   }
   return { damage: damageDealtFrom(lifeChange), descriptionLines, extraSections: [] };
 }
@@ -1120,9 +1187,9 @@ async function handleWoundTurnStart(actor) {
   const total = getStatusInstancesTotal(actor, 'wound');
   if (!total) return { damage: 0, descriptionLines: [], extraSections: [] };
   const lifeChange = await applyLifeChange(actor, -total);
-  const descriptionLines = [game.i18n.format('SKSK.StatusEffect.TurnStartDamage', { amount: total, status: getStatusEffectName('wound') })];
+  const descriptionLines = [formatTurnStartLifeLine(actor, total, false, getStatusEffectName('wound'))];
   if (lifeChange.negativeLifeDelta) {
-    descriptionLines.push(game.i18n.format('SKSK.StatusEffect.NegativeLifeOverflow', { amount: lifeChange.negativeLifeDelta }));
+    descriptionLines.push(formatNegativeLifeOverflowLine(actor, lifeChange.negativeLifeDelta));
   }
   return { damage: damageDealtFrom(lifeChange), descriptionLines, extraSections: [] };
 }
@@ -1160,9 +1227,8 @@ async function handleCustomTurnStart(actor) {
       const { lifeDelta, negativeLifeDelta } = lifeChange;
       const total = lifeDelta - negativeLifeDelta;
       if (total) {
-        const key = total > 0 ? 'SKSK.StatusEffect.TurnStartHealing' : 'SKSK.StatusEffect.TurnStartDamage';
-        descriptionLines.push(game.i18n.format(key, { amount: Math.abs(total), status: statusName }));
-        if (negativeLifeDelta) descriptionLines.push(game.i18n.format('SKSK.StatusEffect.NegativeLifeOverflow', { amount: negativeLifeDelta }));
+        descriptionLines.push(formatTurnStartLifeLine(actor, Math.abs(total), total > 0, statusName));
+        if (negativeLifeDelta) descriptionLines.push(formatNegativeLifeOverflowLine(actor, negativeLifeDelta));
       }
       totalDamage += damageDealtFrom(lifeChange);
     }
@@ -1181,8 +1247,8 @@ async function handleCustomTurnStart(actor) {
       if (manaPaid) descriptionLines.push(game.i18n.format('SKSK.StatusEffect.TurnStartManaLoss', { amount: manaPaid, status: statusName }));
       if (lifeDelta) {
         totalDamage += damageDealtFrom({ lifeDelta, negativeLifeDelta });
-        descriptionLines.push(game.i18n.format('SKSK.StatusEffect.TurnStartDamage', { amount: -lifeDelta, status: statusName }));
-        if (negativeLifeDelta) descriptionLines.push(game.i18n.format('SKSK.StatusEffect.NegativeLifeOverflow', { amount: negativeLifeDelta }));
+        descriptionLines.push(formatTurnStartLifeLine(actor, -lifeDelta, false, statusName));
+        if (negativeLifeDelta) descriptionLines.push(formatNegativeLifeOverflowLine(actor, negativeLifeDelta));
       }
     }
   }

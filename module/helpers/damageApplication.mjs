@@ -293,7 +293,7 @@ export async function applyResolvedDamageEntries(defender, attacker, entries, ki
 
   const wasAlreadyDead = defender.system.life.value === 0 && defender.system.negativeLife.value <= 0;
   const { lifeDelta, negativeLifeDelta } = await applyLifeChange(defender, netDelta);
-  lines.push(negativeLifeOverflowHTML(negativeLifeDelta));
+  lines.push(negativeLifeOverflowHTML(defender, negativeLifeDelta));
   const damageDealt = damageDealtFrom({ lifeDelta, negativeLifeDelta });
   // The Elementarist ability's own Todesmagie-Ladungen bonus (helpers/
   // elementalChargeEffects.mjs) - the attacker heals whenever it deals real

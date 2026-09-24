@@ -723,7 +723,7 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
     if (lifeDelta || negativeLifeDelta) {
       const fromLife = -lifeDelta + negativeLifeDelta;
       parts.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.ManaShortfallFromLife', { amount: fromLife })}</div>`);
-      parts.push(negativeLifeOverflowHTML(negativeLifeDelta));
+      parts.push(negativeLifeOverflowHTML(actor, negativeLifeDelta));
     }
 
     // FP for casting a spell (per its own spellLevel) belongs to its magic
