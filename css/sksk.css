@@ -1791,6 +1791,18 @@ li.chat-message:has(.sksk-chat-card) .flavor-text {
   margin: 2px auto 6px;
 }
 
+/* The Theater-of-Mind-only manual Kill confirmation button (see
+   helpers/damageApplication.mjs#postManualKillOfferCard) - a positive,
+   reward-granting action, so given a "success" border rather than Apply
+   Damage's own "error" red. */
+.sksk-chat-card .sksk-confirm-kill {
+  display: table;
+  width: auto;
+  line-height: normal;
+  margin: 2px auto 6px;
+  border-color: var(--color-level-success, #3dd68c);
+}
+
 /* Once helpers/attackRolls.mjs#autoResolveAttackForTargets has already
    resolved an attack against every targeted token, the Evaluate/Apply
    Damage buttons that triggered it stay fully clickable (e.g. to resolve

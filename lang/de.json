@@ -1097,6 +1097,7 @@
             "ReloadDescription": "{name} lädt {weapon} nach.",
             "FlankingDefenseBonus": "{defender} flankiert den Angreifer: +{bonus} Rüstungsklasse",
             "NoDefender": "Du hast weder ein Ziel ausgewählt noch einen zugewiesenen Charakter - kann nicht ausgewertet werden.",
+            "NoPermissionToApply": "Du besitzt dieses Ziel nicht, und es ist aktuell kein GM online, der das übernehmen könnte - nur der GM (oder ein Besitzer) kann den Schaden hier anwenden.",
             "NoDefenderForcedHit": "Kein Ziel ausgewählt - automatisch als Treffer gewertet (Shift+Klick).",
             "EvaluationTitle": "Trefferauswertung ({defender})",
             "EvaluationTitleNoDefender": "Trefferauswertung (kein Ziel)",
@@ -1119,6 +1120,10 @@
             "NpcDamageAbsorbed": "Absorbiert {type}-Schaden.",
             "DamageAppliedTitle": "Schaden angewendet ({defender})",
             "KillConfirmed": "{defender} wurde besiegt!",
+            "NoDefenderKillHint": "Kein Ziel/Charakter aufgelöst - bei reinem Theater of Mind ohne eigenen Actor für den Gegner kann der Kill hier trotzdem manuell bestätigt werden.",
+            "ConfirmKill": "Kill bestätigen",
+            "ConfirmKillNotOwner": "Nur der Besitzer dieses Akteurs kann diesen Kill bestätigen.",
+            "ManualKillConfirmed": "Kill manuell bestätigt.",
             "SpellMissHalfDamage": "Verfehlt - wirkt trotzdem mit halbiertem Schaden.",
             "SpellMissResisted": "Verfehlt - durch Verbesserte Magieresistenz vollständig abgewehrt.",
             "ConcealmentBroken": "Tarnung durch den Angriff aufgehoben."

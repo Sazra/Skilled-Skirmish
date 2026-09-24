@@ -15,6 +15,7 @@ import { getElementalAirRangeBonus } from './elementalChargeEffects.mjs';
 import { renderRerollButton, wrapRerollIcons } from './luck.mjs';
 import { renderAttributeRerollButton } from './attributeReroll.mjs';
 import { hasRollTwiceWeapon, hasRollTwiceSpell, rollPossiblyDoubledDamage } from './damageReroll.mjs';
+import { requestGmAction, registerGmRelayAction } from './gmRelay.mjs';
 
 /**
  * Tactic level 10's own flat AC bonus (see helpers/flanking.mjs) - a
@@ -815,7 +816,11 @@ export async function resolveHitEvaluationFromChat(button, forceHit = false) {
  * targeting tool (game.user.targets) - the attacker's own token (if it
  * happens to be targeted too) is excluded, as is any target with no
  * assigned Actor at all; de-duplicated, since the same Actor can be
- * represented by more than one Token on the scene.
+ * represented by more than one Token on the scene. Ownership is NOT
+ * filtered here (unlike an earlier version of this function) -
+ * autoResolveAttackForTargets below branches per-defender instead,
+ * relaying an unowned one to the GM (helpers/gmRelay.mjs) rather than
+ * dropping it outright.
  * @param {Actor|null} attacker
  * @return {Actor[]}
  */
@@ -898,6 +903,20 @@ export function greyOutManualEvalButtons(html) {
  * blocks the attack entirely instead, same as a weapon/Martial Arts miss. A
  * linked Technique effect (techniqueItemUuid) only ever applies on an
  * actual hit, never on a miss (halved-damage or fully-resisted alike).
+ *
+ * A target the clicking user doesn't actually own (the ordinary case: a
+ * player targeting a GM-owned NPC) is never resolved directly here - the
+ * writes below (Life, Durability, FP, flanking-defense state, ...) would
+ * otherwise be rejected outright by the server. Such a target is instead
+ * relayed to the currently active GM (helpers/gmRelay.mjs#requestGmAction)
+ * to resolve with their own full permissions - see resolveAndApplyOneAttack/
+ * handleAutoResolveHitRelay below, shared by both paths. That resolution
+ * then posts its OWN separate chat card a moment later (a network round
+ * trip away, on the GM's own client) rather than joining this function's
+ * own returned HTML, which only ever covers targets resolved immediately,
+ * inline. If no GM is connected at all, that target is silently skipped
+ * instead, leaving Evaluate Hit/Apply Damage on the resulting roll card as
+ * the only way to resolve it, exactly as before this relay existed.
  * @param {[Roll, Roll]} rolls
  * @param {"armorClass"|"magicResistance"} comparisonType
  * @param {Actor|null} attacker
@@ -917,31 +936,90 @@ export async function autoResolveAttackForTargets([rollA, rollB], comparisonType
 
   const blocks = [];
   for (const defender of defenders) {
-    const { hit, line, fpHTML, title } = await evaluateHitAgainstDefender({
-      defender, attacker, mode,
-      rollA: rollA.total, rollB: rollB.total, critA, critB,
-      comparisonType, damageDice, killSkillKey,
-    });
-
-    let damageHTML = '';
-    if (hit) {
-      if (damageEntries.length || techniqueItemUuid) {
-        const { lines } = await applyResolvedDamageEntries(defender, attacker, damageEntries, killSkillKey, techniqueItemUuid);
-        damageHTML = lines.join('');
-      }
-    } else if (comparisonType === 'magicResistance' && !defender.system.improvedMagicResistance) {
-      const halved = halveDamageEntries(damageEntries);
-      if (halved.length) {
-        damageHTML += `<div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.SpellMissHalfDamage')}</div>`;
-        const { lines } = await applyResolvedDamageEntries(defender, attacker, halved, killSkillKey, null);
-        damageHTML += lines.join('');
-      }
-    } else if (comparisonType === 'magicResistance') {
-      damageHTML += `<div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.SpellMissResisted')}</div>`;
+    if (!defender.isOwner) {
+      requestGmAction('autoResolveHit', {
+        defenderUuid: defender.uuid, attackerUuid: attacker?.uuid ?? null, mode,
+        rollA: rollA.total, rollB: rollB.total, critA, critB,
+        comparisonType, damageDice, killSkillKey, damageEntries, techniqueItemUuid,
+      });
+      continue;
     }
-
+    const { title, line, fpHTML, damageHTML } = await resolveAndApplyOneAttack(defender, attacker, {
+      mode, rollA: rollA.total, rollB: rollB.total, critA, critB, comparisonType, damageDice, killSkillKey, damageEntries, techniqueItemUuid,
+    });
     blocks.push(formatRollCardHeading(title) + line + fpHTML + damageHTML);
   }
 
-  return `<div class="sksk-auto-resolved">${blocks.join('')}</div>`;
+  return blocks.length ? `<div class="sksk-auto-resolved">${blocks.join('')}</div>` : '';
 }
+
+/**
+ * The shared per-defender core of autoResolveAttackForTargets above -
+ * resolve hit/miss (evaluateHitAgainstDefender) and apply whatever
+ * damage that outcome calls for, returning the rendered pieces rather
+ * than a single joined string so the inline caller above can still wrap
+ * them the same way it always has. Also reused, with the exact same
+ * arguments (rollA/rollB already reduced to their own totals, everything
+ * else already plain data), by handleAutoResolveHitRelay below when a GM
+ * runs this on a player's behalf for a target that player doesn't own.
+ * @param {Actor} defender
+ * @param {Actor|null} attacker
+ * @param {object} args   Everything evaluateHitAgainstDefender needs, plus
+ *   damageEntries/techniqueItemUuid - see autoResolveAttackForTargets'
+ *   own options param for their shapes.
+ * @return {Promise<{title: string, line: string, fpHTML: string, damageHTML: string}>}
+ */
+async function resolveAndApplyOneAttack(defender, attacker, args) {
+  const { mode, rollA, rollB, critA, critB, comparisonType, damageDice, killSkillKey, damageEntries, techniqueItemUuid } = args;
+  const { hit, line, fpHTML, title } = await evaluateHitAgainstDefender({
+    defender, attacker, mode, rollA, rollB, critA, critB, comparisonType, damageDice, killSkillKey,
+  });
+
+  let damageHTML = '';
+  if (hit) {
+    if (damageEntries.length || techniqueItemUuid) {
+      const { lines } = await applyResolvedDamageEntries(defender, attacker, damageEntries, killSkillKey, techniqueItemUuid);
+      damageHTML = lines.join('');
+    }
+  } else if (comparisonType === 'magicResistance' && !defender.system.improvedMagicResistance) {
+    const halved = halveDamageEntries(damageEntries);
+    if (halved.length) {
+      damageHTML += `<div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.SpellMissHalfDamage')}</div>`;
+      const { lines } = await applyResolvedDamageEntries(defender, attacker, halved, killSkillKey, null);
+      damageHTML += lines.join('');
+    }
+  } else if (comparisonType === 'magicResistance') {
+    damageHTML += `<div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.SpellMissResisted')}</div>`;
+  }
+
+  return { title, line, fpHTML, damageHTML };
+}
+
+/**
+ * GM-side handler (helpers/gmRelay.mjs#registerGmRelayAction) for the
+ * "autoResolveHit" action - resolves defender/attacker fresh from their
+ * own uuids (only plain data survives the socket hop, see
+ * autoResolveAttackForTargets' own relay call), runs the exact same
+ * resolveAndApplyOneAttack core with the GM's own full permissions, and
+ * posts its own separate chat card - there's no shared card left to
+ * splice into by the time this fires, unlike the inline case.
+ * @param {object} data   The exact payload autoResolveAttackForTargets'
+ *   own requestGmAction call sends.
+ * @return {Promise<void>}
+ */
+async function handleAutoResolveHitRelay(data) {
+  const defender = await fromUuid(data.defenderUuid);
+  if (!defender) return;
+  const attacker = data.attackerUuid ? await fromUuid(data.attackerUuid) : null;
+
+  const { title, line, fpHTML, damageHTML } = await resolveAndApplyOneAttack(defender, attacker, data);
+
+  const messageData = {
+    speaker: ChatMessage.getSpeaker({ actor: defender }),
+    flavor: title,
+    content: `<div class="sksk-chat-card sksk-action-card sksk-auto-resolved">${formatRollCardHeading(title)}${line}${fpHTML}${damageHTML}</div>`,
+  };
+  ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));
+  return ChatMessage.create(messageData);
+}
+registerGmRelayAction('autoResolveHit', handleAutoResolveHitRelay);

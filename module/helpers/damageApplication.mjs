@@ -6,6 +6,7 @@ import {
 } from './statusEffects.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
 import { getElementalDeathChargeHeal } from './elementalChargeEffects.mjs';
+import { requestGmAction, registerGmRelayAction } from './gmRelay.mjs';
 
 /**
  * NPC-facing chat line per helpers/defense.mjs#applyElementalDefense
@@ -343,6 +344,16 @@ export async function applyResolvedDamageEntries(defender, attacker, entries, ki
  * chat message) if there's no resolvable defender, no entry has both a
  * non-blank formula and a chosen damage type, or any formula fails to
  * parse/evaluate.
+ *
+ * Rolling stays local to the calling client either way (so a typo'd
+ * formula surfaces its error right where it was typed) - only actually
+ * APPLYING the already-rolled entries (postManualDamageResult below) is
+ * relayed to the currently active GM (helpers/gmRelay.mjs) when the
+ * resolved defender isn't owned by the current user (the ordinary case: a
+ * player rolling manual damage against a GM-owned NPC) - see
+ * applyDamageFromChat's own identical guard for why: the server would
+ * otherwise reject that Life change outright. Falls back to a plain
+ * warning if no GM is connected to relay to at all.
  * @param {Array<{formula: string, damageType: string}>} rawEntries
  * @return {Promise<ChatMessage|void>}
  */
@@ -353,7 +364,6 @@ export async function rollAndApplyManualDamage(rawEntries) {
   const rollData = defender.getRollData();
   const resolvedEntries = [];
   const rollLines = [];
-  const rolls = [];
   for (const { formula, damageType } of rawEntries) {
     if (!formula?.trim() || !damageType) continue;
     let roll;
@@ -362,7 +372,6 @@ export async function rollAndApplyManualDamage(rawEntries) {
     } catch (error) {
       return ui.notifications.error(game.i18n.format('SKSK.ManualDamage.InvalidFormula', { formula }));
     }
-    rolls.push(roll);
     resolvedEntries.push({ damageType, amount: roll.total });
     const typeLabel = game.i18n.localize(CONFIG.SKSK.damageTypes[damageType] ?? damageType);
     rollLines.push(
@@ -371,37 +380,117 @@ export async function rollAndApplyManualDamage(rawEntries) {
   }
   if (!resolvedEntries.length) return ui.notifications.warn(game.i18n.localize('SKSK.ManualDamage.NoEntries'));
 
-  const { lines } = await applyResolvedDamageEntries(defender, null, mergeDamageEntries(resolvedEntries), null);
+  const merged = mergeDamageEntries(resolvedEntries);
+  const rollLinesHTML = rollLines.join('');
+  if (!defender.isOwner) {
+    if (requestGmAction('applyManualDamage', { defenderUuid: defender.uuid, entries: merged, rollLinesHTML })) return;
+    return ui.notifications.warn(game.i18n.localize('SKSK.AttackRoll.NoPermissionToApply'));
+  }
 
+  return postManualDamageResult(defender, merged, rollLinesHTML);
+}
+
+/**
+ * The shared "apply already-rolled entries and post the summary" core of
+ * rollAndApplyManualDamage above - also reused, unchanged, by
+ * handleApplyManualDamageRelay below when a GM runs this on a player's
+ * behalf for a defender that player doesn't own.
+ * @param {Actor} defender
+ * @param {Array<{damageType: string, amount: number}>} entries
+ * @param {string} rollLinesHTML
+ * @return {Promise<ChatMessage>}
+ */
+async function postManualDamageResult(defender, entries, rollLinesHTML) {
+  const { lines } = await applyResolvedDamageEntries(defender, null, entries, null);
   const messageData = {
     speaker: ChatMessage.getSpeaker({ actor: defender }),
     flavor: game.i18n.format('SKSK.ManualDamage.ChatTitle', { defender: defender.name }),
-    content: `<div class="sksk-chat-card sksk-action-card">${rollLines.join('')}${lines.join('')}</div>`,
-    rolls,
+    content: `<div class="sksk-chat-card sksk-action-card">${rollLinesHTML}${lines.join('')}</div>`,
   };
   ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));
   return ChatMessage.create(messageData);
 }
 
 /**
+ * GM-side handler (helpers/gmRelay.mjs#registerGmRelayAction) for the
+ * "applyManualDamage" action - see rollAndApplyManualDamage's own relay
+ * call for this payload's shape.
+ * @param {{defenderUuid: string, entries: Array<{damageType: string, amount: number}>, rollLinesHTML: string}} data
+ * @return {Promise<void>}
+ */
+async function handleApplyManualDamageRelay(data) {
+  const defender = await fromUuid(data.defenderUuid);
+  if (!defender) return;
+  return postManualDamageResult(defender, data.entries, data.rollLinesHTML);
+}
+registerGmRelayAction('applyManualDamage', handleApplyManualDamageRelay);
+
+/**
  * Handle a click on an "Apply Damage" button (see renderApplyDamageButton):
  * resolves the defender (helpers/attackRolls.mjs#resolveClickDefender),
  * applies the button's own carried entries/Technique payload through
  * applyResolvedDamageEntries above, and posts a chat summary either way.
+ *
+ * With NO resolvable defender at all (pure Theater of Mind play - no
+ * token/Actor ever stood in for whatever was actually hit, so there is
+ * nothing here to reduce to 0 Life the normal way) and a killSkillKey
+ * (weapon/Martial Arts attacks only - see renderApplyDamageButton's own
+ * doc comment), this also offers a manual Kill confirmation instead of
+ * just warning and giving up entirely - see postManualKillOfferCard/
+ * handleManualKillFromChat below.
+ *
+ * With a resolved defender the CLICKING USER doesn't actually own (the
+ * ordinary case: a player clicking their own attack's Apply Damage button
+ * against a GM-owned NPC they only targeted, never granted Owner on) - the
+ * write below (an uncaught permission error, same root cause as helpers/
+ * attackRolls.mjs#getOtherTargetedActors' own identical situation for the
+ * automatic post-roll resolution) is instead relayed to the currently
+ * active GM (helpers/gmRelay.mjs#requestGmAction), who applies it with
+ * their own full permissions and posts the resulting card themselves - see
+ * applyDamageAndPost/handleApplyDamageRelay below, shared by both paths.
+ * Only if no GM is connected at all does this fall back to a plain
+ * warning, leaving the button right there in the card for whenever a GM
+ * IS available to click it themselves instead.
  * @param {HTMLElement} button
  * @return {Promise<ChatMessage|void>}
  */
 export async function applyDamageFromChat(button) {
   const defender = resolveClickDefender();
-  if (!defender) return ui.notifications.warn(game.i18n.localize('SKSK.AttackRoll.NoDefender'));
-
   const attacker = button.dataset.attackerUuid ? await fromUuid(button.dataset.attackerUuid) : null;
-  const entries = JSON.parse(decodeURIComponent(button.dataset.damageEntries || '[]'));
   const killSkillKey = button.dataset.killSkill || null;
+  if (!defender) {
+    ui.notifications.warn(game.i18n.localize('SKSK.AttackRoll.NoDefender'));
+    if (attacker && killSkillKey) return postManualKillOfferCard(attacker, killSkillKey);
+    return;
+  }
 
-  const { lines } = await applyResolvedDamageEntries(
-    defender, attacker, entries, killSkillKey, button.dataset.techniqueItemUuid || null
-  );
+  const entries = JSON.parse(decodeURIComponent(button.dataset.damageEntries || '[]'));
+  const techniqueItemUuid = button.dataset.techniqueItemUuid || null;
+
+  if (!defender.isOwner) {
+    if (requestGmAction('applyDamage', {
+      defenderUuid: defender.uuid, attackerUuid: attacker?.uuid ?? null, entries, killSkillKey, techniqueItemUuid,
+    })) return;
+    return ui.notifications.warn(game.i18n.localize('SKSK.AttackRoll.NoPermissionToApply'));
+  }
+
+  return applyDamageAndPost(defender, attacker, entries, killSkillKey, techniqueItemUuid);
+}
+
+/**
+ * The shared "apply already-resolved damage entries and post the
+ * summary" core of applyDamageFromChat above - also reused, unchanged,
+ * by handleApplyDamageRelay below when a GM runs this on a player's
+ * behalf for a defender that player doesn't own.
+ * @param {Actor} defender
+ * @param {Actor|null} attacker
+ * @param {Array<{damageType: string, amount: number}>} entries
+ * @param {string|null} killSkillKey
+ * @param {string|null} techniqueItemUuid
+ * @return {Promise<ChatMessage>}
+ */
+async function applyDamageAndPost(defender, attacker, entries, killSkillKey, techniqueItemUuid) {
+  const { lines } = await applyResolvedDamageEntries(defender, attacker, entries, killSkillKey, techniqueItemUuid);
 
   const messageData = {
     speaker: ChatMessage.getSpeaker({ actor: defender }),
@@ -410,4 +499,82 @@ export async function applyDamageFromChat(button) {
   };
   ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));
   return ChatMessage.create(messageData);
+}
+
+/**
+ * GM-side handler (helpers/gmRelay.mjs#registerGmRelayAction) for the
+ * "applyDamage" action - see applyDamageFromChat's own relay call for
+ * this payload's shape.
+ * @param {{defenderUuid: string, attackerUuid: string|null, entries: Array<{damageType: string, amount: number}>, killSkillKey: string|null, techniqueItemUuid: string|null}} data
+ * @return {Promise<void>}
+ */
+async function handleApplyDamageRelay(data) {
+  const defender = await fromUuid(data.defenderUuid);
+  if (!defender) return;
+  const attacker = data.attackerUuid ? await fromUuid(data.attackerUuid) : null;
+  return applyDamageAndPost(defender, attacker, data.entries, data.killSkillKey, data.techniqueItemUuid);
+}
+registerGmRelayAction('applyDamage', handleApplyDamageRelay);
+
+/**
+ * Post a small fallback chat card offering to manually confirm a Kill -
+ * see applyDamageFromChat above, which calls this only for a weapon/
+ * Martial Arts attack (killSkillKey given) whose "Apply Damage" click
+ * resolved no defender at all: pure Theater of Mind play, with no token/
+ * Actor ever standing in for whatever was actually hit, so
+ * applyResolvedDamageEntries' own Life-based Kill detection (see its own
+ * doc comment) has nothing to check against. See handleManualKillFromChat
+ * below for the actual grant.
+ * @param {Actor} attacker
+ * @param {string} killSkillKey
+ * @return {Promise<ChatMessage>}
+ */
+async function postManualKillOfferCard(attacker, killSkillKey) {
+  const content = `<div class="sksk-chat-card sksk-action-card">`
+    + `<div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.NoDefenderKillHint')}</div>`
+    + `<button type="button" class="sksk-confirm-kill" data-action="confirmManualKill"
+        data-attacker-uuid="${attacker.uuid}" data-kill-skill="${killSkillKey}">
+        ${game.i18n.localize('SKSK.AttackRoll.ConfirmKill')}
+      </button>`
+    + `</div>`;
+  const messageData = {
+    speaker: ChatMessage.getSpeaker({ actor: attacker }),
+    flavor: attacker.name,
+    content,
+  };
+  ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));
+  return ChatMessage.create(messageData);
+}
+
+/**
+ * Handle a click on the manual Kill confirmation button (see
+ * postManualKillOfferCard above): grants killSkillKey's own "kill" FP,
+ * plus Attentat's "assassinationKill" if the attacker is currently
+ * Concealed - the exact same grants applyResolvedDamageEntries' own Life-
+ * based Kill detection would make, just without any Life change at all -
+ * to the attacker, then replaces the button in place with a confirmation
+ * line. One-shot, same convention as Elementexperte's own Reroll-Ones
+ * icon (helpers/damageReroll.mjs), so re-clicking (or a second player
+ * clicking) can't grant the same Kill twice.
+ * @param {HTMLElement} button
+ * @return {Promise<void>}
+ */
+export async function handleManualKillFromChat(button) {
+  const attacker = button.dataset.attackerUuid ? await fromUuid(button.dataset.attackerUuid) : null;
+  if (!attacker) return;
+  if (!attacker.isOwner) return ui.notifications.warn(game.i18n.localize('SKSK.AttackRoll.ConfirmKillNotOwner'));
+  const killSkillKey = button.dataset.killSkill;
+
+  let lines = formatSkillFpGrantLine(await grantSkillUsageFp(attacker, killSkillKey, 'kill'));
+  lines += `<div class="sksk-roll-line"><strong>${game.i18n.localize('SKSK.AttackRoll.ManualKillConfirmed')}</strong></div>`;
+  if (getStatusStacks(attacker, 'concealed') > 0) {
+    lines += formatSkillFpGrantLine(await grantSkillUsageFp(attacker, 'assassination', 'assassinationKill'));
+  }
+
+  const message = button.closest('[data-message-id]');
+  const messageId = message?.dataset.messageId ?? null;
+  const messageDoc = messageId ? game.messages.get(messageId) : null;
+  if (!messageDoc) return;
+  const newContent = messageDoc.content.replace(/<button[^>]*data-action="confirmManualKill"[\s\S]*?<\/button>/, lines);
+  await messageDoc.update({ content: newContent });
 }

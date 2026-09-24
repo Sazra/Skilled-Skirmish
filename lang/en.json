@@ -1097,6 +1097,7 @@
       "ReloadDescription": "{name} reloads {weapon}.",
       "FlankingDefenseBonus": "{defender} is flanking the attacker: +{bonus} AC",
       "NoDefender": "You have no target selected and no assigned character - cannot evaluate.",
+      "NoPermissionToApply": "You don't own this target, and no GM is currently connected to relay it to - only the GM (or an owner) can apply damage here.",
       "NoDefenderForcedHit": "No target selected - automatically counted as a hit (Shift+click).",
       "EvaluationTitle": "Hit Evaluation ({defender})",
       "EvaluationTitleNoDefender": "Hit Evaluation (no target)",
@@ -1119,6 +1120,10 @@
       "NpcDamageAbsorbed": "Absorbs {type} damage.",
       "DamageAppliedTitle": "Damage Applied ({defender})",
       "KillConfirmed": "{defender} has been defeated!",
+      "NoDefenderKillHint": "No target/character resolved - in pure Theater of Mind play with no Actor of your own for the enemy, the Kill can still be confirmed manually here.",
+      "ConfirmKill": "Confirm Kill",
+      "ConfirmKillNotOwner": "Only this actor's owner can confirm this Kill.",
+      "ManualKillConfirmed": "Kill manually confirmed.",
       "SpellMissHalfDamage": "Miss - still deals half damage.",
       "SpellMissResisted": "Miss - fully resisted by Improved Magic Resistance.",
       "ConcealmentBroken": "Concealment broken by the attack."

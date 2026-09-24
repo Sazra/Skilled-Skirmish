@@ -7,7 +7,7 @@ import { SKSK } from './helpers/config.mjs';
 import { registerSettings } from './helpers/settings.mjs';
 import { rollSavingThrowFromChat, rollSpellEffectSaveFromChat, applySpellEffectFromChat } from './helpers/spell-rolls.mjs';
 import { resolveHitEvaluationFromChat } from './helpers/attackRolls.mjs';
-import { applyDamageFromChat } from './helpers/damageApplication.mjs';
+import { applyDamageFromChat, handleManualKillFromChat } from './helpers/damageApplication.mjs';
 import { claimInspirationDie } from './helpers/inspiration.mjs';
 import { handleRerollFromChat } from './helpers/luck.mjs';
 import { handleAttributeRerollFromChat } from './helpers/attributeReroll.mjs';
@@ -25,6 +25,7 @@ import {
 import { clampSingleAttributeSelection } from './helpers/models.mjs';
 import { registerCalendariaIntegration } from './helpers/calendarIntegration.mjs';
 import { applyCustomActiveEffectChange, addPhaseSelectToActiveEffectChanges } from './helpers/effects.mjs';
+import { initGmRelay } from './helpers/gmRelay.mjs';
 import * as models from './data/_module.mjs';
 
 Hooks.once('init', function () {
@@ -37,6 +38,12 @@ Hooks.once('init', function () {
   CONFIG.SKSK = SKSK;
 
   registerSettings();
+
+  // Wire up the shared GM-delegation socket listener (helpers/gmRelay.mjs)
+  // - every helper module's own registerGmRelayAction call has already
+  // run by now (plain top-level module code, evaluated before this hook
+  // ever fires).
+  initGmRelay();
 
   // "@attributes.dex.mod" (not "@abilities...") per data/actor-base.mjs#
   // getRollData; "@initiativeBonus" is that same method's flat Active-
@@ -200,6 +207,16 @@ Hooks.once('ready', async function () {
     if (!button) return;
     event.preventDefault();
     applyDamageFromChat(button);
+  });
+
+  // The Theater-of-Mind-only manual Kill confirmation button "Apply
+  // Damage" falls back to when it resolves no defender at all - see
+  // helpers/damageApplication.mjs#handleManualKillFromChat.
+  document.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-action="confirmManualKill"]');
+    if (!button) return;
+    event.preventDefault();
+    handleManualKillFromChat(button);
   });
 
   // An untargeted Inspiration grant's own chat "claim" button - see
