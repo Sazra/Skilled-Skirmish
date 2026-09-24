@@ -445,7 +445,6 @@ export async function rollMartialArtsAttack(actor, index) {
     speaker: ChatMessage.getSpeaker({ actor }),
     flavor: title,
     content: `<div class="sksk-chat-card sksk-action-card">${formatRollCardHeading(title)}${apCostHTML}${attackHTML}${renderedDamage}${techniqueLine}${applyDamageHTML}${fpHTML}${autoResolveHTML}</div>`,
-    rolls: [roll],
   };
   ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));
   return ChatMessage.create(messageData);
