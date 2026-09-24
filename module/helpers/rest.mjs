@@ -1,4 +1,6 @@
-import { getActorSkillLevel, isActorSkillUnlocked } from './skills.mjs';
+import {
+  getActorSkillLevel, isActorSkillUnlocked, getSkillLevel, findSkillDefinition, computeSkillBonusTotals,
+} from './skills.mjs';
 import { postActionChatCard, getRegenerationDieSizes } from './actions.mjs';
 import { getStatusStacks, decreaseStatusStacks, getAdrenalinDamage, reduceAdrenalinDamage } from './statusEffects.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantText } from './skillFp.mjs';
@@ -80,13 +82,65 @@ function computeLevelCap(actor) {
  * actor/parts/header.hbs vs header-npc.hbs).
  * @param {Actor} actor
  * @param {"erholung"|"anpassung"|"genesung"|null} tier
+ * @param {number} [extraXp]   XP this same Pause already grants (e.g. from
+ *   computeSkillLevelUpXpTotal above), on top of the actor's own stored
+ *   total - so a skill level-up crossing the 1000 threshold can trigger a
+ *   Character level-up in the very same Pause rather than only banking it
+ *   for the next one.
  * @return {number|null}
  */
-function computeLevelGainPreview(actor, tier) {
+function computeLevelGainPreview(actor, tier, extraXp = 0) {
   if (actor.type !== 'character' || !(tier === 'anpassung' || tier === 'genesung')) return null;
   const level = actor.system.resources.level.value;
-  if ((actor.system.resources.xp ?? 0) < 1000 || level >= computeLevelCap(actor)) return null;
+  if ((actor.system.resources.xp ?? 0) + extraXp < 1000 || level >= computeLevelCap(actor)) return null;
   return level + 1;
+}
+
+/**
+ * XP granted for crossing from beforeLevel to afterLevel on a single skill
+ * via Pause's own gain-integration (see applyRest/computeRestPreview
+ * below) - 20 * level for a maxLevel-10 skill, 50 * level for a
+ * maxLevel-5 skill, per newly-crossed level (summed if more than one is
+ * crossed in a single Pause). Deliberately keyed off the level actually
+ * crossed THIS Pause, never off the skill's overall achieved level - a
+ * character's starting skill levels (however they got there: manual entry
+ * at character creation, a Species/Class/Talent skillBonus, or an earlier
+ * Pause) never re-grant XP, since beforeLevel already accounts for them.
+ * @param {number} beforeLevel
+ * @param {number} afterLevel
+ * @param {5|10} maxLevel
+ * @return {number}
+ */
+function computeSkillLevelUpXp(beforeLevel, afterLevel, maxLevel) {
+  if (afterLevel <= beforeLevel) return 0;
+  const perLevel = maxLevel === 5 ? 50 : 20;
+  let total = 0;
+  for (let level = beforeLevel + 1; level <= afterLevel; level++) total += perLevel * level;
+  return total;
+}
+
+/**
+ * Total XP every skill's pending gain would grant via computeSkillLevelUpXp
+ * above, were it integrated right now - shared by computeRestPreview and
+ * applyRest below (keep in sync). Skills with no real level (maxLevel
+ * other than 5/10 - see helpers/skills.mjs#getActorSkillLevel) never grant
+ * any.
+ * @param {Actor} actor
+ * @return {number}
+ */
+function computeSkillLevelUpXpTotal(actor) {
+  const skillBonusTotals = computeSkillBonusTotals(actor);
+  let total = 0;
+  for (const [key, skillData] of Object.entries(actor.system.skills)) {
+    if ((skillData.gain ?? 0) <= 0) continue;
+    const def = findSkillDefinition(key);
+    if (!def || (def.maxLevel !== 5 && def.maxLevel !== 10)) continue;
+    const bonus = skillBonusTotals[key] ?? 0;
+    const beforeLevel = getSkillLevel(skillData.points ?? 0, def.maxLevel, bonus);
+    const afterLevel = getSkillLevel((skillData.points ?? 0) + skillData.gain, def.maxLevel, bonus);
+    total += computeSkillLevelUpXp(beforeLevel, afterLevel, def.maxLevel);
+  }
+  return total;
 }
 
 /**
@@ -125,6 +179,7 @@ export function computeRestPreview(actor, state) {
   const skillIntegrationCount = skillIntegrationUnlocked
     ? Object.values(actor.system.skills).filter(s => (s.gain ?? 0) > 0).length
     : 0;
+  const skillLevelUpXpPreview = skillIntegrationUnlocked ? computeSkillLevelUpXpTotal(actor) : 0;
 
   const adrenalinCharges = actor.system.adrenalinCharges;
   const adrenalinChargesRestore = skillIntegrationUnlocked
@@ -151,7 +206,7 @@ export function computeRestPreview(actor, state) {
     ? Math.min(getAdrenalinDamage(actor), tier === 'genesung' ? Math.max(level, conMod) : conMod)
     : 0;
 
-  const levelGainPreview = computeLevelGainPreview(actor, tier);
+  const levelGainPreview = computeLevelGainPreview(actor, tier, skillLevelUpXpPreview);
 
   return {
     segments,
@@ -164,6 +219,7 @@ export function computeRestPreview(actor, state) {
     healingUnlocked: !!tier && segments >= 8,
     skillIntegrationUnlocked,
     skillIntegrationCount,
+    skillLevelUpXpPreview,
     exhaustionMax: computeExhaustionChargeMax(actor, tier),
     meditationRestore,
     regenerationRestoreUnlocked: tier === 'genesung',
@@ -299,19 +355,35 @@ export async function applyRest(actor, options) {
 
     if (tier === 'anpassung' || tier === 'genesung') {
       let integratedCount = 0;
+      let skillLevelUpXp = 0;
+      const skillBonusTotals = computeSkillBonusTotals(actor);
       for (const [key, skillData] of Object.entries(actor.system.skills)) {
         if ((skillData.gain ?? 0) > 0) {
-          updates[`system.skills.${key}.points`] = (skillData.points ?? 0) + skillData.gain;
+          const beforePoints = skillData.points ?? 0;
+          const afterPoints = beforePoints + skillData.gain;
+          updates[`system.skills.${key}.points`] = afterPoints;
           updates[`system.skills.${key}.gain`] = 0;
           integratedCount++;
+
+          const def = findSkillDefinition(key);
+          if (def && (def.maxLevel === 5 || def.maxLevel === 10)) {
+            const bonus = skillBonusTotals[key] ?? 0;
+            const beforeLevel = getSkillLevel(beforePoints, def.maxLevel, bonus);
+            const afterLevel = getSkillLevel(afterPoints, def.maxLevel, bonus);
+            skillLevelUpXp += computeSkillLevelUpXp(beforeLevel, afterLevel, def.maxLevel);
+          }
         }
       }
       if (integratedCount > 0) lines.push(game.i18n.format('SKSK.Rest.SkillsIntegrated', { count: integratedCount }));
+      if (skillLevelUpXp > 0) {
+        updates['system.resources.xp'] = (actor.system.resources.xp ?? 0) + skillLevelUpXp;
+        lines.push(game.i18n.format('SKSK.Rest.SkillLevelUpXpGained', { amount: skillLevelUpXp }));
+      }
 
-      const newLevel = computeLevelGainPreview(actor, tier);
+      const newLevel = computeLevelGainPreview(actor, tier, skillLevelUpXp);
       if (newLevel !== null) {
         updates['system.resources.level.value'] = newLevel;
-        updates['system.resources.xp'] = (actor.system.resources.xp ?? 0) - 1000;
+        updates['system.resources.xp'] = (updates['system.resources.xp'] ?? actor.system.resources.xp ?? 0) - 1000;
         lines.push(game.i18n.format('SKSK.Rest.LevelGained', { level: newLevel }));
       }
 
