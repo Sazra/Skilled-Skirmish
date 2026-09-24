@@ -192,7 +192,16 @@
       "CreateNew": "Add new item",
       "CreateItem": "Item",
       "CreateWeapon": "Weapon",
-      "CreateArmor": "Armor"
+      "CreateArmor": "Armor",
+      "Currency": "Currency",
+      "CurrencyCp": "Copper Pieces",
+      "CurrencyCpAbbr": "CP",
+      "CurrencySp": "Silver Pieces",
+      "CurrencySpAbbr": "SP",
+      "CurrencyGp": "Gold Pieces",
+      "CurrencyGpAbbr": "GP",
+      "CurrencyPp": "Platinum Pieces",
+      "CurrencyPpAbbr": "PP"
     },
     "Charges": {
       "Enabled": "Has Charges",

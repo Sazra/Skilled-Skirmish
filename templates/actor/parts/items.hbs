@@ -9,5 +9,27 @@
     </div>
   </div>
 
+  <div class="resource flex-group-center">
+    <label class="resource-label" data-tooltip="{{localize 'SKSK.Items.Currency'}}">{{localize 'SKSK.Items.Currency'}}</label>
+    <div class="resource-content flexrow flex-center flex-between currency-row">
+      <div class="currency-entry">
+        <input type="text" class="resource-value-input currency-value-input" name="system.currency.cp" value="{{system.currency.cp}}" data-dtype="Number" data-tooltip="{{localize 'SKSK.Items.CurrencyCp'}}" />
+        <label class="resource-label">{{localize 'SKSK.Items.CurrencyCpAbbr'}}</label>
+      </div>
+      <div class="currency-entry">
+        <input type="text" class="resource-value-input currency-value-input" name="system.currency.sp" value="{{system.currency.sp}}" data-dtype="Number" data-tooltip="{{localize 'SKSK.Items.CurrencySp'}}" />
+        <label class="resource-label">{{localize 'SKSK.Items.CurrencySpAbbr'}}</label>
+      </div>
+      <div class="currency-entry">
+        <input type="text" class="resource-value-input currency-value-input" name="system.currency.gp" value="{{system.currency.gp}}" data-dtype="Number" data-tooltip="{{localize 'SKSK.Items.CurrencyGp'}}" />
+        <label class="resource-label">{{localize 'SKSK.Items.CurrencyGpAbbr'}}</label>
+      </div>
+      <div class="currency-entry">
+        <input type="text" class="resource-value-input currency-value-input" name="system.currency.pp" value="{{system.currency.pp}}" data-dtype="Number" data-tooltip="{{localize 'SKSK.Items.CurrencyPp'}}" />
+        <label class="resource-label">{{localize 'SKSK.Items.CurrencyPpAbbr'}}</label>
+      </div>
+    </div>
+  </div>
+
   {{> "systems/sksk/templates/actor/parts/actor-items.hbs"}}
 </section>

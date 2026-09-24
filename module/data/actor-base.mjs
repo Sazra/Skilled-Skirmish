@@ -416,6 +416,16 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       baselineTotal: new fields.NumberField({ ...requiredInteger, initial: 0 }),
     });
 
+    // Carried currency (Items tab) - four coin denominations; each coin
+    // also carries its own flat weight toward the actor's own carry weight
+    // (see helpers/inventory.mjs#COIN_WEIGHT/computeCarriedWeight).
+    schema.currency = new fields.SchemaField({
+      cp: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+      sp: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+      gp: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+      pp: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+    });
+
     // User-extensible list of additional trackable resources (e.g. Rage,
     // Ki points), shown on the General tab alongside Life/Mana/AP/etc.
     // abbreviation (up to 4 letters, enforced by the input's maxlength

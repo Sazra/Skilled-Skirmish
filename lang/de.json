@@ -192,7 +192,16 @@
             "CreateNew": "Neuen Gegenstand hinzufügen",
             "CreateItem": "Gegenstand",
             "CreateWeapon": "Waffe",
-            "CreateArmor": "Rüstung"
+            "CreateArmor": "Rüstung",
+            "Currency": "Währung",
+            "CurrencyCp": "Kupfermünzen",
+            "CurrencyCpAbbr": "CP",
+            "CurrencySp": "Silbermünzen",
+            "CurrencySpAbbr": "SP",
+            "CurrencyGp": "Goldmünzen",
+            "CurrencyGpAbbr": "GP",
+            "CurrencyPp": "Platinmünzen",
+            "CurrencyPpAbbr": "PP"
         },
         "Charges": {
             "Enabled": "Hat Ladungen",

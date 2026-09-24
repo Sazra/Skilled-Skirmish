@@ -22,9 +22,17 @@ const SIZE_CARRY_MULTIPLIERS = {
 };
 
 /**
+ * Each carried coin's own flat weight (system.currency, see data/
+ * actor-base.mjs), regardless of denomination - a Copper piece weighs the
+ * same as a Platinum one.
+ */
+const COIN_WEIGHT = 0.02;
+
+/**
  * Total weight an actor is currently carrying: every Item/Armor/Weapon's
  * own weight, times its quantity (Armor/Weapon have no quantity field -
- * treated as 1 each).
+ * treated as 1 each), plus every carried coin's own flat weight
+ * (COIN_WEIGHT above).
  * @param {Actor} actor
  * @return {number}
  */
@@ -34,6 +42,10 @@ export function computeCarriedWeight(actor) {
     if (!GEAR_ITEM_TYPES.includes(item.type)) continue;
     const quantity = item.system.quantity ?? 1;
     total += (item.system.weight ?? 0) * quantity;
+  }
+  const currency = actor.system.currency;
+  if (currency) {
+    total += (currency.cp + currency.sp + currency.gp + currency.pp) * COIN_WEIGHT;
   }
   return total;
 }

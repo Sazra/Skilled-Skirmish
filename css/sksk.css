@@ -902,6 +902,30 @@ body.theme-light .application.sksk.actor {
   font-weight: bold;
 }
 
+/* Currency row (Items tab, see items.hbs) - four coin denominations, each
+   its own small labeled input rather than the wider sidebar resource
+   fields above. */
+.sksk .currency-row {
+  gap: 8px;
+}
+
+.sksk .currency-entry {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.sksk .currency-entry .resource-label {
+  font-size: 11px;
+  font-weight: normal;
+}
+
+.sksk .currency-value-input {
+  width: 48px;
+  text-align: center;
+}
+
 /* Max Life is no longer user-editable (see data/actor-base.mjs#
    prepareDerivedData) - styled to look distinct from the Life value input
    next to it, rather than like an editable field. */
