@@ -1638,19 +1638,30 @@ li.chat-message:has(.sksk-chat-card) .flavor-text {
 }
 
 .sksk-reroll-luck,
-.sksk-reroll-attribute {
+.sksk-reroll-attribute,
+.sksk-reroll-damage-ones {
   cursor: pointer;
   color: inherit;
 }
 
 .sksk-reroll-luck:hover,
-.sksk-reroll-attribute:hover {
+.sksk-reroll-attribute:hover,
+.sksk-reroll-damage-ones:hover {
   color: var(--color-text-hyperlink, #00538d);
 }
 
 .sksk-reroll-note {
   font-style: italic;
   opacity: 0.8;
+}
+
+/* helpers/damageReroll.mjs#rollPossiblyDoubledDamage's own "roll twice,
+   take the better" pair display (Tödliche Angriffe/Tödliche Magie) -
+   highlights whichever of the two actually counts, same idea as
+   .sksk-critical-success's own highlight elsewhere. */
+.sksk-reroll-picked {
+  border-radius: 3px;
+  outline: 2px solid var(--color-level-success, #18520b);
 }
 
 /* Costs (AP/Mana/...) and a Spell's own magic-school line - larger than
@@ -1719,9 +1730,11 @@ li.chat-message:has(.sksk-chat-card) .flavor-text {
   text-align: center;
 }
 
-/* Anchor for .sksk-reroll-luck's own absolute positioning (see above) - only
-   .sksk-roll-attack ever carries that icon, never .sksk-roll-damage. */
-.sksk-chat-card .sksk-roll-attack {
+/* Anchor for .sksk-reroll-icons' own absolute positioning (see above) -
+   .sksk-roll-attack carries Glück's own Reroll icon, .sksk-roll-damage
+   Elementexperte's own Reroll-Ones one (helpers/damageReroll.mjs). */
+.sksk-chat-card .sksk-roll-attack,
+.sksk-chat-card .sksk-roll-damage {
   position: relative;
 }
 

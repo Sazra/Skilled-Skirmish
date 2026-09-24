@@ -292,6 +292,21 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       Object.keys(CONFIG.SKSK.attributes).map(key => [key, new fields.BooleanField({ initial: false })])
     ));
 
+    // Tödliche Angriffe/Tödliche Magie's own "roll the whole damage roll
+    // twice, take the better total" (on a successful weapon/Martial Arts
+    // or spell attack) - purely an Active Effect target here, one of
+    // several sources helpers/damageReroll.mjs unions together (a Talent's
+    // own damageRerollMode, or a Class/Species ability entry's own one).
+    schema.damageRerollTwiceWeapon = new fields.BooleanField({ initial: false });
+    schema.damageRerollTwiceSpell = new fields.BooleanField({ initial: false });
+    // Elementexperte's own "may reroll any natural 1 on a damage roll of
+    // this element" - per damage type, purely an Active Effect target
+    // here (e.g. "system.damageRerollOnesElements.fire") - same union as
+    // the two switches above. See helpers/damageReroll.mjs.
+    schema.damageRerollOnesElements = new fields.SchemaField(Object.fromEntries(
+      Object.keys(CONFIG.SKSK.damageTypes).map(key => [key, new fields.BooleanField({ initial: false })])
+    ));
+
     // Per-skill flat bonus added to that skill's own check roll - purely an
     // Active Effect target. See helpers/skillRolls.mjs#rollSkillCheck.
     schema.skillRollBonus = new fields.SchemaField(Object.fromEntries(

@@ -469,6 +469,12 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
     if (item.type === 'species' || item.type === 'class' || item.type === 'talent') {
       context.skillBonusChoices = getSkillBonusChoices();
       context.abilityTypeChoices = CONFIG.SKSK.abilityTypes;
+      context.damageRerollModeChoices = CONFIG.SKSK.damageRerollModes;
+      // A blank leading option (unlike weapon/armor's own damageTypeChoices
+      // further below) - damageRerollElement is blank until a GM actually
+      // picks one, and blank is a valid "not yet chosen" state, not a
+      // real damage type.
+      context.damageRerollElementChoices = { '': '', ...CONFIG.SKSK.damageTypes };
     }
 
     // fpGainBonuses (Part of the GM tab on Item/Weapon/Armor/Species/Class/

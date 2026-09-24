@@ -19,6 +19,10 @@ import { computeLehrenTargetBonus } from "./lehren.mjs";
 import { isDurabilityEnabled } from "./materials.mjs";
 import { computePatronDamageBonus } from "./religion.mjs";
 import { getElementalFireDamageBonus } from "./elementalChargeEffects.mjs";
+import {
+  hasRollTwiceWeapon, rollPossiblyDoubledDamage, renderDamageRerollOnesIcon, wrapDamageBlock,
+} from "./damageReroll.mjs";
+import { wrapRerollIcons } from "./luck.mjs";
 
 /**
  * The intended target's flanking result (see helpers/flanking.mjs) for an
@@ -192,11 +196,16 @@ export async function rollWeaponItem(item) {
     const totalDamageBonus = attributeBonus + lehrenDamageBonus + damageTypeBonus + patronDamageBonus + allWeaponsDamageBonus + fireChargeBonus;
     const damageFormulaBase = totalDamageBonus ? `${item.system.formula} + ${totalDamageBonus}` : item.system.formula;
     const damageFormula = applyTechniqueDiceIncrease(damageFormulaBase, technique);
-    const roll = await new Roll(damageFormula, item.getRollData()).evaluate();
-    const rendered = await roll.render();
-    parts.push(`<div class="sksk-roll-damage"><strong>${game.i18n.localize('SKSK.Spell.Roll.Damage')}</strong></div>${rendered}`);
-    const { total, line } = await applyTechniqueBonusDamage(roll.total, technique, item.getRollData());
-    parts.push(line);
+    const rollTwice = actor ? hasRollTwiceWeapon(actor) : false;
+    const { total: rollTotal, html: rendered, pickedRoll } = await rollPossiblyDoubledDamage(damageFormula, item.getRollData(), rollTwice);
+    const { total, line } = await applyTechniqueBonusDamage(rollTotal, technique, item.getRollData());
+    const damageBlockId = foundry.utils.randomID();
+    const rerollOnesIcon = actor
+      ? renderDamageRerollOnesIcon(actor, damageType, pickedRoll, damageBlockId, { type: 'delta', value: total - rollTotal })
+      : '';
+    parts.push(wrapDamageBlock(damageBlockId,
+      `<div class="sksk-roll-damage"><strong>${game.i18n.localize('SKSK.Spell.Roll.Damage')}</strong>${wrapRerollIcons(rerollOnesIcon)}</div>${rendered}${line}`
+    ));
     damageEntries.push({ damageType, amount: total });
     applyButtonIndex = parts.length;
     parts.push(renderApplyDamageButton(actor, damageEntries, item.system.weaponType, techniqueEffect));
@@ -388,10 +397,17 @@ export async function rollMartialArtsAttack(actor, index) {
   const bonus = attributeBonus + lehrenDamageBonus + damageTypeBonus + patronDamageBonus + allWeaponsDamageBonus + fireChargeBonus;
   const formulaBase = bonus ? `${attack.formula} + ${bonus}` : attack.formula;
   const formula = applyTechniqueDiceIncrease(formulaBase, technique);
-  const roll = await new Roll(formula, actor.getRollData()).evaluate();
-  const renderedDamage = await roll.render();
-  const { total: damageTotal, line: techniqueLine } = await applyTechniqueBonusDamage(roll.total, technique, actor.getRollData());
+  const rollTwice = hasRollTwiceWeapon(actor);
+  const { total: rollTotal, html: renderedRoll, pickedRoll } = await rollPossiblyDoubledDamage(formula, actor.getRollData(), rollTwice);
+  const { total: damageTotal, line: techniqueLine } = await applyTechniqueBonusDamage(rollTotal, technique, actor.getRollData());
   const damageEntries = [{ damageType: attack.damageType, amount: damageTotal }];
+  const damageBlockId = foundry.utils.randomID();
+  const rerollOnesIcon = renderDamageRerollOnesIcon(
+    actor, attack.damageType, pickedRoll, damageBlockId, { type: 'delta', value: damageTotal - rollTotal }
+  );
+  const renderedDamage = wrapDamageBlock(damageBlockId,
+    `<div class="sksk-roll-damage"><strong>${game.i18n.localize('SKSK.Spell.Roll.Damage')}</strong>${wrapRerollIcons(rerollOnesIcon)}</div>${renderedRoll}`
+  );
   const techniqueEffect = getTechniqueEffectPayload(technique);
   let applyDamageHTML = renderApplyDamageButton(actor, damageEntries, 'martialArts', techniqueEffect)
     + renderTechniqueSavingThrowHTML(technique);

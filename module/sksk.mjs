@@ -11,6 +11,7 @@ import { applyDamageFromChat } from './helpers/damageApplication.mjs';
 import { claimInspirationDie } from './helpers/inspiration.mjs';
 import { handleRerollFromChat } from './helpers/luck.mjs';
 import { handleAttributeRerollFromChat } from './helpers/attributeReroll.mjs';
+import { handleDamageRerollOnesFromChat } from './helpers/damageReroll.mjs';
 import { rollTechniqueEffectSaveFromChat } from './helpers/technique-rolls.mjs';
 import { computeSpeciesAura } from './helpers/attributes.mjs';
 import { getMainSpeciesItem } from './helpers/movement.mjs';
@@ -226,6 +227,15 @@ Hooks.once('ready', async function () {
     if (!button) return;
     event.preventDefault();
     handleAttributeRerollFromChat(button);
+  });
+
+  // Elementexperte's own Reroll-Ones icon on a single damage roll - see
+  // helpers/damageReroll.mjs#handleDamageRerollOnesFromChat.
+  document.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-action="rerollDamageOnes"]');
+    if (!button) return;
+    event.preventDefault();
+    handleDamageRerollOnesFromChat(button);
   });
 
   // An "effect" Technique's own saving-throw-gated apply button - see

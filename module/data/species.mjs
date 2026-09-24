@@ -130,6 +130,15 @@ export default class SKSKSpecies extends SKSKItemBase {
       active: new fields.BooleanField({ initial: false }),
       roundsRemaining: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
       effectId: new fields.StringField({ required: true, blank: true, initial: "" }),
+      // See data/talent.mjs's own identical pair for what these mean
+      // (Tödliche Angriffe/Tödliche Magie/Elementexperte) - independent of
+      // this same ability's active/passive toggle above, and of every
+      // other ability entry in this array. See helpers/damageReroll.mjs.
+      damageRerollMode: new fields.StringField({
+        required: true, blank: false, initial: "none",
+        choices: ["none", "rollTwiceWeapon", "rollTwiceSpell", "rerollOnes"],
+      }),
+      damageRerollElement: new fields.StringField({ required: true, blank: true, initial: "" }),
     }));
 
     // Zero or more overrides granting the ability to cast spells from a

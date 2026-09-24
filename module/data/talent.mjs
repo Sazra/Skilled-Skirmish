@@ -194,6 +194,23 @@ export default class SKSKTalent extends SKSKItemBase {
     // time-gated.
     schema.elementalSpecializations = new fields.ArrayField(new fields.StringField({ required: true, blank: false, initial: "fire" }));
 
+    // This Talent's own single ability (see schema.ability above), if it
+    // happens to be one of the three damage-reroll ones (Tödliche
+    // Angriffe/Tödliche Magie/Elementexperte) - "none" for every other
+    // Talent. helpers/damageReroll.mjs unions this across every owned
+    // Talent (plus Class/Species ability entries and a direct Active
+    // Effect target - see data/actor-base.mjs) rather than assuming only
+    // one source ever grants it, since a Character could plausibly hold
+    // more than one (Elementexperte's own ability text explicitly allows
+    // taking it multiple times, once per element).
+    schema.damageRerollMode = new fields.StringField({
+      required: true, blank: false, initial: "none",
+      choices: ["none", "rollTwiceWeapon", "rollTwiceSpell", "rerollOnes"],
+    });
+    // Only meaningful for damageRerollMode "rerollOnes" (Elementexperte) -
+    // which single CONFIG.SKSK.damageTypes key this instance was taken for.
+    schema.damageRerollElement = new fields.StringField({ required: true, blank: true, initial: "" });
+
     return schema;
   }
 }

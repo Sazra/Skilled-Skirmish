@@ -929,6 +929,16 @@ SKSK.abilityTypes = {
   passive: 'SKSK.SoulPath.AbilityType.Passive',
 };
 
+// A Talent's own single ability, or one Class/Species ability array entry
+// (data/talent.mjs#damageRerollMode, data/class.mjs/species.mjs's own
+// identical per-entry field) - see helpers/damageReroll.mjs.
+SKSK.damageRerollModes = {
+  none: 'SKSK.DamageReroll.Mode.None',
+  rollTwiceWeapon: 'SKSK.DamageReroll.Mode.RollTwiceWeapon',
+  rollTwiceSpell: 'SKSK.DamageReroll.Mode.RollTwiceSpell',
+  rerollOnes: 'SKSK.DamageReroll.Mode.RerollOnes',
+};
+
 // A Durchbruch (breakthrough) entry's own repeat mode - see
 // data/soulPath.mjs.
 SKSK.soulPathBreakthroughModes = {

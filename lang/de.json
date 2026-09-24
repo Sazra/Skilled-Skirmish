@@ -658,6 +658,22 @@
             "NotEnabled": "Neuwurf für dieses Attribut ist nicht (mehr) aktiviert.",
             "RerolledNote": "Neu gewürfelt."
         },
+        "DamageReroll": {
+            "RollTwiceNote": "Würfelt den Schadenswurf zweimal und nutzt den besseren Wert.",
+            "RerollOnesTooltip": "Jede 1 auf diesem Schadenswurf neu würfeln",
+            "NotOwner": "Nur der Besitzer dieses Akteurs kann diesen Wurf neu würfeln.",
+            "NotEnabled": "Neuwurf für dieses Element ist nicht (mehr) aktiviert.",
+            "NoOnes": "Keine Einsen auf diesem Schadenswurf zum Neuwürfeln.",
+            "RerolledOnesNote": "{count} Einser neu gewürfelt - neuer Schaden: {amount}",
+            "Mode": {
+                "None": "Keine",
+                "RollTwiceWeapon": "Waffen-/Kampfkunst-Schaden zweimal würfeln (Tödliche Angriffe)",
+                "RollTwiceSpell": "Zauberschaden zweimal würfeln (Tödliche Magie)",
+                "RerollOnes": "Einsen auf Schadenswurf eines Elements neu würfeln (Elementexperte)"
+            },
+            "ElementLabel": "Element",
+            "ModeLabel": "Schadens-Neuwurf"
+        },
         "AttributeMax": {
             "ModifiersLabel": "Attributsmaximum-Modifikatoren",
             "Operation": {
@@ -694,6 +710,7 @@
                 "DamageBonus": "Schadenstyp-Boni",
                 "AttributeRoll": "Attributswurf-Boni",
                 "AttributeReroll": "Attributswurf-Neuwurf (Schalter)",
+                "DamageRerollOnes": "Elementexperte: Einsen-Neuwurf (Schalter)",
                 "SkillRoll": "Fertigkeitswurf-Boni",
                 "SkillRollApCost": "Fertigkeitswurf: AP-Kosten",
                 "SkillRollRpCost": "Fertigkeitswurf: RP-Kosten",

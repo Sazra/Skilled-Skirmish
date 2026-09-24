@@ -110,6 +110,17 @@
         </select>
         {{/if}}
 
+        <label class="resource-label">{{localize 'SKSK.DamageReroll.ModeLabel'}}</label>
+        <select name="system.abilities.{{index}}.damageRerollMode">
+          {{selectOptions ../damageRerollModeChoices selected=entry.damageRerollMode localize=true}}
+        </select>
+        {{#if (eq entry.damageRerollMode "rerollOnes")}}
+        <label class="resource-label">{{localize 'SKSK.DamageReroll.ElementLabel'}}</label>
+        <select name="system.abilities.{{index}}.damageRerollElement">
+          {{selectOptions ../damageRerollElementChoices selected=entry.damageRerollElement localize=true}}
+        </select>
+        {{/if}}
+
         <ol class="items-list ability-effects">
           {{#each (lookup ../abilityEffects index) as |effect|}}
           <li class="item effect flexrow" data-effect-id="{{effect.id}}">

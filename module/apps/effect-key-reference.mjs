@@ -104,6 +104,8 @@ export class SKSKEffectKeyReference extends HandlebarsApplicationMixin(Applicati
           { label: 'Totem Slots Bonus', key: 'system.totemSlotsBonus' },
           { label: 'Genereller Wurfbonus (alle Würfe)', key: 'system.allRollsBonus' },
           { label: 'Initiative-Bonus', key: 'system.initiativeBonus' },
+          { label: 'Tödliche Angriffe (Schalter)', key: 'system.damageRerollTwiceWeapon' },
+          { label: 'Tödliche Magie (Schalter)', key: 'system.damageRerollTwiceSpell' },
           { label: 'Trefferbonus: alle Waffen (inkl. Kampfkunst)', key: 'system.weaponAttackBonusAll' },
           { label: 'Schadensbonus: alle Waffen (inkl. Kampfkunst)', key: 'system.damageBonusAll' },
           { label: 'Trefferbonus: alle Zauber', key: 'system.spellAttackBonusAll' },
@@ -145,6 +147,10 @@ export class SKSKEffectKeyReference extends HandlebarsApplicationMixin(Applicati
       {
         title: 'SKSK.EffectKeyReference.Category.AttributeReroll',
         rows: vocabRows(CONFIG.SKSK.attributes, 'system.attributeRerollEnabled.'),
+      },
+      {
+        title: 'SKSK.EffectKeyReference.Category.DamageRerollOnes',
+        rows: vocabRows(CONFIG.SKSK.damageTypes, 'system.damageRerollOnesElements.'),
       },
       {
         title: 'SKSK.EffectKeyReference.Category.SkillRoll',

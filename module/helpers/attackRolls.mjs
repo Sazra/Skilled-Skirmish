@@ -13,6 +13,7 @@ import { checkFlanking } from './flanking.mjs';
 import { computePatronRollBonus } from './religion.mjs';
 import { getElementalAirRangeBonus } from './elementalChargeEffects.mjs';
 import { renderRerollButton, wrapRerollIcons } from './luck.mjs';
+import { hasRollTwiceWeapon, hasRollTwiceSpell, rollPossiblyDoubledDamage } from './damageReroll.mjs';
 
 /**
  * Tactic level 10's own flat AC bonus (see helpers/flanking.mjs) - a
@@ -357,18 +358,25 @@ export function getDamageDieSizes(formula) {
  * multi-element spell (e.g. Fire+Cold) gets a separately labeled bonus
  * roll - and separately resistible/absorbable amount - for each element;
  * damage types with no dice at all are simply omitted from the result.
+ * Also doubled (roll twice, take the better total - same as the attack's
+ * own main damage roll, see helpers/damageReroll.mjs) whenever the
+ * attacker has Tödliche Angriffe/Tödliche Magie for this kind - its own
+ * ability text explicitly calls out a critical hit's bonus dice, not just
+ * the main damage roll.
  * @param {Actor|null} actor
  * @param {Array<{damageType: string, dieSizes: number[]}>} damageDice
- * @return {Promise<Array<{damageType: string, roll: Roll}>>}
+ * @param {"weapon"|"spell"} kind
+ * @return {Promise<Array<{damageType: string, total: number, html: string}>>}
  */
-export async function rollCriticalBonusDamage(actor, damageDice) {
+export async function rollCriticalBonusDamage(actor, damageDice, kind) {
   const diceCount = 1 + (actor ? getActorSkillLevel(actor, 'brutality') : 0);
+  const shouldDouble = kind === 'spell' ? hasRollTwiceSpell(actor) : hasRollTwiceWeapon(actor);
   const results = [];
   for (const { damageType, dieSizes } of damageDice) {
     if (!dieSizes.length) continue;
     const formula = dieSizes.map(size => `${diceCount}d${size}`).join(' + ');
-    const roll = await new Roll(formula, actor?.getRollData()).evaluate();
-    results.push({ damageType, roll });
+    const { total, html } = await rollPossiblyDoubledDamage(formula, actor?.getRollData(), shouldDouble);
+    results.push({ damageType, total, html });
   }
   return results;
 }
@@ -631,15 +639,15 @@ async function evaluateHitAgainstDefender({
   }
 
   if (criticalType === 'success') {
-    const bonusResults = await rollCriticalBonusDamage(attacker, damageDice);
+    const bonusResults = await rollCriticalBonusDamage(attacker, damageDice, comparisonType === 'magicResistance' ? 'spell' : 'weapon');
     if (bonusResults.length) {
       let bonusTotal = 0;
       const bonusEntries = [];
-      for (const { damageType, roll } of bonusResults) {
+      for (const { damageType, total, html } of bonusResults) {
         const typeLabel = game.i18n.localize(CONFIG.SKSK.damageTypes[damageType] ?? damageType);
-        extraHTML += `<div class="sksk-roll-line"><strong>${typeLabel} ${game.i18n.localize('SKSK.AttackRoll.CriticalBonusDamage')}</strong></div>${await roll.render()}`;
-        bonusEntries.push({ damageType, amount: roll.total });
-        bonusTotal += roll.total;
+        extraHTML += `<div class="sksk-roll-line"><strong>${typeLabel} ${game.i18n.localize('SKSK.AttackRoll.CriticalBonusDamage')}</strong></div>${html}`;
+        bonusEntries.push({ damageType, amount: total });
+        bonusTotal += total;
       }
       extraHTML += renderApplyDamageButton(attacker, bonusEntries, killSkillKey);
       extraHTML += formatSkillFpGrantLine(await grantSkillUsageFp(attacker, 'brutality', 'criticalBonusDamagePoint', bonusTotal));

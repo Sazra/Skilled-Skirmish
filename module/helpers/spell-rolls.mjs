@@ -26,6 +26,10 @@ import {
   getTechniqueEffectPayload, renderTechniqueSavingThrowHTML,
 } from './technique-rolls.mjs';
 import { formatRollCardHeading } from './rollCard.mjs';
+import { wrapRerollIcons } from './luck.mjs';
+import {
+  hasRollTwiceSpell, rollPossiblyDoubledDamage, renderDamageRerollOnesIcon, wrapDamageBlock,
+} from './damageReroll.mjs';
 
 // A Combat round is 6 seconds (see helpers/criticalRolls.mjs and the
 // Combat turn-start hooks in statusEffects.mjs), so a "minutes"-unit
@@ -218,6 +222,16 @@ export async function chooseSpellCastOptions(actor, item) {
  *   applyTechniqueDiceIncrease) should scale this roll's own dice term -
  *   only ever passed for the first damage entry actually rolled (see
  *   rollDamageWithTechnique below), null otherwise.
+ * Tödliche Magie's own "roll twice, take the better total" (helpers/
+ * damageReroll.mjs#hasRollTwiceSpell) applies to the roll itself, before
+ * Überladen's own scaling; Elementexperte's own Reroll-Ones icon captures
+ * that scaling as its own postAdjust (so a reroll re-scales correctly
+ * too) - but NOT a technique's own bonus, which rollDamageWithTechnique
+ * below adds only AFTER this function returns, for the first damage
+ * entry rolled only; a reroll used on that specific entry would omit it.
+ * Accepted as a deliberately narrow gap (Technique-consumption AND an
+ * Elementexperte reroll on that exact entry, in the same cast) rather
+ * than threading that late adjustment back through this function too.
  * @return {Promise<{html: string, entry: {damageType: string, amount: number}}>}
  */
 async function renderDamageRoll(damage, actor, overchargeCount = 0, spellSystem = null, technique = null) {
@@ -226,16 +240,22 @@ async function renderDamageRoll(damage, actor, overchargeCount = 0, spellSystem 
   const formula = applyTechniqueDiceIncrease(formulaBase, technique);
   // rollData exposes the actor's custom resources (see actor-base.mjs#
   // getRollData) as "@<abbreviation>", usable directly in the formula.
-  const roll = await new Roll(formula, actor?.getRollData()).evaluate();
+  const rollTwice = hasRollTwiceSpell(actor);
+  const { total: rollTotal, html: rendered, pickedRoll } = await rollPossiblyDoubledDamage(formula, actor?.getRollData(), rollTwice);
   const typeLabel = game.i18n.localize(CONFIG.SKSK.damageTypes[damage.damageType] ?? damage.damageType);
-  const rendered = await roll.render();
-  let amount = roll.total;
+  let amount = rollTotal;
   let overchargeHTML = '';
-  if (overchargeCount > 0) {
-    amount = Math.floor(amount * (1 + 0.5 * overchargeCount));
+  const overchargeMultiplier = overchargeCount > 0 ? 1 + 0.5 * overchargeCount : null;
+  if (overchargeMultiplier) {
+    amount = Math.floor(amount * overchargeMultiplier);
     overchargeHTML = `<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.OverchargeDamage', { amount })}</div>`;
   }
-  const html = `<div class="sksk-roll-damage"><strong>${typeLabel} ${game.i18n.localize('SKSK.Spell.Roll.Damage')}</strong></div>${rendered}${overchargeHTML}`;
+  const postAdjust = overchargeMultiplier ? { type: 'multiplier', value: overchargeMultiplier } : { type: 'delta', value: 0 };
+  const blockId = foundry.utils.randomID();
+  const rerollOnesIcon = actor ? renderDamageRerollOnesIcon(actor, damage.damageType, pickedRoll, blockId, postAdjust) : '';
+  const html = wrapDamageBlock(blockId,
+    `<div class="sksk-roll-damage"><strong>${typeLabel} ${game.i18n.localize('SKSK.Spell.Roll.Damage')}</strong>${wrapRerollIcons(rerollOnesIcon)}</div>${rendered}${overchargeHTML}`
+  );
   return { html, entry: { damageType: damage.damageType, amount } };
 }
 
