@@ -8,6 +8,18 @@ import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
 import { getElementalDeathChargeHeal } from './elementalChargeEffects.mjs';
 
 /**
+ * NPC-facing chat line per helpers/defense.mjs#applyElementalDefense
+ * outcome - see applyResolvedDamageEntries below.
+ */
+const NPC_DAMAGE_OUTCOME_KEYS = {
+  normal: 'SKSK.AttackRoll.NpcDamageNormal',
+  resisted: 'SKSK.AttackRoll.NpcDamageResisted',
+  weakened: 'SKSK.AttackRoll.NpcDamageWeakened',
+  immune: 'SKSK.AttackRoll.NpcDamageImmune',
+  absorbed: 'SKSK.AttackRoll.NpcDamageAbsorbed',
+};
+
+/**
  * Resolve the "defender" for an Angriffswurf-related chat-button click
  * (Evaluate Hit - see helpers/attackRolls.mjs#resolveHitEvaluationFromChat;
  * Apply Damage - see applyDamageFromChat below): the clicking user's first
@@ -248,11 +260,22 @@ export async function applyResolvedDamageEntries(defender, attacker, entries, ki
   let netDelta = 0;
   const lines = [];
   for (const { damageType, amount } of entries) {
-    const { amount: adjusted, healing } = applyElementalDefense(defender, damageType, amount);
+    const { amount: adjusted, healing, outcome } = applyElementalDefense(defender, damageType, amount);
     netDelta += healing ? adjusted : -adjusted;
     const typeLabel = game.i18n.localize(CONFIG.SKSK.damageTypes[damageType] ?? damageType);
-    const outcomeKey = healing ? 'SKSK.AttackRoll.DamageAbsorbedIntoHealing' : 'SKSK.AttackRoll.DamageApplied';
-    lines.push(`<div class="sksk-roll-line">${game.i18n.format(outcomeKey, { type: typeLabel, amount: adjusted })}</div>`);
+    // NPCs report only the qualitative outcome (never the real amount), so
+    // players can't reverse-engineer an NPC's exact Life/Resistance/
+    // Weakness from the chat log - see helpers/defense.mjs#
+    // applyElementalDefense's own outcome doc comment. Characters (the
+    // party's own sheets, already fully visible to their players anyway)
+    // keep the exact number.
+    if (defender.type === 'npc') {
+      const outcomeKey = NPC_DAMAGE_OUTCOME_KEYS[outcome];
+      lines.push(`<div class="sksk-roll-line">${game.i18n.format(outcomeKey, { type: typeLabel })}</div>`);
+    } else {
+      const outcomeKey = healing ? 'SKSK.AttackRoll.DamageAbsorbedIntoHealing' : 'SKSK.AttackRoll.DamageApplied';
+      lines.push(`<div class="sksk-roll-line">${game.i18n.format(outcomeKey, { type: typeLabel, amount: adjusted })}</div>`);
+    }
     if (!healing && adjusted > 0) {
       lines.push(formatSkillFpGrantLine(await grantSkillUsageFp(defender, `${damageType}Resistance`, 'damageTaken', adjusted)));
     } else if (healing && adjusted > 0 && attacker) {

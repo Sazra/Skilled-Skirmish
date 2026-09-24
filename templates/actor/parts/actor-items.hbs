@@ -55,7 +55,12 @@
         {{#if (eq item.type "weapon")}}{{item.system.formula}}{{/if}}
       </div>
       {{#if ../durabilityEnabled}}
-      <div class='item-durability'>{{item.system.durability.value}} / {{item.system.maxDurability}}</div>
+      <div class='item-durability'>
+        <div class="durability-box-wrapper">
+          <span class="durability-value-display" data-action="editDurability">{{item.system.durability.value}} / {{item.system.maxDurability}}</span>
+          <input type="text" class="durability-value-input" value="{{item.system.durability.value}}" data-dtype="Number" />
+        </div>
+      </div>
       {{/if}}
       <div class='item-weight'>{{item.system.weight}}</div>
       <div class='item-equipped'>

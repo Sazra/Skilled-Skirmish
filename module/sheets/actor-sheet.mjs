@@ -179,6 +179,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       attemptRestrainedEscape: SKSKActorSheet.#attemptRestrainedEscape,
       toggleIgnoreSpecialBonus: SKSKActorSheet.#toggleIgnoreSpecialBonus,
       editAttributeValue: SKSKActorSheet.#editAttributeValue,
+      editDurability: SKSKActorSheet.#editDurability,
       resetAttributeBonus: SKSKActorSheet.#resetAttributeBonus,
       resetAllAttributeBonuses: SKSKActorSheet.#resetAllAttributeBonuses,
       configureToken: SKSKActorSheet.#configureToken,
@@ -1585,6 +1586,26 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       });
     }
 
+    // Items tab's Haltbarkeit (Durability) edit-in-place (actor-items.hbs) -
+    // same revert-on-blur/Enter as the attribute boxes above, but the value
+    // itself belongs to the embedded Item, not this Actor, so it's written
+    // straight to that Item here instead of relying on the sheet's own
+    // submitOnChange form binding. See #editDurability.
+    for (const input of this.element.querySelectorAll('.durability-value-input')) {
+      input.addEventListener('blur', async () => {
+        input.closest('.durability-box-wrapper')?.classList.remove('editing');
+        const item = this.actor.items.get(input.closest('.item')?.dataset.itemId);
+        if (!item) return;
+        const value = Math.max(0, Math.trunc(Number(input.value)) || 0);
+        if (value !== item.system.durability.value) await item.update({ 'system.durability.value': value });
+      });
+      input.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        input.blur();
+      });
+    }
+
     // Restrained's DC/timing/AP-cost fields aren't real schema fields (they
     // live as flags on its own ActiveEffect, not system.*), so the sheet's
     // normal submitOnChange form binding can't reach them - read all three
@@ -2303,6 +2324,23 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     if (!wrapper) return;
     wrapper.classList.add('editing');
     const input = wrapper.querySelector('.attribute-value-input');
+    input?.focus();
+    input?.select();
+  }
+
+  /**
+   * Items tab's Haltbarkeit (Durability) column edit-in-place - same
+   * click-to-reveal-input pattern as #editAttributeValue, just targeting an
+   * embedded Item's own system.durability.value rather than an Actor field,
+   * so the commit itself has to happen manually (see _onRender's paired
+   * blur/keydown listeners) rather than through the sheet's own
+   * submitOnChange form binding.
+   */
+  static #editDurability(event, target) {
+    const wrapper = target.closest('.durability-box-wrapper');
+    if (!wrapper) return;
+    wrapper.classList.add('editing');
+    const input = wrapper.querySelector('.durability-value-input');
     input?.focus();
     input?.select();
   }

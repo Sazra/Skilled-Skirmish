@@ -1394,6 +1394,34 @@ body.theme-light .application.sksk.actor {
   font-size: 12px;
 }
 
+/* Click-to-edit swap (see #editDurability/actor-items.hbs) - same idea as
+   .attribute-value-display/.attribute-value-input above, just a single
+   plain-text swap instead of a value/mod box pair. */
+.sksk .item-durability .durability-box-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.sksk .item-durability .durability-value-display {
+  cursor: pointer;
+}
+
+.sksk .item-durability .durability-value-input {
+  display: none;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  font-size: 12px;
+}
+
+.sksk .item-durability .durability-box-wrapper.editing .durability-value-display {
+  display: none;
+}
+
+.sksk .item-durability .durability-box-wrapper.editing .durability-value-input {
+  display: block;
+}
+
 /* An Items-tab row triggers no roll at all - clicking either its own image
    (data-action="editItem") or its name heading (see actor-items.hbs) just
    opens the Item's own sheet. No .rollable class on either (that class's

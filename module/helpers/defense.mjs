@@ -278,18 +278,25 @@ export function getMagicResistanceBreakdown(actor) {
  * @param {Actor} actor
  * @param {string} damageType   A CONFIG.SKSK.damageTypes key.
  * @param {number} amount       Positive raw damage before defenses.
- * @return {{amount: number, healing: boolean}}
+ * @return {{amount: number, healing: boolean, outcome: "normal"|"resisted"|"weakened"|"immune"|"absorbed"}}
+ *   outcome categorizes which of the four branches above (or netFraction's
+ *   own effect on Resistance/Weakness) actually applied - purely for
+ *   helpers/damageApplication.mjs's own NPC-facing chat wording (see
+ *   applyResolvedDamageEntries), which reports one of these qualitatively
+ *   instead of the real amount so players can't reverse-engineer an NPC's
+ *   exact Resistance/Weakness/Life total from it.
  */
 export function applyElementalDefense(actor, damageType, amount) {
-  if (amount <= 0) return { amount: 0, healing: false };
+  if (amount <= 0) return { amount: 0, healing: false, outcome: 'normal' };
 
   const lifeOverride = damageType === 'life' ? actor.system.lifeAbsorptionOverride : 'default';
-  if (lifeOverride === 'force') return { amount, healing: true };
-  if (lifeOverride !== 'deny' && isActorSkillUnlocked(actor, `${damageType}Absorption`)) return { amount, healing: true };
-  if (isActorSkillUnlocked(actor, `${damageType}Immunity`)) return { amount: 0, healing: false };
+  if (lifeOverride === 'force') return { amount, healing: true, outcome: 'absorbed' };
+  if (lifeOverride !== 'deny' && isActorSkillUnlocked(actor, `${damageType}Absorption`)) return { amount, healing: true, outcome: 'absorbed' };
+  if (isActorSkillUnlocked(actor, `${damageType}Immunity`)) return { amount: 0, healing: false, outcome: 'immune' };
 
   const resistancePercent = Math.min(99, getActorSkillLevel(actor, `${damageType}Resistance`) * 10);
   const weaknessStacks = getSkillStacks(actor, `${damageType}Weakness`);
   const netFraction = 1 + weaknessStacks - resistancePercent / 100;
-  return { amount: Math.max(0, Math.floor(amount * netFraction)), healing: false };
+  const outcome = netFraction < 1 ? 'resisted' : netFraction > 1 ? 'weakened' : 'normal';
+  return { amount: Math.max(0, Math.floor(amount * netFraction)), healing: false, outcome };
 }
