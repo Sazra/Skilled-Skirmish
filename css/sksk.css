@@ -1603,6 +1603,7 @@ li.chat-message:has(.sksk-chat-card) .flavor-text {
    Condensed"), so it actually reads as a heading rather than the small
    flavor-text line Foundry renders in the message header. */
 .sksk-chat-card .sksk-roll-card-heading {
+  position: relative;
   font-family: var(--font-h1, "Modesto Condensed", serif);
   font-size: 28px;
   font-weight: normal;
@@ -1613,18 +1614,21 @@ li.chat-message:has(.sksk-chat-card) .flavor-text {
 }
 
 /* Glück's own Reroll icon (see helpers/luck.mjs#renderRerollButton) - a
-   small clickable clover next to the roll's own name, sized well below
-   the heading's own font size so it reads as a control, not more text.
-   Also placed next to the smaller "Angriff"/"Angriffswurf N" sub-heading
-   (.sksk-roll-attack, see helpers/attackRolls.mjs#renderAttackPairHTML)
-   for an Angriffswurf specifically, hence the plain (non-h1-scoped) rule. */
+   small clickable clover pinned to the card's own right edge rather than
+   sitting inline right after the title text, so the title itself stays
+   truly centered regardless of the icon's own width. Also placed next to
+   the smaller "Angriff"/"Angriffswurf N" sub-heading (.sksk-roll-attack,
+   see helpers/attackRolls.mjs#renderAttackPairHTML) for an Angriffswurf
+   specifically, hence the plain (non-h1-scoped) rule - both headings are
+   given position: relative (see above/below) as this rule's own anchor. */
 .sksk-reroll-luck {
-  display: inline-block;
-  margin-left: 6px;
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
   font-size: 0.6em;
   cursor: pointer;
   color: inherit;
-  vertical-align: middle;
 }
 
 .sksk-reroll-luck:hover {
@@ -1700,6 +1704,12 @@ li.chat-message:has(.sksk-chat-card) .flavor-text {
 .sksk-chat-card .sksk-roll-damage {
   font-size: 16px;
   text-align: center;
+}
+
+/* Anchor for .sksk-reroll-luck's own absolute positioning (see above) - only
+   .sksk-roll-attack ever carries that icon, never .sksk-roll-damage. */
+.sksk-chat-card .sksk-roll-attack {
+  position: relative;
 }
 
 .sksk-chat-card .sksk-roll-saves {
