@@ -1099,6 +1099,7 @@
             "NoDefender": "Du hast weder ein Ziel ausgewählt noch einen zugewiesenen Charakter - kann nicht ausgewertet werden.",
             "NoPermissionToApply": "Du besitzt dieses Ziel nicht, und es ist aktuell kein GM online, der das übernehmen könnte - nur der GM (oder ein Besitzer) kann den Schaden hier anwenden.",
             "NoDefenderForcedHit": "Kein Ziel ausgewählt - automatisch als Treffer gewertet (Shift+Klick).",
+            "AutoResolveRelayed": "Auflösung an den GM weitergeleitet (Ziel nicht besessen) - das Ergebnis erscheint in Kürze als eigene Karte.",
             "EvaluationTitle": "Trefferauswertung ({defender})",
             "EvaluationTitleNoDefender": "Trefferauswertung (kein Ziel)",
             "EvaluationLine": "{label} ({total}) gegen {statLabel} ({statValue}): {outcome}",

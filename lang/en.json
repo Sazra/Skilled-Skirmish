@@ -1099,6 +1099,7 @@
       "NoDefender": "You have no target selected and no assigned character - cannot evaluate.",
       "NoPermissionToApply": "You don't own this target, and no GM is currently connected to relay it to - only the GM (or an owner) can apply damage here.",
       "NoDefenderForcedHit": "No target selected - automatically counted as a hit (Shift+click).",
+      "AutoResolveRelayed": "Resolution relayed to the GM (you don't own that target) - the result will appear shortly as its own card.",
       "EvaluationTitle": "Hit Evaluation ({defender})",
       "EvaluationTitleNoDefender": "Hit Evaluation (no target)",
       "EvaluationLine": "{label} ({total}) vs {statLabel} ({statValue}): {outcome}",

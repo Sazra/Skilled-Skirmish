@@ -935,13 +935,14 @@ export async function autoResolveAttackForTargets([rollA, rollB], comparisonType
   const critB = getAttackCriticalType(rollB, attacker);
 
   const blocks = [];
+  let relayedCount = 0;
   for (const defender of defenders) {
     if (!defender.isOwner) {
-      requestGmAction('autoResolveHit', {
+      relayedCount += requestGmAction('autoResolveHit', {
         defenderUuid: defender.uuid, attackerUuid: attacker?.uuid ?? null, mode,
         rollA: rollA.total, rollB: rollB.total, critA, critB,
         comparisonType, damageDice, killSkillKey, damageEntries, techniqueItemUuid,
-      });
+      }) ? 1 : 0;
       continue;
     }
     const { title, line, fpHTML, damageHTML } = await resolveAndApplyOneAttack(defender, attacker, {
@@ -950,7 +951,20 @@ export async function autoResolveAttackForTargets([rollA, rollB], comparisonType
     blocks.push(formatRollCardHeading(title) + line + fpHTML + damageHTML);
   }
 
-  return blocks.length ? `<div class="sksk-auto-resolved">${blocks.join('')}</div>` : '';
+  if (!blocks.length && !relayedCount) return '';
+  // A target relayed to the GM (see requestGmAction above) has nothing to
+  // show inline YET - its own result arrives a moment later, as the GM's
+  // own separate chat card - but the caller still needs a truthy return
+  // here to grey out its manual Evaluate Hit/Apply Damage buttons (see
+  // helpers/actions.mjs#rollWeaponItem/rollMartialArtsAttack, helpers/
+  // spell-rolls.mjs's own attack loop) exactly as it would for an inline
+  // resolution; skipping that step would leave those buttons clickable
+  // even though a relayed resolution already applied this exact damage,
+  // inviting a duplicate application on a second click.
+  const relayNote = relayedCount
+    ? `<div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.AutoResolveRelayed')}</div>`
+    : '';
+  return `<div class="sksk-auto-resolved">${relayNote}${blocks.join('')}</div>`;
 }
 
 /**
