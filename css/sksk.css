@@ -1613,29 +1613,42 @@ li.chat-message:has(.sksk-chat-card) .flavor-text {
   margin: 0 0 4px;
 }
 
-/* Glück's own Reroll icon (see helpers/luck.mjs#renderRerollButton) - a
-   small clickable clover pinned to the card's own right edge rather than
-   sitting inline right after the title text, so the title itself stays
-   truly centered regardless of the icon's own width. Also placed next to
-   the smaller "Angriff"/"Angriffswurf N" sub-heading (.sksk-roll-attack,
-   see helpers/attackRolls.mjs#renderAttackPairHTML) for an Angriffswurf
-   specifically, hence the plain (non-h1-scoped) rule - both headings are
-   given position: relative (see above/below) as this rule's own anchor. */
-.sksk-reroll-luck {
+/* Glück's own Reroll icon (see helpers/luck.mjs#renderRerollButton) and its
+   free, per-attribute-switch sibling (helpers/attributeReroll.mjs#
+   renderAttributeRerollButton, rendered to this one's own LEFT) - both
+   wrapped together in .sksk-reroll-icons (see helpers/luck.mjs#
+   wrapRerollIcons) and pinned as a group to the card's own right edge,
+   rather than sitting inline right after the title text, so the title
+   itself stays truly centered regardless of either icon's own width. Also
+   placed next to the smaller "Angriff"/"Angriffswurf N" sub-heading
+   (.sksk-roll-attack, see helpers/attackRolls.mjs#renderAttackPairHTML)
+   for an Angriffswurf specifically (Luck's icon only there - the
+   attribute one never applies to attacks), hence the plain (non-h1-scoped)
+   rules - both headings are given position: relative (see above/below) as
+   this wrapper's own anchor. */
+.sksk-reroll-icons {
   position: absolute;
   right: 0;
   top: 50%;
   transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 0.6em;
+}
+
+.sksk-reroll-luck,
+.sksk-reroll-attribute {
   cursor: pointer;
   color: inherit;
 }
 
-.sksk-reroll-luck:hover {
+.sksk-reroll-luck:hover,
+.sksk-reroll-attribute:hover {
   color: var(--color-text-hyperlink, #00538d);
 }
 
-.sksk-luck-reroll-note {
+.sksk-reroll-note {
   font-style: italic;
   opacity: 0.8;
 }

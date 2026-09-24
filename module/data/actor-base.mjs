@@ -283,6 +283,15 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       Object.keys(CONFIG.SKSK.attributes).map(key => [key, new fields.NumberField({ ...requiredInteger, initial: 0 })])
     ));
 
+    // Per-attribute switch unlocking the Reroll icon (helpers/luck.mjs's
+    // own Glück Reroll, just a free/no-charge sibling of it) on that
+    // attribute's own roll AND on any skill check involving it - purely an
+    // Active Effect target (e.g. "system.attributeRerollEnabled.str"). See
+    // helpers/attributeReroll.mjs.
+    schema.attributeRerollEnabled = new fields.SchemaField(Object.fromEntries(
+      Object.keys(CONFIG.SKSK.attributes).map(key => [key, new fields.BooleanField({ initial: false })])
+    ));
+
     // Per-skill flat bonus added to that skill's own check roll - purely an
     // Active Effect target. See helpers/skillRolls.mjs#rollSkillCheck.
     schema.skillRollBonus = new fields.SchemaField(Object.fromEntries(

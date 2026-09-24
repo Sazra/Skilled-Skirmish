@@ -2,6 +2,7 @@ import { evaluateD20WithMode, formatD20ModeSummaryLine, wrapCriticalBlock } from
 import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
 import { formatRollCardHeading } from './rollCard.mjs';
 import { rollAttackPair, renderAttackPairHTML } from './attackRolls.mjs';
+import { renderAttributeRerollButton } from './attributeReroll.mjs';
 
 /**
  * Glück's own Reroll mechanic: a small icon next to a D20 roll's own name
@@ -36,6 +37,12 @@ import { rollAttackPair, renderAttackPairHTML } from './attackRolls.mjs';
  * to walk back, so helpers/attackRolls.mjs strips this button from that
  * card entirely (see stripRerollButton) rather than ever letting it be
  * clicked in that state.
+ *
+ * helpers/attributeReroll.mjs is a free/no-charge sibling of the
+ * "generic" kind above (a per-attribute switch instead of a Luck charge),
+ * sharing this file's own redoGenericD20Roll/wrapRerollIcons so both
+ * icons can appear together on the same card, left (attribute) to right
+ * (Luck) - never wired into the "attack" kind, which is Luck-only.
  */
 
 /**
@@ -76,7 +83,7 @@ async function spendLuckCharge(actor) {
  * outright. Renders nothing for an NPC or null actor.
  * @param {Actor|null} actor
  * @param {"generic"|"attack"} kind
- * @param {object} payload   Everything rerollGenericD20/rerollAttackPair
+ * @param {object} payload   Everything redoGenericD20Roll/rerollAttackPair
  *   below need to redo this exact roll - see their own doc comments.
  * @return {string}
  */
@@ -90,21 +97,43 @@ export function renderRerollButton(actor, kind, payload) {
 }
 
 /**
+ * Wraps one or more rendered reroll icons (this file's own
+ * renderRerollButton, helpers/attributeReroll.mjs#renderAttributeRerollButton)
+ * in the shared positioning container that pins the whole group to its
+ * heading's own right edge, in the order given (helpers/attributeReroll.mjs's
+ * icon first/left, this one second/right, per its own doc comment) - '' if
+ * none of them rendered anything, so an empty group never leaves behind an
+ * empty (but still absolutely-positioned) span.
+ * @param {string} iconsHTML
+ * @return {string}
+ */
+export function wrapRerollIcons(iconsHTML) {
+  return iconsHTML ? `<span class="sksk-reroll-icons">${iconsHTML}</span>` : '';
+}
+
+/**
  * Redo a "generic" (skill/attribute check) D20 roll: re-evaluates the
  * exact same formula/mode, grants only the outcome-dependent Luck FP fresh
- * (never the original "made this check" FP a second time), and posts a
- * brand new card carrying its own fresh Reroll button - replacing the
- * original message entirely (see handleRerollFromChat).
+ * (never the original "made this check" FP a second time - same rule that
+ * already applied to the very first roll, regardless of which reroll
+ * mechanism is asking), and posts a brand new card carrying fresh Reroll/
+ * Attribute-Reroll icons (whichever still qualify) - replacing the
+ * original message entirely. Shared by this file's own
+ * handleRerollFromChat and helpers/attributeReroll.mjs#
+ * handleAttributeRerollFromChat - each spends/checks its own cost
+ * (1 Luck charge vs. a free per-attribute switch) before calling this.
  * @param {Actor} actor
- * @param {{formula: string, mode: string, label: string}} payload
+ * @param {{formula: string, mode: string, label: string, attributeKeys?: string[]}} payload
+ * @param {string} noteKey   Localization key for the "rerolled via ..." line -
+ *   distinct per mechanism (SKSK.Luck.RerolledNote/SKSK.AttributeReroll.RerolledNote).
  * @return {Promise<ChatMessage>}
  */
-async function rerollGenericD20(actor, payload) {
+export async function redoGenericD20Roll(actor, payload, noteKey) {
   const { formula, mode, label } = payload;
   const result = await evaluateD20WithMode(formula, actor.getRollData(), mode);
   const { roll, criticalType, doubleCritical } = result;
 
-  let extraHTML = `<div class="sksk-roll-line sksk-luck-reroll-note">${game.i18n.localize('SKSK.Luck.RerolledNote')}</div>`;
+  let extraHTML = `<div class="sksk-roll-line sksk-reroll-note">${game.i18n.localize(noteKey)}</div>`;
   extraHTML += formatD20ModeSummaryLine(result, mode);
   if (criticalType === 'success') {
     extraHTML += formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'luck', 'criticalRoll'));
@@ -113,9 +142,9 @@ async function rerollGenericD20(actor, payload) {
     extraHTML += formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'luck', 'doubleCriticalRoll'));
   }
 
-  const headingExtra = renderRerollButton(actor, 'generic', payload);
+  const icons = renderAttributeRerollButton(actor, payload.attributeKeys ?? [], payload) + renderRerollButton(actor, 'generic', payload);
   const content = `<div class="sksk-chat-card sksk-action-card">`
-    + formatRollCardHeading(label, headingExtra)
+    + formatRollCardHeading(label, wrapRerollIcons(icons))
     + wrapCriticalBlock(await roll.render(), criticalType)
     + extraHTML
     + `</div>`;
@@ -192,6 +221,6 @@ export async function handleRerollFromChat(button) {
     return;
   }
 
-  const newMessage = await rerollGenericD20(actor, payload);
+  const newMessage = await redoGenericD20Roll(actor, payload, 'SKSK.Luck.RerolledNote');
   if (newMessage && messageId) await game.messages.get(messageId)?.delete();
 }

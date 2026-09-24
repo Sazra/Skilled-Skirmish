@@ -10,6 +10,7 @@ import { resolveHitEvaluationFromChat } from './helpers/attackRolls.mjs';
 import { applyDamageFromChat } from './helpers/damageApplication.mjs';
 import { claimInspirationDie } from './helpers/inspiration.mjs';
 import { handleRerollFromChat } from './helpers/luck.mjs';
+import { handleAttributeRerollFromChat } from './helpers/attributeReroll.mjs';
 import { rollTechniqueEffectSaveFromChat } from './helpers/technique-rolls.mjs';
 import { computeSpeciesAura } from './helpers/attributes.mjs';
 import { getMainSpeciesItem } from './helpers/movement.mjs';
@@ -216,6 +217,15 @@ Hooks.once('ready', async function () {
     if (!button) return;
     event.preventDefault();
     handleRerollFromChat(button);
+  });
+
+  // The free, per-attribute-switch Reroll icon next to Glück's own one -
+  // see helpers/attributeReroll.mjs#handleAttributeRerollFromChat.
+  document.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-action="rerollAttribute"]');
+    if (!button) return;
+    event.preventDefault();
+    handleAttributeRerollFromChat(button);
   });
 
   // An "effect" Technique's own saving-throw-gated apply button - see

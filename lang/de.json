@@ -652,6 +652,12 @@
             "NotOwner": "Nur der Besitzer dieses Akteurs kann diesen Wurf neu würfeln.",
             "RerolledNote": "Mit Glück neu gewürfelt."
         },
+        "AttributeReroll": {
+            "RerollTooltip": "Diesen Wurf neu würfeln",
+            "NotOwner": "Nur der Besitzer dieses Akteurs kann diesen Wurf neu würfeln.",
+            "NotEnabled": "Neuwurf für dieses Attribut ist nicht (mehr) aktiviert.",
+            "RerolledNote": "Neu gewürfelt."
+        },
         "AttributeMax": {
             "ModifiersLabel": "Attributsmaximum-Modifikatoren",
             "Operation": {
@@ -687,6 +693,7 @@
                 "WeaponAttack": "Waffentyp-Angriffsboni",
                 "DamageBonus": "Schadenstyp-Boni",
                 "AttributeRoll": "Attributswurf-Boni",
+                "AttributeReroll": "Attributswurf-Neuwurf (Schalter)",
                 "SkillRoll": "Fertigkeitswurf-Boni",
                 "SkillRollApCost": "Fertigkeitswurf: AP-Kosten",
                 "SkillRollRpCost": "Fertigkeitswurf: RP-Kosten",

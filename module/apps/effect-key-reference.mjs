@@ -143,6 +143,10 @@ export class SKSKEffectKeyReference extends HandlebarsApplicationMixin(Applicati
         rows: vocabRows(CONFIG.SKSK.attributes, 'system.attributeRollBonus.'),
       },
       {
+        title: 'SKSK.EffectKeyReference.Category.AttributeReroll',
+        rows: vocabRows(CONFIG.SKSK.attributes, 'system.attributeRerollEnabled.'),
+      },
+      {
         title: 'SKSK.EffectKeyReference.Category.SkillRoll',
         rows: skillRollBonusRows,
       },

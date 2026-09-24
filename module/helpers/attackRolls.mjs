@@ -12,7 +12,7 @@ import { resolveClickDefender, renderApplyDamageButton, applyResolvedDamageEntri
 import { checkFlanking } from './flanking.mjs';
 import { computePatronRollBonus } from './religion.mjs';
 import { getElementalAirRangeBonus } from './elementalChargeEffects.mjs';
-import { renderRerollButton } from './luck.mjs';
+import { renderRerollButton, wrapRerollIcons } from './luck.mjs';
 
 /**
  * Tactic level 10's own flat AC bonus (see helpers/flanking.mjs) - a
@@ -483,7 +483,7 @@ export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor
   const rerollHTML = renderRerollButton(actor, 'attack', { blockId, bonus, comparisonType, damageDice, killSkillKey, flanking, label });
   return `
     <div class="sksk-attack-block" data-block-id="${blockId}">
-    <div class="sksk-roll-attack"><strong>${label}</strong>${rerollHTML}</div>
+    <div class="sksk-roll-attack"><strong>${label}</strong>${wrapRerollIcons(rerollHTML)}</div>
     <div class="sksk-attack-roll-pair">
       <div class="sksk-attack-roll-single">
         ${renderedA}
@@ -515,7 +515,7 @@ export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor
  * @return {string}
  */
 export function stripRerollButton(html) {
-  return html.replace(/<a class="sksk-reroll-luck"[\s\S]*?<\/a>/, '');
+  return html.replace(/<span class="sksk-reroll-icons">[\s\S]*?<\/span>/, '');
 }
 
 /**

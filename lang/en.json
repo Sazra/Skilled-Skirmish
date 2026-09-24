@@ -652,6 +652,12 @@
       "NotOwner": "Only this actor's own owner can reroll this roll.",
       "RerolledNote": "Rerolled with Luck."
     },
+    "AttributeReroll": {
+      "RerollTooltip": "Reroll this roll",
+      "NotOwner": "Only this actor's own owner can reroll this roll.",
+      "NotEnabled": "Reroll for this attribute is not (or no longer) enabled.",
+      "RerolledNote": "Rerolled."
+    },
     "AttributeMax": {
       "ModifiersLabel": "Attribute Max Modifiers",
       "Operation": {
@@ -687,6 +693,7 @@
         "WeaponAttack": "Weapon Type Attack Bonuses",
         "DamageBonus": "Damage Type Bonuses",
         "AttributeRoll": "Attribute Roll Bonuses",
+        "AttributeReroll": "Attribute Roll Reroll (Switch)",
         "SkillRoll": "Skill Roll Bonuses",
         "SkillRollApCost": "Skill Roll: AP Cost",
         "SkillRollRpCost": "Skill Roll: RP Cost",
