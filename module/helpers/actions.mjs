@@ -5,6 +5,7 @@ import { canUseWeaponAttack, canMove, applyAdrenalinDamage, isActorsOwnTurn, isC
 import {
   computeWeaponAttackBonus, computeWeaponAttributeBonus, computeMartialArtsAttackBonus, rollAttackPair, renderAttackPairHTML,
   getDamageDieSizes, getWeaponDamageType, autoResolveAttackForTargets, greyOutManualEvalButtons, stripRerollButton,
+  getWeaponAttributeKeys, getMartialArtsAttributeKeys,
 } from "./attackRolls.mjs";
 import { wrapCriticalBlock } from "./criticalRolls.mjs";
 import { formatRollCardHeading } from "./rollCard.mjs";
@@ -169,6 +170,7 @@ export async function rollWeaponItem(item) {
     const rendered = await renderAttackPairHTML(rolls, 'armorClass', actor, {
       damageDice, killSkillKey: item.system.weaponType, flanking: flank.flanking,
       bonus: attackBonus, label: game.i18n.localize('SKSK.AttackRoll.Attack'),
+      attributeKeys: getWeaponAttributeKeys(item.system),
     });
     attackBlockIndex = parts.length;
     parts.push(rendered);
@@ -384,6 +386,7 @@ export async function rollMartialArtsAttack(actor, index) {
   let attackHTML = `${await renderAttackPairHTML(rolls, 'armorClass', actor, {
     damageDice, killSkillKey: 'martialArts', flanking: flank.flanking,
     bonus: attackBonus, label: game.i18n.localize('SKSK.AttackRoll.Attack'),
+    attributeKeys: getMartialArtsAttributeKeys(attack),
   })}${formatFlankingBonusLine(flank, flankBonus)}`;
 
   const attributeBonus = resolveMartialArtsAttributeBonus(actor, attack.attributes, attack.attributeUsage);

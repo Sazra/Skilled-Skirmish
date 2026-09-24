@@ -247,7 +247,7 @@ export async function rollSkillCheck(actor, skillKey, chosenAttributes, variant 
     extraHTML += formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'luck', 'doubleCriticalRoll'));
   }
   const rerollPayload = { formula, mode, label, attributeKeys: chosenAttributes };
-  const rerollIcons = renderAttributeRerollButton(actor, chosenAttributes, rerollPayload) + renderRerollButton(actor, 'generic', rerollPayload);
+  const rerollIcons = renderAttributeRerollButton(actor, chosenAttributes, 'generic', rerollPayload) + renderRerollButton(actor, 'generic', rerollPayload);
   return postActionChatCard(
     actor, `[skill] ${label}`, roll, offTurn ? 0 : apCost, extraHTML, criticalType, offTurn ? rpCost : 0, wrapRerollIcons(rerollIcons)
   );

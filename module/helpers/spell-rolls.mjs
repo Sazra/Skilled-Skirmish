@@ -440,6 +440,11 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
       const rolls = await rollAttackPair(attackBonus, actor);
       const rendered = await renderAttackPairHTML(rolls, 'magicResistance', actor, {
         damageDice, bonus: attackBonus, label: game.i18n.format('SKSK.Spell.Roll.Attack', { number: i }),
+        // Every spell's own attack bonus always includes its Willpower
+        // modifier (see computeSpellAttackBonus above), regardless of
+        // spellType - so "wil" is the one attribute a Spell-Angriffswurf's
+        // own Attribute-Reroll icon ever needs to check.
+        attributeKeys: ['wil'],
       });
       const attackBlockIndex = parts.length;
       parts.push(rendered);

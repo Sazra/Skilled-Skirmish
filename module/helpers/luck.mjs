@@ -27,7 +27,7 @@ import { renderAttributeRerollButton } from './attributeReroll.mjs';
  *   have nothing to do with the D20 itself and must survive untouched, so
  *   a reroll instead replaces just that one rendered pair's own uniquely-
  *   id'd "sksk-attack-block" region of that SAME message in place (see
- *   rerollAttackPair - a multi-attack spell renders more than one such
+ *   redoAttackPairRoll - a multi-attack spell renders more than one such
  *   block into a single message, hence the id).
  *
  * Deliberately never offered at all once an attack has already been
@@ -38,11 +38,12 @@ import { renderAttributeRerollButton } from './attributeReroll.mjs';
  * card entirely (see stripRerollButton) rather than ever letting it be
  * clicked in that state.
  *
- * helpers/attributeReroll.mjs is a free/no-charge sibling of the
- * "generic" kind above (a per-attribute switch instead of a Luck charge),
- * sharing this file's own redoGenericD20Roll/wrapRerollIcons so both
+ * helpers/attributeReroll.mjs is a free/no-charge sibling (a per-attribute
+ * switch instead of a Luck charge) of BOTH kinds above, sharing this
+ * file's own redoGenericD20Roll/redoAttackPairRoll/wrapRerollIcons so both
  * icons can appear together on the same card, left (attribute) to right
- * (Luck) - never wired into the "attack" kind, which is Luck-only.
+ * (Luck) - the two mechanisms only ever differ in their own eligibility
+ * check/cost, never in how a given kind's own roll actually gets redone.
  */
 
 /**
@@ -83,7 +84,7 @@ async function spendLuckCharge(actor) {
  * outright. Renders nothing for an NPC or null actor.
  * @param {Actor|null} actor
  * @param {"generic"|"attack"} kind
- * @param {object} payload   Everything redoGenericD20Roll/rerollAttackPair
+ * @param {object} payload   Everything redoGenericD20Roll/redoAttackPairRoll
  *   below need to redo this exact roll - see their own doc comments.
  * @return {string}
  */
@@ -142,7 +143,7 @@ export async function redoGenericD20Roll(actor, payload, noteKey) {
     extraHTML += formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'luck', 'doubleCriticalRoll'));
   }
 
-  const icons = renderAttributeRerollButton(actor, payload.attributeKeys ?? [], payload) + renderRerollButton(actor, 'generic', payload);
+  const icons = renderAttributeRerollButton(actor, payload.attributeKeys ?? [], 'generic', payload) + renderRerollButton(actor, 'generic', payload);
   const content = `<div class="sksk-chat-card sksk-action-card">`
     + formatRollCardHeading(label, wrapRerollIcons(icons))
     + wrapCriticalBlock(await roll.render(), criticalType)
@@ -165,22 +166,26 @@ export async function redoGenericD20Roll(actor, payload, noteKey) {
  * reroll), and splices that fresh "sksk-attack-block" region into the
  * ORIGINAL message's content in place - its already-rolled damage roll
  * and Apply Damage button, entirely unrelated to which D20 counts, are
- * left completely untouched.
+ * left completely untouched. Exported (unlike this file's own private
+ * qualifiesForReroll/spendLuckCharge) since helpers/attributeReroll.mjs#
+ * handleAttributeRerollFromChat shares this exact redo for its own free
+ * "attack" kind - the two mechanisms differ only in cost/eligibility,
+ * never in how the D20 pair itself gets redone.
  * @param {Actor} actor
  * @param {{blockId: string, bonus: number, comparisonType: "armorClass"|"magicResistance",
  *   damageDice: Array, killSkillKey: string|null, flanking: boolean,
- *   label: string}} payload
+ *   label: string, attributeKeys?: string[]}} payload
  * @param {string|null} messageId
  * @return {Promise<void>}
  */
-async function rerollAttackPair(actor, payload, messageId) {
+export async function redoAttackPairRoll(actor, payload, messageId) {
   const message = messageId ? game.messages.get(messageId) : null;
   if (!message) return;
 
-  const { blockId, bonus, comparisonType, damageDice, killSkillKey, flanking, label } = payload;
+  const { blockId, bonus, comparisonType, damageDice, killSkillKey, flanking, label, attributeKeys } = payload;
   const rolls = await rollAttackPair(bonus, actor);
   const newBlock = await renderAttackPairHTML(rolls, comparisonType, actor, {
-    damageDice, killSkillKey, flanking, bonus, label,
+    damageDice, killSkillKey, flanking, bonus, label, attributeKeys,
   });
 
   // Find THIS specific block (not just the first one in the message) - a
@@ -217,7 +222,7 @@ export async function handleRerollFromChat(button) {
   const messageId = button.closest('[data-message-id]')?.dataset.messageId ?? null;
 
   if (kind === 'attack') {
-    await rerollAttackPair(actor, payload, messageId);
+    await redoAttackPairRoll(actor, payload, messageId);
     return;
   }
 

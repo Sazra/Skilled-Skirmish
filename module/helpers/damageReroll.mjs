@@ -192,7 +192,7 @@ export function renderDamageRerollOnesIcon(actor, damageType, roll, blockId, pos
 /**
  * Wraps a single damage roll's own line (label + optional reroll icon +
  * rendered dice) in a uniquely id'd block, the same "find and replace
- * just this region in place" scheme helpers/luck.mjs#rerollAttackPair
+ * just this region in place" scheme helpers/luck.mjs#redoAttackPairRoll
  * already uses for an Angriffswurf's own pair - see
  * handleDamageRerollOnesFromChat for why an id (rather than "the first
  * one in the message") is needed: a multi-damage-type spell attack (or a

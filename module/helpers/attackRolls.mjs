@@ -13,6 +13,7 @@ import { checkFlanking } from './flanking.mjs';
 import { computePatronRollBonus } from './religion.mjs';
 import { getElementalAirRangeBonus } from './elementalChargeEffects.mjs';
 import { renderRerollButton, wrapRerollIcons } from './luck.mjs';
+import { renderAttributeRerollButton } from './attributeReroll.mjs';
 import { hasRollTwiceWeapon, hasRollTwiceSpell, rollPossiblyDoubledDamage } from './damageReroll.mjs';
 
 /**
@@ -150,11 +151,14 @@ export function computeSpellAttackBonus(spellSystem, actor) {
 /**
  * The attribute keys a weapon's Angriffswurf (attack roll) attribute bonus
  * draws from - its own attributeOverride if enabled (a unique variant of a
- * shared Model), otherwise its resolvedModel's own attributes list.
+ * shared Model), otherwise its resolvedModel's own attributes list. Also
+ * the attack roll's own attributeKeys for helpers/attributeReroll.mjs's
+ * per-attribute Reroll switch (see renderAttackPairHTML) - any one of
+ * these having its switch on unlocks that icon on this attack.
  * @param {object} weaponSystem
  * @return {string[]}
  */
-function getWeaponAttributeKeys(weaponSystem) {
+export function getWeaponAttributeKeys(weaponSystem) {
   if (weaponSystem.attributeOverride?.enabled) {
     return Object.entries(weaponSystem.attributeOverride.attributes ?? {})
       .filter(([, checked]) => checked).map(([key]) => key);
@@ -274,6 +278,19 @@ export function computeWeaponAttackBonus(actor, weaponItem) {
 }
 
 /**
+ * The attribute keys a Martial Arts attack's own attack-roll attribute
+ * bonus draws from (see computeMartialArtsAttributeBonus below) - also its
+ * attack roll's own attributeKeys for helpers/attributeReroll.mjs's
+ * per-attribute Reroll switch (see renderAttackPairHTML), same role as
+ * getWeaponAttributeKeys above.
+ * @param {object} attack   An entry from actor.system.martialArtsAttacks.
+ * @return {string[]}
+ */
+export function getMartialArtsAttributeKeys(attack) {
+  return Object.entries(attack.attributes ?? {}).filter(([, checked]) => checked).map(([key]) => key);
+}
+
+/**
  * A Martial Arts attack's attribute bonus contribution - always
  * highestOrSumIfAllTied, regardless of that attack's own attributeUsage
  * (which only governs its damage roll - see helpers/actions.mjs#
@@ -283,8 +300,7 @@ export function computeWeaponAttackBonus(actor, weaponItem) {
  * @return {number}
  */
 function computeMartialArtsAttributeBonus(actor, attack) {
-  const keys = Object.entries(attack.attributes ?? {}).filter(([, checked]) => checked).map(([key]) => key);
-  const mods = keys.map(key => actor.system.attributes?.[key]?.mod ?? 0);
+  const mods = getMartialArtsAttributeKeys(attack).map(key => actor.system.attributes?.[key]?.mod ?? 0);
   return highestOrSumIfAllTied(mods);
 }
 
@@ -458,7 +474,7 @@ export async function maybeRollPrecision(actor, isOrdinaryHit) {
  * resolveHitEvaluationFromChat), carried through unchanged from whichever
  * call site knows it.
  * Wrapped in a "sksk-attack-block"/"sksk-attack-block-end"-delimited region
- * (see helpers/luck.mjs#rerollAttackPair) together with its own heading
+ * (see helpers/luck.mjs#redoAttackPairRoll) together with its own heading
  * (damageInfo.label) and Reroll icon (helpers/luck.mjs#renderRerollButton,
  * "attack" kind) - rerolling this same D20 pair later replaces exactly
  * that region in the original chat message, leaving everything else about
@@ -469,15 +485,27 @@ export async function maybeRollPrecision(actor, isOrdinaryHit) {
  * damageInfo.bonus/label are only ever used to build that Reroll button's
  * own payload, never the roll itself (rollA/rollB are already-rolled by
  * the time this runs).
+ *
+ * damageInfo.attributeKeys (see getWeaponAttributeKeys/
+ * getMartialArtsAttributeKeys above, or a spell's own fixed ['wil'] - every
+ * spell's attack bonus always includes its Willpower modifier, see
+ * computeSpellAttackBonus) additionally renders helpers/attributeReroll.mjs's
+ * free per-attribute Reroll icon (to this icon's own left, same left-to-
+ * right order as the "generic" kind - see helpers/luck.mjs#
+ * redoGenericD20Roll) whenever one of them has its own switch on - sharing
+ * this exact same attack-pair-block-splice redo (see helpers/luck.mjs#
+ * redoAttackPairRoll) with this file's own Luck-charge Reroll button, the
+ * two mechanisms differing only in cost/eligibility, never in how the
+ * redo itself works.
  * @param {[Roll, Roll]} rolls
  * @param {"armorClass"|"magicResistance"} comparisonType
  * @param {Actor|null} actor   The attacker, whose own critical thresholds apply.
  * @param {{damageDice?: Array<{damageType: string, dieSizes: number[]}>, killSkillKey?: string|null,
- *   flanking?: boolean, bonus?: number, label?: string}} [damageInfo]
+ *   flanking?: boolean, bonus?: number, label?: string, attributeKeys?: string[]}} [damageInfo]
  * @return {Promise<string>}
  */
 export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor, damageInfo = {}) {
-  const { damageDice = [], killSkillKey = null, flanking = false, bonus = 0, label = '' } = damageInfo;
+  const { damageDice = [], killSkillKey = null, flanking = false, bonus = 0, label = '', attributeKeys = [] } = damageInfo;
   const critA = getAttackCriticalType(rollA, actor);
   const critB = getAttackCriticalType(rollB, actor);
   const renderedA = wrapCriticalBlock(await rollA.render(), critA);
@@ -486,12 +514,19 @@ export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor
   // with more than one Angriffswurf (system.attackRoll.count) renders more
   // than one of these blocks into the SAME chat message, so the reroll
   // button needs a way to find its OWN block again rather than always the
-  // first one in the message - see helpers/luck.mjs#rerollAttackPair.
+  // first one in the message - see helpers/luck.mjs#redoAttackPairRoll.
   const blockId = foundry.utils.randomID();
-  const rerollHTML = renderRerollButton(actor, 'attack', { blockId, bonus, comparisonType, damageDice, killSkillKey, flanking, label });
+  // attributeKeys rides along on BOTH icons' own payload (not just the
+  // Attribute-Reroll one) - whichever icon is actually clicked, helpers/
+  // luck.mjs#redoAttackPairRoll re-renders the fresh block through this
+  // same function, and needs attributeKeys again to decide whether the
+  // OTHER icon still belongs on that new block too.
+  const rerollPayload = { blockId, bonus, comparisonType, damageDice, killSkillKey, flanking, label, attributeKeys };
+  const attributeRerollHTML = renderAttributeRerollButton(actor, attributeKeys, 'attack', rerollPayload);
+  const rerollHTML = renderRerollButton(actor, 'attack', rerollPayload);
   return `
     <div class="sksk-attack-block" data-block-id="${blockId}">
-    <div class="sksk-roll-attack"><strong>${label}</strong>${wrapRerollIcons(rerollHTML)}</div>
+    <div class="sksk-roll-attack"><strong>${label}</strong>${wrapRerollIcons(attributeRerollHTML + rerollHTML)}</div>
     <div class="sksk-attack-roll-pair">
       <div class="sksk-attack-roll-single">
         ${renderedA}

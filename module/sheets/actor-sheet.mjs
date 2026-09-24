@@ -2493,7 +2493,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       const headingLabel = dataset.label ?? label;
       const attributeKeys = dataset.attributeKey ? [dataset.attributeKey] : [];
       const rerollPayload = { formula, mode, label: headingLabel, attributeKeys };
-      const rerollIcons = renderAttributeRerollButton(this.actor, attributeKeys, rerollPayload)
+      const rerollIcons = renderAttributeRerollButton(this.actor, attributeKeys, 'generic', rerollPayload)
         + renderRerollButton(this.actor, 'generic', rerollPayload);
       const messageData = {
         speaker: ChatMessage.getSpeaker({ actor: this.actor }),

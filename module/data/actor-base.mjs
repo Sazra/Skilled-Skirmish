@@ -285,9 +285,12 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
 
     // Per-attribute switch unlocking the Reroll icon (helpers/luck.mjs's
     // own Glück Reroll, just a free/no-charge sibling of it) on that
-    // attribute's own roll AND on any skill check involving it - purely an
-    // Active Effect target (e.g. "system.attributeRerollEnabled.str"). See
-    // helpers/attributeReroll.mjs.
+    // attribute's own roll, on any skill check involving it, AND on any
+    // weapon/Martial Arts/spell Angriffswurf whose own attack-roll bonus
+    // draws from it (Strength/Dexterity/etc. via the weapon's or Martial
+    // Arts attack's own attribute switches, or Willpower for every spell)
+    // - purely an Active Effect target (e.g.
+    // "system.attributeRerollEnabled.str"). See helpers/attributeReroll.mjs.
     schema.attributeRerollEnabled = new fields.SchemaField(Object.fromEntries(
       Object.keys(CONFIG.SKSK.attributes).map(key => [key, new fields.BooleanField({ initial: false })])
     ));
