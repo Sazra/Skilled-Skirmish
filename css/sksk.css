@@ -1612,6 +1612,30 @@ li.chat-message:has(.sksk-chat-card) .flavor-text {
   margin: 0 0 4px;
 }
 
+/* Glück's own Reroll icon (see helpers/luck.mjs#renderRerollButton) - a
+   small clickable clover next to the roll's own name, sized well below
+   the heading's own font size so it reads as a control, not more text.
+   Also placed next to the smaller "Angriff"/"Angriffswurf N" sub-heading
+   (.sksk-roll-attack, see helpers/attackRolls.mjs#renderAttackPairHTML)
+   for an Angriffswurf specifically, hence the plain (non-h1-scoped) rule. */
+.sksk-reroll-luck {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 0.6em;
+  cursor: pointer;
+  color: inherit;
+  vertical-align: middle;
+}
+
+.sksk-reroll-luck:hover {
+  color: var(--color-text-hyperlink, #00538d);
+}
+
+.sksk-luck-reroll-note {
+  font-style: italic;
+  opacity: 0.8;
+}
+
 /* Costs (AP/Mana/...) and a Spell's own magic-school line - larger than
    the card's own 12px base. */
 .sksk-chat-card .sksk-roll-ap-cost,

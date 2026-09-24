@@ -646,6 +646,12 @@
             "ChargeBonuses": "Ladungsboni",
             "Resource": "Ressource"
         },
+        "Luck": {
+            "RerollTooltip": "Mit Glück neu würfeln (1 Ladung)",
+            "NotEnoughCharges": "Keine Glücks-Ladungen mehr übrig.",
+            "NotOwner": "Nur der Besitzer dieses Akteurs kann diesen Wurf neu würfeln.",
+            "RerolledNote": "Mit Glück neu gewürfelt."
+        },
         "AttributeMax": {
             "ModifiersLabel": "Attributsmaximum-Modifikatoren",
             "Operation": {

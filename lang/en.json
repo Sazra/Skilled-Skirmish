@@ -646,6 +646,12 @@
       "ChargeBonuses": "Charge Bonuses",
       "Resource": "Resource"
     },
+    "Luck": {
+      "RerollTooltip": "Reroll with Luck (1 charge)",
+      "NotEnoughCharges": "No Luck charges left.",
+      "NotOwner": "Only this actor's own owner can reroll this roll.",
+      "RerolledNote": "Rerolled with Luck."
+    },
     "AttributeMax": {
       "ModifiersLabel": "Attribute Max Modifiers",
       "Operation": {

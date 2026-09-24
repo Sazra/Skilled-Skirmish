@@ -9,6 +9,7 @@ import { rollSavingThrowFromChat, rollSpellEffectSaveFromChat, applySpellEffectF
 import { resolveHitEvaluationFromChat } from './helpers/attackRolls.mjs';
 import { applyDamageFromChat } from './helpers/damageApplication.mjs';
 import { claimInspirationDie } from './helpers/inspiration.mjs';
+import { handleRerollFromChat } from './helpers/luck.mjs';
 import { rollTechniqueEffectSaveFromChat } from './helpers/technique-rolls.mjs';
 import { computeSpeciesAura } from './helpers/attributes.mjs';
 import { getMainSpeciesItem } from './helpers/movement.mjs';
@@ -206,6 +207,15 @@ Hooks.once('ready', async function () {
     if (!button) return;
     event.preventDefault();
     claimInspirationDie(button);
+  });
+
+  // Glück's own Reroll icon, next to a D20 roll's own name - see
+  // helpers/luck.mjs#handleRerollFromChat.
+  document.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-action="rerollLuck"]');
+    if (!button) return;
+    event.preventDefault();
+    handleRerollFromChat(button);
   });
 
   // An "effect" Technique's own saving-throw-gated apply button - see

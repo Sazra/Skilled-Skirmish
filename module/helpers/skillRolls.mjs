@@ -8,6 +8,7 @@ import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
 import { computePatronRollBonus } from './religion.mjs';
 import { computeSkillRollCost } from './skillRollCost.mjs';
 import { SKSKSkillRollDialog } from '../apps/skill-roll-dialog.mjs';
+import { renderRerollButton } from './luck.mjs';
 
 /**
  * The skill's own config entry (CONFIG.SKSK.skills[category][skillKey]) if
@@ -244,7 +245,8 @@ export async function rollSkillCheck(actor, skillKey, chosenAttributes, variant 
   if (doubleCritical) {
     extraHTML += formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'luck', 'doubleCriticalRoll'));
   }
+  const rerollHTML = renderRerollButton(actor, 'generic', { formula, mode, label });
   return postActionChatCard(
-    actor, `[skill] ${label}`, roll, offTurn ? 0 : apCost, extraHTML, criticalType, offTurn ? rpCost : 0
+    actor, `[skill] ${label}`, roll, offTurn ? 0 : apCost, extraHTML, criticalType, offTurn ? rpCost : 0, rerollHTML
   );
 }

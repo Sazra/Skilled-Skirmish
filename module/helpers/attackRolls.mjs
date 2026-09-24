@@ -12,6 +12,7 @@ import { resolveClickDefender, renderApplyDamageButton, applyResolvedDamageEntri
 import { checkFlanking } from './flanking.mjs';
 import { computePatronRollBonus } from './religion.mjs';
 import { getElementalAirRangeBonus } from './elementalChargeEffects.mjs';
+import { renderRerollButton } from './luck.mjs';
 
 /**
  * Tactic level 10's own flat AC bonus (see helpers/flanking.mjs) - a
@@ -448,19 +449,41 @@ export async function maybeRollPrecision(actor, isOrdinaryHit) {
  * critical here later triggers its own deferred Apply Damage button - see
  * resolveHitEvaluationFromChat), carried through unchanged from whichever
  * call site knows it.
+ * Wrapped in a "sksk-attack-block"/"sksk-attack-block-end"-delimited region
+ * (see helpers/luck.mjs#rerollAttackPair) together with its own heading
+ * (damageInfo.label) and Reroll icon (helpers/luck.mjs#renderRerollButton,
+ * "attack" kind) - rerolling this same D20 pair later replaces exactly
+ * that region in the original chat message, leaving everything else about
+ * the card (the damage roll, Apply Damage button) untouched. The end
+ * marker is a real (empty) element, not an HTML comment - ChatMessage's
+ * own content sanitization strips comments outright on create/update, so
+ * one would silently vanish and break the later reroll's own search.
+ * damageInfo.bonus/label are only ever used to build that Reroll button's
+ * own payload, never the roll itself (rollA/rollB are already-rolled by
+ * the time this runs).
  * @param {[Roll, Roll]} rolls
  * @param {"armorClass"|"magicResistance"} comparisonType
  * @param {Actor|null} actor   The attacker, whose own critical thresholds apply.
- * @param {{damageDice?: Array<{damageType: string, dieSizes: number[]}>, killSkillKey?: string|null, flanking?: boolean}} [damageInfo]
+ * @param {{damageDice?: Array<{damageType: string, dieSizes: number[]}>, killSkillKey?: string|null,
+ *   flanking?: boolean, bonus?: number, label?: string}} [damageInfo]
  * @return {Promise<string>}
  */
 export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor, damageInfo = {}) {
-  const { damageDice = [], killSkillKey = null, flanking = false } = damageInfo;
+  const { damageDice = [], killSkillKey = null, flanking = false, bonus = 0, label = '' } = damageInfo;
   const critA = getAttackCriticalType(rollA, actor);
   const critB = getAttackCriticalType(rollB, actor);
   const renderedA = wrapCriticalBlock(await rollA.render(), critA);
   const renderedB = wrapCriticalBlock(await rollB.render(), critB);
+  // A random id, unique per rendered pair (not per attack/item) - a spell
+  // with more than one Angriffswurf (system.attackRoll.count) renders more
+  // than one of these blocks into the SAME chat message, so the reroll
+  // button needs a way to find its OWN block again rather than always the
+  // first one in the message - see helpers/luck.mjs#rerollAttackPair.
+  const blockId = foundry.utils.randomID();
+  const rerollHTML = renderRerollButton(actor, 'attack', { blockId, bonus, comparisonType, damageDice, killSkillKey, flanking, label });
   return `
+    <div class="sksk-attack-block" data-block-id="${blockId}">
+    <div class="sksk-roll-attack"><strong>${label}</strong>${rerollHTML}</div>
     <div class="sksk-attack-roll-pair">
       <div class="sksk-attack-roll-single">
         ${renderedA}
@@ -477,7 +500,22 @@ export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor
       title="${game.i18n.localize('SKSK.AttackRoll.EvaluateShiftHint')}">
       ${game.i18n.localize('SKSK.AttackRoll.Evaluate')}
     </button>
+    </div><span class="sksk-attack-block-end" data-block-id="${blockId}"></span>
   `;
+}
+
+/**
+ * Strip a rendered attack block's own Reroll icon (see renderRerollButton
+ * above) - called alongside greyOutManualEvalButtons below whenever an
+ * attack ends up auto-resolved against a real target right at roll time
+ * (see autoResolveAttackForTargets): by then damage may already be
+ * applied to that target's actual Life, which a reroll has no way to walk
+ * back, so the button is removed outright rather than merely dimmed.
+ * @param {string} html
+ * @return {string}
+ */
+export function stripRerollButton(html) {
+  return html.replace(/<a class="sksk-reroll-luck"[\s\S]*?<\/a>/, '');
 }
 
 /**

@@ -4,7 +4,7 @@ import { computeMovementSpeeds } from "./movement.mjs";
 import { canUseWeaponAttack, canMove, applyAdrenalinDamage, isActorsOwnTurn, isCombatActive } from "./statusEffects.mjs";
 import {
   computeWeaponAttackBonus, computeWeaponAttributeBonus, computeMartialArtsAttackBonus, rollAttackPair, renderAttackPairHTML,
-  getDamageDieSizes, getWeaponDamageType, autoResolveAttackForTargets, greyOutManualEvalButtons,
+  getDamageDieSizes, getWeaponDamageType, autoResolveAttackForTargets, greyOutManualEvalButtons, stripRerollButton,
 } from "./attackRolls.mjs";
 import { wrapCriticalBlock } from "./criticalRolls.mjs";
 import { formatRollCardHeading } from "./rollCard.mjs";
@@ -64,10 +64,15 @@ function formatFlankingBonusLine(flank, bonus) {
  * @param {number} [rpCost]   Alternate cost paid off the actor's own turn -
  *   see helpers/statusEffects.mjs#isActorsOwnTurn. Never non-zero together
  *   with apCost - RP and AP are alternate payment paths, not combined.
+ * @param {string} [headingExtraHTML]   Rendered right after the title, inside
+ *   the heading itself - see helpers/rollCard.mjs#formatRollCardHeading and
+ *   helpers/luck.mjs#renderRerollButton (currently the only user).
  * @return {Promise<ChatMessage>}
  */
-export async function postActionChatCard(actor, title, roll, apCost, extraHTML = '', criticalType = null, rpCost = 0) {
-  const parts = [formatRollCardHeading(title)];
+export async function postActionChatCard(
+  actor, title, roll, apCost, extraHTML = '', criticalType = null, rpCost = 0, headingExtraHTML = ''
+) {
+  const parts = [formatRollCardHeading(title, headingExtraHTML)];
   if (apCost) {
     parts.push(`<div class="sksk-roll-ap-cost"><strong>${game.i18n.localize('SKSK.Spell.APCost')}:</strong> ${apCost}</div>`);
   }
@@ -159,9 +164,10 @@ export async function rollWeaponItem(item) {
     rolls = await rollAttackPair(attackBonus, actor);
     const rendered = await renderAttackPairHTML(rolls, 'armorClass', actor, {
       damageDice, killSkillKey: item.system.weaponType, flanking: flank.flanking,
+      bonus: attackBonus, label: game.i18n.localize('SKSK.AttackRoll.Attack'),
     });
     attackBlockIndex = parts.length;
-    parts.push(`<div class="sksk-roll-attack"><strong>${game.i18n.localize('SKSK.AttackRoll.Attack')}</strong></div>${rendered}`);
+    parts.push(rendered);
     parts.push(formatFlankingBonusLine(flank, flankBonus));
 
     const fpGrant = await grantSkillUsageFp(actor, item.system.weaponType, 'weaponAttack');
@@ -216,7 +222,7 @@ export async function rollWeaponItem(item) {
       techniqueItemUuid: techniqueEffect?.itemUuid ?? null,
     });
     if (autoResolveHTML) {
-      if (attackBlockIndex >= 0) parts[attackBlockIndex] = greyOutManualEvalButtons(parts[attackBlockIndex]);
+      if (attackBlockIndex >= 0) parts[attackBlockIndex] = stripRerollButton(greyOutManualEvalButtons(parts[attackBlockIndex]));
       if (applyButtonIndex >= 0) parts[applyButtonIndex] = greyOutManualEvalButtons(parts[applyButtonIndex]);
       parts.push(autoResolveHTML);
     }
@@ -366,8 +372,9 @@ export async function rollMartialArtsAttack(actor, index) {
   const flankBonus = flank.flanking ? getActorSkillLevel(actor, 'tactic') : 0;
   const attackBonus = computeMartialArtsAttackBonus(actor, attack) + (technique?.styleAttackBonus ?? 0) + (technique?.hitBonusAmount ?? 0) + flankBonus;
   const rolls = await rollAttackPair(attackBonus, actor);
-  let attackHTML = `<div class="sksk-roll-attack"><strong>${game.i18n.localize('SKSK.AttackRoll.Attack')}</strong></div>${await renderAttackPairHTML(rolls, 'armorClass', actor, {
+  let attackHTML = `${await renderAttackPairHTML(rolls, 'armorClass', actor, {
     damageDice, killSkillKey: 'martialArts', flanking: flank.flanking,
+    bonus: attackBonus, label: game.i18n.localize('SKSK.AttackRoll.Attack'),
   })}${formatFlankingBonusLine(flank, flankBonus)}`;
 
   const attributeBonus = resolveMartialArtsAttributeBonus(actor, attack.attributes, attack.attributeUsage);
@@ -399,7 +406,7 @@ export async function rollMartialArtsAttack(actor, index) {
     techniqueItemUuid: techniqueEffect?.itemUuid ?? null,
   });
   if (autoResolveHTML) {
-    attackHTML = greyOutManualEvalButtons(attackHTML);
+    attackHTML = stripRerollButton(greyOutManualEvalButtons(attackHTML));
     applyDamageHTML = greyOutManualEvalButtons(applyDamageHTML);
   }
 

@@ -54,6 +54,7 @@ import {
 } from '../helpers/inspiration.mjs';
 import { copyEffectKeyToClipboard } from '../helpers/effectKeyReference.mjs';
 import { formatRollCardHeading } from '../helpers/rollCard.mjs';
+import { renderRerollButton } from '../helpers/luck.mjs';
 import { SKSKMassKillDialog } from '../apps/mass-kill-dialog.mjs';
 import { SKSKMartialArtsAttacksDialog } from '../apps/martial-arts-attacks-dialog.mjs';
 import { SKSKCustomResourceManaAlternativeDialog } from '../apps/custom-resource-mana-alternative-dialog.mjs';
@@ -2488,10 +2489,12 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       const rpCostHTML = offTurn && rpCost
         ? `<div class="sksk-roll-rp-cost"><strong>${game.i18n.localize('SKSK.Spell.RPCost')}:</strong> ${rpCost}</div>`
         : '';
+      const headingLabel = dataset.label ?? label;
+      const rerollHTML = renderRerollButton(this.actor, 'generic', { formula, mode, label: headingLabel });
       const messageData = {
         speaker: ChatMessage.getSpeaker({ actor: this.actor }),
         flavor: label,
-        content: `<div class="sksk-chat-card sksk-action-card">${formatRollCardHeading(dataset.label ?? label)}${apCostHTML}${rpCostHTML}${wrapCriticalBlock(await roll.render(), criticalType)}${fpHTML}</div>`,
+        content: `<div class="sksk-chat-card sksk-action-card">${formatRollCardHeading(headingLabel, rerollHTML)}${apCostHTML}${rpCostHTML}${wrapCriticalBlock(await roll.render(), criticalType)}${fpHTML}</div>`,
         rolls: [roll],
       };
       ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));

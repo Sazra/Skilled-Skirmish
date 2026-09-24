@@ -10,7 +10,7 @@ import {
 } from './statusEffects.mjs';
 import {
   computeSpellAttackBonus, rollAttackPair, renderAttackPairHTML, getDamageDieSizes,
-  autoResolveAttackForTargets, greyOutManualEvalButtons,
+  autoResolveAttackForTargets, greyOutManualEvalButtons, stripRerollButton,
 } from './attackRolls.mjs';
 import {
   resolveCheckSuccess, wrapCriticalBlock, wrapCriticalInline, chooseGenericRollMode, evaluateD20WithMode,
@@ -418,9 +418,11 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
     const attackBonus = actor ? computeSpellAttackBonus(system, actor) + (technique?.styleAttackBonus ?? 0) + (technique?.hitBonusAmount ?? 0) : 0;
     for (let i = 1; i <= system.attackRoll.count; i++) {
       const rolls = await rollAttackPair(attackBonus, actor);
-      const rendered = await renderAttackPairHTML(rolls, 'magicResistance', actor, { damageDice });
+      const rendered = await renderAttackPairHTML(rolls, 'magicResistance', actor, {
+        damageDice, bonus: attackBonus, label: game.i18n.format('SKSK.Spell.Roll.Attack', { number: i }),
+      });
       const attackBlockIndex = parts.length;
-      parts.push(`<div class="sksk-roll-attack"><strong>${game.i18n.format('SKSK.Spell.Roll.Attack', { number: i })}</strong></div>${rendered}`);
+      parts.push(rendered);
 
       const damageEntries = [];
       for (const damage of attackDamages) {
@@ -446,7 +448,7 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
           damageEntries, damageDice, killSkillKey: null, techniqueItemUuid: techniqueEffect?.itemUuid ?? null,
         });
         if (autoResolveHTML) {
-          parts[attackBlockIndex] = greyOutManualEvalButtons(parts[attackBlockIndex]);
+          parts[attackBlockIndex] = stripRerollButton(greyOutManualEvalButtons(parts[attackBlockIndex]));
           parts[applyButtonIndex] = greyOutManualEvalButtons(parts[applyButtonIndex]);
           parts.push(autoResolveHTML);
         }
