@@ -78,7 +78,7 @@ export function computeMaxAdrenalinCharges(actor) {
 
 /**
  * An actor's maximum Luck charges - 0 (locked) until the Luck skill reaches
- * level 1; from then on, the actor's level plus any Species/Class/Talent
+ * level 1; from then on, that skill's level plus any Species/Class/Talent
  * chargeBonuses.
  * @param {Actor} actor
  * @return {number}
@@ -86,6 +86,5 @@ export function computeMaxAdrenalinCharges(actor) {
 export function computeMaxLuckCharges(actor) {
   const skillLevel = getActorSkillLevel(actor, 'luck');
   if (skillLevel < 1) return 0;
-  const level = actor.system.resources.level.value;
-  return Math.max(0, Math.round(level + computeChargeBonusTotal(actor, 'luck')));
+  return Math.max(0, Math.round(skillLevel + computeChargeBonusTotal(actor, 'luck')));
 }

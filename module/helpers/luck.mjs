@@ -48,14 +48,16 @@ import { renderAttributeRerollButton } from './attributeReroll.mjs';
 
 /**
  * Whether actor qualifies for the Reroll feature at all - Character-only,
- * same as every other Luck/FP mechanic (see helpers/skillFp.mjs). Doesn't
- * check the actual charge count - see renderRerollButton's own doc
- * comment for why the icon still renders at 0 charges.
+ * same as every other Luck/FP mechanic (see helpers/skillFp.mjs) - and only
+ * once the Luck skill is at least 1 (luckCharges.max is 0 until then, see
+ * helpers/generalResources.mjs#computeMaxLuckCharges). Doesn't check the
+ * actual charge count - see renderRerollButton's own doc comment for why
+ * the icon still renders at 0 charges.
  * @param {Actor|null} actor
  * @return {boolean}
  */
 function qualifiesForReroll(actor) {
-  return !!actor && actor.type === 'character';
+  return !!actor && actor.type === 'character' && actor.system.luckCharges.max >= 1;
 }
 
 /**
@@ -65,7 +67,8 @@ function qualifiesForReroll(actor) {
  */
 async function spendLuckCharge(actor) {
   const charges = actor.system.luckCharges.value;
-  if (charges < 1) {
+  // No Luck skill (max 0) means no usable charge, even a stale leftover one.
+  if (charges < 1 || actor.system.luckCharges.max < 1) {
     ui.notifications.warn(game.i18n.localize('SKSK.Luck.NotEnoughCharges'));
     return false;
   }
@@ -77,7 +80,8 @@ async function spendLuckCharge(actor) {
  * The small Reroll icon rendered next to a D20 roll's own name (see
  * formatRollCardHeading's own extraHTML param, and helpers/attackRolls.mjs#
  * renderAttackPairHTML for the "attack" kind). Rendered for every
- * Character regardless of their current Luck charge count - 0 charges
+ * Character with the Luck skill (level 1+) regardless of their current
+ * Luck charge count - 0 charges
  * still warns on click (see handleRerollFromChat), matching this system's
  * usual "check affordability at click time" convention (e.g. helpers/
  * inspiration.mjs#payInspirationCost) rather than hiding the control
