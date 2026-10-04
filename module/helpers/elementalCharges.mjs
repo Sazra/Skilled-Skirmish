@@ -76,7 +76,8 @@ export function getElementalChargeCounts(actor) {
  * below (no slots to fill at all). Starts fresh from an all-empty array
  * first if the existing charges had already decayed away (see
  * getEffectiveElementalChargeSlots) - self-healing, so stale data never
- * lingers past the next real cast.
+ * lingers past the next real cast - and in that case also restarts at the
+ * first slot instead of continuing from the last position.
  * @param {Actor} actor
  * @param {string} magicSchool - a CONFIG.SKSK.simpleMagicSchools key.
  */
@@ -88,7 +89,10 @@ export async function registerElementalCharge(actor, magicSchool) {
   const current = getEffectiveElementalChargeSlots(actor);
   const slots = current.slice(0, maxSlots);
   while (slots.length < maxSlots) slots.push("");
-  const index = actor.system.elementalCharges.nextIndex % maxSlots;
+  // With no active charge left (never charged, or all of them decayed away),
+  // always start over from the first slot rather than wherever the previous
+  // run stopped.
+  const index = slots.some(Boolean) ? actor.system.elementalCharges.nextIndex % maxSlots : 0;
   slots[index] = magicSchool;
 
   await actor.update({
