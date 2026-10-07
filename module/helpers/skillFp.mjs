@@ -82,22 +82,28 @@ function collectSkillFpGainBonusEntries(actor, skillKey) {
  * @param {Actor} actor
  * @param {string} skillKey
  * @param {number} baseAmount
+ * @param {number} [flatCount=1]   How many times each flat (positive/
+ *   negative) entry applies - 1 for an ordinary single usage grant; Training
+ *   passes floor(hours / 2) (see applyTrainingFpGainBonus). 0 skips the flat
+ *   steps (and their floors) entirely. Multiplicative percentages are never
+ *   scaled by this - they act on the whole running total either way.
  * @return {number}
  */
-function applySkillFpGainBonus(actor, skillKey, baseAmount) {
+function applySkillFpGainBonus(actor, skillKey, baseAmount, flatCount = 1) {
   const entries = collectSkillFpGainBonusEntries(actor, skillKey);
   if (!entries.length) return baseAmount;
   if (entries.some(e => e.bonusType === 'forceZero')) return 0;
 
   const sum = (arr) => arr.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  const flatSum = (arr) => sum(arr) * flatCount;
   let total = baseAmount;
 
-  total += sum(entries.filter(e => e.bonusType === 'positive'));
+  total += flatSum(entries.filter(e => e.bonusType === 'positive'));
 
   const negAllowZero = entries.filter(e => e.bonusType === 'negative' && e.allowZero);
   const negDisallowZero = entries.filter(e => e.bonusType === 'negative' && !e.allowZero);
-  if (negAllowZero.length) total = Math.max(0, total - sum(negAllowZero));
-  if (negDisallowZero.length) total = Math.max(1, total - sum(negDisallowZero));
+  if (negAllowZero.length && flatCount > 0) total = Math.max(0, total - flatSum(negAllowZero));
+  if (negDisallowZero.length && flatCount > 0) total = Math.max(1, total - flatSum(negDisallowZero));
 
   const mult = entries.filter(e => e.bonusType === 'multiplicative');
   if (mult.length) {
@@ -107,6 +113,27 @@ function applySkillFpGainBonus(actor, skillKey, baseAmount) {
   }
 
   return Math.max(0, total);
+}
+
+/**
+ * Training's own FP gain for one skill, with fpGainBonuses applied: the
+ * method's raw (possibly fractional) hours * rate is kept unrounded going
+ * in, so a multiplicative bonus acts on every hour's yield (the percentage
+ * scales the whole running total, same as per hour); a flat positive/
+ * negative entry instead counts once per full 2 hours trained
+ * (floor(hours / 2) times, see applySkillFpGainBonus's flatCount). Floored
+ * only at the very end. 0 if there's nothing to train (no hours or rate),
+ * so a bonus never conjures FP from a session that earned none.
+ * @param {Actor} actor
+ * @param {string} skillKey
+ * @param {number} hours
+ * @param {number} rate   FP per hour.
+ * @return {number}
+ */
+export function applyTrainingFpGainBonus(actor, skillKey, hours, rate) {
+  const base = hours * rate;
+  if (!(base > 0)) return 0;
+  return Math.floor(applySkillFpGainBonus(actor, skillKey, base, Math.floor(hours / 2)));
 }
 
 /**

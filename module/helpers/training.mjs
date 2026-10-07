@@ -1,5 +1,6 @@
 import { getSkillLabel } from './skills.mjs';
 import { postActionChatCard } from './actions.mjs';
+import { applyTrainingFpGainBonus } from './skillFp.mjs';
 
 /**
  * The GM-configured list of Training methods (world setting, edited via the
@@ -45,17 +46,21 @@ function getMethodEntries(method) {
  * fractional, but the actual FP granted is always floored (e.g. a 0.25
  * FP/hour rate grants nothing below 4 hours). Used both by the Training
  * dialog's own preview and by applyTraining itself, to keep the two in sync.
+ * With an actor, its own FP-gain bonuses are folded in (see
+ * helpers/skillFp.mjs#applyTrainingFpGainBonus: multiplicative per hour,
+ * flat once per full 2 hours); without one, the raw rate-only gain.
  * @param {object|null} method
  * @param {number} hours
+ * @param {Actor|null} [actor]
  * @return {Array<{skill: string, label: string, rate: number, gain: number}>}
  */
-export function computeTrainingPreview(method, hours) {
+export function computeTrainingPreview(method, hours, actor = null) {
   const h = Math.max(0, Number(hours) || 0);
   return getMethodEntries(method).map(({ skill, rate }) => ({
     skill,
     label: game.i18n.localize(getSkillLabel(skill)),
     rate,
-    gain: Math.floor(h * rate),
+    gain: actor ? applyTrainingFpGainBonus(actor, skill, h, rate) : Math.floor(h * rate),
   }));
 }
 
@@ -75,7 +80,7 @@ export async function applyTraining(actor, options) {
 
   const updates = {};
   const lines = [];
-  for (const entry of computeTrainingPreview(method, hours)) {
+  for (const entry of computeTrainingPreview(method, hours, actor)) {
     if (entry.gain <= 0) continue;
     const current = actor.system.skills?.[entry.skill]?.gain ?? 0;
     updates[`system.skills.${entry.skill}.gain`] = current + entry.gain;

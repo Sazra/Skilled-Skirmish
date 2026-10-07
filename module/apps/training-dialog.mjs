@@ -48,7 +48,7 @@ export class SKSKTrainingDialog extends HandlebarsApplicationMixin(ApplicationV2
     context.methods = methods;
     context.methodId = this.methodId;
     context.hours = this.hours;
-    context.preview = computeTrainingPreview(method, this.hours);
+    context.preview = computeTrainingPreview(method, this.hours, this.actor);
     context.noMethods = methods.length === 0;
     return context;
   }
