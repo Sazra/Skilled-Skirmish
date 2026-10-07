@@ -1,6 +1,6 @@
 import { getSkillLabel } from './skills.mjs';
 import { postActionChatCard } from './actions.mjs';
-import { applyTrainingFpGainBonus } from './skillFp.mjs';
+import { applyTrainingFpGainBonus, resolveTrainingFpDestination } from './skillFp.mjs';
 
 /**
  * The GM-configured list of Training methods (world setting, edited via the
@@ -48,25 +48,30 @@ function getMethodEntries(method) {
  * dialog's own preview and by applyTraining itself, to keep the two in sync.
  * With an actor, its own FP-gain bonuses are folded in (see
  * helpers/skillFp.mjs#applyTrainingFpGainBonus: multiplicative per hour,
- * flat once per full 2 hours); without one, the raw rate-only gain.
+ * flat once per full 2 hours), then the same two destination rules usage
+ * FP follows (see helpers/skillFp.mjs#resolveTrainingFpDestination): a
+ * Resistance's own gain cap, and Seelenstärke at level 5+ feeding
+ * Seelenmacht instead (soulPower: true, labelled accordingly); without an
+ * actor, the raw rate-only gain.
  * @param {object|null} method
  * @param {number} hours
  * @param {Actor|null} [actor]
- * @return {Array<{skill: string, label: string, rate: number, gain: number}>}
+ * @return {Array<{skill: string, label: string, rate: number, gain: number, soulPower: boolean}>}
  */
 export function computeTrainingPreview(method, hours, actor = null) {
   const h = Math.max(0, Number(hours) || 0);
-  return getMethodEntries(method).map(({ skill, rate }) => ({
-    skill,
-    label: game.i18n.localize(getSkillLabel(skill)),
-    rate,
-    gain: actor ? applyTrainingFpGainBonus(actor, skill, h, rate) : Math.floor(h * rate),
-  }));
+  return getMethodEntries(method).map(({ skill, rate }) => {
+    const label = game.i18n.localize(getSkillLabel(skill));
+    if (!actor) return { skill, label, rate, gain: Math.floor(h * rate), soulPower: false };
+    const { amount, soulPower } = resolveTrainingFpDestination(actor, skill, applyTrainingFpGainBonus(actor, skill, h, rate));
+    return { skill, label: soulPower ? game.i18n.localize('SKSK.Resource.SoulPower') : label, rate, gain: amount, soulPower };
+  });
 }
 
 /**
  * Apply a Training session to a Character: for the method's main skill and
- * every secondary skill, floor(hours * rate) FP is added to that skill's
+ * every secondary skill, the computeTrainingPreview gain (bonuses, caps and
+ * Seelenmacht redirect included) is added to that skill's
  * pending "gain" (not yet integrated into real skill points - see
  * helpers/rest.mjs#applyRest, which folds "gain" into "points" on an
  * Anpassungs-/Genesungspause). Posts a chat summary either way.
@@ -82,8 +87,9 @@ export async function applyTraining(actor, options) {
   const lines = [];
   for (const entry of computeTrainingPreview(method, hours, actor)) {
     if (entry.gain <= 0) continue;
-    const current = actor.system.skills?.[entry.skill]?.gain ?? 0;
-    updates[`system.skills.${entry.skill}.gain`] = current + entry.gain;
+    const path = entry.soulPower ? 'system.soulPower.value' : `system.skills.${entry.skill}.gain`;
+    const current = updates[path] ?? foundry.utils.getProperty(actor, path) ?? 0;
+    updates[path] = current + entry.gain;
     lines.push(game.i18n.format('SKSK.Training.SkillGained', { skill: entry.label, amount: entry.gain }));
   }
   if (Object.keys(updates).length) await actor.update(updates);

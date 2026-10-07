@@ -137,6 +137,23 @@ export function applyTrainingFpGainBonus(actor, skillKey, hours, rate) {
 }
 
 /**
+ * Where a Training grant for one skill actually lands, mirroring the two
+ * special cases grantSkillUsageFp already applies to usage FP: Seelenstärke
+ * (soulforce) at level 5+ has nowhere left to put FP, so it goes to
+ * Seelenmacht (Soul Power) instead; any Resistance is capped by
+ * capResistanceGain (possibly down to 0). Every other skill passes through
+ * unchanged.
+ * @param {Actor} actor
+ * @param {string} skillKey
+ * @param {number} amount   Already bonus-adjusted (see applyTrainingFpGainBonus).
+ * @return {{amount: number, soulPower: boolean}}
+ */
+export function resolveTrainingFpDestination(actor, skillKey, amount) {
+  if (skillKey === 'soulforce' && getActorSkillLevel(actor, 'soulforce') >= 5) return { amount, soulPower: true };
+  return { amount: capResistanceGain(actor, skillKey, amount), soulPower: false };
+}
+
+/**
  * The GM-configured FP-per-usage rates (world setting, edited via the
  * Skill Usage FP settings menu - see apps/skill-usage-fp-config.mjs), keyed
  * by skill then by trigger (e.g. {axe: {skillCheck: 1, weaponAttack: 2}}).
