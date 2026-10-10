@@ -1620,7 +1620,7 @@
                 "Failure": "Misserfolg",
                 "CriticalSuccess": "Kritischer Erfolg",
                 "CriticalFailure": "Kritischer Misserfolg",
-                "NoCharacter": "Dir ist kein Charakter zugewiesen - kann nicht würfeln.",
+                "NoCharacter": "Dir ist kein Charakter zugewiesen und kein eigenes Token ist ausgewählt - kann nicht würfeln.",
                 "ItemNotFound": "Zauber für diesen Rettungswurf nicht gefunden.",
                 "ManaShortfallFromLife": "{amount} dieser Manakosten werden stattdessen vom Leben bezahlt",
                 "ApOwed": "Nicht genug AP - {paid} jetzt bezahlt, {remaining} noch offen. Konzentration ist nötig, um den Zauber fertigzustellen.",

@@ -40,6 +40,25 @@ export function resolveClickDefender() {
 }
 
 /**
+ * Resolve the actor that rolls for itself on a self-service chat button
+ * (a saving throw - see helpers/spell-rolls.mjs#rollSavingThrowFromChat/
+ * rollSpellEffectSaveFromChat): unlike resolveClickDefender above, the
+ * user's own TARGET is never the answer here (a player targeting an enemy
+ * must not roll the enemy's save). Preference: the user's currently
+ * selected token's actor (what a GM without any assigned character relies
+ * on), then their own assigned character, then - a GM only - their first
+ * target, as a last resort.
+ * @return {Actor|null}
+ */
+export function resolveClickRoller() {
+  const controlled = canvas.tokens?.controlled ?? [];
+  const selected = controlled.find(token => token.actor?.isOwner)?.actor;
+  if (selected) return selected;
+  if (game.user.character) return game.user.character;
+  return game.user.isGM ? (Array.from(game.user.targets ?? [])[0]?.actor ?? null) : null;
+}
+
+/**
  * Sum a list of {damageType, amount} entries sharing the same damageType
  * into one - e.g. a weapon's base damage plus its own Brutality bonus
  * damage (same type) become a single Apply-Damage entry, while a spell's
@@ -450,7 +469,9 @@ registerGmRelayAction('applyManualDamage', handleApplyManualDamageRelay);
  * applyDamageAndPost/handleApplyDamageRelay below, shared by both paths.
  * Only if no GM is connected at all does this fall back to a plain
  * warning, leaving the button right there in the card for whenever a GM
- * IS available to click it themselves instead.
+ * IS available to click it themselves instead (or, if the defender itself
+ * is the user's own and only the ATTACKER isn't, to simply applying the
+ * damage without any attacker-side credit/heal).
  * @param {HTMLElement} button
  * @return {Promise<ChatMessage|void>}
  */
@@ -467,11 +488,21 @@ export async function applyDamageFromChat(button) {
   const entries = JSON.parse(decodeURIComponent(button.dataset.damageEntries || '[]'));
   const techniqueItemUuid = button.dataset.techniqueItemUuid || null;
 
-  if (!defender.isOwner) {
+  // The application writes to the ATTACKER too (Healer FP for an Absorption-
+  // turned-healing entry, Kill/Assassination FP, the Elementarist's Todes-
+  // magie heal) - so a defender this user owns (e.g. their own character,
+  // absorbing a fire attack) still needs the GM relay whenever the attacker
+  // is someone else's Character (another player's), or the server rejects
+  // that write with "lacks permission".
+  const attackerNotOwned = !!attacker && !attacker.isOwner;
+  if (!defender.isOwner || attackerNotOwned) {
     if (requestGmAction('applyDamage', {
       defenderUuid: defender.uuid, attackerUuid: attacker?.uuid ?? null, entries, killSkillKey, techniqueItemUuid,
     })) return;
-    return ui.notifications.warn(game.i18n.localize('SKSK.AttackRoll.NoPermissionToApply'));
+    if (!defender.isOwner) return ui.notifications.warn(game.i18n.localize('SKSK.AttackRoll.NoPermissionToApply'));
+    // No GM connected, but the defender itself is writable: still apply the
+    // damage here, just without anything credited to/healed on the attacker.
+    return applyDamageAndPost(defender, null, entries, killSkillKey, techniqueItemUuid);
   }
 
   return applyDamageAndPost(defender, attacker, entries, killSkillKey, techniqueItemUuid);

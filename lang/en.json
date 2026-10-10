@@ -1620,7 +1620,7 @@
         "Failure": "Failure",
         "CriticalSuccess": "Critical Success",
         "CriticalFailure": "Critical Failure",
-        "NoCharacter": "You have no character assigned - cannot roll.",
+        "NoCharacter": "You have no character assigned and no token of yours selected - cannot roll.",
         "ItemNotFound": "Could not find the spell for this saving throw.",
         "ManaShortfallFromLife": "{amount} of that Mana cost is paid from Life instead",
         "ApOwed": "Not enough AP - {paid} paid now, {remaining} still owed. Concentration is required to finish casting.",

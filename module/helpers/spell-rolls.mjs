@@ -20,7 +20,7 @@ import { grantSkillUsageFp, formatSkillFpGrantLine, grantFlatSkillFp, checkRefle
 import { registerElementalCharge } from './elementalCharges.mjs';
 import { getElementalAirRangeBonus } from './elementalChargeEffects.mjs';
 import { getManaAlternativeResources, computeManaAlternativeCoverage, payWithManaAlternative } from './customResources.mjs';
-import { renderApplyDamageButton, resolveClickDefender, applySpellEffectGroup } from './damageApplication.mjs';
+import { renderApplyDamageButton, resolveClickDefender, resolveClickRoller, applySpellEffectGroup } from './damageApplication.mjs';
 import {
   consumePrimedTechnique, applyTechniqueBonusDamage, applyTechniqueDiceIncrease,
   getTechniqueEffectPayload, renderTechniqueSavingThrowHTML,
@@ -1043,7 +1043,8 @@ async function resolveAndRollSavingThrow(rollingActor, casterItem, save, saveInd
 
 /**
  * Handle a click on a saving-throw button in chat: roll 1d20 plus the
- * clicking user's best applicable attribute modifier or skill level (the
+ * clicking user's (selected token's, else assigned character's - see
+ * helpers/damageApplication.mjs#resolveClickRoller) best applicable attribute modifier or skill level (the
  * target "may use whichever they have"), and post the result against the
  * saving throw's DC - including whatever Überladen (Overcharge) count the
  * original cast baked into the button (see renderSavingThrowButton). Purely
@@ -1067,7 +1068,7 @@ export async function rollSavingThrowFromChat(itemUuid, saveIndex, overchargeCou
   const save = item.system.savingThrows?.[saveIndex];
   if (!save) return ui.notifications.warn(game.i18n.localize('SKSK.Spell.Roll.ItemNotFound'));
 
-  const actor = game.user.character;
+  const actor = resolveClickRoller();
   if (!actor) return ui.notifications.warn(game.i18n.localize('SKSK.Spell.Roll.NoCharacter'));
 
   const mode = await chooseGenericRollMode();
@@ -1150,7 +1151,7 @@ export async function rollSpellEffectSaveFromChat(itemUuid, saveIndex, overcharg
   const save = item.system.savingThrows?.[saveIndex];
   if (!save) return ui.notifications.warn(game.i18n.localize('SKSK.Spell.Roll.ItemNotFound'));
 
-  const actor = game.user.character;
+  const actor = resolveClickRoller();
   if (!actor) return ui.notifications.warn(game.i18n.localize('SKSK.Spell.Roll.NoCharacter'));
 
   const mode = await chooseGenericRollMode();
