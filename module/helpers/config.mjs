@@ -611,8 +611,8 @@ SKSK.skills = {
     chantless: { label: 'SKSK.Skill.Magic.Chantless', maxLevel: 1, attributeBonusThresholds: [{ level: 1, mode: 'and', attributes: ['wil', 'aur'] }] },
   },
   fighter: {
-    health: { label: 'SKSK.Skill.Fighter.Health', maxLevel: 10, attributes: ['con'], attributeBonusThresholds: [{ level: 5, mode: 'and', attributes: ['con'] }, { level: 10, mode: 'and', attributes: ['con'] }] },
-    stamina: { label: 'SKSK.Skill.Fighter.Stamina', maxLevel: 10, attributes: ['con'], attributeBonusThresholds: [{ level: 5, mode: 'choice', attributes: ['dex', 'con'] }, { level: 10, mode: 'choice', attributes: ['dex', 'con'] }] },
+    health: { label: 'SKSK.Skill.Fighter.Health', maxLevel: 10, attributes: ['con'], attributeBonusThresholds: [{ level: 5, mode: 'and', attributes: ['con'] }, { level: 10, mode: 'and', attributes: ['con'] }, { level: 5, mode: 'skill', skill: 'tenacity', fp: 200 }] },
+    stamina: { label: 'SKSK.Skill.Fighter.Stamina', maxLevel: 10, attributes: ['con'], attributeBonusThresholds: [{ level: 5, mode: 'choice', attributes: ['dex', 'con'] }, { level: 10, mode: 'choice', attributes: ['dex', 'con'] }, { level: 5, mode: 'skill', skill: 'adrenalin', fp: 200 }] },
     technique: { label: 'SKSK.Skill.Fighter.Technique', maxLevel: 5, attributes: ['dex'], attributeBonusThresholds: [{ level: 3, mode: 'choice', attributes: ['dex', 'str'] }, { level: 5, mode: 'choice', attributes: ['dex', 'str'] }] },
     reflexes: { label: 'SKSK.Skill.Fighter.Reflexes', maxLevel: 5, attributes: ['dex'], attributeBonusThresholds: [{ level: 3, mode: 'and', attributes: ['dex'] }, { level: 5, mode: 'and', attributes: ['dex'] }] },
     precision: { label: 'SKSK.Skill.Fighter.Precision', maxLevel: 5, attributes: ['per'], attributeBonusThresholds: [{ level: 3, mode: 'choice', attributes: ['per', 'dex'] }, { level: 5, mode: 'choice', attributes: ['per', 'dex'] }] },

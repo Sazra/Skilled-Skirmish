@@ -774,6 +774,11 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // rollSpellItem. GM-tab switch, also targetable by Active Effects like
     // every other GM-tab BooleanField here.
     schema.elementalChargesEnabled = new fields.BooleanField({ initial: false });
+    // Whether the Ausdauer (stamina) skill's % speed bonus also applies to
+    // this actor's Hovering speed (it always applies to every other
+    // movement type) - see helpers/movement.mjs#computeMovementSpeeds. GM-
+    // tab switch, also targetable by Active Effects.
+    schema.enduranceAffectsHovering = new fields.BooleanField({ initial: false });
     schema.elementalCharges = new fields.SchemaField({
       // One entry per slot, in display order - a magicSchool key ("fire",
       // ...) once charged, or "" while still empty. Never itself clamped to

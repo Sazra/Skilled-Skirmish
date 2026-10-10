@@ -1,4 +1,4 @@
-import { findSkillDefinition, getSkillThresholdLevel } from './skills.mjs';
+import { findSkillDefinition, getSkillThresholdLevel, getSkillLabel } from './skills.mjs';
 
 const GRANTED = 'granted';
 
@@ -15,12 +15,14 @@ function allAttributeKeys() {
  * point to - a stored attribute key for "choice" mode, or every attribute
  * named by the threshold itself for the choice-less "all"/"and" modes
  * (their stored value is just the GRANTED sentinel, not an attribute key).
+ * A "skill" mode threshold grants no attribute at all (see the file's
+ * skill-grant helpers below), so it always resolves to nothing here.
  * @param {object} threshold
  * @param {string} choice
  * @return {string[]}
  */
 function resolveGrantedAttributes(threshold, choice) {
-  if (!choice) return [];
+  if (!choice || threshold.mode === 'skill') return [];
   if (threshold.mode === 'choice') return [choice];
   return threshold.mode === 'all' ? allAttributeKeys() : threshold.attributes;
 }
@@ -117,7 +119,11 @@ export function getResolvedAttributeBonuses(actor) {
           skillLabel: def.label,
           index,
           level: threshold.level,
-          attributeLabel: attributes.map(a => game.i18n.localize(CONFIG.SKSK.attributes[a])).join(' + '),
+          attributeLabel: threshold.mode === 'skill'
+            ? game.i18n.format('SKSK.GM.SkillGrantLabel', {
+              fp: threshold.fp, skill: game.i18n.localize(getSkillLabel(threshold.skill)),
+            })
+            : attributes.map(a => game.i18n.localize(CONFIG.SKSK.attributes[a])).join(' + '),
         });
       });
     }
@@ -197,10 +203,14 @@ export async function applyPendingAutoGrants(actor) {
   if (!pending.length) return;
 
   const rawValueDeltas = {};
+  const skillPointDeltas = {};
   const choiceClones = {};
   for (const { skillKey, index, threshold } of pending) {
     for (const attribute of resolveGrantedAttributes(threshold, GRANTED)) {
       rawValueDeltas[attribute] = (rawValueDeltas[attribute] ?? 0) + 1;
+    }
+    if (threshold.mode === 'skill') {
+      skillPointDeltas[threshold.skill] = (skillPointDeltas[threshold.skill] ?? 0) + threshold.fp;
     }
     if (!choiceClones[skillKey]) {
       choiceClones[skillKey] = foundry.utils.deepClone(actor.system.skillAttributeBonusChoices[skillKey]);
@@ -211,6 +221,9 @@ export async function applyPendingAutoGrants(actor) {
   const updateData = {};
   for (const [attribute, delta] of Object.entries(rawValueDeltas)) {
     updateData[`system.attributes.${attribute}.rawValue`] = actor.system.attributes[attribute].rawValue + delta;
+  }
+  for (const [skill, delta] of Object.entries(skillPointDeltas)) {
+    updateData[`system.skills.${skill}.points`] = (actor.system.skills[skill]?.points ?? 0) + delta;
   }
   for (const [skillKey, choices] of Object.entries(choiceClones)) {
     updateData[`system.skillAttributeBonusChoices.${skillKey}`] = choices;
@@ -241,6 +254,10 @@ export async function resetAttributeBonusChoice(actor, skillKey, index) {
       const current = actor.system.attributes[attribute].rawValue;
       updateData[`system.attributes.${attribute}.rawValue`] = Math.max(0, current - 1);
     }
+    if (threshold.mode === 'skill') {
+      const current = actor.system.skills[threshold.skill]?.points ?? 0;
+      updateData[`system.skills.${threshold.skill}.points`] = Math.max(0, current - threshold.fp);
+    }
   }
   choices[index] = '';
   updateData[`system.skillAttributeBonusChoices.${skillKey}`] = choices;
@@ -257,6 +274,7 @@ export async function resetAttributeBonusChoice(actor, skillKey, index) {
 export async function resetAllAttributeBonusChoices(actor) {
   const isNpc = actor.type === 'npc';
   const rawValueDeltas = {};
+  const skillPointDeltas = {};
   const updateData = {};
 
   for (const category of Object.values(CONFIG.SKSK.skills)) {
@@ -272,6 +290,10 @@ export async function resetAllAttributeBonusChoices(actor) {
           for (const attribute of resolveGrantedAttributes(thresholds[index], choice)) {
             rawValueDeltas[attribute] = (rawValueDeltas[attribute] ?? 0) - 1;
           }
+          if (thresholds[index].mode === 'skill') {
+            const { skill, fp } = thresholds[index];
+            skillPointDeltas[skill] = (skillPointDeltas[skill] ?? 0) - fp;
+          }
         }
         return '';
       });
@@ -283,6 +305,10 @@ export async function resetAllAttributeBonusChoices(actor) {
   for (const [attribute, delta] of Object.entries(rawValueDeltas)) {
     const current = actor.system.attributes[attribute].rawValue;
     updateData[`system.attributes.${attribute}.rawValue`] = Math.max(0, current + delta);
+  }
+  for (const [skill, delta] of Object.entries(skillPointDeltas)) {
+    const current = actor.system.skills[skill]?.points ?? 0;
+    updateData[`system.skills.${skill}.points`] = Math.max(0, current + delta);
   }
   await actor.update(updateData);
 }

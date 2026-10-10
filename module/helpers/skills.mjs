@@ -154,7 +154,7 @@ export function getSkillBonusChoices() {
  * @param {Actor} actor
  * @return {Object<string, number>} Summed level bonus per skill key.
  */
-export function computeSkillBonusTotals(actor) {
+function computeItemSkillBonusTotals(actor) {
   const totals = {};
   for (const item of actor.items) {
     const grants = item.type === 'species' || item.type === 'talent'
@@ -165,6 +165,60 @@ export function computeSkillBonusTotals(actor) {
       totals[entry.skill] = (totals[entry.skill] ?? 0) + (entry.bonus ?? 0);
     }
   }
+  return totals;
+}
+
+/**
+ * Every "skill" mode entry of CONFIG.SKSK.skills[...].attributeBonusThresholds
+ * (a skill reaching a level also grants another skill - see
+ * helpers/attributeBonuses.mjs), as { source, level, skill } - collected
+ * once, since the skill config never changes after init.
+ */
+let skillGrantThresholds = null;
+function getSkillGrantThresholds() {
+  if (!skillGrantThresholds) {
+    skillGrantThresholds = [];
+    for (const category of Object.values(CONFIG.SKSK.skills)) {
+      for (const [source, def] of Object.entries(category)) {
+        for (const threshold of def.attributeBonusThresholds ?? []) {
+          if (threshold.mode === 'skill') {
+            skillGrantThresholds.push({ source, level: threshold.level, skill: threshold.skill });
+          }
+        }
+      }
+    }
+  }
+  return skillGrantThresholds;
+}
+
+/**
+ * Total skill LEVEL bonuses of an actor: computeItemSkillBonusTotals's
+ * Species/Talent/Class grants plus - NPC only - one level of the granted
+ * skill for every "skill" mode threshold (e.g. Ausdauer 5 -> Adrenalin 1)
+ * whose source skill has reached its level. A Character instead receives
+ * those as a one-time FP grant (helpers/attributeBonuses.mjs). The source
+ * skill's level is deliberately derived from the item bonuses alone (never
+ * from this function), so chained grants can't recurse.
+ * @param {Actor} actor
+ * @return {Object<string, number>} Summed level bonus per skill key.
+ */
+export function computeSkillBonusTotals(actor) {
+  const totals = computeItemSkillBonusTotals(actor);
+  if (actor.type !== 'npc') return totals;
+
+  const grants = getSkillGrantThresholds();
+  if (!grants.length) return totals;
+  const rollData = actor.getRollData();
+  const granted = {};
+  for (const { source, level, skill } of grants) {
+    const def = findSkillDefinition(source);
+    if (!def || (def.maxLevel !== 5 && def.maxLevel !== 10)) continue;
+    const points = evaluateSkillFormula(actor.system.skills?.[source]?.formula ?? '', rollData);
+    if (getSkillLevel(points, def.maxLevel, totals[source] ?? 0) >= level) {
+      granted[skill] = (granted[skill] ?? 0) + 1;
+    }
+  }
+  for (const [skill, bonus] of Object.entries(granted)) totals[skill] = (totals[skill] ?? 0) + bonus;
   return totals;
 }
 

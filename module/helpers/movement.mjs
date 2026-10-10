@@ -1,4 +1,5 @@
 import { applyDazedMovementReduction } from './statusEffects.mjs';
+import { getActorSkillLevel } from './skills.mjs';
 
 /**
  * Item types whose movementBonuses entries can grant an actor a bonus to
@@ -50,6 +51,18 @@ function computeSpeciesBaseMovement(speciesItem, actor) {
 }
 
 /**
+ * The fraction of its base speed the Ausdauer (stamina) skill adds: +10 %
+ * per level, plus another +50 % on reaching level 5 and again on level 10
+ * (so 100 % at level 5, 200 % at level 10). Additive, never compounding.
+ * @param {Actor} actor
+ * @return {number}
+ */
+export function computeEnduranceSpeedFactor(actor) {
+  const level = getActorSkillLevel(actor, 'stamina');
+  return level * 0.1 + (level >= 5 ? 0.5 : 0) + (level >= 10 ? 0.5 : 0);
+}
+
+/**
  * Compute an actor's effective speed for every movement type
  * (CONFIG.SKSK.movementTypes): the base value entered on the actor (or, if
  * they have a main Species, that Species' own innate base speeds instead -
@@ -59,7 +72,9 @@ function computeSpeciesBaseMovement(speciesItem, actor) {
  * movementType "all" applies to every type at once, in addition to any
  * type-specific entries. Finally, any movement type a Species has
  * "unlocked" is floored to a size-based minimum (see
- * SIZE_MOVEMENT_MINIMUMS above).
+ * SIZE_MOVEMENT_MINIMUMS above). Ausdauer's % bonus
+ * (computeEnduranceSpeedFactor) is added to the base speed before any of
+ * those flat bonuses.
  * @param {Actor} actor
  * @return {Object<string, number>}   Final speed per movement type key.
  */
@@ -96,6 +111,17 @@ export function computeMovementSpeeds(actor) {
           unlockedTypes.add(entry.movementType);
         }
       }
+    }
+  }
+
+  // Ausdauer's % speed bonus counts against the base speed only (what's
+  // been established above: innate/Species base, replaced by any override),
+  // never against the flat bonuses added next.
+  const enduranceFactor = computeEnduranceSpeedFactor(actor);
+  if (enduranceFactor > 0) {
+    for (const key of Object.keys(speeds)) {
+      if (key === 'hovering' && !actor.system.enduranceAffectsHovering) continue;
+      speeds[key] += Math.round(speeds[key] * enduranceFactor);
     }
   }
 
