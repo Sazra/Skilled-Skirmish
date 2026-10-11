@@ -1081,13 +1081,19 @@
       "NoLevel": "No Inspiration skill level - can't determine a die size.",
       "NoDieHeld": "No Inspiration die currently held."
     },
+    "Macro": {
+        "ActorNotFound": "This macro's Actor could not be found. You may need to delete and recreate the macro.",
+        "NotOwner": "You don't own {name}, so you can't run this macro.",
+        "AttackNotFound": "This macro's Martial Arts attack could not be found.",
+        "UnknownAction": "This macro's action is unknown. You may need to delete and recreate the macro.",
+        "ItemNotFound": "Could not find item {name}. You may need to delete and recreate this macro."
+    },
     "GenericRoll": {
       "ChooseModeTitle": "Choose Roll Mode",
       "ChooseModePrompt": "Which mode should this roll use?",
       "ModeNeutral": "Neutral",
       "ModeAdvantage": "Advantage",
-      "ModeDisadvantage": "Disadvantage",
-      "ModeSummary": "{mode} ({formula}): d20 {dice} - {kept} counts"
+      "ModeDisadvantage": "Disadvantage"
     },
     "AttackRoll": {
       "Attack": "Attack",

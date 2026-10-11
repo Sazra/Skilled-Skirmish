@@ -6,7 +6,7 @@ import { handlePendingSpellTurnStart } from './spell-rolls.mjs';
 import { handlePathAbilityTurnStart } from './soulPathRolls.mjs';
 import { handleAbilityTurnStart } from './abilityRolls.mjs';
 import {
-  resolveCheckSuccess, wrapCriticalBlock, chooseGenericRollMode, evaluateD20WithMode, formatD20ModeSummaryLine,
+  resolveCheckSuccess, wrapCriticalBlock, chooseGenericRollMode, evaluateD20WithMode,
 } from './criticalRolls.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
 import { computeLehrenTargetBonus } from './lehren.mjs';
@@ -867,7 +867,6 @@ async function resolveRestrainedEscapeCheck(actor, mode = null, forceIgnoreSpeci
   if (doubleCritical) {
     luckHTML += formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'luck', 'doubleCriticalRoll'));
   }
-  luckHTML += formatD20ModeSummaryLine(result, resolvedMode);
   return { roll, criticalType, dc, outcome, luckHTML };
 }
 
@@ -1144,7 +1143,6 @@ async function handlePoisonTurnStart(actor, round) {
     if (doubleCritical) {
       luckHTML += formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'luck', 'doubleCriticalRoll'));
     }
-    luckHTML += formatD20ModeSummaryLine(checkResult, actor.system.genericCriticalRollMode);
     extraSections.push(`
       <div class="sksk-roll-line"><strong>${statusName}</strong> - ${game.i18n.format('SKSK.StatusEffect.PoisonCheck', { dc: def.dc })}: ${outcome}</div>
       ${checkRendered}
@@ -1365,7 +1363,6 @@ export async function checkConcentration(actor, damage) {
   if (doubleCritical) {
     luckHTML += formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'luck', 'doubleCriticalRoll'));
   }
-  luckHTML += formatD20ModeSummaryLine(result, actor.system.genericCriticalRollMode);
   const extraHTML = `
     <div class="sksk-roll-line">${game.i18n.format('SKSK.StatusEffect.ConcentrationCheck', { dc })}: ${outcome}</div>
     ${cancelledSpell ? `<div class="sksk-roll-line">${game.i18n.localize('SKSK.Spell.Roll.SpellCancelled')}</div>` : ''}

@@ -1081,13 +1081,19 @@
             "NoLevel": "Keine Inspiration-Fertigkeitsstufe - Würfelgröße kann nicht bestimmt werden.",
             "NoDieHeld": "Aktuell kein Inspirationswürfel vorhanden."
         },
+        "Macro": {
+            "ActorNotFound": "Der Actor dieses Makros wurde nicht gefunden. Das Makro muss eventuell gelöscht und neu erstellt werden.",
+            "NotOwner": "Du besitzt {name} nicht und kannst dieses Makro daher nicht ausführen.",
+            "AttackNotFound": "Der Kampfkunst-Angriff dieses Makros wurde nicht gefunden.",
+            "UnknownAction": "Die Aktion dieses Makros ist unbekannt. Das Makro muss eventuell gelöscht und neu erstellt werden.",
+            "ItemNotFound": "Gegenstand {name} wurde nicht gefunden. Das Makro muss eventuell gelöscht und neu erstellt werden."
+        },
         "GenericRoll": {
             "ChooseModeTitle": "Wurfmodus wählen",
             "ChooseModePrompt": "Welchen Modus soll dieser Wurf nutzen?",
             "ModeNeutral": "Neutral",
             "ModeAdvantage": "Vorteil",
-            "ModeDisadvantage": "Nachteil",
-            "ModeSummary": "{mode} ({formula}): W20 {dice} - {kept} zählt"
+            "ModeDisadvantage": "Nachteil"
         },
         "AttackRoll": {
             "Attack": "Angriff",

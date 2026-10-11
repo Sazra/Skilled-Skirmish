@@ -26,6 +26,7 @@ import { clampSingleAttributeSelection } from './helpers/models.mjs';
 import { registerCalendariaIntegration } from './helpers/calendarIntegration.mjs';
 import { applyCustomActiveEffectChange, addPhaseSelectToActiveEffectChanges } from './helpers/effects.mjs';
 import { initGmRelay } from './helpers/gmRelay.mjs';
+import { createMacroFromDrop, runRollMacro, rollItemMacro } from './helpers/macroRolls.mjs';
 import * as models from './data/_module.mjs';
 
 Hooks.once('init', function () {
@@ -33,6 +34,7 @@ Hooks.once('init', function () {
     SKSKActor,
     SKSKItem,
     rollItemMacro,
+    runRollMacro,
   };
 
   CONFIG.SKSK = SKSK;
@@ -130,7 +132,9 @@ Hooks.once('ready', async function () {
   // isn't installed; the hook it listens for then simply never fires.
   registerCalendariaIntegration();
 
-  Hooks.on('hotbarDrop', (bar, data, slot) => createItemMacro(data, slot));
+  // Drag-to-hotbar macros (a sheet roll, or an owned Item) - see
+  // helpers/macroRolls.mjs.
+  Hooks.on('hotbarDrop', createMacroFromDrop);
 
   // Aktiver Manakern (see helpers/statusEffects.mjs#activateActiveManaCore/
   // deactivateActiveManaCore/handleConcentrationEnded) - hooked on the
@@ -512,44 +516,3 @@ Hooks.once('ready', async function () {
     if (incomingActor) handleCombatTurnStart(incomingActor, current.round);
   });
 });
-
-async function createItemMacro(data, slot) {
-  if (data.type !== 'Item') return;
-  if (!data.uuid.includes('Actor.') && !data.uuid.includes('Token.')) {
-    return ui.notifications.warn(
-      'You can only create macro buttons for owned Items'
-    );
-  }
-  const item = await Item.fromDropData(data);
-  const command = `game.sksk.rollItemMacro("${data.uuid}");`;
-  let macro = game.macros.find(
-    (m) => m.name === item.name && m.command === command
-  );
-  if (!macro) {
-    macro = await Macro.create({
-      name: item.name,
-      type: 'script',
-      img: item.img,
-      command: command,
-      flags: { 'sksk.itemMacro': true },
-    });
-  }
-  game.user.assignHotbarMacro(macro, slot);
-  return false;
-}
-
-function rollItemMacro(itemUuid) {
-  const dropData = {
-    type: 'Item',
-    uuid: itemUuid,
-  };
-  Item.fromDropData(dropData).then((item) => {
-    if (!item || !item.parent) {
-      const itemName = item?.name ?? itemUuid;
-      return ui.notifications.warn(
-        `Could not find item ${itemName}. You may need to delete and recreate this macro.`
-      );
-    }
-    item.roll();
-  });
-}

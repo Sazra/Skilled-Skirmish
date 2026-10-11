@@ -1,6 +1,6 @@
 import { getActorSkillLevel } from './skills.mjs';
 import { applyD20Malus, computeDazedAttributeMalus, isActorsOwnTurn } from './statusEffects.mjs';
-import { chooseGenericRollMode, evaluateD20WithMode, formatD20ModeSummaryLine } from './criticalRolls.mjs';
+import { chooseGenericRollMode, evaluateD20WithMode } from './criticalRolls.mjs';
 import {
   postActionChatCard, hasEnoughActionPoints, hasEnoughReactionPoints, spendActionPoints, spendReactionPoints,
 } from './actions.mjs';
@@ -236,7 +236,7 @@ export async function rollSkillCheck(actor, skillKey, chosenAttributes, variant 
   const descriptionHTML = descriptionKey
     ? `<div class="sksk-roll-description">${game.i18n.format(descriptionKey, { name: actor.name })}</div>`
     : '';
-  let extraHTML = descriptionHTML + formatSkillFpGrantLine(fpGrant) + formatD20ModeSummaryLine(result, mode);
+  let extraHTML = descriptionHTML + formatSkillFpGrantLine(fpGrant);
   // Luck's own "criticalRoll"/"doubleCriticalRoll" FP - any generic (non-
   // Angriffswurf) D20 roll's critical success/double critical, see
   // helpers/criticalRolls.mjs#evaluateD20WithMode.

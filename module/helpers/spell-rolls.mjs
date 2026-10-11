@@ -14,7 +14,6 @@ import {
 } from './attackRolls.mjs';
 import {
   resolveCheckSuccess, wrapCriticalBlock, wrapCriticalInline, chooseGenericRollMode, evaluateD20WithMode,
-  formatD20ModeSummaryLine,
 } from './criticalRolls.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine, grantFlatSkillFp, checkReflexActionTrigger, getSkillFpRate } from './skillFp.mjs';
 import { registerElementalCharge } from './elementalCharges.mjs';
@@ -1036,7 +1035,6 @@ async function resolveAndRollSavingThrow(rollingActor, casterItem, save, saveInd
   if (doubleCritical) {
     luckHTML += formatSkillFpGrantLine(await grantSkillUsageFp(rollingActor, 'luck', 'doubleCriticalRoll'));
   }
-  luckHTML += formatD20ModeSummaryLine(result, mode);
 
   return { dc, roll, criticalType, success, saveLabel, outcome, luckHTML, best, result, isContest: contestTotal != null };
 }

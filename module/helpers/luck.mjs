@@ -1,4 +1,4 @@
-import { evaluateD20WithMode, formatD20ModeSummaryLine, wrapCriticalBlock } from './criticalRolls.mjs';
+import { evaluateD20WithMode, wrapCriticalBlock } from './criticalRolls.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
 import { formatRollCardHeading } from './rollCard.mjs';
 import { rollAttackPair, renderAttackPairHTML } from './attackRolls.mjs';
@@ -139,7 +139,6 @@ export async function redoGenericD20Roll(actor, payload, noteKey) {
   const { roll, criticalType, doubleCritical } = result;
 
   let extraHTML = `<div class="sksk-roll-line sksk-reroll-note">${game.i18n.localize(noteKey)}</div>`;
-  extraHTML += formatD20ModeSummaryLine(result, mode);
   if (criticalType === 'success') {
     extraHTML += formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'luck', 'criticalRoll'));
   }

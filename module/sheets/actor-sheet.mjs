@@ -75,9 +75,10 @@ import {
   getAdrenalinDamage, setRestrainedConfig, attemptRestrainedEscapeManual, setStatusStacks,
   setStatusIgnoreSpecialBonus, isActorsOwnTurn,
 } from '../helpers/statusEffects.mjs';
-import { wrapCriticalBlock, chooseGenericRollMode, evaluateD20WithMode, formatD20ModeSummaryLine } from '../helpers/criticalRolls.mjs';
+import { wrapCriticalBlock, chooseGenericRollMode, evaluateD20WithMode } from '../helpers/criticalRolls.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine, tradeSoulPowerForFp } from '../helpers/skillFp.mjs';
 import { computeAttributeRollCost } from '../helpers/skillRollCost.mjs';
+import { ROLL_DRAGGABLE_SELECTOR, buildRollDragData, getAttributeRollFormulas } from '../helpers/macroRolls.mjs';
 
 /**
  * Schema paths (relative to system.*) whose value input accepts the "+N"/
@@ -494,10 +495,9 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       const button = document.createElement('a');
       button.classList.add('minimized-attribute-button');
       button.dataset.action = 'roll';
-      const rollBonus = this.actor.system.attributeRollBonus?.[key] ?? 0;
-      const bonus = `${attribute.unlimitedBonus ? `+${attribute.unlimitedBonus}` : ''}${rollBonus ? `+${rollBonus}` : ''}`;
-      button.dataset.roll = `d20+@attributes.${key}.mod${bonus}`;
-      button.dataset.rollExcludingSpecial = `d20+@attributes.${key}.modExcludingSpecial${bonus}`;
+      const formulas = getAttributeRollFormulas(this.actor, key);
+      button.dataset.roll = formulas.roll;
+      button.dataset.rollExcludingSpecial = formulas.rollExcludingSpecial;
       button.dataset.attributeKey = key;
       button.dataset.label = attribute.label;
       button.dataset.tooltip = attribute.label;
@@ -1570,6 +1570,27 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       }
     }
 
+    // Every roll this sheet offers (attribute/skill checks, the Actions
+    // tab's buttons) can be dragged onto the Hotbar as a macro, like the
+    // Item rows above - see helpers/macroRolls.mjs. stopPropagation keeps a
+    // roll button that sits INSIDE a draggable Item row from also starting
+    // that row's own (Item) drag. The marker attribute keeps a re-render of
+    // the persistent window frame (the minimized attribute bar) from
+    // stacking duplicate listeners.
+    if (this.actor.isOwner) {
+      for (const element of this.element.querySelectorAll(ROLL_DRAGGABLE_SELECTOR)) {
+        if (element.dataset.macroDraggable) continue;
+        element.dataset.macroDraggable = 'true';
+        element.setAttribute('draggable', true);
+        element.addEventListener('dragstart', (ev) => {
+          ev.stopPropagation();
+          const dragData = buildRollDragData(this.actor, element);
+          if (!dragData) return ev.preventDefault();
+          ev.dataTransfer.setData('text/plain', JSON.stringify(dragData));
+        });
+      }
+    }
+
     // Bind drop handling so existing Items (of any type) can be dragged
     // onto this sheet from the sidebar, a compendium, or another sheet.
     this.#dragDrop.forEach(d => d.bind(this.element));
@@ -2473,7 +2494,6 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       if (unlimitedSkill) {
         fpHTML = formatSkillFpGrantLine(await grantSkillUsageFp(this.actor, unlimitedSkill, 'attributeRoll'));
       }
-      fpHTML += formatD20ModeSummaryLine(result, mode);
       // Luck's own "criticalRoll"/"doubleCriticalRoll" FP - any generic (non-
       // Angriffswurf) D20 roll's critical success/double critical, see
       // helpers/criticalRolls.mjs#evaluateD20WithMode.

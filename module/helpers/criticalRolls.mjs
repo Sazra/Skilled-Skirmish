@@ -182,21 +182,3 @@ export async function evaluateD20WithMode(formula, rollData, mode) {
     && naturals.every(n => getCriticalType(n, GENERIC_THRESHOLDS) === 'success');
   return { roll, criticalType, doubleCritical, naturals };
 }
-
-/**
- * A short transparency line showing both d20s a Vorteil/Nachteil generic
- * roll rolled and which one was kept - empty for Neutral (nothing to add,
- * the single roll speaks for itself).
- * @param {Awaited<ReturnType<typeof evaluateD20WithMode>>} result
- * @param {"neutral"|"advantage"|"disadvantage"} mode
- * @return {string}
- */
-export function formatD20ModeSummaryLine(result, mode) {
-  if (mode !== 'advantage' && mode !== 'disadvantage') return '';
-  const modeLabel = game.i18n.localize(GENERIC_ROLL_MODES.find(m => m.id === mode)?.label ?? '');
-  const kept = mode === 'advantage' ? Math.max(...result.naturals) : Math.min(...result.naturals);
-  return `<div class="sksk-roll-line">${game.i18n.format('SKSK.GenericRoll.ModeSummary', {
-    mode: modeLabel, formula: mode === 'advantage' ? '2d20kh1' : '2d20kl1',
-    dice: result.naturals.join(' / '), kept,
-  })}</div>`;
-}

@@ -3,7 +3,7 @@ import { resolveClickDefender, applyTechniqueEffectBundle } from './damageApplic
 import { applyD20Malus, isActorsOwnTurn, isCombatActive } from './statusEffects.mjs';
 import {
   resolveCheckSuccess, wrapCriticalBlock, wrapCriticalInline,
-  chooseGenericRollMode, evaluateD20WithMode, formatD20ModeSummaryLine,
+  chooseGenericRollMode, evaluateD20WithMode,
 } from './criticalRolls.mjs';
 import { getActorSkillLevel, getSkillLabel } from './skills.mjs';
 import { formatRollCardHeading } from './rollCard.mjs';
@@ -675,7 +675,7 @@ export async function rollTechniqueEffectSaveFromChat(itemUuid) {
   })}</div>`;
 
   const content = `<div class="sksk-chat-card sksk-action-card">${formatRollCardHeading(item.name)}`
-    + line + wrapCriticalBlock(await roll.render(), criticalType) + formatD20ModeSummaryLine(result, mode) + appliedHTML
+    + line + wrapCriticalBlock(await roll.render(), criticalType) + appliedHTML
     + `</div>`;
   const messageData = {
     speaker: ChatMessage.getSpeaker({ actor: defender }),
