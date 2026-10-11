@@ -208,7 +208,10 @@ export function computeSkillBonusTotals(actor) {
 
   const grants = getSkillGrantThresholds();
   if (!grants.length) return totals;
-  const rollData = actor.getRollData();
+  // Deliberately NOT actor.getRollData() - that itself calls back into
+  // computeSkillBonusTotals (data/actor-base.mjs#getRollData), i.e. infinite
+  // recursion. A formula only ever needs "L", the actor's level.
+  const rollData = { lvl: actor.system.resources?.level?.value ?? 0 };
   const granted = {};
   for (const { source, level, skill } of grants) {
     const def = findSkillDefinition(source);
