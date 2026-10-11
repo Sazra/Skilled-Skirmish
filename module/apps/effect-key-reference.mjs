@@ -94,6 +94,8 @@ export class SKSKEffectKeyReference extends HandlebarsApplicationMixin(Applicati
         title: 'SKSK.EffectKeyReference.Category.Misc',
         rows: [
           { label: 'Natural Material Bonus', key: 'system.naturalMaterialBonus.bonus' },
+          { label: 'Mana Cost Reduction (%)', key: 'system.manaCostReductionPercent' },
+          { label: 'Mana Cost Reduction (flat)', key: 'system.manaCostReductionFlat' },
           { label: 'Critical Hit Threshold', key: 'system.criticalHitThreshold' },
           { label: 'Critical Failure Threshold', key: 'system.criticalFailureThreshold' },
           { label: 'Generic Critical Roll Mode', key: 'system.genericCriticalRollMode' },

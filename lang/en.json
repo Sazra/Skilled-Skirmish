@@ -526,6 +526,10 @@
       "CustomArmorClassBonusHint": "A flat AC bonus (positive or negative) on top of every other AC component.",
       "CustomMagicResistanceBonus": "Custom MR Bonus",
       "CustomMagicResistanceBonusHint": "A flat MR bonus (positive or negative) on top of every other MR component.",
+      "ManaCostReductionPercent": "Mana Cost Reduction (%)",
+      "ManaCostReductionPercentHint": "Percentage reduction of every spell's Mana cost, on top of Magic Control/Ritualism and Items' Mana-cost reductions. Negative = surcharge. Targetable by Active Effects.",
+      "ManaCostReductionFlat": "Mana Cost Reduction (flat)",
+      "ManaCostReductionFlatHint": "Flat deduction from every spell's Mana cost (applied before the percentage discounts). Negative = surcharge. Never lowers the cost below 1. Targetable by Active Effects.",
       "CriticalHitThreshold": "Critical Hit Threshold",
       "CriticalHitThresholdHint": "The lowest natural d20 result (on an Angriffswurf/attack roll only) that counts as a critical success. 20 by default; lowering it to e.g. 15 means 15-20 all critically hit.",
       "CriticalFailureThreshold": "Critical Failure Threshold",
@@ -1083,7 +1087,7 @@
       "ModeNeutral": "Neutral",
       "ModeAdvantage": "Advantage",
       "ModeDisadvantage": "Disadvantage",
-      "ModeSummary": "{mode}: Roll A {totalA} / Roll B {totalB} - Roll {chosen} counts"
+      "ModeSummary": "{mode} ({formula}): d20 {dice} - {kept} counts"
     },
     "AttackRoll": {
       "Attack": "Attack",

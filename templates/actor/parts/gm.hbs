@@ -175,6 +175,21 @@
 
     <div class="grid grid-2col">
       <div class="grid-span-1">
+        <label class="resource-label" title="{{localize 'SKSK.GM.ManaCostReductionPercentHint'}}">
+          {{localize 'SKSK.GM.ManaCostReductionPercent'}}
+        </label>
+        <input type="text" name="system.manaCostReductionPercent" value="{{data.system.manaCostReductionPercent}}" data-dtype="Number" />
+      </div>
+      <div class="grid-span-1">
+        <label class="resource-label" title="{{localize 'SKSK.GM.ManaCostReductionFlatHint'}}">
+          {{localize 'SKSK.GM.ManaCostReductionFlat'}}
+        </label>
+        <input type="text" name="system.manaCostReductionFlat" value="{{data.system.manaCostReductionFlat}}" data-dtype="Number" />
+      </div>
+    </div>
+
+    <div class="grid grid-2col">
+      <div class="grid-span-1">
         <label class="resource-label" title="{{localize 'SKSK.GM.CriticalHitThresholdHint'}}">
           {{localize 'SKSK.GM.CriticalHitThreshold'}}
         </label>

@@ -113,25 +113,6 @@ export function wrapCriticalInline(text, criticalType) {
 }
 
 /**
- * How "good" a resolved d20 result is, for ranking one roll against another
- * under Vorteil/Nachteil (Angriffswürfe - see helpers/attackRolls.mjs#
- * chooseAttackMode/resolveHitEvaluationFromChat; generic D20 rolls - see
- * chooseGenericRollMode/evaluateD20WithMode below) - a critical success is
- * always the best possible outcome and a critical failure always the worst,
- * regardless of either roll's total (mirrors resolveCheckSuccess's own
- * critical-overrides-total rule); otherwise the raw total itself is the
- * score.
- * @param {number} total
- * @param {"success"|"failure"|null} criticalType
- * @return {number}
- */
-export function rollQuality(total, criticalType) {
-  if (criticalType === 'success') return Infinity;
-  if (criticalType === 'failure') return -Infinity;
-  return total;
-}
-
-/**
  * The three ways a generic (non-Angriffswurf) D20 roll can resolve - see
  * chooseGenericRollMode/evaluateD20WithMode. Mirrors helpers/attackRolls.mjs#
  * ATTACK_MODES, kept separate since generic rolls resolve in one step
@@ -172,44 +153,39 @@ export async function chooseGenericRollMode() {
 
 /**
  * Roll a generic (non-Angriffswurf) D20 check under a given mode: Neutral
- * rolls (and uses) a single d20; Vorteil/Nachteil roll two independent d20s
- * and pick the better/worse one (see rollQuality) - both evaluated and
+ * rolls a plain "1d20"; Vorteil rolls "2d20kh1" (two d20s, keep the highest)
+ * and Nachteil "2d20kl1" (keep the lowest) - one single Roll either way,
  * resolved immediately, unlike an Angriffswurf's own deferred-evaluation
- * flow, since a generic check's target (DC) is already known at roll time.
- * @param {string} formula   A "1d20 + ..." formula (d20 term first).
+ * flow (see helpers/attackRolls.mjs), since a generic check's target (DC)
+ * is already known at roll time.
+ * @param {string} formula   A "1d20 + ..." (or "d20 + ...") formula, d20 term first.
  * @param {object} rollData
  * @param {"neutral"|"advantage"|"disadvantage"} mode
  * @return {Promise<{roll: Roll, criticalType: "success"|"failure"|null,
- *   doubleCritical: boolean, rollA: Roll, critA: "success"|"failure"|null,
- *   rollB: Roll|null, critB: "success"|"failure"|null, pickedB: boolean}>}
- *   roll/criticalType are the one that counts; doubleCritical is true only
- *   when BOTH d20s (Vorteil/Nachteil only, never Neutral) were natural
- *   criticals - see Luck's own "doubleCriticalRoll" FP trigger (helpers/
- *   skillFp.mjs), mirroring Präzision's own doubleCriticalHit rule.
+ *   doubleCritical: boolean, naturals: number[]}>}
+ *   roll/criticalType are for the d20 that was kept; doubleCritical is
+ *   true only when BOTH d20s (Vorteil/Nachteil only, never Neutral) were
+ *   natural critical successes - see Luck's own "doubleCriticalRoll" FP
+ *   trigger (helpers/skillFp.mjs), mirroring Präzision's own
+ *   doubleCriticalHit rule. naturals lists every d20 actually rolled (one
+ *   for Neutral, two otherwise).
  */
 export async function evaluateD20WithMode(formula, rollData, mode) {
-  const rollA = await new Roll(formula, rollData).evaluate();
-  const critA = getGenericCriticalType(rollA);
-  if (mode !== 'advantage' && mode !== 'disadvantage') {
-    return { roll: rollA, criticalType: critA, doubleCritical: false, rollA, critA, rollB: null, critB: null, pickedB: false };
-  }
-
-  const rollB = await new Roll(formula, rollData).evaluate();
-  const critB = getGenericCriticalType(rollB);
-  const qualityA = rollQuality(rollA.total, critA);
-  const qualityB = rollQuality(rollB.total, critB);
-  const pickedB = mode === 'advantage' ? qualityB > qualityA : qualityB < qualityA;
-  return {
-    roll: pickedB ? rollB : rollA,
-    criticalType: pickedB ? critB : critA,
-    doubleCritical: critA === 'success' && critB === 'success',
-    rollA, critA, rollB, critB, pickedB,
-  };
+  const keep = mode === 'advantage' ? 'kh1' : mode === 'disadvantage' ? 'kl1' : null;
+  // Every D20 formula in this system leads with its d20 term, spelled either
+  // "d20" or "1d20" - swap just that one term.
+  const rollFormula = keep ? formula.replace(/^(\s*)1?d20/, (_, lead) => `${lead}2d20${keep}`) : formula;
+  const roll = await new Roll(rollFormula, rollData).evaluate();
+  const criticalType = getGenericCriticalType(roll);
+  const naturals = (roll.dice?.[0]?.results ?? []).map(r => r.result);
+  const doubleCritical = !!keep && naturals.length === 2
+    && naturals.every(n => getCriticalType(n, GENERIC_THRESHOLDS) === 'success');
+  return { roll, criticalType, doubleCritical, naturals };
 }
 
 /**
- * A short transparency line showing both of a Vorteil/Nachteil generic
- * roll's totals and which one counted - empty for Neutral (nothing to add,
+ * A short transparency line showing both d20s a Vorteil/Nachteil generic
+ * roll rolled and which one was kept - empty for Neutral (nothing to add,
  * the single roll speaks for itself).
  * @param {Awaited<ReturnType<typeof evaluateD20WithMode>>} result
  * @param {"neutral"|"advantage"|"disadvantage"} mode
@@ -218,8 +194,9 @@ export async function evaluateD20WithMode(formula, rollData, mode) {
 export function formatD20ModeSummaryLine(result, mode) {
   if (mode !== 'advantage' && mode !== 'disadvantage') return '';
   const modeLabel = game.i18n.localize(GENERIC_ROLL_MODES.find(m => m.id === mode)?.label ?? '');
+  const kept = mode === 'advantage' ? Math.max(...result.naturals) : Math.min(...result.naturals);
   return `<div class="sksk-roll-line">${game.i18n.format('SKSK.GenericRoll.ModeSummary', {
-    mode: modeLabel, totalA: result.rollA.total, totalB: result.rollB.total,
-    chosen: result.pickedB ? 'B' : 'A',
+    mode: modeLabel, formula: mode === 'advantage' ? '2d20kh1' : '2d20kl1',
+    dice: result.naturals.join(' / '), kept,
   })}</div>`;
 }

@@ -4,7 +4,7 @@ import { computeLehrenTargetBonus } from './lehren.mjs';
 import { getSpellSchool } from './spells.mjs';
 import { computeNaturalMaterialBonus } from './defense.mjs';
 import { applyD20Malus, getStatusStacks, setStatusStacks } from './statusEffects.mjs';
-import { getAttackCriticalType, resolveCheckSuccess, wrapCriticalBlock, wrapCriticalInline, rollQuality } from './criticalRolls.mjs';
+import { getAttackCriticalType, resolveCheckSuccess, wrapCriticalBlock, wrapCriticalInline } from './criticalRolls.mjs';
 import { formatRollCardHeading } from './rollCard.mjs';
 import { getEquippedArmorSkillKeys } from './defense.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
@@ -634,9 +634,12 @@ async function evaluateHitAgainstDefender({
   let criticalType = critA;
   let labelKey = 'RollA';
   if (mode !== 'neutral') {
-    const qualityA = rollQuality(rollA, critA);
-    const qualityB = rollQuality(rollB, critB);
-    const pickB = mode === 'advantage' ? qualityB > qualityA : qualityB < qualityA;
+    // Both pair rolls carry the exact same modifier (see rollAttackPair),
+    // so comparing their totals is comparing their natural d20s - Vorteil
+    // keeps the higher one, Nachteil the lower one (a tie keeps Roll A),
+    // exactly what "2d20kh1"/"2d20kl1" would have kept. The critical type
+    // then simply follows whichever d20 was kept.
+    const pickB = mode === 'advantage' ? rollB > rollA : rollB < rollA;
     if (pickB) { chosenTotal = rollB; criticalType = critB; labelKey = 'RollB'; }
   }
 
@@ -768,7 +771,7 @@ async function evaluateHitAgainstDefender({
  * defender (see helpers/damageApplication.mjs#resolveClickDefender), then
  * prompts for which of the attack's two already-rolled d20s actually counts
  * (see chooseAttackMode) - Neutral always picks Roll A, Vorteil/Nachteil
- * pick whichever of the two ranks better/worse (see rollQuality). Aborts
+ * keep the higher/lower one (the "2d20kh1"/"2d20kl1" rule). Aborts
  * silently (no chat message) if either no defender could be resolved (a
  * Shift+click/forceHit bypasses that particular block, see
  * evaluateHitAgainstDefender's own doc comment) or the mode dialog was

@@ -526,6 +526,10 @@
             "CustomArmorClassBonusHint": "Ein fester AC-Bonus (positiv oder negativ) zusätzlich zu jeder anderen AC-Komponente.",
             "CustomMagicResistanceBonus": "Eigener MR-Bonus",
             "CustomMagicResistanceBonusHint": "Ein fester MR-Bonus (positiv oder negativ) zusätzlich zu jeder anderen MR-Komponente.",
+            "ManaCostReductionPercent": "Manakosten-Reduktion (%)",
+            "ManaCostReductionPercentHint": "Prozentuale Senkung der Manakosten aller Zauber, zusätzlich zu Magiekontrolle/Ritualismus und den Manakosten-Reduktionen aus Items. Negativ = Aufschlag. Von Active Effects ansteuerbar.",
+            "ManaCostReductionFlat": "Manakosten-Reduktion (fix)",
+            "ManaCostReductionFlatHint": "Fester Abzug von den Manakosten aller Zauber (vor den prozentualen Rabatten). Negativ = Aufschlag. Die Kosten sinken dadurch nie unter 1. Von Active Effects ansteuerbar.",
             "CriticalHitThreshold": "Schwelle für kritischen Erfolg",
             "CriticalHitThresholdHint": "Der niedrigste natürliche W20-Wurf (nur bei einem Angriffswurf), der als kritischer Erfolg zählt. Standardmäßig 20; wird er z.B. auf 15 gesenkt, lösen 15 bis 20 alle einen kritischen Erfolg aus.",
             "CriticalFailureThreshold": "Schwelle für kritischen Fehlschlag",
@@ -1083,7 +1087,7 @@
             "ModeNeutral": "Neutral",
             "ModeAdvantage": "Vorteil",
             "ModeDisadvantage": "Nachteil",
-            "ModeSummary": "{mode}: Wurf A {totalA} / Wurf B {totalB} - Wurf {chosen} zählt"
+            "ModeSummary": "{mode} ({formula}): W20 {dice} - {kept} zählt"
         },
         "AttackRoll": {
             "Attack": "Angriff",

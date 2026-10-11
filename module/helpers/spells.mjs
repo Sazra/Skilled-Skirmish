@@ -555,7 +555,9 @@ export function computeOverchargedRanges(ranges, overchargeCount) {
  *   Systemless spell - which has no prerequisite at all) the cost is
  *   discounted by the caster's Magic Control/Ritualism skill (see above).
  * - On top of either, every matching Talent/Class/Species/Item/Armor/
- *   Weapon manaCostReductions grant for that school always applies - flat
+ *   Weapon manaCostReductions grant for that school, plus the actor's own
+ *   manaCostReductionPercent/manaCostReductionFlat (GM tab/Active Effects,
+ *   any spell), always applies - flat
  *   first, then percent (e.g. a base cost of 10 with a flat -4 and a 50%
  *   discount becomes (10-4)*0.5 = 3, not (10*0.5)-4 = 1).
  * The result is always rounded down and floored at 1 - unless a flat
@@ -597,8 +599,12 @@ export function computeSpellManaCost(spellSystem, actor, overchargeCount = 0, ex
   }
 
   const school = getSpellSchool(spellSystem);
-  const { percent: grantedPercent, flat: grantedFlat, allowBelowOne } =
+  const { percent: itemPercent, flat: itemFlat, allowBelowOne } =
     getManaCostReduction(actor, spellSystem.spellType, school);
+  // The actor-wide GM-tab/Active-Effect reduction stacks on top of the
+  // Item-based entries for this spell's own school.
+  const grantedPercent = itemPercent + (actor.system.manaCostReductionPercent ?? 0);
+  const grantedFlat = itemFlat + (actor.system.manaCostReductionFlat ?? 0);
   const totalPercent = Math.min(100, discountPercent + grantedPercent);
 
   // Flat reductions apply first, then percentage ones.

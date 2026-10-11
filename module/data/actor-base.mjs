@@ -166,6 +166,15 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // helpers/defense.mjs#computeArmorClass/computeMagicResistance).
     schema.customArmorClassBonus = new fields.NumberField({ ...requiredInteger, initial: 0 });
     schema.customMagicResistanceBonus = new fields.NumberField({ ...requiredInteger, initial: 0 });
+    // An actor-wide Mana-cost reduction applying to EVERY spell regardless
+    // of spellType/school - a percentage and/or a flat amount, stacking
+    // with (never replacing) every Item-based manaCostReductions entry and
+    // the Magic Control/Ritualism discount. Plain fields, directly user-
+    // editable on the GM tab and equally targetable by Active Effects; a
+    // negative value is a surcharge. See helpers/spells.mjs#
+    // computeSpellManaCost.
+    schema.manaCostReductionPercent = new fields.NumberField({ ...requiredInteger, initial: 0 });
+    schema.manaCostReductionFlat = new fields.NumberField({ ...requiredInteger, initial: 0 });
     // Angriffswurf (attack roll) critical thresholds - a natural d20 result
     // at or above criticalHitThreshold is a critical success; at or below
     // criticalFailureThreshold, a critical failure (see helpers/
