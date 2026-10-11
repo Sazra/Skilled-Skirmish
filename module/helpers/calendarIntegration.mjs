@@ -1,5 +1,6 @@
 import { countActiveSummons } from './summoning.mjs';
 import { grantSkillUsageFp } from './skillFp.mjs';
+import { advanceTechniquesByRounds } from './statusEffects.mjs';
 
 /**
  * Whether the optional "Calendaria" module (github.com/Sayshal/calendaria)
@@ -90,6 +91,51 @@ async function settleDailyAccumulatorsForAllActors(days) {
 }
 
 /**
+ * Seconds of world time already advanced but not yet worth a whole round
+ * (CONFIG.time.roundTime seconds) - carried over to the next advance, so a
+ * clock ticking forward a second at a time still eventually adds up to
+ * rounds. Kept in memory only (on whichever client is the active GM), so at
+ * most one round's worth of seconds is lost across a reload.
+ */
+let pendingTechniqueSeconds = 0;
+
+/**
+ * Every Actor whose Techniques a world-time advance should tick: all world
+ * actors, plus the (synthetic) actors of the active Scene's unlinked tokens,
+ * which aren't in game.actors.
+ * @return {Actor[]}
+ */
+function getTechniqueTickActors() {
+  const actors = new Map(game.actors.map(actor => [actor.uuid, actor]));
+  for (const token of canvas.scene?.tokens ?? []) {
+    if (token.actor && !token.actorLink) actors.set(token.actor.uuid, token.actor);
+  }
+  return [...actors.values()];
+}
+
+/**
+ * Tick every Technique's duration/cooldown for the rounds a Calendaria world-
+ * time advance represents (see statusEffects.mjs#advanceTechniquesByRounds),
+ * posting one chat note per Actor whose Techniques changed state - whispered
+ * to the GM and the Actor's owners rather than the whole table.
+ * @param {number} rounds
+ * @return {Promise<void>}
+ */
+async function tickTechniquesForElapsedRounds(rounds) {
+  for (const actor of getTechniqueTickActors()) {
+    if (!actor.items.some(item => item.type === 'technique')) continue;
+    const lines = await advanceTechniquesByRounds(actor, rounds);
+    if (!lines.length) continue;
+    const owners = game.users.filter(user => !user.isGM && actor.testUserPermission(user, 'OWNER')).map(user => user.id);
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor }),
+      content: `<div class="sksk-chat-card sksk-action-card"><div class="sksk-roll-line">${lines.join(' ')}</div></div>`,
+      whisper: [...ChatMessage.getWhisperRecipients('GM').map(user => user.id), ...owners],
+    });
+  }
+}
+
+/**
  * Wire this system's optional Calendaria integration up - safe to call
  * unconditionally (from the system's own 'ready' hook, see sksk.mjs) even
  * when Calendaria isn't installed, since the hook it listens for then simply
@@ -102,6 +148,27 @@ async function settleDailyAccumulatorsForAllActors(days) {
  * every actor in the world.
  */
 export function registerCalendariaIntegration() {
+  // Time advancing outside the Combat tracker (a Calendaria time jump or
+  // running clock) ticks every Technique's duration/cooldown, a Combat round
+  // being CONFIG.time.roundTime (6) seconds - see tickTechniquesForElapsedRounds.
+  // Foundry's own Combat turn/round changes also move world time, but are
+  // already ticked per turn (statusEffects.mjs#handleTechniqueTurnStart) and
+  // must not count twice; those arrive through a Combat document update,
+  // while a direct world-time change (Calendaria, the Time controls) is a
+  // Setting update - hence the documentName check.
+  Hooks.on('updateWorldTime', async (worldTime, dt, options) => {
+    if (game.user.id !== game.users.activeGM?.id) return;
+    if (!isCalendariaActive()) return;
+    if (options?.documentName !== 'Setting' || !(dt > 0)) return;
+
+    const roundTime = CONFIG.time.roundTime > 0 ? CONFIG.time.roundTime : 6;
+    pendingTechniqueSeconds += dt;
+    const rounds = Math.floor(pendingTechniqueSeconds / roundTime);
+    if (rounds < 1) return;
+    pendingTechniqueSeconds -= rounds * roundTime;
+    await tickTechniquesForElapsedRounds(rounds);
+  });
+
   Hooks.on('calendaria.dayChange', async ({ previous, current }) => {
     if (game.user.id !== game.users.activeGM?.id) return;
     if (!isCalendariaDailySettlementEnabled()) return;

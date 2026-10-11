@@ -7,6 +7,8 @@ import {
 } from './criticalRolls.mjs';
 import { getActorSkillLevel, getSkillLabel } from './skills.mjs';
 import { formatRollCardHeading } from './rollCard.mjs';
+import { grantSkillUsageFp } from './skillFp.mjs';
+import { isCalendariaActive } from './calendarIntegration.mjs';
 
 /**
  * The roundsRemaining value to store the moment a Technique goes on
@@ -44,6 +46,29 @@ export function computeTechniqueCooldownStart(cooldownRounds) {
  */
 function resolveCooldownStart(cooldownRounds) {
   return isCombatActive() ? computeTechniqueCooldownStart(cooldownRounds) : 0;
+}
+
+/**
+ * Shift+activating a Technique with no Calendaria running, outside Combat -
+ * where nothing can ever tick a cooldown down, and none is started at all
+ * (see resolveCooldownStart) - instead grants, right at activation, the
+ * "techniqueCooldownRound" FP its cooldown would have earned in Combat: one
+ * grant per cooldown round, same count as a real Combat cooldown's own ticks
+ * (computeTechniqueCooldownStart, grace round included). No cooldown is set
+ * either way. A no-op while Calendaria is active (elapsed time ticks the
+ * cooldown for real, see helpers/statusEffects.mjs#advanceTechniquesByRounds),
+ * during Combat (the real per-turn ticking grants it), or without Shift held.
+ * @param {Actor} actor
+ * @param {Item} item
+ * @return {Promise<void>}
+ */
+async function grantSimulatedCooldownFp(actor, item) {
+  if (!game.keyboard?.isModifierActive?.('Shift')) return;
+  if (isCalendariaActive() || isCombatActive()) return;
+  const rounds = computeTechniqueCooldownStart(item.system.cooldownRounds ?? 0);
+  for (let round = 0; round < rounds; round++) {
+    await grantSkillUsageFp(actor, 'technique', 'techniqueCooldownRound');
+  }
 }
 
 /**
@@ -259,6 +284,7 @@ async function toggleDurationTechnique(actor, item) {
   const effect = actor.effects.get(effectId);
   if (effect) await effect.update({ disabled: false });
   await item.update({ 'system.active': true, 'system.roundsRemaining': item.system.durationRounds });
+  await grantSimulatedCooldownFp(actor, item);
 
   return postTechniqueActionCard(actor, item, game.i18n.localize('SKSK.Technique.StatusLine.Activated'));
 }
@@ -333,6 +359,7 @@ export async function primeConsumableTechnique(actor, item) {
   }
 
   await item.update({ 'system.active': true, 'system.roundsRemaining': 0 });
+  await grantSimulatedCooldownFp(actor, item);
   return postTechniqueActionCard(actor, item, game.i18n.localize('SKSK.Technique.StatusLine.Primed'));
 }
 
@@ -365,6 +392,7 @@ export async function activateDirectEffectTechnique(actor, item) {
 
   await ensureLinkedEffect(item);
   await item.update({ 'system.roundsRemaining': resolveCooldownStart(item.system.cooldownRounds) });
+  await grantSimulatedCooldownFp(actor, item);
 
   const statusText = game.i18n.localize('SKSK.Technique.StatusLine.Activated');
   if (item.system.effectSavingThrowEnabled) {

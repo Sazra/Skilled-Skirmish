@@ -1668,6 +1668,65 @@ async function handleTechniqueTurnStart(actor) {
 }
 
 /**
+ * Advance every Technique an actor owns by a number of Combat-round-sized
+ * time steps that elapsed OUTSIDE the Combat tracker's own per-turn ticking
+ * (see handleTechniqueTurnStart) - helpers/calendarIntegration.mjs turns
+ * Calendaria's world-time advances into rounds (CONFIG.time.roundTime
+ * seconds each, 6 by default) and calls this: a still-active stand/self-
+ * effect Technique counts its remaining duration down, auto-deactivating
+ * (disabling its own linked ActiveEffect) once the elapsed rounds cover it,
+ * starting its cooldown - with whatever rounds were left over beyond the
+ * duration already counted against that cooldown, unlike turn-start
+ * ticking there's no "+1 grace round" here, since no turn-start tick
+ * follows - and a Technique already on cooldown simply counts it down.
+ * Unlike a manual Deactivate outside Combat (see helpers/technique-rolls.mjs#
+ * resolveCooldownStart's own outside-Combat waiver),
+ * natural expiry through elapsed time DOES start a cooldown, whether or not
+ * a Combat is running. Grants no cooldown-round FP (only a real Combat round
+ * does, see handleTechniqueTurnStart). A primed attackBonus/attackTarget
+ * Technique has no duration and is left alone.
+ * @param {Actor} actor
+ * @param {number} rounds   Whole rounds that elapsed (> 0).
+ * @return {Promise<string[]>} description lines for whatever changed state.
+ */
+export async function advanceTechniquesByRounds(actor, rounds) {
+  const lines = [];
+  if (!(rounds > 0)) return lines;
+
+  for (const item of actor.items.filter(i => i.type === 'technique')) {
+    const remaining = item.system.roundsRemaining ?? 0;
+
+    if (item.system.active && techniqueHasDuration(item)) {
+      if (rounds < remaining) {
+        await item.update({ 'system.roundsRemaining': remaining - rounds });
+        continue;
+      }
+      const effect = item.system.effectId ? actor.effects.get(item.system.effectId) : null;
+      if (effect && !effect.disabled) await effect.update({ disabled: true });
+      const cooldownLeft = Math.max(0, (item.system.cooldownRounds ?? 0) - (rounds - remaining));
+      await item.update({ 'system.active': false, 'system.roundsRemaining': cooldownLeft });
+      lines.push(game.i18n.format('SKSK.Technique.Expired', { name: item.name }));
+      if ((item.system.cooldownRounds ?? 0) > 0) {
+        lines.push(game.i18n.format('SKSK.Technique.CooldownStarted', { name: item.name, rounds: item.system.cooldownRounds }));
+        lines.push(cooldownLeft > 0
+          ? game.i18n.format('SKSK.Technique.CooldownRemaining', { name: item.name, rounds: cooldownLeft })
+          : game.i18n.format('SKSK.Technique.CooldownComplete', { name: item.name }));
+      }
+      continue;
+    }
+
+    if (!item.system.active && remaining > 0) {
+      const cooldownLeft = Math.max(0, remaining - rounds);
+      await item.update({ 'system.roundsRemaining': cooldownLeft });
+      lines.push(cooldownLeft > 0
+        ? game.i18n.format('SKSK.Technique.CooldownRemaining', { name: item.name, rounds: cooldownLeft })
+        : game.i18n.format('SKSK.Technique.CooldownComplete', { name: item.name }));
+    }
+  }
+  return lines;
+}
+
+/**
  * Which of "SKSK.StatusEffect.TurnStartBeginsMale"/"...Female" an actor's
  * own system.gender (see data/actor-base.mjs, Character tab's Data section)
  * resolves to - male/genderless use the male form, female/hermaphrodite use
