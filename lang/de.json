@@ -719,6 +719,8 @@
                 "AttributeReroll": "Attributswurf-Neuwurf (Schalter)",
                 "DamageRerollOnes": "Elementexperte: Einsen-Neuwurf (Schalter)",
                 "SkillRoll": "Fertigkeitswurf-Boni",
+                "SkillLevel": "Fertigkeitsstufen-Boni",
+                "SkillLevelHint": "Erhöht (oder senkt) die FERTIGKEITSSTUFE selbst direkt, z.B. \"system.skillLevelBonus.waterResistance\" mit Modus \"Add\" und Wert 5 für Wasserresistenz 5. Wird auf die fertige Stufe aufgeschlagen (0 bis Maximalstufe), verändert also weder Punkte noch Level-Up-XP und eignet sich für schaltbare/zeitweise Effekte. Bei binären Fertigkeiten (Absorption, Immunität, ...) schaltet jeder Wert ab 1 sie frei, bei Schwächen erhöht er die Stapelzahl.",
                 "SkillRollApCost": "Fertigkeitswurf: AP-Kosten",
                 "SkillRollRpCost": "Fertigkeitswurf: RP-Kosten",
                 "AttributeRollApCost": "Attributswurf: AP-Kosten",

@@ -326,6 +326,22 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
         .map(key => [key, new fields.NumberField({ ...requiredInteger, initial: 0 })])
     ));
 
+    // Per-skill flat adjustment added straight onto that skill's FINAL level
+    // (clamped to 0..its max level) - purely an Active Effect target, e.g. a
+    // toggleable "Resistance 5 while in water" effect ("system.skillLevelBonus.
+    // waterResistance", add 5). Unlike an item's skillBonuses (a free starting
+    // level that points then progress from - see helpers/skills.mjs#
+    // computeSkillBonusTotals), this never touches the points progression,
+    // XP for level-ups or the Resistance gain cap, so a temporary effect can
+    // be switched on/off without disturbing any of that. For a binary skill
+    // any value >= 1 counts as unlocked; for a stackable one (Weakness) it's
+    // added to the stack count. See helpers/skills.mjs#getActorSkillLevel/
+    // isActorSkillUnlocked/getSkillStacks.
+    schema.skillLevelBonus = new fields.SchemaField(Object.fromEntries(
+      Object.values(CONFIG.SKSK.skills).flatMap(category => Object.keys(category))
+        .map(key => [key, new fields.NumberField({ ...requiredInteger, initial: 0 })])
+    ));
+
     // A flat bonus/malus applied to literally every d20 roll - purely an
     // Active Effect target, folded into the same fan-out Lehren's own
     // "allRolls" target and Exhaustion/Dazed already use. See
@@ -1035,7 +1051,8 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
           const points = isNpc
             ? evaluateSkillFormula(skillData.formula ?? '', { lvl: data.lvl })
             : (skillData.points ?? 0);
-          data.skills[key] = getSkillLevel(points, def.maxLevel, bonus);
+          const effectBonus = this.skillLevelBonus?.[key] ?? 0;
+          data.skills[key] = Math.max(0, Math.min(def.maxLevel, getSkillLevel(points, def.maxLevel, bonus) + effectBonus));
         }
       }
     }

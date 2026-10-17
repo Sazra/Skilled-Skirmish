@@ -719,6 +719,8 @@
         "AttributeReroll": "Attribute Roll Reroll (Switch)",
         "DamageRerollOnes": "Elementexperte: Reroll Ones (Switch)",
         "SkillRoll": "Skill Roll Bonuses",
+        "SkillLevel": "Skill Level Bonuses",
+        "SkillLevelHint": "Raises (or lowers) the skill LEVEL itself directly, e.g. \"system.skillLevelBonus.waterResistance\" with mode \"Add\" and value 5 for Water Resistance 5. Added on top of the finished level (0 to its max level), so it changes neither points nor level-up XP and suits toggleable/temporary effects. For binary skills (Absorption, Immunity, ...) any value of 1 or more unlocks them; for Weaknesses it raises the stack count.",
         "SkillRollApCost": "Skill Roll: AP Cost",
         "SkillRollRpCost": "Skill Roll: RP Cost",
         "AttributeRollApCost": "Attribute Roll: AP Cost",

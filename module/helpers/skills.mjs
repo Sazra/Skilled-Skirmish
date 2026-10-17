@@ -304,7 +304,11 @@ export function getActorSkillLevel(actor, skillKey) {
     ? evaluateSkillFormula(data.formula ?? '', actor.getRollData())
     : (data.points ?? 0);
 
-  return getSkillLevel(points, def.maxLevel, bonus);
+  // The Active-Effect-only skillLevelBonus (data/actor-base.mjs) is added
+  // on top of the FINAL level, never folded into "bonus" above, so a
+  // temporary effect doesn't shift the points progression.
+  const effectBonus = actor.system.skillLevelBonus?.[skillKey] ?? 0;
+  return Math.max(0, Math.min(def.maxLevel, getSkillLevel(points, def.maxLevel, bonus) + effectBonus));
 }
 
 /**
@@ -323,6 +327,7 @@ export function isActorSkillUnlocked(actor, skillKey) {
   if (!def || def.maxLevel !== 1) return false;
 
   if ((computeSkillBonusTotals(actor)[skillKey] ?? 0) >= 1) return true;
+  if ((actor.system.skillLevelBonus?.[skillKey] ?? 0) >= 1) return true;
 
   const data = actor.system.skills?.[skillKey] ?? {};
   if (actor.type === 'npc') {
@@ -347,8 +352,9 @@ export function getSkillStacks(actor, skillKey) {
   if (!def?.stackable) return 0;
 
   const data = actor.system.skills?.[skillKey] ?? {};
-  if (actor.type === 'npc') return evaluateSkillFormula(data.formula ?? '', actor.getRollData());
-  return data.points ?? 0;
+  const effectBonus = actor.system.skillLevelBonus?.[skillKey] ?? 0;
+  const raw = actor.type === 'npc' ? evaluateSkillFormula(data.formula ?? '', actor.getRollData()) : (data.points ?? 0);
+  return Math.max(0, raw + effectBonus);
 }
 
 /**

@@ -59,6 +59,9 @@ export class SKSKEffectKeyReference extends HandlebarsApplicationMixin(Applicati
     const skillRollBonusRows = Object.values(CONFIG.SKSK.skills)
       .flatMap(category => Object.keys(category))
       .map(key => ({ label: game.i18n.localize(getSkillLabel(key)), key: `system.skillRollBonus.${key}` }));
+    const skillLevelRows = Object.values(CONFIG.SKSK.skills)
+      .flatMap(category => Object.keys(category))
+      .map(key => ({ label: game.i18n.localize(getSkillLabel(key)), key: `system.skillLevelBonus.${key}` }));
     const skillRollApCostRows = Object.values(CONFIG.SKSK.skills)
       .flatMap(category => Object.keys(category))
       .map(key => ({ label: game.i18n.localize(getSkillLabel(key)), key: `system.skillRollApCostModifier.${key}` }));
@@ -157,6 +160,11 @@ export class SKSKEffectKeyReference extends HandlebarsApplicationMixin(Applicati
       {
         title: 'SKSK.EffectKeyReference.Category.SkillRoll',
         rows: skillRollBonusRows,
+      },
+      {
+        title: 'SKSK.EffectKeyReference.Category.SkillLevel',
+        hint: 'SKSK.EffectKeyReference.Category.SkillLevelHint',
+        rows: skillLevelRows,
       },
       {
         title: 'SKSK.EffectKeyReference.Category.SkillRollApCost',
