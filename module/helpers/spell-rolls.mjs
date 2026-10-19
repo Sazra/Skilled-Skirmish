@@ -242,6 +242,9 @@ async function renderDamageRoll(damage, actor, overchargeCount = 0, spellSystem 
   const rollTwice = hasRollTwiceSpell(actor);
   const { total: rollTotal, html: rendered, pickedRoll } = await rollPossiblyDoubledDamage(formula, actor?.getRollData(), rollTwice);
   const typeLabel = game.i18n.localize(CONFIG.SKSK.damageTypes[damage.damageType] ?? damage.damageType);
+  // A Spell with its own "ignores Barrier" switch tags every damage entry it
+  // produces - see helpers/damageApplication.mjs#applyResolvedDamageEntries.
+  const barrierFlag = spellSystem?.ignoresBarrier ? { ignoresBarrier: true } : {};
   let amount = rollTotal;
   let overchargeHTML = '';
   const overchargeMultiplier = overchargeCount > 0 ? 1 + 0.5 * overchargeCount : null;
@@ -255,7 +258,7 @@ async function renderDamageRoll(damage, actor, overchargeCount = 0, spellSystem 
   const html = wrapDamageBlock(blockId,
     `<div class="sksk-roll-damage"><strong>${typeLabel} ${game.i18n.localize('SKSK.Spell.Roll.Damage')}</strong>${wrapRerollIcons(rerollOnesIcon)}</div>${rendered}${overchargeHTML}`
   );
-  return { html, entry: { damageType: damage.damageType, amount } };
+  return { html, entry: { damageType: damage.damageType, amount, ...barrierFlag } };
 }
 
 /**
@@ -433,7 +436,9 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
   // spell may use both an attack roll and a save at once.
   if (system.attackRoll.enabled) {
     const attackDamages = system.damages.filter(d => d.trigger === 'attack');
-    const damageDice = attackDamages.map(damage => ({ damageType: damage.damageType, dieSizes: getDamageDieSizes(damage.formula) }));
+    const damageDice = attackDamages.map(damage => ({
+      damageType: damage.damageType, dieSizes: getDamageDieSizes(damage.formula), ...(system.ignoresBarrier ? { ignoresBarrier: true } : {}),
+    }));
     const attackBonus = actor ? computeSpellAttackBonus(system, actor) + (technique?.styleAttackBonus ?? 0) + (technique?.hitBonusAmount ?? 0) : 0;
     for (let i = 1; i <= system.attackRoll.count; i++) {
       const rolls = await rollAttackPair(attackBonus, actor);
@@ -456,14 +461,14 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
       }
       const techniqueEffect = takeTechniqueEffect();
       const applyButtonIndex = parts.length;
-      parts.push(renderApplyDamageButton(actor, damageEntries, null, techniqueEffect));
+      parts.push(renderApplyDamageButton(actor, damageEntries, null, techniqueEffect, 'magicResistance'));
 
       // Convenience: if the user has one or more OTHER tokens targeted,
       // resolve this attack against every one of them right away, no
       // manual Evaluate/Apply Damage click needed - see helpers/
       // attackRolls.mjs#autoResolveAttackForTargets. Unlike weapon/Martial
       // Arts attacks, a spell that misses still deals half this damage
-      // (rounded down) unless the target's own Verbesserte Magieresistenz
+      // (rounded up) unless the target's own Verbesserte Magieresistenz
       // switch is on - see that function's own doc comment. The manual
       // buttons above stay in place either way, just visually dimmed once
       // this actually did something.
@@ -1215,10 +1220,10 @@ function renderSpellEffectApplyButtonHTML(item, group) {
  * @return {Promise<ChatMessage|void>}
  */
 export async function applySpellEffectFromChat(itemUuid, group) {
-  const defender = resolveClickDefender();
+  const item = await fromUuid(itemUuid);
+  const defender = resolveClickDefender(item?.actor ?? null);
   if (!defender) return ui.notifications.warn(game.i18n.localize('SKSK.AttackRoll.NoDefender'));
 
-  const item = await fromUuid(itemUuid);
   const html = await applySpellEffectGroup(itemUuid, group, null, defender);
   const messageData = {
     speaker: ChatMessage.getSpeaker({ actor: defender }),

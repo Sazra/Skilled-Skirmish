@@ -562,7 +562,7 @@
       "EnduranceAffectsHoveringHint": "The Stamina skill's percentage speed bonus applies to every movement type except Hovering by default. This switch makes it apply to Hovering speed too. Off by default. Targetable by Active Effects.",
       "SkillGrantLabel": "+{fp} FP {skill}",
       "ImprovedMagicResistance": "Improved Magic Resistance",
-      "ImprovedMagicResistanceHint": "A spell attack roll that misses this actor normally still deals half damage (rounded down) anyway - with this switch on, Magic Resistance blocks that damage entirely on a miss instead. Targetable by Active Effects.",
+      "ImprovedMagicResistanceHint": "A spell attack roll that misses this actor normally still deals half damage (rounded up) anyway - with this switch on, Magic Resistance blocks that damage entirely on a miss instead. Targetable by Active Effects.",
       "ConcealmentBreaksOnlyOnHit": "Concealment doesn't break unless the attack hits",
       "ConcealmentBreaksOnlyOnHitHint": "Attacking from Concealment normally lifts it immediately regardless of hit or miss - with this switch on, Concealment stays up after a miss instead. Assassination attacks are always calculated normally either way (based on Concealment at the moment of the attack). Targetable by Active Effects.",
       "ConcealmentNeverBreaksOnAttack": "Concealment doesn't break on attack",
@@ -689,6 +689,10 @@
         "Multiply": "Multiply",
         "Divide": "Divide"
       }
+    },
+    "Barrier": {
+      "IgnoresBarrier": "Ignores Barrier",
+      "IgnoresBarrierHint": "This weapon's / spell's damage bypasses Barriers and hits the target's Life directly. Without this switch, damage hits the Barrier first."
     },
     "FpGainBonus": {
       "Label": "FP Gain Bonuses",
@@ -1088,7 +1092,9 @@
         "NotOwner": "You don't own {name}, so you can't run this macro.",
         "AttackNotFound": "This macro's Martial Arts attack could not be found.",
         "UnknownAction": "This macro's action is unknown. You may need to delete and recreate the macro.",
-        "ItemNotFound": "Could not find item {name}. You may need to delete and recreate this macro."
+        "ItemNotFound": "Could not find item {name}. You may need to delete and recreate this macro.",
+      "NoActiveActor": "No own token selected and no character assigned - this macro cannot run.",
+      "ItemNotOnActor": "{actor} has no item \"{name}\" - this macro cannot run."
     },
     "GenericRoll": {
       "ChooseModeTitle": "Choose Roll Mode",
@@ -1142,6 +1148,9 @@
       "ManualKillConfirmed": "Kill manually confirmed.",
       "SpellMissHalfDamage": "Miss - still deals half damage.",
       "SpellMissResisted": "Miss - fully resisted by Improved Magic Resistance.",
+      "BarrierAbsorbed": "Barrier absorbs {amount} damage ({remaining} left).",
+      "NpcBarrierAbsorbed": "The Barrier absorbs damage.",
+      "BarrierBroken": "The Barrier is broken.",
       "ConcealmentBroken": "Concealment broken by the attack."
     },
     "Gender": {

@@ -148,7 +148,11 @@ export async function rollWeaponItem(item) {
 
   const parts = [formatRollCardHeading(item.name)];
   const damageType = getWeaponDamageType(item.system);
-  const damageDice = [{ damageType, dieSizes: getDamageDieSizes(item.system.formula) }];
+  // A Weapon with its own "ignores Barrier" switch tags every damage entry it
+  // produces, so helpers/damageApplication.mjs#applyResolvedDamageEntries
+  // sends them straight to Life.
+  const barrierFlag = item.system.ignoresBarrier ? { ignoresBarrier: true } : {};
+  const damageDice = [{ damageType, dieSizes: getDamageDieSizes(item.system.formula), ...barrierFlag }];
   const damageEntries = [];
 
   // A primed Technique (helpers/technique-rolls.mjs) is consumed by this
@@ -208,9 +212,9 @@ export async function rollWeaponItem(item) {
     parts.push(wrapDamageBlock(damageBlockId,
       `<div class="sksk-roll-damage"><strong>${game.i18n.localize('SKSK.Spell.Roll.Damage')}</strong>${wrapRerollIcons(rerollOnesIcon)}</div>${rendered}${line}`
     ));
-    damageEntries.push({ damageType, amount: total });
+    damageEntries.push({ damageType, amount: total, ...barrierFlag });
     applyButtonIndex = parts.length;
-    parts.push(renderApplyDamageButton(actor, damageEntries, item.system.weaponType, techniqueEffect));
+    parts.push(renderApplyDamageButton(actor, damageEntries, item.system.weaponType, techniqueEffect, 'armorClass'));
     parts.push(renderTechniqueSavingThrowHTML(technique));
   } else if (item.system.description) {
     const descriptionHTML = await foundry.applications.ux.TextEditor.implementation.enrichHTML(

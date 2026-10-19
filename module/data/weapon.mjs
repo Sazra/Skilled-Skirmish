@@ -83,6 +83,11 @@ export default class SKSKWeapon extends SKSKItemBase {
     // helpers/actions.mjs#useItem.
     schema.useApCost = new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 });
 
+    // Switch: this weapon's damage ignores the target's Barrier and goes
+    // straight to Life - see helpers/damageApplication.mjs#
+    // applyResolvedDamageEntries (damage entries carry it as ignoresBarrier).
+    schema.ignoresBarrier = new fields.BooleanField({ initial: false });
+
     // This weapon's type (axe, bow, sword, etc.) - determines which Weapon
     // Models (see helpers/models.mjs) are selectable below. Mirrors
     // CONFIG.SKSK.skills.weapons' keys, hardcoded here since static schema

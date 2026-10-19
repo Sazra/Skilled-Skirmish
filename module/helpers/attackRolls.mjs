@@ -8,7 +8,9 @@ import { getAttackCriticalType, resolveCheckSuccess, wrapCriticalBlock, wrapCrit
 import { formatRollCardHeading } from './rollCard.mjs';
 import { getEquippedArmorSkillKeys } from './defense.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
-import { resolveClickDefender, renderApplyDamageButton, applyResolvedDamageEntries } from './damageApplication.mjs';
+import {
+  resolveClickDefender, renderApplyDamageButton, applyResolvedDamageEntries, halveDamageEntries, recordHitEvaluation,
+} from './damageApplication.mjs';
 import { checkFlanking } from './flanking.mjs';
 import { computePatronRollBonus } from './religion.mjs';
 import { getElementalAirRangeBonus } from './elementalChargeEffects.mjs';
@@ -660,7 +662,9 @@ async function evaluateHitAgainstDefender({
   // With no defender to compare against (forceHit), the attack counts as a
   // hit unconditionally - except a natural critical failure, which always
   // misses regardless of any target's stat, same as with a real defender.
-  const hit = defender ? resolveCheckSuccess(chosenTotal, statValue, criticalType) : criticalType !== 'failure';
+  // The roll must EXCEED AC/MR (at least +1), unlike a saving throw against a
+  // DC, where meeting it is enough.
+  const hit = defender ? resolveCheckSuccess(chosenTotal, statValue + 1, criticalType) : criticalType !== 'failure';
   let extraHTML = defenderFlanks
     ? `<div class="sksk-roll-line">${game.i18n.format('SKSK.AttackRoll.FlankingDefenseBonus', { bonus: FLANKING_AC_BONUS, defender: defender.name })}</div>`
     : '';
@@ -685,7 +689,10 @@ async function evaluateHitAgainstDefender({
       for (const { damageType, total, html } of bonusResults) {
         const typeLabel = game.i18n.localize(CONFIG.SKSK.damageTypes[damageType] ?? damageType);
         extraHTML += `<div class="sksk-roll-line"><strong>${typeLabel} ${game.i18n.localize('SKSK.AttackRoll.CriticalBonusDamage')}</strong></div>${html}`;
-        bonusEntries.push({ damageType, amount: total });
+        bonusEntries.push({
+          damageType, amount: total,
+          ...(damageDice.some(d => d.damageType === damageType && d.ignoresBarrier) ? { ignoresBarrier: true } : {}),
+        });
         bonusTotal += total;
       }
       extraHTML += renderApplyDamageButton(attacker, bonusEntries, killSkillKey);
@@ -706,7 +713,9 @@ async function evaluateHitAgainstDefender({
     const assassinationRoll = await rollAssassinationBonusDamage(attacker);
     const typeLabel = game.i18n.localize(CONFIG.SKSK.damageTypes[assassinationType] ?? assassinationType);
     extraHTML += `<div class="sksk-roll-line"><strong>${typeLabel} ${game.i18n.localize('SKSK.AttackRoll.AssassinationDamage')}</strong></div>${await assassinationRoll.render()}`;
-    extraHTML += renderApplyDamageButton(attacker, [{ damageType: assassinationType, amount: assassinationRoll.total }], killSkillKey);
+    extraHTML += renderApplyDamageButton(attacker, [{
+      damageType: assassinationType, amount: assassinationRoll.total, ...(damageDice[0].ignoresBarrier ? { ignoresBarrier: true } : {}),
+    }], killSkillKey);
     if (killSkillKey) {
       extraHTML += formatSkillFpGrantLine(await grantSkillUsageFp(attacker, 'assassination', 'assassinationAttack'));
     }
@@ -784,22 +793,30 @@ async function evaluateHitAgainstDefender({
  * @return {Promise<ChatMessage|void>}
  */
 export async function resolveHitEvaluationFromChat(button, forceHit = false) {
-  const defender = resolveClickDefender();
+  const attacker = button.dataset.attackerUuid ? await fromUuid(button.dataset.attackerUuid) : null;
+  const defender = resolveClickDefender(attacker);
   if (!defender && !forceHit) return ui.notifications.warn(game.i18n.localize('SKSK.AttackRoll.NoDefender'));
 
   const mode = await chooseAttackMode(button.dataset.flanking === 'true' ? 'advantage' : null);
   if (!mode) return;
 
-  const attacker = button.dataset.attackerUuid ? await fromUuid(button.dataset.attackerUuid) : null;
   const damageDice = JSON.parse(decodeURIComponent(button.dataset.damageDice || '[]'));
   const killSkillKey = button.dataset.killSkill || null;
 
-  const { line, fpHTML, title } = await evaluateHitAgainstDefender({
+  const { hit, line, fpHTML, title } = await evaluateHitAgainstDefender({
     defender, attacker, mode,
     rollA: Number(button.dataset.rollA), rollB: Number(button.dataset.rollB),
     critA: button.dataset.critA || null, critB: button.dataset.critB || null,
     comparisonType: button.dataset.comparisonType, damageDice, killSkillKey,
   });
+
+  // Remember the outcome on the roll's own message, so that message's Apply
+  // Damage button can deal a missed spell's half damage - see
+  // damageApplication.mjs#applyDamageFromChat.
+  if (defender) {
+    const messageId = button.closest('[data-message-id]')?.dataset.messageId;
+    await recordHitEvaluation(messageId ? game.messages.get(messageId) : null, defender.uuid, button.dataset.comparisonType, hit);
+  }
 
   const content = `<div class="sksk-chat-card sksk-action-card">`
     + formatRollCardHeading(title) + line + fpHTML
@@ -837,18 +854,6 @@ function getOtherTargetedActors(attacker) {
     actors.push(targetActor);
   }
   return actors;
-}
-
-/**
- * Halves a set of already-rolled {damageType, amount} entries, rounded
- * down, dropping any that floor to 0 - Spells' own "still deals half
- * damage on a miss, unless Verbesserte Magieresistenz" rule (see
- * autoResolveAttackForTargets below).
- * @param {Array<{damageType: string, amount: number}>} entries
- * @return {Array<{damageType: string, amount: number}>}
- */
-function halveDamageEntries(entries) {
-  return entries.map(entry => ({ ...entry, amount: Math.floor(entry.amount / 2) })).filter(entry => entry.amount > 0);
 }
 
 /**

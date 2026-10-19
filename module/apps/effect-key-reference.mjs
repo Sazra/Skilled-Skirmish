@@ -104,6 +104,7 @@ export class SKSKEffectKeyReference extends HandlebarsApplicationMixin(Applicati
           { label: 'Generic Critical Roll Mode', key: 'system.genericCriticalRollMode' },
           { label: 'Assassination Bonus Dice', key: 'system.assassinationBonusDice' },
           { label: 'Overcharge Max Bonus', key: 'system.overchargeMaxBonus' },
+          { label: 'Zusatzschaden an Barrieren (%)', key: 'system.barrierDamageBonus' },
           { label: 'Soul Path Breakthrough Bonus', key: 'system.soulPathBreakthroughBonus' },
           { label: 'Summon Slots Bonus', key: 'system.summonSlotsBonus' },
           { label: 'Totem Slots Bonus', key: 'system.totemSlotsBonus' },

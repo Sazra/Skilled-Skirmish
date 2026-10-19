@@ -562,7 +562,7 @@
             "EnduranceAffectsHoveringHint": "Der prozentuale Geschwindigkeitsbonus der Fertigkeit Ausdauer gilt standardmäßig für alle Bewegungsarten außer Schweben. Mit diesem Schalter wirkt er auch auf die Schwebegeschwindigkeit. Standardmäßig aus. Von Active Effects ansteuerbar.",
             "SkillGrantLabel": "+{fp} FP {skill}",
             "ImprovedMagicResistance": "Verbesserte Magieresistenz",
-            "ImprovedMagicResistanceHint": "Ein Zauber-Angriffswurf, der diesen Akteur nicht trifft, verursacht normalerweise trotzdem halbierten Schaden (abgerundet) - bei aktiviertem Schalter verhindert die Magieresistenz den Schaden bei einem Fehlschlag stattdessen vollständig. Von Active Effects ansteuerbar.",
+            "ImprovedMagicResistanceHint": "Ein Zauber-Angriffswurf, der diesen Akteur nicht trifft, verursacht normalerweise trotzdem halbierten Schaden (aufgerundet) - bei aktiviertem Schalter verhindert die Magieresistenz den Schaden bei einem Fehlschlag stattdessen vollständig. Von Active Effects ansteuerbar.",
             "ConcealmentBreaksOnlyOnHit": "Tarnung bricht nicht solange der Angriff nicht getroffen hat",
             "ConcealmentBreaksOnlyOnHitHint": "Ein Angriff aus der Tarnung heraus hebt diese normalerweise sofort auf, unabhängig von Treffer oder Fehlschlag - bei aktiviertem Schalter bleibt die Tarnung bei einem Fehlschlag stattdessen bestehen. Attentats-Angriffe werden unabhängig davon immer normal berechnet (anhand der Tarnung zum Zeitpunkt des Angriffs). Von Active Effects ansteuerbar.",
             "ConcealmentNeverBreaksOnAttack": "Tarnung bricht nicht bei Angriff",
@@ -689,6 +689,10 @@
                 "Multiply": "Multiplizieren",
                 "Divide": "Dividieren"
             }
+        },
+        "Barrier": {
+            "IgnoresBarrier": "Ignoriert Barriere",
+            "IgnoresBarrierHint": "Der Schaden dieser Waffe bzw. dieses Zaubers geht an Barrieren vorbei direkt auf das Leben des Ziels. Ohne diesen Schalter trifft Schaden zuerst die Barriere."
         },
         "FpGainBonus": {
             "Label": "FP-Gewinn-Boni",
@@ -1088,7 +1092,9 @@
             "NotOwner": "Du besitzt {name} nicht und kannst dieses Makro daher nicht ausführen.",
             "AttackNotFound": "Der Kampfkunst-Angriff dieses Makros wurde nicht gefunden.",
             "UnknownAction": "Die Aktion dieses Makros ist unbekannt. Das Makro muss eventuell gelöscht und neu erstellt werden.",
-            "ItemNotFound": "Gegenstand {name} wurde nicht gefunden. Das Makro muss eventuell gelöscht und neu erstellt werden."
+            "ItemNotFound": "Gegenstand {name} wurde nicht gefunden. Das Makro muss eventuell gelöscht und neu erstellt werden.",
+            "NoActiveActor": "Kein eigener Token ausgewählt und kein Charakter zugewiesen - das Makro kann nicht ausgeführt werden.",
+            "ItemNotOnActor": "{actor} besitzt keinen Gegenstand \"{name}\" - das Makro kann nicht ausgeführt werden."
         },
         "GenericRoll": {
             "ChooseModeTitle": "Wurfmodus wählen",
@@ -1142,6 +1148,9 @@
             "ManualKillConfirmed": "Kill manuell bestätigt.",
             "SpellMissHalfDamage": "Verfehlt - wirkt trotzdem mit halbiertem Schaden.",
             "SpellMissResisted": "Verfehlt - durch Verbesserte Magieresistenz vollständig abgewehrt.",
+            "BarrierAbsorbed": "Barriere absorbiert {amount} Schaden (verbleibend: {remaining}).",
+            "NpcBarrierAbsorbed": "Die Barriere absorbiert Schaden.",
+            "BarrierBroken": "Die Barriere ist zerstört.",
             "ConcealmentBroken": "Tarnung durch den Angriff aufgehoben."
         },
         "Gender": {

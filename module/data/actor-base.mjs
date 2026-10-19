@@ -705,9 +705,14 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // configured rate being > 0) this one is disruptive enough to combat
     // pacing that the GM opted for an explicit extra switch on top.
     schema.soulforceMeditationCombatFpEnabled = new fields.BooleanField({ initial: false });
+    // Percent of EXTRA damage this actor's attacks deal to a target's
+    // Barrier (e.g. 50 = every damage point drains 1.5 Barrier points) - purely
+    // an Active Effect target ("system.barrierDamageBonus"), read from the
+    // ATTACKER in helpers/damageApplication.mjs#applyResolvedDamageEntries.
+    schema.barrierDamageBonus = new fields.NumberField({ ...requiredInteger, initial: 0 });
     // GM-tab switch: a spell's own Angriffswurf that fails to exceed this
     // actor's Magic Resistance normally still deals half its rolled damage
-    // (rounded down) anyway - see helpers/attackRolls.mjs#
+    // (rounded up) anyway - see helpers/attackRolls.mjs#
     // autoResolveAttackForTargets. On, that half-damage fallback is denied
     // entirely (a miss blocks everything), same as a weapon/Martial Arts
     // miss always has. Off by default. Targetable by Active Effects.

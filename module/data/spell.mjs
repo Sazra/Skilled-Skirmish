@@ -162,6 +162,11 @@ export default class SKSKSpell extends SKSKItemBase {
     // just without any automatic scaling - the GM adjusts it manually.
     schema.overchargeAutoEffects = new fields.BooleanField({ initial: true });
 
+    // Switch: this spell's damage ignores the target's Barrier and goes
+    // straight to Life - see helpers/damageApplication.mjs#
+    // applyResolvedDamageEntries (damage entries carry it as ignoresBarrier).
+    schema.ignoresBarrier = new fields.BooleanField({ initial: false });
+
     // Whether the spell needs an attack roll at all, against the target's
     // Magic Resistance - independent of, and combinable with, the saving
     // throws below (see helpers/spell-rolls.mjs#renderSpellEffectParts,

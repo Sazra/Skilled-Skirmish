@@ -31,10 +31,22 @@ const NPC_DAMAGE_OUTCOME_KEYS = {
  * attackRolls.mjs) purely to avoid a circular import - this module has no
  * dependency on attackRolls.mjs otherwise, and attackRolls.mjs imports this
  * function back from here.
+ *
+ * With the attack's own attacker given, a non-GM user who doesn't own that
+ * attacker (an enemy's/another player's attack, not their own) is the one
+ * the attack is being applied TO - so their own selected token / assigned
+ * character wins over whatever they happen to have targeted (typically the
+ * NEXT enemy they plan to hit), which only remains the fallback.
+ * @param {Actor|null} [attacker]
  * @return {Actor|null}
  */
-export function resolveClickDefender() {
+export function resolveClickDefender(attacker = null) {
   const targets = Array.from(game.user.targets ?? []);
+  if (attacker && !game.user.isGM && !attacker.isOwner) {
+    const controlled = canvas.tokens?.controlled ?? [];
+    const own = controlled.find(token => token.actor?.isOwner)?.actor ?? game.user.character;
+    if (own) return own;
+  }
   const controlled = game.user.isGM ? (canvas.tokens?.controlled ?? []) : [];
   return targets[0]?.actor ?? controlled[0]?.actor ?? game.user.character ?? null;
 }
@@ -63,16 +75,22 @@ export function resolveClickRoller() {
  * into one - e.g. a weapon's base damage plus its own Brutality bonus
  * damage (same type) become a single Apply-Damage entry, while a spell's
  * Fire+Cold damage stay separate. Entries with a non-positive amount are
- * dropped entirely.
- * @param {Array<{damageType: string, amount: number}>} entries
- * @return {Array<{damageType: string, amount: number}>}
+ * dropped entirely. An entry flagged ignoresBarrier (a Weapon/Spell with its
+ * own "ignores Barrier" switch - see applyResolvedDamageEntries) only merges
+ * with others carrying the same flag, so the flag survives the merge.
+ * @param {Array<{damageType: string, amount: number, ignoresBarrier?: boolean}>} entries
+ * @return {Array<{damageType: string, amount: number, ignoresBarrier?: boolean}>}
  */
 export function mergeDamageEntries(entries) {
-  const totals = {};
-  for (const { damageType, amount } of entries) {
-    if (amount > 0) totals[damageType] = (totals[damageType] ?? 0) + amount;
+  const totals = new Map();
+  for (const { damageType, amount, ignoresBarrier } of entries) {
+    if (!(amount > 0)) continue;
+    const key = `${damageType}|${ignoresBarrier ? 1 : 0}`;
+    const existing = totals.get(key) ?? { damageType, amount: 0, ...(ignoresBarrier ? { ignoresBarrier: true } : {}) };
+    existing.amount += amount;
+    totals.set(key, existing);
   }
-  return Object.entries(totals).map(([damageType, amount]) => ({ damageType, amount }));
+  return [...totals.values()];
 }
 
 /**
@@ -216,13 +234,20 @@ export async function applySpellEffectGroup(itemUuid, group, savingThrowIndex, d
  *   damage-less target-effect Technique still gets a button to hang its own
  *   application off of; applyDamageFromChat then applies that Technique's
  *   own effect(s) unconditionally via applyTechniqueEffectBundle above.
+ * @param {"armorClass"|"magicResistance"|null} [attackComparison]   Marks
+ *   these entries as an Angriffswurf's OWN damage (as opposed to a saving-
+ *   throw/unconditional one) - applyDamageFromChat then looks up whether
+ *   that attack was already manually evaluated against the resolved
+ *   defender as a miss, to deal a spell's half damage instead (see
+ *   helpers/attackRolls.mjs#recordHitEvaluation).
  * @return {string}
  */
-export function renderApplyDamageButton(attacker, damageEntries, killSkillKey = null, techniqueEffect = null) {
+export function renderApplyDamageButton(attacker, damageEntries, killSkillKey = null, techniqueEffect = null, attackComparison = null) {
   const entries = mergeDamageEntries(damageEntries);
   if (!entries.length && !techniqueEffect) return '';
   const payload = encodeURIComponent(JSON.stringify(entries));
-  const techniqueAttrs = techniqueEffect ? ` data-technique-item-uuid="${techniqueEffect.itemUuid}"` : '';
+  const techniqueAttrs = (techniqueEffect ? ` data-technique-item-uuid="${techniqueEffect.itemUuid}"` : '')
+    + (attackComparison ? ` data-attack-comparison="${attackComparison}"` : '');
   const label = entries.length
     ? game.i18n.localize('SKSK.AttackRoll.ApplyDamage')
     : game.i18n.localize('SKSK.Technique.ApplyEffect');
@@ -236,7 +261,9 @@ export function renderApplyDamageButton(attacker, damageEntries, killSkillKey = 
  * The shared core of "Apply Damage"/"Apply Effect" (see
  * renderApplyDamageButton above and applyDamageFromChat below): runs each
  * carried {damageType, amount} entry through helpers/defense.mjs#
- * applyElementalDefense, nets the results (damage negative, healing
+ * applyElementalDefense, drains the defender's Barrier with the resulting
+ * damage first (unless an entry is flagged ignoresBarrier - see the Barrier
+ * block inside), nets what is left (damage negative, healing
  * positive) into one applyLifeChange call, applies a linked Technique
  * effect bundle if any (applyTechniqueEffectBundle above), and grants
  * every FP trigger a real click of the button would - "<type>Resistance"'s
@@ -277,11 +304,38 @@ export async function applyResolvedDamageEntries(defender, attacker, entries, ki
     }
   }
 
-  let netDelta = 0;
+  // Barrier shields Life: every damage entry (after Resistance/Weakness/
+  // Immunity/Absorption) drains the defender's Barrier first, only what it
+  // couldn't absorb reaches Life - unless the entry is flagged
+  // ignoresBarrier (a Weapon/Spell with that switch on), which goes straight
+  // to Life. The ATTACKER's own barrierDamageBonus (percent, Active-Effect
+  // target) makes its damage drain Barrier faster: each point of damage
+  // costs (1 + bonus/100) Barrier points, rounded up per entry.
+  const barrierFactor = 1 + Math.max(0, attacker?.system.barrierDamageBonus ?? 0) / 100;
+  const barrierStart = defender.system.barrier?.value ?? 0;
+  let barrierValue = barrierStart;
+  let barrierAbsorbed = 0;
+  let healTotal = 0;
+  let lifeDamage = 0;
   const lines = [];
-  for (const { damageType, amount } of entries) {
+  for (const { damageType, amount, ignoresBarrier } of entries) {
     const { amount: adjusted, healing, outcome } = applyElementalDefense(defender, damageType, amount);
-    netDelta += healing ? adjusted : -adjusted;
+    if (healing) {
+      healTotal += adjusted;
+    } else if (ignoresBarrier || barrierValue <= 0) {
+      lifeDamage += adjusted;
+    } else {
+      const needed = Math.ceil(adjusted * barrierFactor);
+      if (barrierValue >= needed) {
+        barrierValue -= needed;
+        barrierAbsorbed += adjusted;
+      } else {
+        const absorbed = Math.floor(barrierValue / barrierFactor);
+        barrierValue = 0;
+        barrierAbsorbed += absorbed;
+        lifeDamage += adjusted - absorbed;
+      }
+    }
     const typeLabel = game.i18n.localize(CONFIG.SKSK.damageTypes[damageType] ?? damageType);
     // NPCs report only the qualitative outcome (never the real amount), so
     // players can't reverse-engineer an NPC's exact Life/Resistance/
@@ -307,10 +361,22 @@ export async function applyResolvedDamageEntries(defender, attacker, entries, ki
     }
   }
 
+  if (barrierValue !== barrierStart) {
+    await defender.update({ 'system.barrier.value': barrierValue });
+    // NPCs again report only the qualitative outcome, never the real amounts.
+    lines.push(defender.type === 'npc'
+      ? `<div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.NpcBarrierAbsorbed')}</div>`
+      : `<div class="sksk-roll-line">${game.i18n.format('SKSK.AttackRoll.BarrierAbsorbed', { amount: barrierAbsorbed, remaining: barrierValue })}</div>`);
+    if (barrierValue === 0) {
+      lines.push(`<div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.BarrierBroken')}</div>`);
+    }
+  }
+
   if (techniqueItemUuid) {
     lines.push(await applyTechniqueEffectBundle(techniqueItemUuid, defender));
   }
 
+  const netDelta = healTotal - lifeDamage;
   const wasAlreadyDead = defender.system.life.value === 0 && defender.system.negativeLife.value <= 0;
   const { lifeDelta, negativeLifeDelta } = await applyLifeChange(defender, netDelta);
   lines.push(negativeLifeOverflowHTML(defender, negativeLifeDelta));
@@ -335,10 +401,15 @@ export async function applyResolvedDamageEntries(defender, attacker, entries, ki
   await checkConcentration(defender, damageDealt);
 
   const isDead = defender.system.life.value === 0 && defender.system.negativeLife.value <= 0;
-  if (isDead && !wasAlreadyDead && attacker && killSkillKey) {
-    lines.push(formatSkillFpGrantLine(await grantSkillUsageFp(attacker, killSkillKey, 'kill')));
+  if (isDead && !wasAlreadyDead) {
+    // Kill FP only for sources with a configured "kill" rate (weapon/Martial
+    // Arts attacks - killSkillKey); a spell kill has none but is still
+    // announced in the chat.
+    if (attacker && killSkillKey) {
+      lines.push(formatSkillFpGrantLine(await grantSkillUsageFp(attacker, killSkillKey, 'kill')));
+    }
     lines.push(`<div class="sksk-roll-line"><strong>${game.i18n.format('SKSK.AttackRoll.KillConfirmed', { defender: defender.name })}</strong></div>`);
-    if (getStatusStacks(attacker, 'concealed') > 0) {
+    if (attacker && killSkillKey && getStatusStacks(attacker, 'concealed') > 0) {
       lines.push(formatSkillFpGrantLine(await grantSkillUsageFp(attacker, 'assassination', 'assassinationKill')));
     }
   }
@@ -476,8 +547,8 @@ registerGmRelayAction('applyManualDamage', handleApplyManualDamageRelay);
  * @return {Promise<ChatMessage|void>}
  */
 export async function applyDamageFromChat(button) {
-  const defender = resolveClickDefender();
   const attacker = button.dataset.attackerUuid ? await fromUuid(button.dataset.attackerUuid) : null;
+  const defender = resolveClickDefender(attacker);
   const killSkillKey = button.dataset.killSkill || null;
   if (!defender) {
     ui.notifications.warn(game.i18n.localize('SKSK.AttackRoll.NoDefender'));
@@ -485,8 +556,33 @@ export async function applyDamageFromChat(button) {
     return;
   }
 
-  const entries = JSON.parse(decodeURIComponent(button.dataset.damageEntries || '[]'));
-  const techniqueItemUuid = button.dataset.techniqueItemUuid || null;
+  let entries = JSON.parse(decodeURIComponent(button.dataset.damageEntries || '[]'));
+  let techniqueItemUuid = button.dataset.techniqueItemUuid || null;
+  let noteHTML = '';
+
+  // A spell's own Angriffswurf damage that was already manually evaluated
+  // against THIS defender as a miss: it still deals half damage (rounded
+  // up) - or nothing at all with Verbesserte Magieresistenz - exactly like
+  // the automatic resolution at roll time (helpers/attackRolls.mjs#
+  // resolveAndApplyOneAttack). A linked Technique effect only ever applies
+  // on a hit, so it's dropped here too.
+  if (button.dataset.attackComparison === 'magicResistance') {
+    const evaluation = getRecordedHitEvaluation(button.closest('[data-message-id]')?.dataset.messageId, defender.uuid);
+    if (evaluation?.comparisonType === 'magicResistance' && !evaluation.hit) {
+      techniqueItemUuid = null;
+      if (defender.system.improvedMagicResistance) {
+        const resistedMessage = {
+          speaker: ChatMessage.getSpeaker({ actor: defender }),
+          flavor: game.i18n.format('SKSK.AttackRoll.DamageAppliedTitle', { defender: defender.name }),
+          content: `<div class="sksk-chat-card sksk-action-card"><div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.SpellMissResisted')}</div></div>`,
+        };
+        ChatMessage.applyRollMode(resistedMessage, game.settings.get('core', 'rollMode'));
+        return ChatMessage.create(resistedMessage);
+      }
+      entries = halveDamageEntries(entries);
+      noteHTML = `<div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.SpellMissHalfDamage')}</div>`;
+    }
+  }
 
   // The application writes to the ATTACKER too (Healer FP for an Absorption-
   // turned-healing entry, Kill/Assassination FP, the Elementarist's Todes-
@@ -497,15 +593,15 @@ export async function applyDamageFromChat(button) {
   const attackerNotOwned = !!attacker && !attacker.isOwner;
   if (!defender.isOwner || attackerNotOwned) {
     if (requestGmAction('applyDamage', {
-      defenderUuid: defender.uuid, attackerUuid: attacker?.uuid ?? null, entries, killSkillKey, techniqueItemUuid,
+      defenderUuid: defender.uuid, attackerUuid: attacker?.uuid ?? null, entries, killSkillKey, techniqueItemUuid, noteHTML,
     })) return;
     if (!defender.isOwner) return ui.notifications.warn(game.i18n.localize('SKSK.AttackRoll.NoPermissionToApply'));
     // No GM connected, but the defender itself is writable: still apply the
     // damage here, just without anything credited to/healed on the attacker.
-    return applyDamageAndPost(defender, null, entries, killSkillKey, techniqueItemUuid);
+    return applyDamageAndPost(defender, null, entries, killSkillKey, techniqueItemUuid, noteHTML);
   }
 
-  return applyDamageAndPost(defender, attacker, entries, killSkillKey, techniqueItemUuid);
+  return applyDamageAndPost(defender, attacker, entries, killSkillKey, techniqueItemUuid, noteHTML);
 }
 
 /**
@@ -518,15 +614,17 @@ export async function applyDamageFromChat(button) {
  * @param {Array<{damageType: string, amount: number}>} entries
  * @param {string|null} killSkillKey
  * @param {string|null} techniqueItemUuid
+ * @param {string} [noteHTML]   An extra line rendered above the results (a
+ *   spell miss's "still deals half damage" note).
  * @return {Promise<ChatMessage>}
  */
-async function applyDamageAndPost(defender, attacker, entries, killSkillKey, techniqueItemUuid) {
+async function applyDamageAndPost(defender, attacker, entries, killSkillKey, techniqueItemUuid, noteHTML = '') {
   const { lines } = await applyResolvedDamageEntries(defender, attacker, entries, killSkillKey, techniqueItemUuid);
 
   const messageData = {
     speaker: ChatMessage.getSpeaker({ actor: defender }),
     flavor: game.i18n.format('SKSK.AttackRoll.DamageAppliedTitle', { defender: defender.name }),
-    content: `<div class="sksk-chat-card sksk-action-card">${lines.join('')}</div>`,
+    content: `<div class="sksk-chat-card sksk-action-card">${noteHTML}${lines.join('')}</div>`,
   };
   ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));
   return ChatMessage.create(messageData);
@@ -536,16 +634,68 @@ async function applyDamageAndPost(defender, attacker, entries, killSkillKey, tec
  * GM-side handler (helpers/gmRelay.mjs#registerGmRelayAction) for the
  * "applyDamage" action - see applyDamageFromChat's own relay call for
  * this payload's shape.
- * @param {{defenderUuid: string, attackerUuid: string|null, entries: Array<{damageType: string, amount: number}>, killSkillKey: string|null, techniqueItemUuid: string|null}} data
+ * @param {{defenderUuid: string, attackerUuid: string|null, entries: Array<{damageType: string, amount: number}>, killSkillKey: string|null, techniqueItemUuid: string|null, noteHTML?: string}} data
  * @return {Promise<void>}
  */
 async function handleApplyDamageRelay(data) {
   const defender = await fromUuid(data.defenderUuid);
   if (!defender) return;
   const attacker = data.attackerUuid ? await fromUuid(data.attackerUuid) : null;
-  return applyDamageAndPost(defender, attacker, data.entries, data.killSkillKey, data.techniqueItemUuid);
+  return applyDamageAndPost(defender, attacker, data.entries, data.killSkillKey, data.techniqueItemUuid, data.noteHTML ?? '');
 }
 registerGmRelayAction('applyDamage', handleApplyDamageRelay);
+
+/**
+ * Halves a set of already-rolled {damageType, amount} entries, rounded UP,
+ * keeping every other property (e.g. ignoresBarrier) - Spells' own "still
+ * deals half damage on a miss, unless Verbesserte Magieresistenz" rule (see
+ * helpers/attackRolls.mjs#resolveAndApplyOneAttack and applyDamageFromChat
+ * above).
+ * @param {Array<{damageType: string, amount: number}>} entries
+ * @return {Array<{damageType: string, amount: number}>}
+ */
+export function halveDamageEntries(entries) {
+  return entries.map(entry => ({ ...entry, amount: Math.ceil(entry.amount / 2) })).filter(entry => entry.amount > 0);
+}
+
+/** A message flag key can't contain dots (it would nest) - a uuid does. */
+const hitEvaluationKey = (defenderUuid) => defenderUuid.replaceAll('.', '_');
+
+/**
+ * Remember on an Angriffswurf's chat message that it was manually evaluated
+ * (Evaluate button) against one specific defender, and whether it hit - so a
+ * later click on that message's own Apply Damage button can tell a spell
+ * that missed (half damage) from one that hit. A user who can't edit the
+ * message (not its author, not a GM) hands the write to the active GM.
+ * @param {ChatMessage|null} message
+ * @param {string} defenderUuid
+ * @param {"armorClass"|"magicResistance"} comparisonType
+ * @param {boolean} hit
+ * @return {Promise<void>}
+ */
+export async function recordHitEvaluation(message, defenderUuid, comparisonType, hit) {
+  if (!message || !defenderUuid) return;
+  if (!message.isOwner) {
+    requestGmAction('recordHitEvaluation', { messageId: message.id, defenderUuid, comparisonType, hit });
+    return;
+  }
+  const evaluations = { ...(message.getFlag('sksk', 'hitEvaluations') ?? {}) };
+  evaluations[hitEvaluationKey(defenderUuid)] = { comparisonType, hit };
+  await message.setFlag('sksk', 'hitEvaluations', evaluations);
+}
+registerGmRelayAction('recordHitEvaluation', async (data) => {
+  await recordHitEvaluation(game.messages.get(data.messageId), data.defenderUuid, data.comparisonType, data.hit);
+});
+
+/**
+ * @param {string|null|undefined} messageId
+ * @param {string} defenderUuid
+ * @return {{comparisonType: string, hit: boolean}|null}
+ */
+function getRecordedHitEvaluation(messageId, defenderUuid) {
+  const message = messageId ? game.messages.get(messageId) : null;
+  return message?.getFlag('sksk', 'hitEvaluations')?.[hitEvaluationKey(defenderUuid)] ?? null;
+}
 
 /**
  * Post a small fallback chat card offering to manually confirm a Kill -

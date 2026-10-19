@@ -22,6 +22,13 @@
     <input type="text" name="system.quality" value="{{system.quality}}" data-dtype="Number" maxlength="4" />
   </div>
 
+  <div class="resource">
+    <label class="resource-label casting-method-option" title="{{localize 'SKSK.Barrier.IgnoresBarrierHint'}}">
+      <input type="checkbox" name="system.ignoresBarrier" {{checked system.ignoresBarrier}} />
+      {{localize 'SKSK.Barrier.IgnoresBarrier'}}
+    </label>
+  </div>
+
   <details class="model-properties-details" data-sync="weapon-attribute-override">
     <summary class="resource-label">{{localize 'SKSK.Models.AttributeOverride'}}</summary>
     <p class="hint">{{localize 'SKSK.Models.AttributeOverrideHint'}}</p>

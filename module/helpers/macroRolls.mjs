@@ -1,4 +1,4 @@
-import { rollMartialArtsAttack } from './actions.mjs';
+import { rollMartialArtsAttack, useItem } from './actions.mjs';
 import { getSkillLabel } from './skills.mjs';
 import { chooseSpellCastOptions } from './spell-rolls.mjs';
 
@@ -18,6 +18,12 @@ import { chooseSpellCastOptions } from './spell-rolls.mjs';
  * dialogs and chat card), so a macro never goes stale as bonuses change.
  * Shift (held while the macro is clicked) behaves like Shift+click on the
  * sheet.
+ *
+ * A macro never belongs to the actor its roll was dragged from: it runs for
+ * whoever triggers it - the user's currently selected (owned) token, else
+ * their assigned character (see resolveMacroActor) - with that actor's own
+ * values. Items (a weapon, a spell, ...) are looked up on that actor by name
+ * and type.
  */
 
 /** The drag payload's own `type` - see buildRollDragData/createMacroFromDrop. */
@@ -38,6 +44,7 @@ const MACRO_ACTIONS = {
   grantInspiration: 'icons/svg/light.svg',
   useMove: 'icons/svg/walk.svg',
   useDodge: 'icons/svg/shield.svg',
+  useItem: 'icons/svg/sword.svg',
   rollMartialArtsAttack: 'icons/svg/combat.svg',
   attemptRestrainedEscape: 'icons/svg/net.svg',
   openTechniqueDialog: 'icons/svg/sword.svg',
@@ -51,6 +58,33 @@ export const ROLL_DRAGGABLE_SELECTOR = [
   '[data-action="roll"][data-attribute-key]',
   ...Object.keys(MACRO_ACTIONS).filter(a => a !== 'roll').map(a => `[data-action="${a}"]`),
 ].join(', ');
+
+/**
+ * The actor a macro runs for: the user's selected token's actor (one they
+ * own), else their assigned character, else - only for macros created
+ * before macros became actor-independent - the actor recorded in the macro.
+ * @param {string|null} [legacyActorUuid]
+ * @return {Promise<Actor|null>}
+ */
+export async function resolveMacroActor(legacyActorUuid = null) {
+  const selected = canvas.tokens?.controlled?.find(token => token.actor?.isOwner)?.actor;
+  if (selected) return selected;
+  if (game.user.character) return game.user.character;
+  return legacyActorUuid ? await fromUuid(legacyActorUuid) : null;
+}
+
+/**
+ * Finds the same Item (matched by type and name) among an actor's own items,
+ * falling back to its id - an Item dragged off one actor's sheet is looked up
+ * on whichever actor the macro ends up running for.
+ * @param {Actor} actor
+ * @param {{itemName?: string, itemType?: string, itemId?: string}} reference
+ * @return {Item|null}
+ */
+function findOwnedItem(actor, { itemName, itemType, itemId }) {
+  const byName = itemName ? actor.items.find(item => item.name === itemName && (!itemType || item.type === itemType)) : null;
+  return byName ?? (itemId ? actor.items.get(itemId) ?? null : null);
+}
 
 /**
  * The d20 formulas of an attribute's own rollable label/modifier (see
@@ -98,6 +132,13 @@ export function buildRollDragData(actor, element) {
       params = { skill: element.dataset.skill };
       label = game.i18n.localize(getSkillLabel(params.skill));
       break;
+    case 'useItem': {
+      const item = actor.items.get(element.dataset.itemId);
+      if (!item) return null;
+      params = { itemName: item.name, itemType: item.type, itemId: item.id };
+      label = item.name;
+      break;
+    }
     case 'useMove': {
       const movementType = element.dataset.movementType ?? row?.querySelector('.move-type-select')?.value ?? 'walking';
       params = { movementType };
@@ -127,16 +168,14 @@ export function buildRollDragData(actor, element) {
  * @param {number} slot
  */
 async function createRollMacro(data, slot) {
-  const actor = await fromUuid(data.actorUuid);
-  if (!actor) return;
-
-  const payload = { actorUuid: data.actorUuid, action: data.action, params: data.params };
+  // No actor in the payload on purpose: the macro runs for the active token /
+  // own character (see resolveMacroActor).
+  const payload = { action: data.action, params: data.params };
   const command = `game.sksk.runRollMacro(${JSON.stringify(payload)});`;
-  const name = `${data.label} (${actor.name})`;
   let macro = game.macros.find(m => m.command === command && m.author?.id === game.user.id);
   if (!macro) {
     macro = await Macro.create({
-      name,
+      name: data.label,
       type: 'script',
       img: MACRO_ACTIONS[data.action],
       command,
@@ -155,7 +194,7 @@ async function createRollMacro(data, slot) {
 async function createItemMacro(data, slot) {
   const item = await Item.fromDropData(data);
   if (!item) return;
-  const command = `game.sksk.rollItemMacro("${data.uuid}");`;
+  const command = `game.sksk.rollItemMacro(${JSON.stringify(data.uuid)}, ${JSON.stringify(item.name)}, ${JSON.stringify(item.type)});`;
   let macro = game.macros.find(m => m.name === item.name && m.command === command);
   if (!macro) {
     macro = await Macro.create({
@@ -214,9 +253,9 @@ function macroEvent() {
  * @return {Promise<*>}
  */
 export async function runRollMacro(payload) {
-  const actor = await fromUuid(payload?.actorUuid);
+  const actor = await resolveMacroActor(payload?.actorUuid);
   if (!actor) {
-    return ui.notifications.warn(game.i18n.localize('SKSK.Macro.ActorNotFound'));
+    return ui.notifications.warn(game.i18n.localize('SKSK.Macro.NoActiveActor'));
   }
   if (!actor.isOwner) {
     return ui.notifications.warn(game.i18n.format('SKSK.Macro.NotOwner', { name: actor.name }));
@@ -234,6 +273,12 @@ export async function runRollMacro(payload) {
     const index = byName >= 0 ? byName : params.index;
     if (!attacks[index]) return ui.notifications.warn(game.i18n.localize('SKSK.Macro.AttackNotFound'));
     return rollMartialArtsAttack(actor, index);
+  }
+
+  if (payload.action === 'useItem') {
+    const item = findOwnedItem(actor, params);
+    if (!item) return ui.notifications.warn(game.i18n.format('SKSK.Macro.ItemNotOnActor', { actor: actor.name, name: params.itemName ?? '' }));
+    return useItem(actor, item);
   }
 
   const dataset = {};
@@ -259,17 +304,30 @@ export async function runRollMacro(payload) {
  * Execute a macro created by createItemMacro: rolls the owned Item the same
  * way clicking it on the sheet does (Shift+click on a Spell first opens the
  * cast-options dialog - Überladen/extra Mana/alternative resource).
+ * Runs for the active token's / own character's copy of the Item (matched by
+ * name and type), not for the actor it was originally dragged from; that
+ * original is only the fallback for a GM with nothing selected.
  * @param {string} itemUuid
+ * @param {string} [itemName]   The dragged Item's name (macros created before
+ *   this was recorded resolve it from itemUuid instead).
+ * @param {string} [itemType]
  * @return {Promise<*>}
  */
-export async function rollItemMacro(itemUuid) {
-  const item = await Item.fromDropData({ type: 'Item', uuid: itemUuid });
-  if (!item || !item.parent) {
-    const itemName = item?.name ?? itemUuid;
-    return ui.notifications.warn(game.i18n.format('SKSK.Macro.ItemNotFound', { name: itemName }));
+export async function rollItemMacro(itemUuid, itemName = '', itemType = '') {
+  const original = await Item.fromDropData({ type: 'Item', uuid: itemUuid });
+  const name = itemName || original?.name || '';
+  const type = itemType || original?.type || '';
+
+  const actor = await resolveMacroActor(original?.parent?.uuid ?? null);
+  if (!actor) {
+    return ui.notifications.warn(game.i18n.localize('SKSK.Macro.NoActiveActor'));
   }
-  if (!item.parent.isOwner) {
-    return ui.notifications.warn(game.i18n.format('SKSK.Macro.NotOwner', { name: item.parent.name }));
+  const item = findOwnedItem(actor, { itemName: name, itemType: type, itemId: original?.parent === actor ? original.id : null });
+  if (!item) {
+    return ui.notifications.warn(game.i18n.format('SKSK.Macro.ItemNotOnActor', { actor: actor.name, name: name || itemUuid }));
+  }
+  if (!actor.isOwner) {
+    return ui.notifications.warn(game.i18n.format('SKSK.Macro.NotOwner', { name: actor.name }));
   }
 
   if (macroEvent().shiftKey && item.type === 'spell') {
@@ -281,5 +339,8 @@ export async function rollItemMacro(itemUuid) {
     if (!choice) return;
     return item.roll(choice.overchargeCount, choice.extraCostTier, choice.altResourceIndex);
   }
+  // A weapon / usable item goes through the Actions tab's own "Use" path, so
+  // its AP/RP cost and blocked-attack checks apply like a click there.
+  if (item.type === 'weapon' || item.type === 'item') return useItem(item.parent, item);
   return item.roll();
 }
