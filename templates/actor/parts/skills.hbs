@@ -52,7 +52,7 @@
               {{/if}}
             </div>
           {{else}}
-            <div class="skill-level" title="Current level{{#if skill.bonus}} (includes +{{skill.bonus}} level(s) from Species/Class){{/if}}{{#if skill.weaknessStacks}} (Weakness x{{skill.weaknessStacks}}: +{{skill.weaknessDamagePercent}}% damage taken){{/if}}">
+            <div class="skill-level" title="{{skill.levelTitle}}">
               {{skill.level}} / {{skill.maxLevel}}{{#if skill.bonus}} <span class="skill-bonus">(+{{skill.bonus}})</span>{{/if}}{{#if skill.weaknessStacks}} <span class="skill-weakness">(Weakness x{{skill.weaknessStacks}})</span>{{/if}}
             </div>
             <div class="item-controls">

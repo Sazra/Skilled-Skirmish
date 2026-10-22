@@ -91,6 +91,13 @@ SKSK.chargeResources = {
   luck: 'SKSK.GeneralResource.Luck',
 };
 
+// A Species/Class/Talent's chargeBonuses entry's bonusType field - see
+// helpers/generalResources.mjs.
+SKSK.chargeBonusTypes = {
+  flat: 'SKSK.GeneralResource.ChargeBonusType.Flat',
+  multiplicative: 'SKSK.GeneralResource.ChargeBonusType.Multiplicative',
+};
+
 // Status effects always present in a fresh/updated world (seeded into the
 // "statusEffects" world setting by helpers/statusEffects.mjs#
 // ensurePredefinedStatusEffects, then editable - besides their id, which

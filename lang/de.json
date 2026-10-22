@@ -652,6 +652,11 @@
             "Adrenalin": "Adrenalin",
             "Luck": "Glück",
             "ChargeBonuses": "Ladungsboni",
+            "ChargeBonusAmountHint": "Bei Flat ein fester Bonus auf die maximalen Ladungen. Bei Multiplikativ ein PROZENTSATZ auf das Maximum inklusive aller Flat-Boni (z.B. 50 = +50%, 100 = Verdopplung); mehrere multiplikative Einträge werden addiert. Das Ergebnis wird gerundet.",
+            "ChargeBonusType": {
+                "Flat": "Flat",
+                "Multiplicative": "Multiplikativ"
+            },
             "Resource": "Ressource"
         },
         "Luck": {
@@ -1417,6 +1422,12 @@
                 "Immortal": "Unsterblich"
             },
             "Gain": "Gewinn",
+            "CurrentLevel": "Aktuelle Stufe",
+            "CurrentLevelBonus": " (enthält +{bonus} Stufe(n) aus Spezies/Klasse)",
+            "CurrentLevelEffectBonus": " (enthält +{bonus} Stufe(n) durch Effekte)",
+            "CurrentLevelWeakness": " (Schwäche x{stacks}: +{percent}% erlittener Schaden)",
+            "PointsForNextLevel": "Fertigkeitspunkte für nächste Stufe: {points}",
+            "MaxLevelReached": "Maximalstufe erreicht",
             "GainHint": "Noch nicht integrierte Fertigkeitspunkte - werden bei einer Anpassungs- oder Genesungspause zu den normalen Punkten hinzugefügt (und danach zurückgesetzt).",
             "ChooseAttributePrompt": "Wähle, welches Attribut verwendet werden soll:",
             "CombineAttributePrompt": "Wähle, welche(s) Attribut(e) verwendet werden soll(en):",

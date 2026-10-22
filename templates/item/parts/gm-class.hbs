@@ -294,6 +294,7 @@
     <ol class="items-list items-list-compact">
       <li class="item flexrow items-header">
         <div class="item-name">{{localize 'SKSK.GeneralResource.Resource'}}</div>
+        <div class="item-name">{{localize 'SKSK.General.Type'}}</div>
         <div class="item-name">Bonus</div>
         <div class="item-controls">
           <a class="item-control item-create" data-action="addChargeBonus" title="Add charge bonus">
@@ -309,8 +310,14 @@
           </select>
         </div>
         <div class="item-name">
+          <select name="system.chargeBonuses.{{index}}.bonusType">
+            {{selectOptions ../chargeBonusTypeChoices selected=entry.bonusType localize=true}}
+          </select>
+        </div>
+        <div class="item-name">
           <input type="text" name="system.chargeBonuses.{{index}}.bonus" value="{{entry.bonus}}"
-            data-dtype="Number" />
+            data-dtype="Number" title="{{localize 'SKSK.GeneralResource.ChargeBonusAmountHint'}}" />
+          {{#if (eq entry.bonusType "multiplicative")}}<span class="fp-gain-bonus-unit">%</span>{{/if}}
         </div>
         <div class="item-controls">
           <a class="item-control item-delete" data-action="removeArrayEntry" data-field="chargeBonuses"

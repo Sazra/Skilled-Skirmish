@@ -24,6 +24,26 @@ export function getSkillPointThreshold(level, maxLevel) {
 }
 
 /**
+ * The skill points a multi-level skill needs in total (the same number its
+ * own "points" field holds) to reach its NEXT level, given the same inputs
+ * as getSkillLevel - i.e. the next threshold, discounted by the starting-
+ * bonus baseline exactly like getSkillLevel does. Null once the skill is
+ * already at its max level (or isn't a multi-level skill).
+ * @param {number} points
+ * @param {number} maxLevel
+ * @param {number} [startLevel=0]
+ * @return {number|null}
+ */
+export function getNextLevelPoints(points, maxLevel, startLevel = 0) {
+  if (maxLevel <= 1) return null;
+  const level = getSkillLevel(points, maxLevel, startLevel);
+  if (level >= maxLevel) return null;
+  const start = Math.max(0, Math.min(startLevel, maxLevel));
+  const baseline = start > 0 ? getSkillPointThreshold(start, maxLevel) : 0;
+  return getSkillPointThreshold(level + 1, maxLevel) - baseline;
+}
+
+/**
  * Derive the current level of a multi-level skill from accumulated points,
  * on top of a starting-bonus level (e.g. a Class granting Axe at level 1).
  * The bonus level is the BASELINE, not an afterthought added on top of the

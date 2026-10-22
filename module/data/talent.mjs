@@ -147,6 +147,13 @@ export default class SKSKTalent extends SKSKItemBase {
         required: true, blank: false, initial: "meditation",
         choices: ["meditation", "regeneration", "inspiration", "adrenalin", "luck"]
       }),
+      // "flat": bonus is added to the max; "multiplicative": bonus is a
+      // PERCENTAGE of the max so far (base + every flat bonus), e.g. 50 =
+      // +50%, 100 = doubled - several multiplicative entries add together
+      // before applying. See helpers/generalResources.mjs.
+      bonusType: new fields.StringField({
+        required: true, blank: false, initial: "flat", choices: ["flat", "multiplicative"]
+      }),
       bonus: new fields.NumberField({ required: true, nullable: false, initial: 0 }),
     }));
 

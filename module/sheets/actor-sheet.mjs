@@ -6,6 +6,7 @@ import {
 } from '../helpers/effects.mjs';
 import {
   evaluateSkillFormula, computeSkillBonusTotals, getActorSkillLevel, isActorSkillUnlocked, getSkillStacks,
+  getNextLevelPoints,
 } from '../helpers/skills.mjs';
 import { getSkillCheckDefinition, rollSkillCheck, chooseSkillRollVariant, chooseSkillRollAttributeAndMode } from '../helpers/skillRolls.mjs';
 import {
@@ -1141,14 +1142,16 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
           // See helpers/skills.mjs#isActorSkillUnlocked (character: its own
           // toggle; NPC: formula evaluates to 1).
           row.unlocked = isActorSkillUnlocked(actor, key);
-        } else if (isNpc) {
-          // The formula computes total points directly; "L" in the
-          // formula is replaced with the actor's level, so non-linear
-          // scaling (e.g. "L * L") works, not just a flat rate per level.
-          row.points = evaluateSkillFormula(row.formula, rollData);
-          row.level = getActorSkillLevel(actor, key);
         } else {
+          if (isNpc) {
+            // The formula computes total points directly; "L" in the
+            // formula is replaced with the actor's level, so non-linear
+            // scaling (e.g. "L * L") works, not just a flat rate per level.
+            row.points = evaluateSkillFormula(row.formula, rollData);
+          }
           row.level = getActorSkillLevel(actor, key);
+          row.nextLevelPoints = getNextLevelPoints(row.points, def.maxLevel, row.bonus);
+          row.effectLevelBonus = actor.system.skillLevelBonus?.[key] ?? 0;
         }
 
         return row;
@@ -1174,6 +1177,25 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       }
       return true;
     });
+
+    // Hover text of each levelled skill's own level display - built here
+    // (not in the template) so every part is localized. Resistance rows'
+    // weakness stacks are only known after the pass above.
+    for (const rows of Object.values(skillCategories)) {
+      for (const row of rows) {
+        if (row.isBinary || row.isStackable) continue;
+        const lines = [game.i18n.localize('SKSK.Skill.CurrentLevel')];
+        if (row.bonus) lines[0] += game.i18n.format('SKSK.Skill.CurrentLevelBonus', { bonus: row.bonus });
+        if (row.effectLevelBonus) lines[0] += game.i18n.format('SKSK.Skill.CurrentLevelEffectBonus', { bonus: row.effectLevelBonus });
+        if (row.weaknessStacks) {
+          lines[0] += game.i18n.format('SKSK.Skill.CurrentLevelWeakness', { stacks: row.weaknessStacks, percent: row.weaknessDamagePercent });
+        }
+        lines.push(row.nextLevelPoints === null
+          ? game.i18n.localize('SKSK.Skill.MaxLevelReached')
+          : game.i18n.format('SKSK.Skill.PointsForNextLevel', { points: row.nextLevelPoints }));
+        row.levelTitle = lines.join('\n');
+      }
+    }
 
     context.skillCategories = skillCategories;
     context.isNpc = isNpc;

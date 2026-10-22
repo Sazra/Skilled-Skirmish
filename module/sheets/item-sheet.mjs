@@ -543,6 +543,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
     // helpers/generalResources.mjs.
     if (['species', 'class', 'talent'].includes(item.type)) {
       context.chargeResourceChoices = CONFIG.SKSK.chargeResources;
+      context.chargeBonusTypeChoices = CONFIG.SKSK.chargeBonusTypes;
       context.attributeMaxOperationChoices = CONFIG.SKSK.attributeMaxOperations;
     }
 
@@ -998,7 +999,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
   }
 
   static async #addChargeBonus(event, target) {
-    await this.#addArrayEntry('chargeBonuses', { resource: 'meditation', bonus: 0 });
+    await this.#addArrayEntry('chargeBonuses', { resource: 'meditation', bonusType: 'flat', bonus: 0 });
   }
 
   static async #addAttributeMaxModifier(event, target) {

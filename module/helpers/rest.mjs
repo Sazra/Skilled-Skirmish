@@ -174,6 +174,13 @@ export function computeRestPreview(actor, state) {
   const conMod = actor.system.attributes?.con?.baseMod ?? 0;
   const level = actor.system.resources.level.value;
   const regenerationRestore = tier === 'genesung' ? Math.min(1 + conMod, level) : 0;
+  // A Genesungspause's own restored charges are already spendable on the
+  // healing/Exhaustion rolls of that very Pause (see applyRest), up to the
+  // actor's max - so the dialog offers them as available too.
+  const regenCharges = actor.system.regenerationCharges;
+  const availableRegenerationCharges = Math.min(
+    Math.max(regenCharges.max, regenCharges.value), regenCharges.value + regenerationRestore
+  );
 
   const skillIntegrationUnlocked = tier === 'anpassung' || tier === 'genesung';
   const skillIntegrationCount = skillIntegrationUnlocked
@@ -214,7 +221,7 @@ export function computeRestPreview(actor, state) {
     tier,
     tierLabelKey: tier ? `SKSK.Rest.Tier.${tier}` : null,
     manaGain,
-    availableRegenerationCharges: actor.system.regenerationCharges.value,
+    availableRegenerationCharges,
     availableMeditationCharges: actor.system.meditationCharges.value,
     healingUnlocked: !!tier && segments >= 8,
     skillIntegrationUnlocked,
@@ -263,7 +270,9 @@ export function computeRestPreview(actor, state) {
  * - Genesungspause (>= 32 segments, not required to be contiguous):
  *   restores Meditation charges/(2 + Meditation skill level * 2) instead
  *   (replacing, not stacking with, Anpassungspause's own restore);
- *   restores Regeneration charges/min(1 + Constitution modifier, level);
+ *   restores Regeneration charges/min(1 + Constitution modifier, level) -
+ *   BEFORE the healing/Exhaustion rolls below, so those freshly restored
+ *   charges (up to the actor's max) can be spent on this very Pause;
  *   up to (Constitution modifier, at least 1) Regeneration
  *   charges can instead heal that many Exhaustion levels; reduces
  *   Adrenalin Damage by whichever is higher between Character level and
@@ -319,6 +328,22 @@ export async function applyRest(actor, options) {
     if (adrenalinUsedCount > 0) {
       updates['system.adrenalinUsedCount'] = 0;
       lines.push(game.i18n.format('SKSK.Rest.AdrenalinUsedCountReset', { amount: adrenalinUsedCount }));
+    }
+
+    // Genesungspause: the restored Regeneration charges are credited first, up
+    // to the actor's max, so the healing/Exhaustion spends below can already
+    // use them (e.g. 3 held + 3 restored, max 8 -> 6 spendable; max 5 -> 5).
+    if (tier === 'genesung') {
+      const conMod = actor.system.attributes?.con?.baseMod ?? 0;
+      const level = actor.system.resources.level.value;
+      const regenerationRestore = Math.min(1 + conMod, level);
+      const newRegenerationCharges = Math.min(
+        Math.max(actor.system.regenerationCharges.max, regenerationCharges), regenerationCharges + regenerationRestore
+      );
+      if (newRegenerationCharges !== regenerationCharges) {
+        lines.push(game.i18n.format('SKSK.Rest.RegenerationRestored', { amount: newRegenerationCharges - regenerationCharges }));
+      }
+      regenerationCharges = newRegenerationCharges;
     }
 
     if (segments >= 8 && regenForHealing > 0) {
@@ -468,17 +493,6 @@ export async function applyRest(actor, options) {
       if (adrenalinDamageReduced > 0) {
         lines.push(game.i18n.format('SKSK.Rest.AdrenalinDamageReduced', { amount: adrenalinDamageReduced }));
       }
-    }
-
-    if (tier === 'genesung') {
-      const conMod = actor.system.attributes?.con?.baseMod ?? 0;
-      const level = actor.system.resources.level.value;
-      const regenerationRestore = Math.min(1 + conMod, level);
-      const newRegenerationCharges = Math.min(actor.system.regenerationCharges.max, regenerationCharges + regenerationRestore);
-      if (newRegenerationCharges !== regenerationCharges) {
-        lines.push(game.i18n.format('SKSK.Rest.RegenerationRestored', { amount: newRegenerationCharges - regenerationCharges }));
-      }
-      regenerationCharges = newRegenerationCharges;
     }
   }
 

@@ -8,21 +8,40 @@ import { getActorSkillLevel } from './skills.mjs';
 const CHARGE_BONUS_ITEM_TYPES = ['species', 'class', 'talent'];
 
 /**
- * The total flat bonus every Species/Class/Talent item grants to one
- * general resource's max charges.
+ * Every Species/Class/Talent chargeBonuses entry for one general resource,
+ * summed up by kind: flat entries add up as plain amounts, multiplicative
+ * ones as one combined percentage (several of them add together, same
+ * convention as FP gain bonuses - see helpers/skillFp.mjs).
  * @param {Actor} actor
  * @param {string} resource   A CONFIG.SKSK.chargeResources key.
- * @return {number}
+ * @return {{flat: number, percent: number}}
  */
-function computeChargeBonusTotal(actor, resource) {
-  let total = 0;
+function collectChargeBonuses(actor, resource) {
+  let flat = 0;
+  let percent = 0;
   for (const item of actor.items) {
     if (!CHARGE_BONUS_ITEM_TYPES.includes(item.type)) continue;
     for (const entry of item.system.chargeBonuses ?? []) {
-      if (entry.resource === resource) total += entry.bonus ?? 0;
+      if (entry.resource !== resource) continue;
+      if (entry.bonusType === 'multiplicative') percent += entry.bonus ?? 0;
+      else flat += entry.bonus ?? 0;
     }
   }
-  return total;
+  return { flat, percent };
+}
+
+/**
+ * A resource's max charges: its base value plus every flat chargeBonuses
+ * entry, then scaled by the combined multiplicative percentage (50 = +50%,
+ * 100 = doubled), rounded to whole charges and never below 0.
+ * @param {Actor} actor
+ * @param {string} resource   A CONFIG.SKSK.chargeResources key.
+ * @param {number} base       The resource's own base amount before any bonus.
+ * @return {number}
+ */
+function computeMaxCharges(actor, resource, base) {
+  const { flat, percent } = collectChargeBonuses(actor, resource);
+  return Math.max(0, Math.round((base + flat) * (1 + percent / 100)));
 }
 
 /**
@@ -35,7 +54,7 @@ function computeChargeBonusTotal(actor, resource) {
  */
 export function computeMaxMeditationCharges(actor) {
   const level = actor.system.resources.level.value;
-  return Math.max(0, Math.round(level + computeChargeBonusTotal(actor, 'meditation')));
+  return computeMaxCharges(actor, 'meditation', level);
 }
 
 /**
@@ -45,7 +64,7 @@ export function computeMaxMeditationCharges(actor) {
  */
 export function computeMaxRegenerationCharges(actor) {
   const level = actor.system.resources.level.value;
-  return Math.max(0, Math.round(level + computeChargeBonusTotal(actor, 'regeneration')));
+  return computeMaxCharges(actor, 'regeneration', level);
 }
 
 /**
@@ -59,7 +78,7 @@ export function computeMaxInspirationCharges(actor) {
   const skillLevel = getActorSkillLevel(actor, 'inspiration');
   if (skillLevel < 1) return 0;
   const chaMod = actor.system.attributes?.cha?.baseMod ?? 0;
-  return Math.max(0, Math.round(skillLevel + chaMod + computeChargeBonusTotal(actor, 'inspiration')));
+  return computeMaxCharges(actor, 'inspiration', skillLevel + chaMod);
 }
 
 /**
@@ -73,7 +92,7 @@ export function computeMaxAdrenalinCharges(actor) {
   const skillLevel = getActorSkillLevel(actor, 'adrenalin');
   if (skillLevel < 1) return 0;
   const conMod = actor.system.attributes?.con?.baseMod ?? 0;
-  return Math.max(0, Math.round(skillLevel + conMod + computeChargeBonusTotal(actor, 'adrenalin')));
+  return computeMaxCharges(actor, 'adrenalin', skillLevel + conMod);
 }
 
 /**
@@ -86,5 +105,5 @@ export function computeMaxAdrenalinCharges(actor) {
 export function computeMaxLuckCharges(actor) {
   const skillLevel = getActorSkillLevel(actor, 'luck');
   if (skillLevel < 1) return 0;
-  return Math.max(0, Math.round(skillLevel + computeChargeBonusTotal(actor, 'luck')));
+  return computeMaxCharges(actor, 'luck', skillLevel);
 }

@@ -652,6 +652,11 @@
       "Adrenalin": "Adrenalin",
       "Luck": "Luck",
       "ChargeBonuses": "Charge Bonuses",
+      "ChargeBonusAmountHint": "For Flat, a fixed bonus to the max charges. For Multiplicative, a PERCENTAGE of the max including every flat bonus (e.g. 50 = +50%, 100 = doubled); several multiplicative entries add together. The result is rounded.",
+      "ChargeBonusType": {
+        "Flat": "Flat",
+        "Multiplicative": "Multiplicative"
+      },
       "Resource": "Resource"
     },
     "Luck": {
@@ -1398,6 +1403,12 @@
         "Immortal": "Immortal"
       },
       "Gain": "Gain",
+      "CurrentLevel": "Current level",
+      "CurrentLevelBonus": " (includes +{bonus} level(s) from Species/Class)",
+      "CurrentLevelEffectBonus": " (includes +{bonus} level(s) from effects)",
+      "CurrentLevelWeakness": " (Weakness x{stacks}: +{percent}% damage taken)",
+      "PointsForNextLevel": "Skill points for next level: {points}",
+      "MaxLevelReached": "Max level reached",
       "GainHint": "Not-yet-integrated skill points - added to the real points (and reset to 0) once an Adjustment or Recuperation Pause is taken.",
       "ChooseAttributePrompt": "Choose which attribute to use:",
       "CombineAttributePrompt": "Choose which attribute(s) to use:",
