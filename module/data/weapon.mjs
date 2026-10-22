@@ -17,6 +17,8 @@ export default class SKSKWeapon extends SKSKItemBase {
     const schema = super.defineSchema();
 
     schema.weight = new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 });
+    // Price in gold - see data/item.mjs#price.
+    schema.price = new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 });
     // Weapons are always equippable, unlike the generic Item type.
     schema.equipped = new fields.BooleanField({ initial: false });
     schema.enchanted = new fields.BooleanField({ initial: false });

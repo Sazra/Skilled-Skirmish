@@ -27,6 +27,7 @@ import { registerCalendariaIntegration } from './helpers/calendarIntegration.mjs
 import { applyCustomActiveEffectChange, addPhaseSelectToActiveEffectChanges } from './helpers/effects.mjs';
 import { initGmRelay } from './helpers/gmRelay.mjs';
 import { createMacroFromDrop, runRollMacro, rollItemMacro } from './helpers/macroRolls.mjs';
+import { registerItemPilesIntegration } from './helpers/itemPiles.mjs';
 import * as models from './data/_module.mjs';
 
 Hooks.once('init', function () {
@@ -46,6 +47,10 @@ Hooks.once('init', function () {
   // run by now (plain top-level module code, evaluated before this hook
   // ever fires).
   initGmRelay();
+
+  // Optional Item Piles integration (loot piles, merchants, vaults, trading)
+  // - see helpers/itemPiles.mjs. A no-op without that module installed.
+  registerItemPilesIntegration();
 
   // "@attributes.dex.mod" (not "@abilities...") per data/actor-base.mjs#
   // getRollData; "@initiativeBonus" is that same method's flat Active-

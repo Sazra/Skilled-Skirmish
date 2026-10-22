@@ -12,6 +12,9 @@ export default class SKSKItem extends SKSKItemBase {
     // quantity can drop to 0 once its last copy's charges are used up.
     schema.quantity = new fields.NumberField({ ...requiredInteger, initial: 1, min: 0 });
     schema.weight = new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 });
+    // Price of one unit, in gold - read by the Item Piles integration (see
+    // helpers/itemPiles.mjs) for merchants and trading.
+    schema.price = new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 });
     // Whether this item can be equipped at all (a ring, wand, etc. -
     // as opposed to a mundane trade good). equipped/enchanted are only
     // meaningful (and only shown) once this is on.
