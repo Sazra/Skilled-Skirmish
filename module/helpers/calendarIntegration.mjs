@@ -1,6 +1,7 @@
 import { countActiveSummons } from './summoning.mjs';
 import { grantSkillUsageFp } from './skillFp.mjs';
 import { advanceTechniquesByRounds } from './statusEffects.mjs';
+import { applyLongevityDelta } from './longevity.mjs';
 
 /**
  * Whether the optional "Calendaria" module (github.com/Sayshal/calendaria)
@@ -169,18 +170,34 @@ export function registerCalendariaIntegration() {
     await tickTechniquesForElapsedRounds(rounds);
   });
 
-  Hooks.on('calendaria.dayChange', async ({ previous, current }) => {
-    if (game.user.id !== game.users.activeGM?.id) return;
-    if (!isCalendariaDailySettlementEnabled()) return;
-
-    // The hook's own previous/current are Calendaria's INTERNAL component
-    // shape (0-indexed month, "dayOfMonth") - its public daysBetween API
-    // expects the public shape (1-indexed "month"/"day") instead, since it
-    // re-converts internally (see Calendaria's own scripts/api.mjs#
-    // toInternal) - passing the internal shape straight through would
-    // silently double-shift both by one.
+  // Calendaria's hook payload has its own INTERNAL component shape
+  // (0-indexed month, "dayOfMonth") - its public daysBetween API expects the
+  // public shape (1-indexed "month"/"day") instead, since it re-converts
+  // internally (see Calendaria's own scripts/api.mjs#toInternal) - passing
+  // the internal shape straight through would silently double-shift both by
+  // one.
+  const getElapsedDays = ({ previous, current }) => {
     const toPublicDate = (components) => ({ year: components.year, month: components.month + 1, day: components.dayOfMonth + 1 });
-    const days = Math.max(0, Math.round(globalThis.CALENDARIA.api.daysBetween(toPublicDate(previous), toPublicDate(current))));
-    if (days > 0) await settleDailyAccumulatorsForAllActors(days);
+    return Math.round(globalThis.CALENDARIA.api.daysBetween(toPublicDate(previous), toPublicDate(current)));
+  };
+
+  Hooks.on('calendaria.dayChange', async (payload) => {
+    if (game.user.id !== game.users.activeGM?.id) return;
+    if (!isCalendariaActive()) return;
+
+    const days = getElapsedDays(payload);
+    if (days <= 0) return;
+
+    // Lebenszeit (Longevity) runs down with the calendar: every Character
+    // that has one loses the elapsed days (and ages by the whole years among
+    // them - see longevity.mjs#applyLongevityDelta). Not gated by the
+    // opt-in daily-settlement setting below - that one grants FP, this is
+    // plain bookkeeping. Moving the calendar backwards gives nothing back.
+    for (const actor of game.actors) {
+      if (actor.type !== 'character' || !actor.system.longevity?.initialized) continue;
+      await applyLongevityDelta(actor, -days);
+    }
+
+    if (isCalendariaDailySettlementEnabled()) await settleDailyAccumulatorsForAllActors(days);
   });
 }

@@ -176,21 +176,62 @@ export async function applyPendingLongevityGrowth(actor) {
 }
 
 /**
+ * Adds whole years to an actor's free-text age (system.age - set by the
+ * player/GM, never computed): the leading integer is increased and anything
+ * after it ("25", "25 Jahre", "25 (ca.)") is kept as is. An age with no
+ * leading number (blank, "unbekannt") is left alone.
+ * @param {string} age
+ * @param {number} years
+ * @return {string|null} The new age string, or null if it has no leading number.
+ */
+function addYearsToAge(age, years) {
+  const match = /^(\s*)(\d+)(.*)$/s.exec(age ?? '');
+  if (!match) return null;
+  return `${match[1]}${Number(match[2]) + years}${match[3]}`;
+}
+
+/**
+ * Changes an actor's remaining Lebenszeit by a number of days (clamped to
+ * never go below 0) and re-derives percent from the new days against the
+ * current baseline - unlike automatic growth or a Species change, a change
+ * of days itself is what RECOMPUTES percent rather than preserving it - see
+ * data/actor-base.mjs#longevity. Time TAKEN AWAY (a negative delta) also
+ * ages the character: every 360 days (one year) taken is added to the
+ * leading number of the free-text system.age, the remainder carried in
+ * longevity.ageCarryDays until it reaches a full year - age itself stays
+ * freely editable by the user afterwards.
+ * @param {Actor} actor
+ * @param {number} deltaDays  Signed - negative to subtract.
+ */
+export async function applyLongevityDelta(actor, deltaDays) {
+  if (!deltaDays) return;
+  const longevity = actor.system.longevity;
+  const newDays = Math.max(0, (longevity.days ?? 0) + deltaDays);
+  const baseline = longevity.mainBaselineDays * computeSubMultiplierProduct(actor);
+  const newPercent = baseline > 0 ? (newDays / baseline) * 100 : longevity.percent;
+  const updates = { 'system.longevity.days': newDays, 'system.longevity.percent': newPercent };
+
+  if (deltaDays < 0) {
+    const carry = (longevity.ageCarryDays ?? 0) + Math.round(-deltaDays);
+    const years = Math.floor(carry / DAYS_PER_UNIT.year);
+    updates['system.longevity.ageCarryDays'] = carry % DAYS_PER_UNIT.year;
+    if (years > 0) {
+      const newAge = addYearsToAge(actor.system.age, years);
+      if (newAge !== null) updates['system.age'] = newAge;
+    }
+  }
+  await actor.update(updates);
+}
+
+/**
  * Applies a manual ±N adjustment (from the Lebenszeit sub-tab's own
  * Year/Month/Week/Day buttons) to the actor's current Longevity, converted
- * to days via DAYS_PER_UNIT and clamped to never go below 0. Unlike
- * automatic growth or a Species change, a manual adjustment is what
- * RECOMPUTES percent (from the new days against the current baseline)
- * rather than preserving it - see data/actor-base.mjs#longevity.
+ * to days via DAYS_PER_UNIT - see applyLongevityDelta for the clamping, the
+ * percent re-derivation and the aging of a subtraction.
  * @param {Actor} actor
  * @param {"year"|"month"|"week"|"day"} unit
  * @param {number} amount  Signed - negative to subtract.
  */
 export async function adjustLongevity(actor, unit, amount) {
-  const longevity = actor.system.longevity;
-  const deltaDays = DAYS_PER_UNIT[unit] * amount;
-  const newDays = Math.max(0, (longevity.days ?? 0) + deltaDays);
-  const baseline = longevity.mainBaselineDays * computeSubMultiplierProduct(actor);
-  const newPercent = baseline > 0 ? (newDays / baseline) * 100 : longevity.percent;
-  await actor.update({ 'system.longevity.days': newDays, 'system.longevity.percent': newPercent });
+  await applyLongevityDelta(actor, DAYS_PER_UNIT[unit] * amount);
 }

@@ -466,6 +466,11 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       // computeSubMultiplierProduct/deriveDaysFromPercent).
       mainBaselineDays: new fields.NumberField({ ...requiredInteger, initial: 0 }),
       baselineTotal: new fields.NumberField({ ...requiredInteger, initial: 0 }),
+      // Days of Lebenszeit taken away that haven't yet added up to a whole
+      // year of aging - see helpers/longevity.mjs#applyLongevityDelta, which
+      // adds a year to system.age (the player-set free-text field above,
+      // otherwise never touched) for every 360 of them. Internal only.
+      ageCarryDays: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
     });
 
     // Carried currency (Items tab) - four coin denominations; each coin
