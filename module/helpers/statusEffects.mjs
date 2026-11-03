@@ -180,26 +180,23 @@ function clampResourceChange(value, max, delta) {
  * means still safely clinging on, 0 means truly dead (see
  * helpers/statusEffects.mjs#handleTenacityTurnStart, which reads it the same
  * way, and helpers/damageApplication.mjs#applyDamageFromChat's own death
- * check). The very first hit that pushes Life below 0 (Life was still above
- * 0 immediately before this call) starts that buffer fresh at its own max,
- * rather than continuing to drain whatever stale value was left over from a
- * PRIOR trip into Negative Life that Life has since recovered from - see
- * helpers/rest.mjs#applyRest, the only place that ever refills it. Healing
- * never interacts with Negative Life here (Rest already handles healing it
- * directly, on its own tiers).
+ * check). Overflow only ever drains whatever Negative Life the actor has
+ * right now - it is never refilled to its max first, not even by the hit
+ * that takes Life from above 0 down to 0 - see helpers/rest.mjs#applyRest,
+ * the only place that ever refills it. Healing never interacts with
+ * Negative Life here (Rest already handles healing it directly, on its own
+ * tiers).
  * @param {Actor} actor
  * @param {number} delta   Positive to heal, negative to damage.
  * @return {Promise<{lifeDelta: number, negativeLifeDelta: number}>} The
  *   amounts actually applied to each (may differ from delta once clamped);
  *   negativeLifeDelta is the (always non-negative) magnitude of NEW damage
  *   absorbed into the Negative Life buffer this call, i.e. positive when
- *   Negative Life worsens - not the raw signed change to its stored value,
- *   which can look like an increase on a fresh entry (0 -> max - overflow).
+ *   Negative Life worsens.
  */
 export async function applyLifeChange(actor, delta) {
   if (!delta) return { lifeDelta: 0, negativeLifeDelta: 0 };
   const life = actor.system.life;
-  const wasAboveZero = life.value > 0;
   const newLifeValue = clampResourceChange(life.value, life.max, delta);
   const lifeDelta = newLifeValue - life.value;
 
@@ -211,9 +208,11 @@ export async function applyLifeChange(actor, delta) {
     const overflow = -delta + lifeDelta; // damage magnitude Life itself couldn't absorb
     if (overflow > 0) {
       const negativeLife = actor.system.negativeLife;
-      const startingValue = wasAboveZero ? negativeLife.max : negativeLife.value;
-      const newNegativeLifeValue = Math.max(0, startingValue - overflow);
-      negativeLifeDelta = startingValue - newNegativeLifeValue;
+      // Only ever drains whatever Negative Life the actor currently has -
+      // never refilled to its max first, whether Life just hit 0 with this
+      // very change or was already there.
+      const newNegativeLifeValue = Math.max(0, negativeLife.value - overflow);
+      negativeLifeDelta = negativeLife.value - newNegativeLifeValue;
       if (newNegativeLifeValue !== negativeLife.value) updates['system.negativeLife.value'] = newNegativeLifeValue;
     }
   }

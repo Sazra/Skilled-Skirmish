@@ -1450,10 +1450,9 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
   /**
    * Life dropping below 0 via its own value input drains the leftover from
    * Negative Life instead of discarding it - mirrors helpers/
-   * statusEffects.mjs#applyLifeChange's own overflow handling (entering
-   * Negative Life fresh - Life was still above 0 before this change -
-   * starts that buffer at its own max; a further drop while already at 0
-   * Life continues draining whatever's left, see the same function).
+   * statusEffects.mjs#applyLifeChange's own overflow handling (the leftover
+   * only drains whatever Negative Life the actor currently has, never a
+   * refilled one - see the same function).
    * Rewrites Negative Life's own sibling input in place (rather than a
    * separate actor.update() call) so both land in the one pending form
    * submission this change event already triggers.
@@ -1465,8 +1464,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     const negLifeInput = lifeInput.form?.querySelector('[name="system.negativeLife.value"]');
     if (!negLifeInput) return;
     const negativeLife = this.actor.system.negativeLife;
-    const startingValue = this.actor.system.life.value > 0 ? negativeLife.max : negativeLife.value;
-    negLifeInput.value = String(Math.max(0, startingValue - overflow));
+    negLifeInput.value = String(Math.max(0, negativeLife.value - overflow));
   }
 
   /**

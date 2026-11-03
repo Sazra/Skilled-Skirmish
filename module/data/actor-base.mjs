@@ -51,9 +51,11 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       bonus: new fields.NumberField({ ...requiredInteger, initial: 0 })
     });
     // Damage taken after life reaches 0 is deducted from negative life
-    // instead of killing the character outright.
+    // instead of killing the character outright. A new actor starts with the
+    // buffer full (matching max's own initial below, like Life) - damage only
+    // ever drains it, see helpers/statusEffects.mjs#applyLifeChange.
     schema.negativeLife = new fields.SchemaField({
-      value: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+      value: new fields.NumberField({ ...requiredInteger, initial: 10, min: 0 }),
       // No longer directly user-editable - overwritten every data
       // preparation by helpers/life.mjs#computeMaxNegativeLife (see
       // prepareDerivedData below).
