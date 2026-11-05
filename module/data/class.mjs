@@ -95,10 +95,25 @@ export default class SKSKClass extends SKSKItemBase {
       }),
       damageRerollElement: new fields.StringField({ required: true, blank: true, initial: "" }),
     }), {
+      // Every field spelled out: a partial entry here is not cleaned, so any
+      // field left out fails validation ("may not be undefined") and makes a
+      // brand-new Class item impossible to create.
       initial: [
-        { name: "", description: "", lifeBonusFormula: "0", manaBonusFormula: "0", patronAbilityIndex: 0 },
-        { name: "", description: "", lifeBonusFormula: "0", manaBonusFormula: "0", patronAbilityIndex: 0 },
-        { name: "", description: "", lifeBonusFormula: "0", manaBonusFormula: "0", patronAbilityIndex: 0 }
+        {
+          name: "", description: "", lifeBonusFormula: "0", manaBonusFormula: "0", patronAbilityIndex: 0,
+          type: "passive", apCost: 0, rpCost: 0, manaCost: 0, durationRounds: 1, cooldownRounds: 0,
+          active: false, roundsRemaining: 0, effectId: "", damageRerollMode: "none", damageRerollElement: ""
+        },
+        {
+          name: "", description: "", lifeBonusFormula: "0", manaBonusFormula: "0", patronAbilityIndex: 0,
+          type: "passive", apCost: 0, rpCost: 0, manaCost: 0, durationRounds: 1, cooldownRounds: 0,
+          active: false, roundsRemaining: 0, effectId: "", damageRerollMode: "none", damageRerollElement: ""
+        },
+        {
+          name: "", description: "", lifeBonusFormula: "0", manaBonusFormula: "0", patronAbilityIndex: 0,
+          type: "passive", apCost: 0, rpCost: 0, manaCost: 0, durationRounds: 1, cooldownRounds: 0,
+          active: false, roundsRemaining: 0, effectId: "", damageRerollMode: "none", damageRerollElement: ""
+        }
       ]
     });
 
