@@ -12,7 +12,7 @@
     </li>
     {{#each materials as |material index|}}
     <li class="item model-entry">
-      <details class="settings-entry-details" data-sync="material-entry-{{index}}" open>
+      <details class="settings-entry-details" data-sync="material-entry-{{index}}">
         <summary class="settings-entry-summary">
           <i class="fas fa-chevron-right settings-entry-chevron"></i>
           <input type="text" name="materials.{{index}}.name" value="{{material.name}}"

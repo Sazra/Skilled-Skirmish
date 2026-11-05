@@ -192,7 +192,8 @@ export async function rollWeaponItem(item) {
       ? computeLehrenTargetBonus(actor, 'damageBonus', { skillKey: item.system.weaponType, kind: 'weapon' })
       : 0;
     const damageTypeBonus = actor?.system.damageBonus?.[damageType] ?? 0;
-    const allWeaponsDamageBonus = actor?.system.damageBonusAll ?? 0;
+    const allWeaponsDamageBonus = (actor?.system.damageBonusAll ?? 0)
+      + (actor?.system.weaponDamageBonus?.[item.system.weaponType] ?? 0);
     const patronDamageBonus = actor ? computePatronDamageBonus(actor, { skillKey: item.system.weaponType, damageType }) : 0;
     // The Elementarist ability's own Feuer-Ladungen bonus (helpers/
     // elementalChargeEffects.mjs) - general "extra damage", applies to
@@ -396,7 +397,7 @@ export async function rollMartialArtsAttack(actor, index) {
   const attributeBonus = resolveMartialArtsAttributeBonus(actor, attack.attributes, attack.attributeUsage);
   const lehrenDamageBonus = computeLehrenTargetBonus(actor, 'damageBonus', { skillKey: 'martialArts', kind: 'weapon' });
   const damageTypeBonus = actor.system.damageBonus?.[attack.damageType] ?? 0;
-  const allWeaponsDamageBonus = actor.system.damageBonusAll ?? 0;
+  const allWeaponsDamageBonus = (actor.system.damageBonusAll ?? 0) + (actor.system.weaponDamageBonus?.martialArts ?? 0);
   const patronDamageBonus = computePatronDamageBonus(actor, { skillKey: 'martialArts', damageType: attack.damageType });
   // The Elementarist ability's own Feuer-Ladungen bonus - see the identical
   // comment above rollWeaponItem's own totalDamageBonus.
@@ -491,15 +492,19 @@ export function getRegenerationDieSizes(actor) {
  * capped/restored). The charge is a resource cost like Mana, not AP/RP, so
  * it's always consumed regardless of Combat state - mirrors helpers/
  * inspiration.mjs#payInspirationCost's own charge handling.
+ * Shift+click on the action offers rolling several at once (see
+ * promptMultiRoll below): one charge each unless "no charges" is set, and
+ * apCost is then the TOTAL AP for the whole batch.
  * @param {Actor} actor
+ * @param {{count?: number, noCharges?: boolean, apCost?: number|null}} [options]
  * @return {Promise<ChatMessage|void>}
  */
-export async function rollRegeneration(actor) {
-  const apCost = actor.system.regenerationApCost ?? 0;
-  if (!hasEnoughActionPoints(actor, apCost)) return;
+export async function rollRegeneration(actor, { count = 1, noCharges = false, apCost = null } = {}) {
+  const totalAp = apCost ?? (actor.system.regenerationApCost ?? 0) * count;
+  if (!hasEnoughActionPoints(actor, totalAp)) return;
 
   const charges = actor.system.regenerationCharges.value;
-  if (charges < 1) {
+  if (!noCharges && charges < count) {
     return ui.notifications.warn(game.i18n.localize('SKSK.Action.NotEnoughRegenerationCharges'));
   }
 
@@ -507,19 +512,21 @@ export async function rollRegeneration(actor) {
   const conMod = actor.system.attributes?.con?.mod ?? 0;
   const healthLevel = getActorSkillLevel(actor, 'health');
   const formula = [...dice, conMod, healthLevel].join(' + ');
-  const roll = await new Roll(formula, actor.getRollData()).evaluate();
+  const rolls = [];
+  for (let i = 0; i < count; i++) rolls.push(await new Roll(formula, actor.getRollData()).evaluate());
+  const total = rolls.reduce((sum, r) => sum + r.total, 0);
 
   const life = actor.system.life;
-  const newValue = Math.min(life.max, life.value + roll.total);
+  const newValue = Math.min(life.max, life.value + total);
   await actor.update({
-    ...spendActionPoints(actor, apCost),
+    ...spendActionPoints(actor, totalAp),
     'system.life.value': newValue,
-    'system.regenerationCharges.value': charges - 1,
+    ...(noCharges ? {} : { 'system.regenerationCharges.value': charges - count }),
   });
-  const fpGrant = await grantSkillUsageFp(actor, 'health', 'regenerationUsed');
+  const fpGrant = await grantSkillUsageFp(actor, 'health', 'regenerationUsed', count);
   const descriptionHTML = `<div class="sksk-roll-description">${game.i18n.format('SKSK.Action.RegenerateLifeDescription', { name: actor.name })}</div>`;
   const extraHTML = descriptionHTML + formatSkillFpGrantLine(fpGrant) + formatSkillFpGrantLine(await checkReflexActionTrigger(actor));
-  return postActionChatCard(actor, game.i18n.localize('SKSK.Action.Regeneration'), roll, apCost, extraHTML);
+  return postMultiRollCard(actor, game.i18n.localize('SKSK.Action.Regeneration'), rolls, totalAp, extraHTML, 'SKSK.Action.MultiRoll.TotalLife');
 }
 
 /**
@@ -531,49 +538,131 @@ export async function rollRegeneration(actor) {
  * rest.mjs#applyRest for how it's capped/restored). The charge is a
  * resource cost like Mana, not AP/RP, so it's always consumed regardless
  * of Combat state - mirrors helpers/inspiration.mjs#payInspirationCost's
- * own charge handling.
+ * own charge handling. Shift+click on the action offers rolling several at
+ * once, see rollRegeneration above (same options).
  * @param {Actor} actor
+ * @param {{count?: number, noCharges?: boolean, apCost?: number|null}} [options]
  * @return {Promise<ChatMessage|void>}
  */
-export async function rollMeditation(actor) {
-  const apCost = actor.system.meditationApCost ?? 0;
-  if (!hasEnoughActionPoints(actor, apCost)) return;
+export async function rollMeditation(actor, { count = 1, noCharges = false, apCost = null } = {}) {
+  const totalAp = apCost ?? (actor.system.meditationApCost ?? 0) * count;
+  if (!hasEnoughActionPoints(actor, totalAp)) return;
 
   const charges = actor.system.meditationCharges.value;
-  if (charges < 1) {
+  if (!noCharges && charges < count) {
     return ui.notifications.warn(game.i18n.localize('SKSK.Action.NotEnoughMeditationCharges'));
   }
 
   const aura = actor.system.attributes?.aur?.value ?? 0;
   const skillBonus = getActorSkillLevel(actor, 'manaRegeneration') + getActorSkillLevel(actor, 'sourceBound');
   const formula = aura > 0 ? `1d${aura} + ${skillBonus}` : String(skillBonus);
-  const roll = await new Roll(formula, actor.getRollData()).evaluate();
+  const rolls = [];
+  for (let i = 0; i < count; i++) rolls.push(await new Roll(formula, actor.getRollData()).evaluate());
+  const total = rolls.reduce((sum, r) => sum + r.total, 0);
 
   const mana = actor.system.mana;
-  const newValue = Math.min(mana.max, mana.value + roll.total);
+  const newValue = Math.min(mana.max, mana.value + total);
   const restored = newValue - mana.value;
   await actor.update({
-    ...spendActionPoints(actor, apCost),
+    ...spendActionPoints(actor, totalAp),
     'system.mana.value': newValue,
-    'system.meditationCharges.value': charges - 1,
+    ...(noCharges ? {} : { 'system.meditationCharges.value': charges - count }),
     // Manaregeneration's own FP accumulator (see helpers/rest.mjs#
     // applyRest, which turns this into FP on the next Anpassungs-/
     // Genesungspause) - only the amount actually restored (post-cap), not
     // the raw roll total.
     'system.manaRegenerationAccumulator': (actor.system.manaRegenerationAccumulator ?? 0) + Math.max(0, restored),
   });
-  const fpGrant = await grantSkillUsageFp(actor, 'meditation', 'meditationUsed');
+  const fpGrant = await grantSkillUsageFp(actor, 'meditation', 'meditationUsed', count);
   // Seelenstärke's own extra trigger - only while a Combat is active, and
   // only if the GM has also flipped this actor's own GM-tab switch on top
   // of the usual GM-configured rate (see data/actor-base.mjs#
   // soulforceMeditationCombatFpEnabled).
   const soulforceGrant = (game.combat && actor.system.soulforceMeditationCombatFpEnabled)
-    ? await grantSkillUsageFp(actor, 'soulforce', 'meditationUsedInCombat')
+    ? await grantSkillUsageFp(actor, 'soulforce', 'meditationUsedInCombat', count)
     : null;
   const descriptionHTML = `<div class="sksk-roll-description">${game.i18n.format('SKSK.Action.RegenerateManaDescription', { name: actor.name })}</div>`;
   const extraHTML = descriptionHTML + formatSkillFpGrantLine(fpGrant) + formatSkillFpGrantLine(soulforceGrant)
     + formatSkillFpGrantLine(await checkReflexActionTrigger(actor));
-  return postActionChatCard(actor, game.i18n.localize('SKSK.Action.Meditation'), roll, apCost, extraHTML);
+  return postMultiRollCard(actor, game.i18n.localize('SKSK.Action.Meditation'), rolls, totalAp, extraHTML, 'SKSK.Action.MultiRoll.TotalMana');
+}
+
+/**
+ * Post the chat card of a (possibly multiple) Regeneration/Meditation roll:
+ * a single roll goes through postActionChatCard unchanged, several are
+ * listed one after the other under a "×N" heading with their summed total.
+ * @param {Actor} actor
+ * @param {string} title
+ * @param {Roll[]} rolls
+ * @param {number} apCost   Total AP of the whole batch.
+ * @param {string} extraHTML
+ * @param {string} totalKey   Localization key of the "Total: {total}" line.
+ * @return {Promise<ChatMessage>}
+ */
+async function postMultiRollCard(actor, title, rolls, apCost, extraHTML, totalKey) {
+  if (rolls.length === 1) return postActionChatCard(actor, title, rolls[0], apCost, extraHTML);
+  let rollsHTML = '';
+  for (const roll of rolls) rollsHTML += await roll.render();
+  const total = rolls.reduce((sum, r) => sum + r.total, 0);
+  const totalHTML = `<div class="sksk-roll-line"><strong>${game.i18n.format(totalKey, { total })}</strong></div>`;
+  return postActionChatCard(actor, `${title} ×${rolls.length}`, null, apCost, rollsHTML + totalHTML + extraHTML);
+}
+
+/**
+ * The Shift+click dialog of the Regeneration/Meditation action: how many to
+ * roll at once, a "don't consume charges" switch, and the AP cost of the
+ * whole batch (pre-filled with the normal cost per roll times the count,
+ * until it is edited by hand).
+ * @param {Actor} actor
+ * @param {"regeneration"|"meditation"} kind
+ * @return {Promise<{count: number, noCharges: boolean, apCost: number}|null>}   null if cancelled.
+ */
+export async function promptMultiRoll(actor, kind) {
+  const perRoll = (kind === 'regeneration' ? actor.system.regenerationApCost : actor.system.meditationApCost) ?? 0;
+  const charges = (kind === 'regeneration' ? actor.system.regenerationCharges : actor.system.meditationCharges)?.value ?? 0;
+  const titleKey = kind === 'regeneration' ? 'SKSK.Action.Regeneration' : 'SKSK.Action.Meditation';
+  const content = `
+    <div class="form-group">
+      <label>${game.i18n.localize('SKSK.Action.MultiRoll.Count')}</label>
+      <input type="number" name="count" value="1" min="1" step="1" autofocus />
+    </div>
+    <div class="form-group">
+      <label>${game.i18n.localize('SKSK.Action.MultiRoll.NoCharges')}</label>
+      <input type="checkbox" name="noCharges" />
+    </div>
+    <p class="hint">${game.i18n.format('SKSK.Action.MultiRoll.ChargesLeft', { charges })}</p>
+    <div class="form-group">
+      <label>${game.i18n.localize('SKSK.Action.MultiRoll.ApCost')}</label>
+      <input type="number" name="apCost" value="${perRoll}" min="0" step="1" />
+    </div>`;
+  return foundry.applications.api.DialogV2.prompt({
+    window: { title: game.i18n.localize(titleKey) },
+    content,
+    ok: {
+      label: game.i18n.localize('SKSK.Action.MultiRoll.Roll'),
+      callback: (event, button) => {
+        const form = button.form.elements;
+        return {
+          count: Math.max(1, Math.floor(Number(form.count.value)) || 1),
+          noCharges: !!form.noCharges.checked,
+          apCost: Math.max(0, Math.floor(Number(form.apCost.value)) || 0),
+        };
+      },
+    },
+    render: (event, dialog) => {
+      const form = dialog?.element?.querySelector('form') ?? dialog?.element;
+      const count = form?.querySelector('input[name="count"]');
+      const ap = form?.querySelector('input[name="apCost"]');
+      if (!count || !ap) return;
+      // Follow the count with the normal cost until the AP field is edited.
+      let edited = false;
+      ap.addEventListener('input', () => { edited = true; });
+      count.addEventListener('input', () => {
+        if (!edited) ap.value = perRoll * Math.max(1, Math.floor(Number(count.value)) || 1);
+      });
+    },
+    rejectClose: false,
+  });
 }
 
 /**

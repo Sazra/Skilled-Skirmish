@@ -10,9 +10,9 @@
      disabled/no-slots case is hidden via a CSS class instead of an #if
      wrapping the whole element away. --}}
 <div class="elemental-charges-bar{{#unless elementalChargeSlots.length}} elemental-charges-bar-hidden{{/unless}}{{#unless elementalChargesEnabled}} elemental-charges-bar-hidden{{/unless}}">
-  {{#each elementalChargeSlots as |slot|}}
-  <div class="elemental-charge-slot {{slot.cssClass}}"
-    {{#if slot.label}}data-tooltip="{{slot.label}}"{{/if}}>
+  {{#each elementalChargeSlots as |slot slotIndex|}}
+  <div class="elemental-charge-slot {{slot.cssClass}}{{#if slot.school}} elemental-charge-slot-consumable{{/if}}"
+    {{#if slot.label}}data-tooltip="{{slot.label}}" data-action="consumeElementalCharge" data-index="{{slotIndex}}"{{/if}}>
     {{#if slot.school}}<span class="elemental-charge-abbr">{{slot.abbr}}</span>{{/if}}
   </div>
   {{/each}}

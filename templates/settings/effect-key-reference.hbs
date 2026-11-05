@@ -4,7 +4,7 @@
   <input type="search" class="effect-key-search" placeholder="{{localize 'SKSK.EffectKeyReference.SearchPlaceholder'}}" />
 
   {{#each categories as |category|}}
-  <details class="model-properties-details" open>
+  <details class="model-properties-details">
     <summary class="resource-label">{{localize category.title}}</summary>
     {{#if category.hint}}
     <p class="hint">{{localize category.hint}}</p>

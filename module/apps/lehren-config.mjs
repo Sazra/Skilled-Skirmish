@@ -191,7 +191,8 @@ export class SKSKLehrenConfig extends HandlebarsApplicationMixin(ApplicationV2) 
       id: foundry.utils.randomID(), name: '', description: '', minSkillLevel: 0, bonuses: [],
     });
     await game.settings.set('sksk', 'lehren', lehren);
-    this.render();
+    await this.render();
+    this.element?.querySelector(`details[data-sync="lehre-entry-${skillKey}-${lehren[skillKey].length - 1}"]`)?.setAttribute('open', '');
   }
 
   /** @private */

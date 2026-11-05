@@ -1,12 +1,12 @@
 <section class="tab {{tab.cssClass}}" data-group="primary" data-tab="{{tab.id}}">
   {{#each skills as |skill|}}
-  <details class="gm-section lehre-skill-section" data-sync="lehre-skill-{{skill.key}}" {{#if skill.defs.length}}open{{/if}}>
+  <details class="gm-section lehre-skill-section" data-sync="lehre-skill-{{skill.key}}">
     <summary class="resource-label">{{localize skill.label}} ({{skill.defs.length}})</summary>
 
     <ol class="items-list">
       {{#each skill.defs as |def defIndex|}}
       <li class="item model-entry lehre-card">
-        <details class="settings-entry-details" data-sync="lehre-entry-{{skill.key}}-{{defIndex}}" open>
+        <details class="settings-entry-details" data-sync="lehre-entry-{{skill.key}}-{{defIndex}}">
           <summary class="settings-entry-summary">
             <i class="fas fa-chevron-right settings-entry-chevron"></i>
             <input type="text" name="lehren.{{skill.key}}.{{defIndex}}.name" value="{{def.name}}"

@@ -43,10 +43,12 @@ function sumBonuses(attributeBonuses, skillBonuses, actor) {
  * @param {object} savingThrow   An entry from SKSKSpell#savingThrows.
  * @param {Actor} actor          The actor casting the spell.
  * @param {number} [overchargeCount=0]
+ * @param {number} [extraDcBonus=0]   DC change from paid extra-cost steps
+ *   (see computeExtraCostEffects).
  * @return {number}
  */
-export function computeSavingThrowValue(savingThrow, actor, overchargeCount = 0) {
-  return (savingThrow.baseValue ?? 0) + overchargeCount
+export function computeSavingThrowValue(savingThrow, actor, overchargeCount = 0, extraDcBonus = 0) {
+  return (savingThrow.baseValue ?? 0) + overchargeCount + extraDcBonus
     + sumBonuses(savingThrow.attributeBonuses, savingThrow.skillBonuses, actor)
     + (actor ? getElementalDarkSaveDcBonus(actor) : 0);
 }
@@ -88,6 +90,17 @@ export function computeDamageBonus(damage, actor, spellSystem = null) {
   // applies unconditionally whenever an actor is present - no spellSystem
   // needed.
   const allSpellsDamageBonus = actor?.system.spellDamageBonusAll ?? 0;
+  // Per-magic-school damage bonus (Active Effect target), keyed like the
+  // school's attack bonus: Simple/Advanced by magicSchool, Combined by
+  // combinedSchool; Systemless spells have none.
+  let schoolDamageBonus = 0;
+  if (actor && spellSystem) {
+    if (spellSystem.spellType === 'simple' || spellSystem.spellType === 'advanced') {
+      schoolDamageBonus = actor.system.magicSchoolDamageBonus?.[spellSystem.magicSchool] ?? 0;
+    } else if (spellSystem.spellType === 'combined') {
+      schoolDamageBonus = actor.system.combinedMagicSchoolDamageBonus?.[spellSystem.combinedSchool] ?? 0;
+    }
+  }
   const patronBonus = actor && spellSystem
     ? computeSpellPatronDamageBonus(spellSystem, actor, damage.damageType)
     : 0;
@@ -95,7 +108,7 @@ export function computeDamageBonus(damage, actor, spellSystem = null) {
   // elementalChargeEffects.mjs) - general "extra damage", not scoped to
   // fire-type damage specifically, so it applies to any spell's damage.
   const fireChargeBonus = actor ? getElementalFireDamageBonus(actor) : 0;
-  return sumBonuses(damage.attributeBonuses, damage.skillBonuses, actor) + lehrenBonus + damageTypeBonus + patronBonus + allSpellsDamageBonus + fireChargeBonus;
+  return sumBonuses(damage.attributeBonuses, damage.skillBonuses, actor) + lehrenBonus + damageTypeBonus + patronBonus + allSpellsDamageBonus + schoolDamageBonus + fireChargeBonus;
 }
 
 /**
@@ -421,6 +434,11 @@ function getManaCostReduction(actor, spellType, school) {
     }
   }
 
+  // The Active-Effect counterparts of those entries (see data/actor-base.mjs).
+  percent += actor.system.manaCostReductionPercentBySchool?.[school] ?? 0;
+  flat += actor.system.manaCostReductionFlatBySchool?.[school] ?? 0;
+  if (actor.system.manaCostAllowBelowOne) allowBelowOne = true;
+
   return { percent, flat, allowBelowOne };
 }
 
@@ -445,6 +463,9 @@ function getApCostReduction(actor, spellType, school) {
     }
   }
 
+  // The Active-Effect counterparts of those entries (see data/actor-base.mjs).
+  flat += (actor.system.apCostReductionBySchool?.[school] ?? 0) + (actor.system.apCostReductionFlat ?? 0);
+
   return flat;
 }
 
@@ -452,6 +473,8 @@ function getApCostReduction(actor, spellType, school) {
  * The percentage mana discount from a caster's Magic Control (non-Ritual
  * spells) or Ritualism (Ritual spells) skill level - 5% per level, capped
  * at 50% (Magic Control's max level 10) or 25% (Ritualism's max level 5).
+ * Ritual spells additionally get the Magic Control discount while the
+ * actor's ritualsUseMagicControl switch is on.
  * @param {object} spellSystem
  * @param {Actor} actor
  * @return {number}
@@ -460,7 +483,13 @@ function computeMagicControlOrRitualismDiscountPercent(spellSystem, actor) {
   const isRitual = !!spellSystem.castingMethods?.ritual;
   const level = getActorSkillLevel(actor, isRitual ? 'ritualism' : 'magicControl');
   const cap = isRitual ? 25 : 50;
-  return Math.min(cap, level * 5);
+  let percent = Math.min(cap, level * 5);
+  // With the actor's "rituals use Magic Control" switch, a Ritual spell is
+  // discounted by Magic Control as well, on top of Ritualism.
+  if (isRitual && actor.system.ritualsUseMagicControl) {
+    percent += Math.min(50, getActorSkillLevel(actor, 'magicControl') * 5);
+  }
+  return percent;
 }
 
 /**
@@ -495,10 +524,139 @@ export function computeRitualHours(spellSystem) {
  * @param {number} tier
  * @return {number}
  */
-export function computeExtraManaCostSum(spellSystem, tier) {
+export function computeExtraManaCostSum(spellSystem, tier, counts = []) {
   if (tier <= 0) return 0;
   const tiers = spellSystem.extraManaCosts ?? [];
-  return tiers.slice(0, tier).reduce((sum, entry) => sum + (entry.manaCost ?? 0), 0);
+  const used = normalizeExtraCostCounts(spellSystem, counts);
+  return tiers.slice(0, tier).reduce((sum, entry, index) => sum + (entry.manaCost ?? 0) * used[index], 0);
+}
+
+/**
+ * Everything the paid "Es kann mehr Mana gezahlt werden" steps change about
+ * a cast besides its cost (see data/spell.mjs#extraManaCosts): additional
+ * attack rolls, range distance/indicator changes and saving-throw DC
+ * changes. Cumulative like the cost (steps 1..tier), and each step counts
+ * once per time it was chosen (its repeat count).
+ * @param {object} spellSystem
+ * @param {number} tier
+ * @param {number[]} [counts]
+ * @return {{extraAttacks: number, dcBonus: Object<number, number>,
+ *   rangeDistanceBonus: Object<number, number>, rangeIndicator: Object<number, string>,
+ *   statusStacks: Object<number, number>}}
+ */
+export function computeExtraCostEffects(spellSystem, tier, counts = []) {
+  const fx = { extraAttacks: 0, dcBonus: {}, rangeDistanceBonus: {}, rangeIndicator: {}, statusStacks: {} };
+  if (tier <= 0) return fx;
+  const used = normalizeExtraCostCounts(spellSystem, counts);
+  (spellSystem.extraManaCosts ?? []).slice(0, tier).forEach((entry, index) => {
+    const times = used[index];
+    fx.extraAttacks += (entry.extraAttacks ?? 0) * times;
+    for (const change of entry.rangeChanges ?? []) {
+      const key = change.rangeIndex ?? 0;
+      fx.rangeDistanceBonus[key] = (fx.rangeDistanceBonus[key] ?? 0) + (change.distanceBonus ?? 0) * times;
+      if (change.indicator) fx.rangeIndicator[key] = change.indicator;
+    }
+    for (const change of entry.saveDcChanges ?? []) {
+      const key = change.savingThrowIndex ?? 0;
+      fx.dcBonus[key] = (fx.dcBonus[key] ?? 0) + (change.dcBonus ?? 0) * times;
+    }
+    for (const change of entry.statusStackBonuses ?? []) {
+      const key = change.statusIndex ?? 0;
+      fx.statusStacks[key] = (fx.statusStacks[key] ?? 0) + (change.stacks ?? 0) * times;
+    }
+  });
+  return fx;
+}
+
+/**
+ * How many stacks one of a spell's statusEffects entries applies for a cast
+ * that paid the given extra-cost tier: null if the entry is gated on a step
+ * that was not paid; otherwise its own stacks (times the number of times
+ * its gating step was chosen, if gated) plus any extra stacks the paid
+ * steps add to it (data/spell.mjs#extraManaCosts.statusStackBonuses).
+ * @param {object} spellSystem
+ * @param {number} index   Index into statusEffects.
+ * @param {number} [tier=0]
+ * @param {number[]} [counts=[]]
+ * @return {number|null}
+ */
+export function resolveSpellStatusStacks(spellSystem, index, tier = 0, counts = []) {
+  const entry = spellSystem.statusEffects?.[index];
+  if (!entry) return null;
+  const gate = entry.extraCostIndex;
+  const gated = gate !== null && gate !== undefined;
+  if (gated && tier < gate + 1) return null;
+  const used = normalizeExtraCostCounts(spellSystem, counts);
+  const fx = computeExtraCostEffects(spellSystem, tier, counts);
+  return (entry.stacks ?? 1) * (gated ? (used[gate] ?? 1) : 1) + (fx.statusStacks[index] ?? 0);
+}
+
+/**
+ * Whether one of a spell's foundryEffects entries applies to a cast that
+ * paid the given extra-cost tier (see data/spell.mjs#foundryEffects.
+ * extraCostIndex).
+ * @param {object} spellSystem
+ * @param {number} index   Index into foundryEffects.
+ * @param {number} [tier=0]
+ * @return {boolean}
+ */
+export function isSpellFoundryEffectActive(spellSystem, index, tier = 0) {
+  const gate = spellSystem.foundryEffects?.[index]?.extraCostIndex;
+  return gate === null || gate === undefined || tier >= gate + 1;
+}
+
+/**
+ * Whether a saving throw applies to this cast: always, unless it is bound
+ * to an extra-cost step (data/spell.mjs#savingThrows.extraCostIndex) that
+ * was not paid.
+ * @param {object} spellSystem
+ * @param {number} saveIndex
+ * @param {number} tier   The extra-cost tier paid.
+ * @return {boolean}
+ */
+export function isSavingThrowActive(spellSystem, saveIndex, tier) {
+  const gate = spellSystem.savingThrows?.[saveIndex]?.extraCostIndex;
+  return gate === null || gate === undefined || tier >= gate + 1;
+}
+
+/**
+ * A spell's ranges as they apply to one cast: the stored distance, plus
+ * (for a "?" Mana cost spell) distancePerMana × the chosen base Mana, plus
+ * the distance bonus / indicator replacement of paid extra-cost steps.
+ * Überladen and the Luft-Ladungen bonus are applied by the caller.
+ * @param {object} spellSystem
+ * @param {number} [tier=0]
+ * @param {number[]} [counts=[]]
+ * @param {number|null} [variableMana=null]
+ * @return {Array<{distance: number, indicator: string}>}
+ */
+export function computeEffectiveRanges(spellSystem, tier = 0, counts = [], variableMana = null) {
+  const fx = computeExtraCostEffects(spellSystem, tier, counts);
+  const mana = Number(variableMana ?? spellSystem.variableManaPaid ?? 0) || 0;
+  return (spellSystem.ranges ?? []).map((range, index) => {
+    const perMana = spellSystem.manaCostVariable ? Math.floor((range.distancePerMana ?? 0) * mana) : 0;
+    return {
+      ...range,
+      distance: Math.max(0, (range.distance ?? 0) + perMana + (fx.rangeDistanceBonus[index] ?? 0)),
+      indicator: fx.rangeIndicator[index] ?? range.indicator,
+    };
+  });
+}
+
+/**
+ * Clamp the per-step repeat counts of a cast to what the spell allows: a
+ * step that is not flagged "kann mehrfach gewählt werden" always counts
+ * once, a repeatable one between 1 and its maxRepeats.
+ * @param {object} spellSystem
+ * @param {number[]} [counts]   Index = extra-cost step (0-based).
+ * @return {number[]}   One count per extra-cost step.
+ */
+export function normalizeExtraCostCounts(spellSystem, counts = []) {
+  return (spellSystem.extraManaCosts ?? []).map((entry, index) => {
+    if (!entry.repeatable) return 1;
+    const wanted = Math.floor(Number(counts?.[index] ?? 1)) || 1;
+    return Math.max(1, Math.min(wanted, Math.max(1, entry.maxRepeats ?? 1)));
+  });
 }
 
 /**
@@ -535,9 +693,71 @@ export function computeMaxOverchargeCount(actor) {
  * @param {number} overchargeCount
  * @return {Array<{distance: number, indicator: string}>}
  */
-export function computeOverchargedRanges(ranges, overchargeCount) {
+export function computeOverchargedRanges(ranges, overchargeCount, settings = OVERCHARGE_DEFAULTS) {
   if (overchargeCount <= 0) return ranges;
-  return ranges.map(r => ({ ...r, distance: Math.floor(r.distance * (1 + 0.2 * overchargeCount)) }));
+  const percent = settings.rangePercent ?? OVERCHARGE_DEFAULTS.rangePercent;
+  const flat = settings.rangeFlat ?? 0;
+  return ranges.map(r => ({
+    ...r,
+    distance: Math.max(0, Math.floor(r.distance * (100 + percent * overchargeCount) / 100) + flat * overchargeCount),
+  }));
+}
+
+/**
+ * The general Überladen (Overcharge) rules, which a spell's own
+ * data/spell.mjs#overcharge settings default to: +20% Mana, +1 AP, +1 DC,
+ * +20% range and +50% damage per Überladung.
+ */
+export const OVERCHARGE_DEFAULTS = {
+  effect: 'scaling', manaPercent: 20, manaFlat: 0, apCost: 1, dcBonus: 1,
+  rangePercent: 20, rangeFlat: 0, damagePercent: 50, durationText: '',
+};
+
+/**
+ * A spell's Überladen settings with every missing value filled from the
+ * general rules.
+ * @param {object} spellSystem
+ * @return {typeof OVERCHARGE_DEFAULTS}
+ */
+export function getOverchargeSettings(spellSystem) {
+  return { ...OVERCHARGE_DEFAULTS, ...(spellSystem?.overcharge ?? {}) };
+}
+
+/**
+ * The per-Überladung cost surcharge for a spell cast by an actor: the
+ * spell's own Überladen settings (getOverchargeSettings) plus the caster's
+ * Active-Effect adjustments (overchargeManaPercentBonus/
+ * overchargeManaFlatBonus/overchargeApCostBonus), each floored at 0.
+ * @param {object} spellSystem
+ * @param {Actor} actor
+ * @return {{manaPercent: number, manaFlat: number, apCost: number}}
+ */
+export function getOverchargeSurcharges(spellSystem, actor) {
+  const oc = getOverchargeSettings(spellSystem);
+  const sys = actor?.system ?? {};
+  return {
+    manaPercent: Math.max(0, oc.manaPercent + (sys.overchargeManaPercentBonus ?? 0)),
+    manaFlat: Math.max(0, oc.manaFlat + (sys.overchargeManaFlatBonus ?? 0)),
+    apCost: Math.max(0, oc.apCost + (sys.overchargeApCostBonus ?? 0)),
+  };
+}
+
+/**
+ * Fill a spell's "durationText" (data/spell.mjs#overcharge): "{n}" and any
+ * "{formula in n}" are replaced by the evaluated number.
+ * @param {string} text
+ * @param {number} n   Number of Überladungen.
+ * @return {string}
+ */
+export function formatOverchargeDuration(text, n) {
+  return String(text ?? '').replace(/\{([^{}]+)\}/g, (match, expr) => {
+    try {
+      const total = new Roll(expr.replace(/\bn\b/g, String(n))).evaluateSync({ strict: false }).total;
+      return Number.isFinite(total) ? String(total) : match;
+    } catch (e) {
+      return match;
+    }
+  });
 }
 
 /**
@@ -577,13 +797,21 @@ export function computeOverchargedRanges(ranges, overchargeCount) {
  * @param {number} [extraCostTier=0]   Which "Es kann mehr Mana gezahlt
  *   werden" tier was paid (1-based, cumulative) - see
  *   computeExtraManaCostSum/computeMaxExtraCostTier.
+ * @param {number[]} [extraCostCounts=[]]   How often each repeatable
+ *   extra-cost step was chosen (see normalizeExtraCostCounts).
+ * @param {number|null} [variableMana=null]   The base Mana amount chosen
+ *   for a spell with a "?" Mana cost (data/spell.mjs#manaCostVariable);
+ *   replaces manaCost as the base. Ignored for a fixed-cost spell.
  * @return {{cost: number, increased: boolean}}   increased is true only
  *   when the level-shortfall surcharge applied (regardless of whether
  *   other discounts brought the final number back below the base cost) -
  *   the UI uses it to flag the cost in red.
  */
-export function computeSpellManaCost(spellSystem, actor, overchargeCount = 0, extraCostTier = 0) {
-  let cost = (spellSystem.manaCost ?? 0) + computeExtraManaCostSum(spellSystem, extraCostTier);
+export function computeSpellManaCost(spellSystem, actor, overchargeCount = 0, extraCostTier = 0, extraCostCounts = [], variableMana = null) {
+  const baseCost = spellSystem.manaCostVariable
+    ? Math.max(0, Number(variableMana ?? spellSystem.variableManaPaid ?? 0) || 0)
+    : (spellSystem.manaCost ?? 0);
+  let cost = baseCost + computeExtraManaCostSum(spellSystem, extraCostTier, extraCostCounts);
   let discountPercent = 0;
   let increased = false;
 
@@ -613,7 +841,8 @@ export function computeSpellManaCost(spellSystem, actor, overchargeCount = 0, ex
   cost = allowBelowOne ? Math.max(0, cost) : Math.max(1, cost);
 
   if (overchargeCount > 0) {
-    cost = Math.floor(cost * (1 + 0.2 * overchargeCount));
+    const oc = getOverchargeSurcharges(spellSystem, actor);
+    cost = Math.floor(cost * (100 + oc.manaPercent * overchargeCount) / 100) + oc.manaFlat * overchargeCount;
   }
 
   return { cost, increased };
@@ -659,5 +888,5 @@ export function computeSpellApCost(spellSystem, actor, overchargeCount = 0) {
   }
 
   const floor = (spellSystem.rpCost ?? 0) > 0 ? 0 : 1;
-  return Math.max(floor, Math.floor(apCost)) + overchargeCount;
+  return Math.max(floor, Math.floor(apCost)) + getOverchargeSurcharges(spellSystem, actor).apCost * overchargeCount;
 }

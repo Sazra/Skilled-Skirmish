@@ -178,14 +178,65 @@ async function payTechniqueCost(actor, item) {
  */
 async function ensureLinkedEffect(item) {
   if (item.system.effectId && item.actor?.effects.get(item.system.effectId)) return item.system.effectId;
+  // The first time it is needed on the actor, start from the template
+  // authored on the Technique item itself (if there is one).
+  const template = getTechniqueTemplate(item);
+  const data = template ? template.toObject() : {};
+  delete data._id;
+  delete data._stats;
+  if (data.flags?.sksk) delete data.flags.sksk.techniqueTemplate;
   const [effect] = await item.actor.createEmbeddedDocuments('ActiveEffect', [{
+    ...data,
+    name: data.name || item.name,
+    img: data.img || item.img || 'icons/svg/aura.svg',
+    origin: item.uuid,
+    disabled: true,
+    transfer: false,
+  }]);
+  await item.update({ 'system.effectId': effect.id });
+  return effect.id;
+}
+
+/**
+ * The effect template kept on a Technique item itself (never transferred
+ * to an owner) - what the Edit Effect button opens while no effect is bound
+ * to an actor yet, so it can be authored before the Technique is owned or
+ * activated. Copied onto the actor by ensureLinkedEffect above.
+ * @param {Item} item
+ * @return {ActiveEffect|null}
+ */
+function getTechniqueTemplate(item) {
+  return item.effects.find(effect => effect.getFlag('sksk', 'techniqueTemplate')) ?? null;
+}
+
+/**
+ * The Technique's template effect, created (disabled, non-transferring) if
+ * it doesn't exist yet.
+ * @param {Item} item
+ * @return {Promise<ActiveEffect>}
+ */
+export async function ensureTechniqueTemplate(item) {
+  const existing = getTechniqueTemplate(item);
+  if (existing) return existing;
+  const [effect] = await item.createEmbeddedDocuments('ActiveEffect', [{
     name: item.name,
     img: item.img || 'icons/svg/aura.svg',
     origin: item.uuid,
     disabled: true,
+    transfer: false,
+    flags: { sksk: { techniqueTemplate: true } },
   }]);
-  await item.update({ 'system.effectId': effect.id });
-  return effect.id;
+  return effect;
+}
+
+/**
+ * The effect the Edit Effect button should open when one is already bound to
+ * the owning actor (null otherwise - see ensureTechniqueTemplate).
+ * @param {Item} item
+ * @return {ActiveEffect|null}
+ */
+export function openableTechniqueEffect(item) {
+  return item.system.effectId ? (item.actor?.effects.get(item.system.effectId) ?? null) : null;
 }
 
 /**

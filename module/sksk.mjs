@@ -6,6 +6,11 @@ import { preloadHandlebarsTemplates } from './helpers/templates.mjs';
 import { SKSK } from './helpers/config.mjs';
 import { registerSettings } from './helpers/settings.mjs';
 import { rollSavingThrowFromChat, rollSpellEffectSaveFromChat, applySpellEffectFromChat } from './helpers/spell-rolls.mjs';
+
+/** "1,2,1" (a chat button's data-extra-counts) -> [1, 2, 1]. */
+function parseExtraCounts(text) {
+  return String(text ?? '').split(',').filter(part => part !== '').map(Number);
+}
 import { resolveHitEvaluationFromChat } from './helpers/attackRolls.mjs';
 import { applyDamageFromChat, handleManualKillFromChat } from './helpers/damageApplication.mjs';
 import { claimInspirationDie } from './helpers/inspiration.mjs';
@@ -25,6 +30,7 @@ import {
 import { clampSingleAttributeSelection } from './helpers/models.mjs';
 import { registerCalendariaIntegration } from './helpers/calendarIntegration.mjs';
 import { applyCustomActiveEffectChange, addPhaseSelectToActiveEffectChanges } from './helpers/effects.mjs';
+import { attachEffectKeyAutocomplete } from './helpers/effectKeyAutocomplete.mjs';
 import { initGmRelay } from './helpers/gmRelay.mjs';
 import { createMacroFromDrop, runRollMacro, rollItemMacro } from './helpers/macroRolls.mjs';
 import { registerItemPilesIntegration } from './helpers/itemPiles.mjs';
@@ -176,6 +182,7 @@ Hooks.once('ready', async function () {
   // alongside the existing ones without the row overflowing/scrolling.
   Hooks.on('renderActiveEffectConfig', (app, element) => {
     addPhaseSelectToActiveEffectChanges(element);
+    attachEffectKeyAutocomplete(element);
     if (!app._sksk_widenedForPhase) {
       app._sksk_widenedForPhase = true;
       app.setPosition({ width: app.position.width + 100 });
@@ -195,7 +202,8 @@ Hooks.once('ready', async function () {
     // renderSavingThrowButton/rollContestCasterRoll.
     rollSavingThrowFromChat(
       button.dataset.itemUuid, Number(button.dataset.saveIndex), Number(button.dataset.overcharge) || 0, event.shiftKey,
-      button.dataset.contestTotal !== undefined ? Number(button.dataset.contestTotal) : null
+      button.dataset.contestTotal !== undefined ? Number(button.dataset.contestTotal) : null,
+      Number(button.dataset.dcBonus) || 0
     );
   });
 
@@ -282,7 +290,9 @@ Hooks.once('ready', async function () {
     event.preventDefault();
     rollSpellEffectSaveFromChat(
       button.dataset.itemUuid, Number(button.dataset.saveIndex), Number(button.dataset.overcharge) || 0, event.shiftKey,
-      button.dataset.contestTotal !== undefined ? Number(button.dataset.contestTotal) : null
+      button.dataset.contestTotal !== undefined ? Number(button.dataset.contestTotal) : null,
+      Number(button.dataset.dcBonus) || 0,
+      Number(button.dataset.extraTier) || 0, parseExtraCounts(button.dataset.extraCounts)
     );
   });
 
@@ -293,7 +303,7 @@ Hooks.once('ready', async function () {
     const button = event.target.closest('[data-action="applySpellEffect"]');
     if (!button) return;
     event.preventDefault();
-    applySpellEffectFromChat(button.dataset.itemUuid, button.dataset.group);
+    applySpellEffectFromChat(button.dataset.itemUuid, button.dataset.group, Number(button.dataset.extraTier) || 0, parseExtraCounts(button.dataset.extraCounts));
   });
 
   // A weapon's attributeOverride enforces the same single-attribute rule

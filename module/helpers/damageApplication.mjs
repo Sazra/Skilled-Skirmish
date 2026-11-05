@@ -5,6 +5,7 @@ import {
   checkConcentration, damageDealtFrom,
 } from './statusEffects.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
+import { resolveSpellStatusStacks, isSpellFoundryEffectActive } from './spells.mjs';
 import { getElementalDeathChargeHeal } from './elementalChargeEffects.mjs';
 import { requestGmAction, registerGmRelayAction } from './gmRelay.mjs';
 
@@ -173,9 +174,13 @@ export async function applyTechniqueEffectBundle(itemUuid, defender) {
  *   which specific saving throw's own effect entries to apply (entries for
  *   any OTHER saving throw index are left alone).
  * @param {Actor} defender
+ * @param {number} [extraCostTier=0]   The extra-cost tier paid at cast time
+ *   - gates entries bound to a step and adds step-granted stacks (see
+ *   helpers/spells.mjs#resolveSpellStatusStacks).
+ * @param {number[]} [extraCostCounts=[]]
  * @return {Promise<string>}
  */
-export async function applySpellEffectGroup(itemUuid, group, savingThrowIndex, defender) {
+export async function applySpellEffectGroup(itemUuid, group, savingThrowIndex, defender, extraCostTier = 0, extraCostCounts = []) {
   const item = itemUuid ? await fromUuid(itemUuid) : null;
   if (!item) return '';
 
@@ -186,15 +191,18 @@ export async function applySpellEffectGroup(itemUuid, group, savingThrowIndex, d
   // event on its own, so the field can stay unset in storage.
   const matches = (entry) => entry.trigger === group && (group !== 'save' || (entry.savingThrowIndex ?? 0) === savingThrowIndex);
   const lines = [];
-  for (const entry of item.system.statusEffects ?? []) {
+  for (const [index, entry] of (item.system.statusEffects ?? []).entries()) {
     if (!matches(entry) || !entry.statusId) continue;
-    await increaseStatusStacks(defender, entry.statusId, entry.stacks ?? 1);
+    const stacks = resolveSpellStatusStacks(item.system, index, extraCostTier, extraCostCounts);
+    if (stacks === null || stacks <= 0) continue;
+    await increaseStatusStacks(defender, entry.statusId, stacks);
     const def = getStatusEffectDefinitions().find(d => d.id === entry.statusId);
-    lines.push(`<div class="sksk-roll-line sksk-roll-status-effect">${game.i18n.format('SKSK.Spell.StatusEffectApplied', { name: def?.name ?? entry.statusId, target: defender.name })}</div>`);
+    lines.push(`<div class="sksk-roll-line sksk-roll-status-effect">${game.i18n.format('SKSK.Spell.StatusEffectApplied', { name: def?.name ?? entry.statusId, target: defender.name })}${stacks > 1 ? ` (×${stacks})` : ''}</div>`);
   }
-  for (const entry of item.system.foundryEffects ?? []) {
+  for (const [index, entry] of (item.system.foundryEffects ?? []).entries()) {
     if (!matches(entry) || !entry.effectId) continue;
-    const template = item.actor?.effects.get(entry.effectId);
+    if (!isSpellFoundryEffectActive(item.system, index, extraCostTier)) continue;
+    const template = item.effects.get(entry.effectId) ?? item.actor?.effects.get(entry.effectId);
     if (!template) continue;
     const effectData = template.toObject();
     delete effectData._id;

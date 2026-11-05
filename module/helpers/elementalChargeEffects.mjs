@@ -56,6 +56,11 @@ export function getElementalSpecializations(actor) {
       for (const school of item.system.elementalSpecializations ?? []) schools.add(school);
     }
   }
+  // The Active-Effect counterpart (see data/actor-base.mjs#
+  // elementalSpecialization).
+  for (const [school, active] of Object.entries(actor.system.elementalSpecialization ?? {})) {
+    if (active) schools.add(school);
+  }
   return schools;
 }
 

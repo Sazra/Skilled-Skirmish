@@ -134,6 +134,13 @@ export function computeMovementSpeeds(actor) {
     }
   }
 
+  // The Active-Effect counterparts of those "bonus" entries (see
+  // data/actor-base.mjs#movementBonus/movementBonusAll).
+  const allBonus = actor.system.movementBonusAll ?? 0;
+  for (const key of Object.keys(speeds)) {
+    speeds[key] += allBonus + (actor.system.movementBonus?.[key] ?? 0);
+  }
+
   if (unlockedTypes.size) {
     const minimums = SIZE_MOVEMENT_MINIMUMS[getActorSizeCategory(actor)] ?? SIZE_MOVEMENT_MINIMUMS.medium;
     for (const type of unlockedTypes) {

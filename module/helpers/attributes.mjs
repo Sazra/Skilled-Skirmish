@@ -200,10 +200,14 @@ export function computeAttributeMax(actor, attributeKey) {
     if (mod.operation === 'add') max += mod.value;
     else if (mod.operation === 'subtract') max -= mod.value;
   }
+  // The Active-Effect counterparts of those entries (see data/actor-base.mjs
+  // #attributeMaxBonus/attributeMaxMultiplier) join the same two steps.
+  max += actor.system.attributeMaxBonus?.[attributeKey] ?? 0;
   for (const mod of modifiers) {
     if (mod.operation === 'multiply') max *= mod.value;
     else if (mod.operation === 'divide' && mod.value) max /= mod.value;
   }
+  max *= actor.system.attributeMaxMultiplier?.[attributeKey] ?? 1;
 
   return Math.max(1, Math.floor(max));
 }
@@ -268,6 +272,14 @@ export function getAttributeMaxBreakdown(actor, attributeKey) {
       const prefix = operationPrefixes[entry.operation] ?? '';
       rows.push({ label: item.name, perLevel: null, value: `${prefix}${entry.value}` });
     }
+  }
+  const effectBonus = actor.system.attributeMaxBonus?.[attributeKey] ?? 0;
+  if (effectBonus) {
+    rows.push({ label: game.i18n.localize('SKSK.Breakdown.EffectsBonus'), perLevel: null, value: `${effectBonus > 0 ? '+' : ''}${effectBonus}` });
+  }
+  const effectMultiplier = actor.system.attributeMaxMultiplier?.[attributeKey] ?? 1;
+  if (effectMultiplier !== 1) {
+    rows.push({ label: game.i18n.localize('SKSK.Breakdown.EffectsBonus'), perLevel: null, value: `×${effectMultiplier}` });
   }
 
   return { rows, total: computeAttributeMax(actor, attributeKey) };

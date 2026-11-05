@@ -52,7 +52,17 @@ export class SKSKEffectKeyReference extends HandlebarsApplicationMixin(Applicati
   /** @override */
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
+    context.categories = SKSKEffectKeyReference.buildCategories();
+    return context;
+  }
 
+  /**
+   * Every category (title localization key + {label, key} rows) of the
+   * catalog - also the source of the Active Effect sheet's key autocomplete
+   * (helpers/effectKeyAutocomplete.mjs).
+   * @return {Array<{title: string, hint?: string, rows: Array<{label: string, key: string}>}>}
+   */
+  static buildCategories() {
     const skillRows = Object.values(CONFIG.SKSK.skills)
       .flatMap(category => Object.keys(category))
       .map(key => ({ label: game.i18n.localize(getSkillLabel(key)), key: `system.skills.${key}.gain` }));
@@ -69,7 +79,43 @@ export class SKSKEffectKeyReference extends HandlebarsApplicationMixin(Applicati
       .flatMap(category => Object.keys(category))
       .map(key => ({ label: game.i18n.localize(getSkillLabel(key)), key: `system.skillRollRpCostModifier.${key}` }));
 
-    context.categories = [
+    // Actor-wide Active-Effect counterparts of the bonus lists on Species/
+    // Class/Talent items (and Items/Armor/Weapons for cost reductions and
+    // movement) - see data/actor-base.mjs.
+    const chargeRows = Object.entries(CONFIG.SKSK.chargeResources).flatMap(([key, labelKey]) => {
+      const label = game.i18n.localize(labelKey);
+      return [
+        { label: `${label} (Flat)`, key: `system.chargeBonusFlat.${key}` },
+        { label: `${label} (%)`, key: `system.chargeBonusPercent.${key}` },
+      ];
+    });
+    const schoolVocab = {
+      ...CONFIG.SKSK.simpleMagicSchools, ...CONFIG.SKSK.advancedMagicSchools,
+      ...CONFIG.SKSK.combinedMagicSchools, ...CONFIG.SKSK.systemlessMagicCategories,
+    };
+    const schoolCostRows = Object.entries(schoolVocab).flatMap(([key, labelKey]) => {
+      const label = game.i18n.localize(labelKey);
+      return [
+        { label: `${label} - Mana (%)`, key: `system.manaCostReductionPercentBySchool.${key}` },
+        { label: `${label} - Mana (Flat)`, key: `system.manaCostReductionFlatBySchool.${key}` },
+        { label: `${label} - AP (Flat)`, key: `system.apCostReductionBySchool.${key}` },
+      ];
+    });
+    const movementRows = [
+      ...Object.entries(CONFIG.SKSK.movementTypes).map(([key, labelKey]) => ({
+        label: game.i18n.localize(labelKey), key: `system.movementBonus.${key}`,
+      })),
+      { label: game.i18n.localize('SKSK.EffectKeyReference.Category.MovementBonusAll'), key: 'system.movementBonusAll' },
+    ];
+    const attributeMaxRows = Object.entries(CONFIG.SKSK.attributes).flatMap(([key, labelKey]) => {
+      const label = game.i18n.localize(labelKey);
+      return [
+        { label: `${label} (Max +/-)`, key: `system.attributeMaxBonus.${key}` },
+        { label: `${label} (Max ×)`, key: `system.attributeMaxMultiplier.${key}` },
+      ];
+    });
+
+    return [
       {
         title: 'SKSK.EffectKeyReference.Category.Attributes',
         hint: 'SKSK.EffectKeyReference.Category.AttributesHint',
@@ -99,11 +145,17 @@ export class SKSKEffectKeyReference extends HandlebarsApplicationMixin(Applicati
           { label: 'Natural Material Bonus', key: 'system.naturalMaterialBonus.bonus' },
           { label: 'Mana Cost Reduction (%)', key: 'system.manaCostReductionPercent' },
           { label: 'Mana Cost Reduction (flat)', key: 'system.manaCostReductionFlat' },
+          { label: 'Manakosten dürfen unter 1 fallen (Schalter)', key: 'system.manaCostAllowBelowOne' },
+          { label: 'Rituale: Magiekontrolle-Rabatt zusätzlich (Schalter)', key: 'system.ritualsUseMagicControl' },
+          { label: 'AP-Kosten-Reduktion: alle Zauber (flat)', key: 'system.apCostReductionFlat' },
           { label: 'Critical Hit Threshold', key: 'system.criticalHitThreshold' },
           { label: 'Critical Failure Threshold', key: 'system.criticalFailureThreshold' },
           { label: 'Generic Critical Roll Mode', key: 'system.genericCriticalRollMode' },
           { label: 'Assassination Bonus Dice', key: 'system.assassinationBonusDice' },
           { label: 'Overcharge Max Bonus', key: 'system.overchargeMaxBonus' },
+          { label: 'Überladung: Mana-Mehrkosten (% pro Überladung)', key: 'system.overchargeManaPercentBonus' },
+          { label: 'Überladung: Mana-Mehrkosten (flat pro Überladung)', key: 'system.overchargeManaFlatBonus' },
+          { label: 'Überladung: AP-Mehrkosten (pro Überladung)', key: 'system.overchargeApCostBonus' },
           { label: 'Zusatzschaden an Barrieren (%)', key: 'system.barrierDamageBonus' },
           { label: 'Soul Path Breakthrough Bonus', key: 'system.soulPathBreakthroughBonus' },
           { label: 'Summon Slots Bonus', key: 'system.summonSlotsBonus' },
@@ -143,6 +195,20 @@ export class SKSKEffectKeyReference extends HandlebarsApplicationMixin(Applicati
         })),
       },
       {
+        title: 'SKSK.EffectKeyReference.Category.MagicSchoolDamage',
+        rows: [
+          ...vocabRows(CONFIG.SKSK.simpleMagicSchools, 'system.magicSchoolDamageBonus.'),
+          ...vocabRows(CONFIG.SKSK.advancedMagicSchools, 'system.magicSchoolDamageBonus.'),
+          ...vocabRows(CONFIG.SKSK.combinedMagicSchools, 'system.combinedMagicSchoolDamageBonus.'),
+        ],
+      },
+      {
+        title: 'SKSK.EffectKeyReference.Category.WeaponDamage',
+        rows: Object.keys(CONFIG.SKSK.skills.weapons).map(key => ({
+          label: game.i18n.localize(getSkillLabel(key)), key: `system.weaponDamageBonus.${key}`,
+        })),
+      },
+      {
         title: 'SKSK.EffectKeyReference.Category.DamageBonus',
         rows: vocabRows(CONFIG.SKSK.damageTypes, 'system.damageBonus.'),
       },
@@ -168,6 +234,36 @@ export class SKSKEffectKeyReference extends HandlebarsApplicationMixin(Applicati
         rows: skillLevelRows,
       },
       {
+        title: 'SKSK.EffectKeyReference.Category.ChargeBonus',
+        hint: 'SKSK.EffectKeyReference.Category.ChargeBonusHint',
+        rows: chargeRows,
+      },
+      {
+        title: 'SKSK.EffectKeyReference.Category.SchoolCost',
+        hint: 'SKSK.EffectKeyReference.Category.SchoolCostHint',
+        rows: schoolCostRows,
+      },
+      {
+        title: 'SKSK.EffectKeyReference.Category.MovementBonus',
+        hint: 'SKSK.EffectKeyReference.Category.MovementBonusHint',
+        rows: movementRows,
+      },
+      {
+        title: 'SKSK.EffectKeyReference.Category.AttributeMax',
+        hint: 'SKSK.EffectKeyReference.Category.AttributeMaxHint',
+        rows: attributeMaxRows,
+      },
+      {
+        title: 'SKSK.EffectKeyReference.Category.ElementalChargeApCost',
+        hint: 'SKSK.EffectKeyReference.Category.ElementalChargeApCostHint',
+        rows: vocabRows(CONFIG.SKSK.simpleMagicSchools, 'system.elementalChargeApCost.'),
+      },
+      {
+        title: 'SKSK.EffectKeyReference.Category.ElementalSpecialization',
+        hint: 'SKSK.EffectKeyReference.Category.ElementalSpecializationHint',
+        rows: vocabRows(CONFIG.SKSK.simpleMagicSchools, 'system.elementalSpecialization.'),
+      },
+      {
         title: 'SKSK.EffectKeyReference.Category.SkillRollApCost',
         rows: skillRollApCostRows,
       },
@@ -188,8 +284,6 @@ export class SKSKEffectKeyReference extends HandlebarsApplicationMixin(Applicati
         rows: skillRows,
       },
     ];
-
-    return context;
   }
 
   /** @private */

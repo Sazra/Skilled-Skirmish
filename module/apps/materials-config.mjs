@@ -105,7 +105,8 @@ export class SKSKMaterialsConfig extends HandlebarsApplicationMixin(ApplicationV
       heavyRequirement: 0, demandingRequirement: 0, drainingRequirement: 0,
     });
     await game.settings.set('sksk', 'materials', materials);
-    this.render();
+    await this.render();
+    this.element?.querySelector(`details[data-sync="material-entry-${materials.length - 1}"]`)?.setAttribute('open', '');
   }
 
   /** @private */

@@ -20,6 +20,9 @@
 // Minuten keine Ladung mehr generieren..." line.
 const DECAY_SECONDS = 600;
 
+import { isCombatActive, isActorsOwnTurn } from './statusEffects.mjs';
+import { formatRollCardHeading } from './rollCard.mjs';
+
 /**
  * @param {Actor} actor
  * @return {boolean}
@@ -100,6 +103,64 @@ export async function registerElementalCharge(actor, magicSchool) {
     'system.elementalCharges.nextIndex': index + 1,
     'system.elementalCharges.lastChargeTime': game.time.worldTime,
   });
+}
+
+/**
+ * Actively consume one charge (click on it in the bar): empties that slot -
+ * the charge's passive effect (see helpers/elementalChargeEffects.mjs) is
+ * gone with it - and posts a chat line. Costs the AP configured for that
+ * school (data/actor-base.mjs#elementalChargeApCost), paid like an
+ * ability's: only while a combat is running, as RP when it is not the
+ * actor's own turn; nothing is spent or removed if that can't be afforded.
+ * Asks for confirmation first unless skipConfirm (Shift+click).
+ * @param {Actor} actor
+ * @param {number} slotIndex
+ * @param {boolean} [skipConfirm=false]
+ * @return {Promise<boolean>}   Whether a charge was consumed.
+ */
+export async function consumeElementalCharge(actor, slotIndex, skipConfirm = false) {
+  const slots = getEffectiveElementalChargeSlots(actor).slice();
+  const school = slots[slotIndex];
+  if (!school) return false;
+
+  const cost = actor.system.elementalChargeApCost?.[school] ?? 0;
+  const schoolLabel = game.i18n.localize(CONFIG.SKSK.simpleMagicSchools[school] ?? school);
+  const combatActive = isCombatActive();
+  const offTurn = !isActorsOwnTurn(actor);
+  const pays = combatActive && cost > 0;
+
+  if (pays) {
+    if (offTurn ? actor.system.reactionPoints.value < cost : actor.system.actionPoints.value < cost) {
+      ui.notifications.warn(game.i18n.localize(offTurn ? 'SKSK.Action.NotEnoughRP' : 'SKSK.Action.NotEnoughAP'));
+      return false;
+    }
+  }
+
+  if (!skipConfirm) {
+    const confirmed = await foundry.applications.api.DialogV2.confirm({
+      window: { title: game.i18n.localize('SKSK.ElementalCharges.ConsumeTitle') },
+      content: `<p>${game.i18n.format('SKSK.ElementalCharges.ConsumeConfirm', { school: schoolLabel, cost })}</p>`,
+      rejectClose: false,
+    });
+    if (!confirmed) return false;
+  }
+
+  slots[slotIndex] = "";
+  const update = { 'system.elementalCharges.slots': slots };
+  if (pays) {
+    if (offTurn) update['system.reactionPoints.value'] = actor.system.reactionPoints.value - cost;
+    else update['system.actionPoints.value'] = actor.system.actionPoints.value - cost;
+  }
+  await actor.update(update);
+
+  const costLine = pays
+    ? `<div class="sksk-roll-${offTurn ? 'rp' : 'ap'}-cost"><strong>${game.i18n.localize(offTurn ? 'SKSK.Spell.RPCost' : 'SKSK.Spell.APCost')}:</strong> ${cost}</div>`
+    : '';
+  await ChatMessage.create({
+    speaker: ChatMessage.getSpeaker({ actor }),
+    content: `<div class="sksk-chat-card sksk-action-card">${formatRollCardHeading(game.i18n.format('SKSK.ElementalCharges.ConsumedHeading', { school: schoolLabel }))}${costLine}</div>`,
+  });
+  return true;
 }
 
 /**

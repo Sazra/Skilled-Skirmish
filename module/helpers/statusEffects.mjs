@@ -352,6 +352,40 @@ export function damageDealtFrom({ lifeDelta, negativeLifeDelta }) {
  * @return {Array<object>}
  */
 function buildStatModifierChanges(def, stacks) {
+  if (!def) return [];
+  return [...buildCustomModifierChanges(def, stacks), ...buildKeyChanges(def, stacks)];
+}
+
+/**
+ * The freely chosen Active Effect keys of a status effect definition (its
+ * "keyChanges" rows: key + mode + value, any status incl. predefined):
+ * "Add" scales with the stack count (value x stacks), "Multiply" compounds
+ * per stack (value ^ stacks); every other mode (override, upgrade,
+ * downgrade) and any non-numeric value is passed through unchanged.
+ * @param {object|undefined} def
+ * @param {number} stacks
+ * @return {Array<object>}
+ */
+function buildKeyChanges(def, stacks) {
+  const modes = CONST.ACTIVE_EFFECT_MODES;
+  const changes = [];
+  for (const row of def?.keyChanges ?? []) {
+    const key = String(row.key ?? '').trim();
+    if (!key) continue;
+    const mode = Number(row.mode ?? modes.ADD);
+    const raw = String(row.value ?? '').trim();
+    const number = Number(raw);
+    let value = raw;
+    if (raw !== '' && Number.isFinite(number)) {
+      if (mode === modes.ADD) value = String(number * stacks);
+      else if (mode === modes.MULTIPLY) value = String(Math.pow(number, stacks));
+    }
+    changes.push({ key, mode, value });
+  }
+  return changes;
+}
+
+function buildCustomModifierChanges(def, stacks) {
   if (!def || def.predefined) return [];
   const changes = [];
   for (const [field, key] of Object.entries(CUSTOM_STAT_MODIFIER_FIELDS)) {
@@ -1563,7 +1597,7 @@ async function handleSpellUpkeepTurnStart(actor) {
   const deactivatedNames = [];
   const itemUpdates = [];
   for (const item of spells) {
-    const cost = item.system.manaCost ?? 0;
+    const cost = item.system.manaCostVariable ? (item.system.variableManaPaid ?? 0) : (item.system.manaCost ?? 0);
     if (mana >= cost) {
       mana -= cost;
     } else {

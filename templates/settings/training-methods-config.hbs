@@ -12,7 +12,7 @@
     </li>
     {{#each methods as |method index|}}
     <li class="item model-entry">
-      <details class="settings-entry-details" data-sync="training-method-entry-{{index}}" open>
+      <details class="settings-entry-details" data-sync="training-method-entry-{{index}}">
         <summary class="settings-entry-summary">
           <i class="fas fa-chevron-right settings-entry-chevron"></i>
           <input type="text" name="methods.{{index}}.name" value="{{method.name}}"

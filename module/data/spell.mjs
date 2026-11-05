@@ -48,6 +48,16 @@ export default class SKSKSpell extends SKSKItemBase {
     schema.isForbiddenArt = new fields.BooleanField({ initial: false });
 
     schema.manaCost = new fields.NumberField({ ...requiredInteger, initial: 1, min: 0 });
+    // "?" as Mana cost: the caster picks the base Mana amount every time the
+    // spell is cast (helpers/spell-rolls.mjs#rollSpellItem asks for it; the
+    // Mana Cost field's own "?" is converted to this switch by the item
+    // sheet). manaCost itself is ignored while this is on. Extra-cost tiers,
+    // reductions and Überladen still apply on top of the chosen amount.
+    schema.manaCostVariable = new fields.BooleanField({ required: true, initial: false });
+    // The base amount chosen at the last cast - the default of the next
+    // prompt, and the per-round amount while a manaCostPerRound spell is
+    // being sustained.
+    schema.variableManaPaid = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
     // Whether manaCost is drained every round (from the caster's CURRENT
     // mana) for as long as this spell is sustaining, instead of only once
     // at cast time - same per-round-drain/auto-deactivate-on-insufficient-
@@ -111,6 +121,41 @@ export default class SKSKSpell extends SKSKItemBase {
     schema.extraManaCosts = new fields.ArrayField(new fields.SchemaField({
       label: new fields.StringField({ required: true, blank: true }),
       manaCost: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+      // "Kann mehrfach gewählt werden": the step may be paid several times in
+      // one cast (its cost then counts that many times in the cumulative
+      // sum, see helpers/spells.mjs#computeExtraManaCostSum), up to
+      // maxRepeats uses in total. Only the cost scales - tier-gated damage
+      // entries still depend on the tier reached, not on the repeat count.
+      repeatable: new fields.BooleanField({ required: true, initial: false }),
+      maxRepeats: new fields.NumberField({ ...requiredInteger, initial: 2, min: 1 }),
+      // What else paying this step (or a higher one - cumulative like the
+      // cost) changes about the spell, see helpers/spells.mjs#
+      // computeExtraCostEffects. All of it counts once per time a
+      // repeatable step was chosen.
+      // - extraAttacks: additional attack rolls (turns the attack roll on
+      //   if the spell has none of its own).
+      // - rangeChanges: adds distance to / replaces the indicator of one of
+      //   the spell's ranges (rangeIndex is 0-based into "ranges"; a blank
+      //   indicator keeps the existing one).
+      // - saveDcChanges: raises/lowers the DC of one saving throw
+      //   (savingThrowIndex is 0-based into "savingThrows").
+      extraAttacks: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+      rangeChanges: new fields.ArrayField(new fields.SchemaField({
+        rangeIndex: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+        distanceBonus: new fields.NumberField({ ...requiredInteger, initial: 0 }),
+        indicator: new fields.StringField({ required: true, blank: true, initial: "" }),
+      })),
+      saveDcChanges: new fields.ArrayField(new fields.SchemaField({
+        savingThrowIndex: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+        dcBonus: new fields.NumberField({ ...requiredInteger, initial: 0 }),
+      })),
+      // Extra stacks of one of the spell's own statusEffects entries
+      // (statusIndex is 0-based into "statusEffects") - on top of that
+      // entry's own stacks, once per time this step was chosen.
+      statusStackBonuses: new fields.ArrayField(new fields.SchemaField({
+        statusIndex: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+        stacks: new fields.NumberField({ ...requiredInteger, initial: 1 }),
+      })),
     }));
 
     // Manakern's own flat FP grant (to the "manaCore" skill) whenever this
@@ -126,9 +171,14 @@ export default class SKSKSpell extends SKSKItemBase {
       indicator: new fields.StringField({
         required: true, blank: false, initial: "projectile",
         choices: ["self", "touch", "targeted", "sight", "hearing", "projectile", "line", "radius", "cone", "square"]
-      })
+      }),
+      // Only used by a spell with a "?" Mana cost (manaCostVariable): extra
+      // metres per Mana of the base amount chosen at cast time (e.g. 2 =
+      // "2 m per Mana"), added on top of distance. Fractions allowed; the
+      // product is rounded down.
+      distancePerMana: new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 })
     }), {
-      initial: [{ distance: 10, indicator: "projectile" }]
+      initial: [{ distance: 10, indicator: "projectile", distancePerMana: 0 }]
     });
 
     schema.duration = new fields.StringField({ required: true, blank: true });
@@ -162,6 +212,30 @@ export default class SKSKSpell extends SKSKItemBase {
     // just without any automatic scaling - the GM adjusts it manually.
     schema.overchargeAutoEffects = new fields.BooleanField({ initial: true });
 
+    // Per-spell Überladen (Overcharge) rules - see helpers/spells.mjs#
+    // getOverchargeSettings. The defaults are the general rules, so a spell
+    // that never touches these behaves exactly as before.
+    // - effect "scaling": each Überladung scales saving-throw DC, ranges and
+    //   damage (gated by overchargeAutoEffects above). "extraAttack":
+    //   instead, each Überladung adds one more attack roll (with the
+    //   attack's own damage; no additional FP) and none of that scaling
+    //   applies.
+    // - The costs (extra Mana, extra AP) always apply, whatever the effect.
+    // - durationText: shown as an extra "Dauer (überladen)" chat line; "{n}"
+    //   is the number of Überladungen, "{...}" may hold a small formula in n
+    //   (e.g. "{2+n} Runden").
+    schema.overcharge = new fields.SchemaField({
+      effect: new fields.StringField({ required: true, blank: false, initial: "scaling", choices: ["scaling", "extraAttack"] }),
+      manaPercent: new fields.NumberField({ required: true, nullable: false, initial: 20, min: 0 }),
+      manaFlat: new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 }),
+      apCost: new fields.NumberField({ required: true, nullable: false, initial: 1, min: 0 }),
+      dcBonus: new fields.NumberField({ required: true, nullable: false, initial: 1 }),
+      rangePercent: new fields.NumberField({ required: true, nullable: false, initial: 20, min: 0 }),
+      rangeFlat: new fields.NumberField({ required: true, nullable: false, initial: 0 }),
+      damagePercent: new fields.NumberField({ required: true, nullable: false, initial: 50, min: 0 }),
+      durationText: new fields.StringField({ required: true, blank: true, initial: "" }),
+    });
+
     // Switch: this spell's damage ignores the target's Barrier and goes
     // straight to Life - see helpers/damageApplication.mjs#
     // applyResolvedDamageEntries (damage entries carry it as ignoresBarrier).
@@ -188,6 +262,11 @@ export default class SKSKSpell extends SKSKItemBase {
     schema.savingThrows = new fields.ArrayField(new fields.SchemaField({
       label: new fields.StringField({ required: true, blank: true }),
       baseValue: new fields.NumberField({ ...requiredInteger, initial: 10 }),
+      // Set (0-based extra-cost step): this saving throw only exists once
+      // that step (or a higher one) was paid at cast time - an additional
+      // save an "Es kann mehr Mana gezahlt werden" step makes necessary.
+      // null = always.
+      extraCostIndex: new fields.NumberField({ required: false, nullable: true, integer: true, initial: null }),
       // "Wettstreit" (contest): instead of resolving against a fixed DC
       // (baseValue, ignored while this is on), the caster's own d20 + this
       // save's attribute-/skill-bonuses is rolled once, right when the
@@ -266,6 +345,10 @@ export default class SKSKSpell extends SKSKItemBase {
     schema.statusEffects = new fields.ArrayField(new fields.SchemaField({
       statusId: new fields.StringField({ required: true, blank: true, initial: "" }),
       stacks: new fields.NumberField({ ...requiredInteger, initial: 1, min: 1 }),
+      // Set (0-based extra-cost step): this entry is only applied once that
+      // step (or a higher one) was paid at cast time, and its stacks count
+      // once per time that step was chosen. null = always.
+      extraCostIndex: new fields.NumberField({ required: false, nullable: true, integer: true, initial: null }),
       trigger: new fields.StringField({
         required: true, blank: false, initial: "unconditional",
         choices: ["attack", "save", "unconditional"]
@@ -284,6 +367,8 @@ export default class SKSKSpell extends SKSKItemBase {
     schema.foundryEffects = new fields.ArrayField(new fields.SchemaField({
       name: new fields.StringField({ required: true, blank: true, initial: "" }),
       effectId: new fields.StringField({ required: true, blank: true, initial: "" }),
+      // Same gate as statusEffects.extraCostIndex above.
+      extraCostIndex: new fields.NumberField({ required: false, nullable: true, integer: true, initial: null }),
       trigger: new fields.StringField({
         required: true, blank: false, initial: "unconditional",
         choices: ["attack", "save", "unconditional"]

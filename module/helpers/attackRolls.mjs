@@ -7,7 +7,7 @@ import { applyD20Malus, getStatusStacks, setStatusStacks } from './statusEffects
 import { getAttackCriticalType, resolveCheckSuccess, wrapCriticalBlock, wrapCriticalInline } from './criticalRolls.mjs';
 import { formatRollCardHeading } from './rollCard.mjs';
 import { getEquippedArmorSkillKeys } from './defense.mjs';
-import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
+import { grantSkillUsageFp, grantSkillUsageFp as grantSkillUsageFpReal, formatSkillFpGrantLine } from './skillFp.mjs';
 import {
   resolveClickDefender, renderApplyDamageButton, applyResolvedDamageEntries, halveDamageEntries, recordHitEvaluation,
 } from './damageApplication.mjs';
@@ -508,7 +508,7 @@ export async function maybeRollPrecision(actor, isOrdinaryHit) {
  * @return {Promise<string>}
  */
 export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor, damageInfo = {}) {
-  const { damageDice = [], killSkillKey = null, flanking = false, bonus = 0, label = '', attributeKeys = [] } = damageInfo;
+  const { damageDice = [], killSkillKey = null, flanking = false, bonus = 0, label = '', attributeKeys = [], noFp = false } = damageInfo;
   const critA = getAttackCriticalType(rollA, actor);
   const critB = getAttackCriticalType(rollB, actor);
   const renderedA = wrapCriticalBlock(await rollA.render(), critA);
@@ -524,7 +524,7 @@ export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor
   // luck.mjs#redoAttackPairRoll re-renders the fresh block through this
   // same function, and needs attributeKeys again to decide whether the
   // OTHER icon still belongs on that new block too.
-  const rerollPayload = { blockId, bonus, comparisonType, damageDice, killSkillKey, flanking, label, attributeKeys };
+  const rerollPayload = { blockId, bonus, comparisonType, damageDice, killSkillKey, flanking, label, attributeKeys, noFp };
   const attributeRerollHTML = renderAttributeRerollButton(actor, attributeKeys, 'attack', rerollPayload);
   const rerollHTML = renderRerollButton(actor, 'attack', rerollPayload);
   return `
@@ -542,7 +542,7 @@ export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor
       data-roll-a="${rollA.total}" data-roll-b="${rollB.total}" data-comparison-type="${comparisonType}"
       data-crit-a="${critA ?? ''}" data-crit-b="${critB ?? ''}" data-attacker-uuid="${actor?.uuid ?? ''}"
       data-damage-dice="${encodeURIComponent(JSON.stringify(damageDice))}"
-      data-kill-skill="${killSkillKey ?? ''}" data-flanking="${flanking}"
+      data-kill-skill="${killSkillKey ?? ''}" data-flanking="${flanking}" data-no-fp="${noFp}"
       title="${game.i18n.localize('SKSK.AttackRoll.EvaluateShiftHint')}">
       ${game.i18n.localize('SKSK.AttackRoll.Evaluate')}
     </button>
@@ -630,8 +630,11 @@ export function stripRerollButton(html) {
  * @return {Promise<{hit: boolean, criticalType: string|null, line: string, fpHTML: string, title: string}>}
  */
 async function evaluateHitAgainstDefender({
-  defender, attacker, mode, rollA, rollB, critA, critB, comparisonType, damageDice, killSkillKey,
+  defender, attacker, mode, rollA, rollB, critA, critB, comparisonType, damageDice, killSkillKey, noFp = false,
 }) {
+  // An extra attack granted by a spell's Überladen (see data/spell.mjs#
+  // overcharge.effect) gives no FP of its own.
+  const grantSkillUsageFp = noFp ? async () => null : grantSkillUsageFpReal;
   let chosenTotal = rollA;
   let criticalType = critA;
   let labelKey = 'RollA';
@@ -808,6 +811,7 @@ export async function resolveHitEvaluationFromChat(button, forceHit = false) {
     rollA: Number(button.dataset.rollA), rollB: Number(button.dataset.rollB),
     critA: button.dataset.critA || null, critB: button.dataset.critB || null,
     comparisonType: button.dataset.comparisonType, damageDice, killSkillKey,
+    noFp: button.dataset.noFp === 'true',
   });
 
   // Remember the outcome on the roll's own message, so that message's Apply
@@ -932,7 +936,7 @@ export function greyOutManualEvalButtons(html) {
  * @return {Promise<string>}
  */
 export async function autoResolveAttackForTargets([rollA, rollB], comparisonType, attacker, options = {}) {
-  const { damageEntries = [], damageDice = [], killSkillKey = null, flanking = false, techniqueItemUuid = null } = options;
+  const { damageEntries = [], damageDice = [], killSkillKey = null, flanking = false, techniqueItemUuid = null, noFp = false } = options;
   const defenders = getOtherTargetedActors(attacker);
   if (!defenders.length) return '';
 
@@ -949,12 +953,12 @@ export async function autoResolveAttackForTargets([rollA, rollB], comparisonType
       relayedCount += requestGmAction('autoResolveHit', {
         defenderUuid: defender.uuid, attackerUuid: attacker?.uuid ?? null, mode,
         rollA: rollA.total, rollB: rollB.total, critA, critB,
-        comparisonType, damageDice, killSkillKey, damageEntries, techniqueItemUuid,
+        comparisonType, damageDice, killSkillKey, damageEntries, techniqueItemUuid, noFp,
       }) ? 1 : 0;
       continue;
     }
     const { title, line, fpHTML, damageHTML } = await resolveAndApplyOneAttack(defender, attacker, {
-      mode, rollA: rollA.total, rollB: rollB.total, critA, critB, comparisonType, damageDice, killSkillKey, damageEntries, techniqueItemUuid,
+      mode, rollA: rollA.total, rollB: rollB.total, critA, critB, comparisonType, damageDice, killSkillKey, damageEntries, techniqueItemUuid, noFp,
     });
     blocks.push(formatRollCardHeading(title) + line + fpHTML + damageHTML);
   }
@@ -992,9 +996,9 @@ export async function autoResolveAttackForTargets([rollA, rollB], comparisonType
  * @return {Promise<{title: string, line: string, fpHTML: string, damageHTML: string}>}
  */
 async function resolveAndApplyOneAttack(defender, attacker, args) {
-  const { mode, rollA, rollB, critA, critB, comparisonType, damageDice, killSkillKey, damageEntries, techniqueItemUuid } = args;
+  const { mode, rollA, rollB, critA, critB, comparisonType, damageDice, killSkillKey, damageEntries, techniqueItemUuid, noFp = false } = args;
   const { hit, line, fpHTML, title } = await evaluateHitAgainstDefender({
-    defender, attacker, mode, rollA, rollB, critA, critB, comparisonType, damageDice, killSkillKey,
+    defender, attacker, mode, rollA, rollB, critA, critB, comparisonType, damageDice, killSkillKey, noFp,
   });
 
   let damageHTML = '';

@@ -33,11 +33,11 @@ import { getManaBreakdown } from '../helpers/mana.mjs';
 import { daysToBreakdown, applyPendingLongevityGrowth, adjustLongevity, resetLongevityToFull } from '../helpers/longevity.mjs';
 import { getArmorClassBreakdown, getMagicResistanceBreakdown, computeArmorPieceBonus } from '../helpers/defense.mjs';
 import { isDurabilityEnabled } from '../helpers/materials.mjs';
-import { prepareElementalChargeSlots } from '../helpers/elementalCharges.mjs';
+import { prepareElementalChargeSlots, consumeElementalCharge } from '../helpers/elementalCharges.mjs';
 import { computeWeaponAttackBonus, computeWeaponRangeLabel } from '../helpers/attackRolls.mjs';
 import { renderBreakdownHtml } from '../helpers/tooltips.mjs';
 import {
-  rollMartialArtsAttack, rollRegeneration, rollMeditation, rollAdrenalin, useMove, useDodge, useItem,
+  rollMartialArtsAttack, rollRegeneration, rollMeditation, promptMultiRoll, rollAdrenalin, useMove, useDodge, useItem,
   postActionChatCard, hasEnoughActionPoints, hasEnoughReactionPoints, spendActionPoints, spendReactionPoints,
 } from '../helpers/actions.mjs';
 import { chooseSpellCastOptions } from '../helpers/spell-rolls.mjs';
@@ -137,6 +137,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       createItem: SKSKActorSheet.#createItem,
       toggleCreateItemMenu: SKSKActorSheet.#toggleCreateItemMenu,
       toggleSpellSustaining: SKSKActorSheet.#toggleSpellSustaining,
+      consumeElementalCharge: SKSKActorSheet.#consumeElementalCharge,
       deleteItem: SKSKActorSheet.#deleteItem,
       create: SKSKActorSheet.#onEffectAction,
       edit: SKSKActorSheet.#onEffectAction,
@@ -605,6 +606,9 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     // Elementarladungen Bottom-Bar widget - see helpers/elementalCharges.mjs.
     context.elementalChargesEnabled = actor.system.elementalChargesEnabled;
     context.elementalChargeSlots = prepareElementalChargeSlots(actor);
+    // GM tab: one AP-cost input per Einfache Magieschule.
+    context.elementalChargeSchools = Object.entries(CONFIG.SKSK.simpleMagicSchools)
+      .map(([key, label]) => ({ key, label }));
     // The GM tab holds background information/switches irrelevant to
     // players - hidden from the tab bar entirely for non-GM users.
     if (!game.user.isGM) delete context.tabs.gm;
@@ -1017,7 +1021,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     // spells and show their real (possibly penalized/discounted) cost.
     for (const item of spells) {
       const { cost, increased } = computeSpellManaCost(item.system, actor);
-      item.effectiveManaCost = cost;
+      item.effectiveManaCost = item.system.manaCostVariable ? '?' : cost;
       item.manaCostIncreased = increased;
       item.effectiveApCost = computeSpellApCost(item.system, actor);
       if (item.system.spellType === 'simple' || item.system.spellType === 'advanced') {
@@ -1834,6 +1838,19 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
   }
 
   /**
+   * Click on a filled Elementarladung in the bottom bar: consume it (see
+   * helpers/elementalCharges.mjs#consumeElementalCharge); Shift+click skips
+   * the confirmation.
+   * @param {PointerEvent} event
+   * @param {HTMLElement} target
+   * @private
+   */
+  static async #consumeElementalCharge(event, target) {
+    if (!this.isEditable) return;
+    await consumeElementalCharge(this.actor, Number(target.dataset.index), event.shiftKey);
+  }
+
+  /**
    * Handle deleting an item.
    * @param {PointerEvent} event   The originating click event.
    * @param {HTMLElement} target   The capturing HTML element.
@@ -1931,11 +1948,22 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
 
   /** @private */
   static async #rollRegeneration(event, target) {
+    // Shift+click: roll several at once - see helpers/actions.mjs#promptMultiRoll.
+    if (event.shiftKey) {
+      const options = await promptMultiRoll(this.actor, 'regeneration');
+      if (!options) return;
+      return rollRegeneration(this.actor, options);
+    }
     await rollRegeneration(this.actor);
   }
 
   /** @private */
   static async #rollMeditation(event, target) {
+    if (event.shiftKey) {
+      const options = await promptMultiRoll(this.actor, 'meditation');
+      if (!options) return;
+      return rollMeditation(this.actor, options);
+    }
     await rollMeditation(this.actor);
   }
 
@@ -2470,7 +2498,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
           }
           const choice = await chooseSpellCastOptions(this.actor, item);
           if (!choice) return;
-          return item.roll(choice.overchargeCount, choice.extraCostTier, choice.altResourceIndex);
+          return item.roll(choice.overchargeCount, choice.extraCostTier, choice.altResourceIndex, choice.extraCostCounts, choice.variableMana);
         }
 
         return item.roll();

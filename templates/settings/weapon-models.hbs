@@ -22,7 +22,7 @@
       </li>
       {{#each (lookup ../weaponModelsByType t.id) as |entry|}}
       <li class="item model-entry">
-        <details class="settings-entry-details" data-sync="weapon-model-entry-{{entry.index}}" open>
+        <details class="settings-entry-details" data-sync="weapon-model-entry-{{entry.index}}">
           <summary class="settings-entry-summary">
             <i class="fas fa-chevron-right settings-entry-chevron"></i>
             <input type="text" name="weaponModels.{{entry.index}}.name" value="{{entry.model.name}}"

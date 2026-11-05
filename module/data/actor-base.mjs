@@ -177,6 +177,84 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // computeSpellManaCost.
     schema.manaCostReductionPercent = new fields.NumberField({ ...requiredInteger, initial: 0 });
     schema.manaCostReductionFlat = new fields.NumberField({ ...requiredInteger, initial: 0 });
+    // Actor-wide counterparts of the Species/Class/Talent/Item/Armor/Weapon
+    // lists "manaCostReductions"/"apCostReductions" (which are per
+    // spellType+school) - purely Active Effect targets, keyed by that same
+    // school key (the union of CONFIG.SKSK.simpleMagicSchools/
+    // advancedMagicSchools/combinedMagicSchools/systemlessMagicCategories,
+    // hardcoded here for the same reason as magicSchoolAttackBonus below),
+    // stacking with every list entry for that school. A negative value is a
+    // surcharge. apCostReductionFlat/manaCostAllowBelowOne apply to every
+    // spell. See helpers/spells.mjs#getManaCostReduction/getApCostReduction.
+    const costSchoolKeys = [
+      'fire', 'water', 'earth', 'air', 'life', 'death', 'light', 'nature', 'dark', 'trickery',
+      'martialArts', 'bardic', 'space', 'time', 'blood', 'divination',
+      'stormancy', 'chaomancy', 'demomancy', 'drakomancy', 'necromancy', 'miracles',
+      'feymancy', 'geomancy', 'biomancy', 'cryomancy', 'witchery',
+      'household', 'special', 'magicalBody', 'general',
+    ];
+    const bySchool = () => new fields.SchemaField(Object.fromEntries(
+      costSchoolKeys.map(key => [key, new fields.NumberField({ ...requiredInteger, initial: 0 })])
+    ));
+    schema.manaCostReductionPercentBySchool = bySchool();
+    schema.manaCostReductionFlatBySchool = bySchool();
+    schema.apCostReductionBySchool = bySchool();
+    schema.apCostReductionFlat = new fields.NumberField({ ...requiredInteger, initial: 0 });
+    schema.manaCostAllowBelowOne = new fields.BooleanField({ initial: false });
+    // Ritual-casting-method spells are normally discounted by Ritualism only
+    // (max. 25%); with this GM-tab switch (also an Active Effect target) the
+    // caster's Magic Control discount (max. 50%) is added on top - see
+    // helpers/spells.mjs#computeMagicControlOrRitualismDiscountPercent.
+    schema.ritualsUseMagicControl = new fields.BooleanField({ initial: false });
+
+    // Actor-wide counterparts of the Species/Class/Talent "chargeBonuses"
+    // list - purely Active Effect targets, one flat amount and one
+    // percentage per general resource (keys hardcoded from
+    // CONFIG.SKSK.chargeResources). Flat amounts join the list's own flat
+    // entries, percentages its multiplicative ones - see helpers/
+    // generalResources.mjs#collectChargeBonuses.
+    const chargeResourceKeys = ['meditation', 'regeneration', 'inspiration', 'adrenalin', 'luck'];
+    schema.chargeBonusFlat = new fields.SchemaField(Object.fromEntries(
+      chargeResourceKeys.map(key => [key, new fields.NumberField({ ...requiredInteger, initial: 0 })])
+    ));
+    schema.chargeBonusPercent = new fields.SchemaField(Object.fromEntries(
+      chargeResourceKeys.map(key => [key, new fields.NumberField({ ...requiredInteger, initial: 0 })])
+    ));
+
+    // Actor-wide counterparts of the "movementBonuses" list's "bonus" mode
+    // entries - purely Active Effect targets (a flat speed bonus per
+    // movement type, plus one for every type at once). Keys hardcoded from
+    // CONFIG.SKSK.movementTypes. See helpers/movement.mjs#
+    // computeMovementSpeeds.
+    schema.movementBonus = new fields.SchemaField(Object.fromEntries(
+      ['walking', 'flying', 'hovering', 'swimming', 'climbing', 'digging']
+        .map(key => [key, new fields.NumberField({ ...requiredInteger, initial: 0 })])
+    ));
+    schema.movementBonusAll = new fields.NumberField({ ...requiredInteger, initial: 0 });
+
+    // Actor-wide counterparts of the "attributeMaxModifiers" list: a flat
+    // adjustment (add/subtract - negative for subtract) and a multiplier
+    // (multiply/divide - 0.5 for divide by 2; 1 = unchanged, so use the
+    // effect mode "Multiply" or "Override") per attribute's natural maximum -
+    // purely Active Effect targets. See helpers/attributes.mjs#
+    // computeAttributeMax.
+    const maxAttributeKeys = ['str', 'dex', 'con', 'per', 'wil', 'aur', 'cha', 'app'];
+    schema.attributeMaxBonus = new fields.SchemaField(Object.fromEntries(
+      maxAttributeKeys.map(key => [key, new fields.NumberField({ ...requiredInteger, initial: 0 })])
+    ));
+    schema.attributeMaxMultiplier = new fields.SchemaField(Object.fromEntries(
+      maxAttributeKeys.map(key => [key, new fields.NumberField({ required: true, nullable: false, initial: 1, min: 0 })])
+    ));
+
+    // Actor-wide counterpart of the Species/Class/Talent
+    // "elementalSpecializations" list: an Elementarist specialization in one
+    // Einfache Magieschule, as a plain switch per school - purely an Active
+    // Effect target. See helpers/elementalChargeEffects.mjs#
+    // getElementalSpecializations.
+    schema.elementalSpecialization = new fields.SchemaField(Object.fromEntries(
+      ['fire', 'water', 'earth', 'air', 'life', 'death', 'light', 'nature', 'dark', 'trickery']
+        .map(key => [key, new fields.BooleanField({ initial: false })])
+    ));
     // Angriffswurf (attack roll) critical thresholds - a natural d20 result
     // at or above criticalHitThreshold is a critical success; at or below
     // criticalFailureThreshold, a critical failure (see helpers/
@@ -246,6 +324,14 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // as naturalMaterialBonus.bonus above. See helpers/spells.mjs#
     // computeMaxOverchargeCount.
     schema.overchargeMaxBonus = new fields.NumberField({ ...requiredInteger, initial: 0 });
+    // Adjustments to the per-Überladung surcharge itself (added to the
+    // spell's own data/spell.mjs#overcharge manaPercent/manaFlat/apCost,
+    // PER Überladung; a negative value makes Überladen cheaper, but the
+    // combined surcharge never drops below 0) - purely Active Effect
+    // targets. See helpers/spells.mjs#getOverchargeSurcharges.
+    schema.overchargeManaPercentBonus = new fields.NumberField({ ...requiredInteger, initial: 0 });
+    schema.overchargeManaFlatBonus = new fields.NumberField({ ...requiredInteger, initial: 0 });
+    schema.overchargeApCostBonus = new fields.NumberField({ ...requiredInteger, initial: 0 });
 
     // Per-attribute Spezial-/Modifikator-Bonus accumulators - not meant to
     // be hand-edited, purely Active Effect targets (e.g.
@@ -276,6 +362,26 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     schema.weaponAttackBonus = new fields.SchemaField(Object.fromEntries(
       Object.keys(CONFIG.SKSK.skills.weapons).map(key => [key, new fields.NumberField({ ...requiredInteger, initial: 0 })])
     ));
+
+    // Per-weapon-skill and per-magic-school damage bonuses - purely Active
+    // Effect targets (e.g. "system.weaponDamageBonus.axe",
+    // "system.magicSchoolDamageBonus.fire"), the damage counterparts of
+    // weaponAttackBonus/magicSchoolAttackBonus/combinedMagicSchoolAttackBonus
+    // above, stacking with damageBonus.<damageType> and the "...All" fields.
+    // weaponDamageBonus includes martialArts (Kampfkunst). See
+    // helpers/actions.mjs's weapon/martial-arts damage bonus and
+    // helpers/spells.mjs#computeDamageBonus.
+    schema.weaponDamageBonus = new fields.SchemaField(Object.fromEntries(
+      Object.keys(CONFIG.SKSK.skills.weapons).map(key => [key, new fields.NumberField({ ...requiredInteger, initial: 0 })])
+    ));
+    schema.magicSchoolDamageBonus = new fields.SchemaField(Object.fromEntries([
+      'fire', 'water', 'earth', 'air', 'life', 'death', 'light', 'nature', 'dark', 'trickery',
+      'martialArts', 'bardic', 'space', 'time', 'blood', 'divination',
+    ].map(key => [key, new fields.NumberField({ ...requiredInteger, initial: 0 })])));
+    schema.combinedMagicSchoolDamageBonus = new fields.SchemaField(Object.fromEntries([
+      'stormancy', 'chaomancy', 'demomancy', 'drakomancy', 'necromancy', 'miracles',
+      'feymancy', 'geomancy', 'biomancy', 'cryomancy', 'witchery',
+    ].map(key => [key, new fields.NumberField({ ...requiredInteger, initial: 0 })])));
 
     // Per-damage-type damage bonus - purely an Active Effect target (e.g.
     // "system.damageBonus.fire"). See helpers/spells.mjs#computeDamageBonus
@@ -800,6 +906,11 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       // same way overchargeCount is - see helpers/spell-rolls.mjs#
       // resolvePendingSpell.
       extraCostTier: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+      // How often each repeatable extra-cost step was paid (index = step,
+      // see data/spell.mjs#extraManaCosts.repeatable) - empty = once each.
+      extraCostCounts: new fields.ArrayField(new fields.NumberField({ ...requiredInteger, initial: 1, min: 1 })),
+      // The base Mana amount chosen for a "?"-cost spell (scales its ranges).
+      variableMana: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
     });
     // Elementarladungen - an opt-in Bottom-Bar widget (see templates/actor/
     // parts/elemental-charges-bar.hbs) easing certain elemental-focused
@@ -811,6 +922,15 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // rollSpellItem. GM-tab switch, also targetable by Active Effects like
     // every other GM-tab BooleanField here.
     schema.elementalChargesEnabled = new fields.BooleanField({ initial: false });
+    // AP (RP off the actor's own turn) it costs to actively consume one
+    // charge of each Einfache Magieschule by clicking it in the bar - see
+    // helpers/elementalCharges.mjs#consumeElementalCharge. 0 = free. GM-tab
+    // values, also Active Effect targets
+    // ("system.elementalChargeApCost.fire", ...).
+    schema.elementalChargeApCost = new fields.SchemaField(Object.fromEntries(
+      ['fire', 'water', 'earth', 'air', 'life', 'death', 'light', 'nature', 'dark', 'trickery']
+        .map(school => [school, new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 })])
+    ));
     // Whether the Ausdauer (stamina) skill's % speed bonus also applies to
     // this actor's Hovering speed (it always applies to every other
     // movement type) - see helpers/movement.mjs#computeMovementSpeeds. GM-

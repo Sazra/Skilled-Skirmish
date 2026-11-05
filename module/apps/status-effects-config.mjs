@@ -73,6 +73,8 @@ export class SKSKStatusEffectsConfig extends HandlebarsApplicationMixin(Applicat
       removeStatusEffect: SKSKStatusEffectsConfig.#removeStatusEffect,
       addStatusAttributeBonus: SKSKStatusEffectsConfig.#addStatusAttributeBonus,
       removeStatusAttributeBonus: SKSKStatusEffectsConfig.#removeStatusAttributeBonus,
+      addStatusKeyChange: SKSKStatusEffectsConfig.#addStatusKeyChange,
+      removeStatusKeyChange: SKSKStatusEffectsConfig.#removeStatusKeyChange,
       addStatusFpGainBonus: SKSKStatusEffectsConfig.#addStatusFpGainBonus,
       removeStatusFpGainBonus: SKSKStatusEffectsConfig.#removeStatusFpGainBonus,
     },
@@ -97,6 +99,13 @@ export class SKSKStatusEffectsConfig extends HandlebarsApplicationMixin(Applicat
     context.attributeChoices = CONFIG.SKSK.attributes;
     context.skillBonusChoices = getSkillBonusChoices();
     context.fpGainBonusTypeChoices = CONFIG.SKSK.fpGainBonusTypes;
+    context.keyModeChoices = {
+      2: 'SKSK.StatusEffect.KeyMode.Add',
+      1: 'SKSK.StatusEffect.KeyMode.Multiply',
+      5: 'SKSK.StatusEffect.KeyMode.Override',
+      4: 'SKSK.StatusEffect.KeyMode.Upgrade',
+      3: 'SKSK.StatusEffect.KeyMode.Downgrade',
+    };
     return context;
   }
 
@@ -126,6 +135,12 @@ export class SKSKStatusEffectsConfig extends HandlebarsApplicationMixin(Applicat
         img: entry.img ?? 'icons/svg/aura.svg',
         description,
       };
+      // Freely chosen Active Effect keys - allowed on every status effect.
+      result.keyChanges = Object.values(entry.keyChanges ?? {}).map(row => ({
+        key: String(row.key ?? '').trim(),
+        mode: Number(row.mode) || 2,
+        value: String(row.value ?? '').trim(),
+      }));
       if (predefined) {
         const def = CONFIG.SKSK.predefinedStatusEffects.find(d => d.id === result.id);
         result.customized = def ? (name !== game.i18n.localize(def.nameKey) || description !== game.i18n.localize(def.descriptionKey)) : true;
@@ -161,7 +176,32 @@ export class SKSKStatusEffectsConfig extends HandlebarsApplicationMixin(Applicat
     for (const field of NUMERIC_FIELDS) entry[field] = 0;
     for (const field of ATTRIBUTE_BONUS_FIELDS) entry[field] = [];
     entry[FP_GAIN_BONUS_FIELD] = [];
+    entry.keyChanges = [];
     statusEffects.push(entry);
+    await game.settings.set('sksk', 'statusEffects', statusEffects);
+    await this.render();
+    this.element?.querySelector(`details[data-sync="status-effect-entry-${statusEffects.length - 1}"]`)?.setAttribute('open', '');
+  }
+
+  /** @private */
+  static async #addStatusKeyChange(event, target) {
+    const index = Number(target.dataset.index);
+    const statusEffects = foundry.utils.deepClone(game.settings.get('sksk', 'statusEffects') ?? []);
+    const entry = statusEffects[index];
+    if (!entry) return;
+    (entry.keyChanges ??= []).push({ key: '', mode: 2, value: '1' });
+    await game.settings.set('sksk', 'statusEffects', statusEffects);
+    this.render();
+  }
+
+  /** @private */
+  static async #removeStatusKeyChange(event, target) {
+    const index = Number(target.dataset.index);
+    const rowIndex = Number(target.dataset.rowIndex);
+    const statusEffects = foundry.utils.deepClone(game.settings.get('sksk', 'statusEffects') ?? []);
+    const entry = statusEffects[index];
+    if (!entry) return;
+    (entry.keyChanges ?? []).splice(rowIndex, 1);
     await game.settings.set('sksk', 'statusEffects', statusEffects);
     this.render();
   }

@@ -276,7 +276,8 @@ export class SKSKModelsConfig extends HandlebarsApplicationMixin(ApplicationV2) 
       reloadApCost: 0, reloadMagazineSize: 1, durabilityMultiplier: 1,
     });
     await game.settings.set('sksk', 'weaponModels', models);
-    this.render();
+    await this.render();
+    this.element?.querySelector(`details[data-sync="weapon-model-entry-${models.length - 1}"]`)?.setAttribute('open', '');
   }
 
   /** @private */
@@ -296,7 +297,8 @@ export class SKSKModelsConfig extends HandlebarsApplicationMixin(ApplicationV2) 
       heavyRequirement: 0, demandingRequirement: 0, drainingRequirement: 0, durabilityMultiplier: 1,
     });
     await game.settings.set('sksk', 'armorModels', models);
-    this.render();
+    await this.render();
+    this.element?.querySelector(`details[data-sync="armor-model-entry-${models.length - 1}"]`)?.setAttribute('open', '');
   }
 
   /** @private */

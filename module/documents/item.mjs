@@ -44,8 +44,8 @@ export class SKSKItem extends Item {
   }
 
   /** @override */
-  async roll(overchargeCount = 0, extraCostTier = 0, altResourceIndex = -1) {
-    if (this.type === 'spell') return rollSpellItem(this, overchargeCount, extraCostTier, altResourceIndex);
+  async roll(overchargeCount = 0, extraCostTier = 0, altResourceIndex = -1, extraCostCounts = [], variableMana = null) {
+    if (this.type === 'spell') return rollSpellItem(this, overchargeCount, extraCostTier, altResourceIndex, extraCostCounts, variableMana);
     if (this.type === 'weapon') return rollWeaponItem(this);
     if (this.type === 'technique') return activateTechnique(this.actor, this);
     if (this.type === 'item') return rollItemUsage(this);

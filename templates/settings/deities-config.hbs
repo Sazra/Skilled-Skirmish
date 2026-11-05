@@ -18,7 +18,7 @@
     </li>
     {{#each deities as |deity index|}}
     <li class="item model-entry">
-      <details class="settings-entry-details" data-sync="deity-entry-{{index}}" open>
+      <details class="settings-entry-details" data-sync="deity-entry-{{index}}">
         <summary class="settings-entry-summary">
           <i class="fas fa-chevron-right settings-entry-chevron"></i>
           <input type="text" name="deities.{{index}}.name" value="{{deity.name}}"

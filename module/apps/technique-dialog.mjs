@@ -1,6 +1,6 @@
 import {
   activateTechnique, getTechniqueStatusLabel, getTechniqueActionLabel, techniqueShowsEffectButton,
-  getActiveStyleBonuses,
+  getActiveStyleBonuses, openableTechniqueEffect, ensureTechniqueTemplate,
 } from '../helpers/technique-rolls.mjs';
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
@@ -141,8 +141,8 @@ export class SKSKTechniqueDialog extends HandlebarsApplicationMixin(ApplicationV
 
   static async #onOpenEffect(event, target) {
     const item = this.actor.items.get(target.dataset.itemId);
-    const effect = item?.system.effectId ? this.actor.effects.get(item.system.effectId) : null;
-    if (!effect) return ui.notifications.warn(game.i18n.localize('SKSK.Technique.NoEffectYet'));
+    if (!item) return;
+    const effect = openableTechniqueEffect(item) ?? await ensureTechniqueTemplate(item);
     effect.sheet.render(true);
   }
 

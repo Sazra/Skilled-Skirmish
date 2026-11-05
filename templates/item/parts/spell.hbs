@@ -88,8 +88,9 @@
 
     <div class="grid grid-4col">
       <div class="resource">
-        <label class="resource-label">Mana Cost</label>
-        <input type="text" name="system.manaCost" value="{{system.manaCost}}" data-dtype="Number" />
+        <label class="resource-label" title="{{localize 'SKSK.Spell.ManaCostVariableHint'}}">Mana Cost</label>
+        <input type="text" name="system.manaCost" value="{{#if system.manaCostVariable}}?{{else}}{{system.manaCost}}{{/if}}" data-dtype="Number"
+          title="{{localize 'SKSK.Spell.ManaCostVariableHint'}}" />
       </div>
       <div class="resource">
         <label class="resource-label">AP Cost</label>
@@ -113,6 +114,8 @@
         <li class="item flexrow items-header">
           <div class="item-name">Label</div>
           <div class="item-name">{{localize 'SKSK.Spell.ManaCost'}}</div>
+          <div class="item-name" title="{{localize 'SKSK.Spell.ExtraManaCostRepeatableHint'}}">{{localize 'SKSK.Spell.ExtraManaCostRepeatable'}}</div>
+          <div class="item-name">{{localize 'SKSK.Spell.ExtraManaCostMaxRepeats'}}</div>
           <div class="item-controls">
             <a class="item-control item-create" data-action="addExtraManaCost" title="Add extra mana cost tier">
               <i class="fas fa-plus"></i>
@@ -120,7 +123,8 @@
           </div>
         </li>
         {{#each system.extraManaCosts as |tier index|}}
-        <li class="item flexrow">
+        <li class="item expandable-item">
+          <div class="flexrow">
           <div class="item-name">
             <input type="text" name="system.extraManaCosts.{{index}}.label" value="{{tier.label}}"
               placeholder="e.g. Extra Cost 1" />
@@ -129,14 +133,138 @@
             <input type="text" name="system.extraManaCosts.{{index}}.manaCost" value="{{tier.manaCost}}"
               data-dtype="Number" />
           </div>
+          <div class="item-name">
+            <input type="checkbox" name="system.extraManaCosts.{{index}}.repeatable" {{checked tier.repeatable}}
+              title="{{localize 'SKSK.Spell.ExtraManaCostRepeatableHint'}}" />
+          </div>
+          <div class="item-name">
+            <input type="number" name="system.extraManaCosts.{{index}}.maxRepeats" value="{{tier.maxRepeats}}"
+              data-dtype="Number" min="1" step="1" {{#unless tier.repeatable}}disabled{{/unless}} />
+          </div>
           {{#if ../extraManaCostCumulative}}
-          <div class="item-name computed-total">= {{lookup ../extraManaCostCumulative index}}</div>
+          <div class="item-name computed-total">= {{lookup ../extraManaCostCumulative index}}{{#if (lookup ../extraManaCostCumulativeMax index)}} (max {{lookup ../extraManaCostCumulativeMax index}}){{/if}}</div>
           {{/if}}
           <div class="item-controls">
             <a class="item-control item-delete" data-action="removeArrayEntry" data-field="extraManaCosts"
               data-index="{{index}}" title="Remove">
               <i class="fas fa-trash"></i>
             </a>
+          </div>
+          </div>
+
+          <div class="bonus-groups extra-cost-effects">
+            <div class="bonus-group" title="{{localize 'SKSK.Spell.ExtraCostEffectsHint'}}">
+              <label class="resource-label">{{localize 'SKSK.Spell.ExtraCostExtraAttacks'}}</label>
+              <input type="number" name="system.extraManaCosts.{{index}}.extraAttacks" value="{{tier.extraAttacks}}"
+                data-dtype="Number" min="0" step="1" />
+            </div>
+            <div class="bonus-group">
+              <label class="resource-label" title="{{localize 'SKSK.Spell.ExtraCostEffectsHint'}}">{{localize 'SKSK.Spell.ExtraCostRangeChanges'}}</label>
+              <ol class="items-list items-list-compact">
+                {{#each tier.rangeChanges as |change changeIndex|}}
+                <li class="item flexrow">
+                  <div class="item-name">
+                    <select name="system.extraManaCosts.{{index}}.rangeChanges.{{changeIndex}}.rangeIndex">
+                      {{selectOptions ../../rangeChoices selected=change.rangeIndex}}
+                    </select>
+                  </div>
+                  <div class="item-name">
+                    <input type="number" name="system.extraManaCosts.{{index}}.rangeChanges.{{changeIndex}}.distanceBonus"
+                      value="{{change.distanceBonus}}" data-dtype="Number" step="1"
+                      title="{{localize 'SKSK.Spell.ExtraCostRangeDistance'}}" />
+                  </div>
+                  <div class="item-name">
+                    <select name="system.extraManaCosts.{{index}}.rangeChanges.{{changeIndex}}.indicator">
+                      {{selectOptions ../../rangeIndicatorOverrideChoices selected=change.indicator localize=true}}
+                    </select>
+                  </div>
+                  <div class="item-controls">
+                    <a class="item-control item-delete" data-action="removeNestedArrayEntry"
+                      data-parent-field="extraManaCosts" data-parent-index="{{index}}" data-field="rangeChanges"
+                      data-index="{{changeIndex}}" title="Remove">
+                      <i class="fas fa-trash"></i>
+                    </a>
+                  </div>
+                </li>
+                {{/each}}
+                <li class="item flexrow">
+                  <div class="item-controls">
+                    <a class="item-control item-create" data-action="addExtraCostRangeChange" data-index="{{index}}"
+                      title="{{localize 'SKSK.Spell.ExtraCostRangeChanges'}}">
+                      <i class="fas fa-plus"></i> Add
+                    </a>
+                  </div>
+                </li>
+              </ol>
+            </div>
+            <div class="bonus-group">
+              <label class="resource-label" title="{{localize 'SKSK.Spell.ExtraCostEffectsHint'}}">{{localize 'SKSK.Spell.ExtraCostStatusStacks'}}</label>
+              <ol class="items-list items-list-compact">
+                {{#each tier.statusStackBonuses as |change changeIndex|}}
+                <li class="item flexrow">
+                  <div class="item-name">
+                    <select name="system.extraManaCosts.{{index}}.statusStackBonuses.{{changeIndex}}.statusIndex">
+                      {{selectOptions ../../statusEntryChoices selected=change.statusIndex}}
+                    </select>
+                  </div>
+                  <div class="item-name">
+                    <input type="number" name="system.extraManaCosts.{{index}}.statusStackBonuses.{{changeIndex}}.stacks"
+                      value="{{change.stacks}}" data-dtype="Number" step="1"
+                      title="{{localize 'SKSK.Spell.ExtraCostStatusStackBonus'}}" />
+                  </div>
+                  <div class="item-controls">
+                    <a class="item-control item-delete" data-action="removeNestedArrayEntry"
+                      data-parent-field="extraManaCosts" data-parent-index="{{index}}" data-field="statusStackBonuses"
+                      data-index="{{changeIndex}}" title="Remove">
+                      <i class="fas fa-trash"></i>
+                    </a>
+                  </div>
+                </li>
+                {{/each}}
+                <li class="item flexrow">
+                  <div class="item-controls">
+                    <a class="item-control item-create" data-action="addExtraCostStatusStack" data-index="{{index}}"
+                      title="{{localize 'SKSK.Spell.ExtraCostStatusStacks'}}">
+                      <i class="fas fa-plus"></i> Add
+                    </a>
+                  </div>
+                </li>
+              </ol>
+            </div>
+            <div class="bonus-group">
+              <label class="resource-label" title="{{localize 'SKSK.Spell.ExtraCostEffectsHint'}}">{{localize 'SKSK.Spell.ExtraCostSaveDcChanges'}}</label>
+              <ol class="items-list items-list-compact">
+                {{#each tier.saveDcChanges as |change changeIndex|}}
+                <li class="item flexrow">
+                  <div class="item-name">
+                    <select name="system.extraManaCosts.{{index}}.saveDcChanges.{{changeIndex}}.savingThrowIndex">
+                      {{selectOptions ../../savingThrowChoices selected=change.savingThrowIndex}}
+                    </select>
+                  </div>
+                  <div class="item-name">
+                    <input type="number" name="system.extraManaCosts.{{index}}.saveDcChanges.{{changeIndex}}.dcBonus"
+                      value="{{change.dcBonus}}" data-dtype="Number" step="1"
+                      title="{{localize 'SKSK.Spell.ExtraCostDcBonus'}}" />
+                  </div>
+                  <div class="item-controls">
+                    <a class="item-control item-delete" data-action="removeNestedArrayEntry"
+                      data-parent-field="extraManaCosts" data-parent-index="{{index}}" data-field="saveDcChanges"
+                      data-index="{{changeIndex}}" title="Remove">
+                      <i class="fas fa-trash"></i>
+                    </a>
+                  </div>
+                </li>
+                {{/each}}
+                <li class="item flexrow">
+                  <div class="item-controls">
+                    <a class="item-control item-create" data-action="addExtraCostSaveDcChange" data-index="{{index}}"
+                      title="{{localize 'SKSK.Spell.ExtraCostSaveDcChanges'}}">
+                      <i class="fas fa-plus"></i> Add
+                    </a>
+                  </div>
+                </li>
+              </ol>
+            </div>
           </div>
         </li>
         {{/each}}
@@ -168,6 +296,9 @@
         <li class="item flexrow items-header">
           <div class="item-name">Distance (m)</div>
           <div class="item-name">Indicator</div>
+          {{#if system.manaCostVariable}}
+          <div class="item-name" title="{{localize 'SKSK.Spell.RangePerManaHint'}}">{{localize 'SKSK.Spell.RangePerMana'}}</div>
+          {{/if}}
           <div class="item-controls">
             <a class="item-control item-create" data-action="addRange" title="Add range">
               <i class="fas fa-plus"></i>
@@ -185,6 +316,12 @@
               {{selectOptions ../rangeIndicatorChoices selected=entry.indicator localize=true}}
             </select>
           </div>
+          {{#if ../system.manaCostVariable}}
+          <div class="item-name">
+            <input type="text" name="system.ranges.{{index}}.distancePerMana" value="{{entry.distancePerMana}}"
+              data-dtype="Number" title="{{localize 'SKSK.Spell.RangePerManaHint'}}" />
+          </div>
+          {{/if}}
           <div class="item-controls">
             {{#if ../canRemoveRange}}
             <a class="item-control item-delete" data-action="removeArrayEntry" data-field="ranges"
@@ -303,6 +440,13 @@
                 <input type="checkbox" name="system.savingThrows.{{index}}.contest" {{checked save.contest}} />
               </label>
             </div>
+            {{#if ../extraCostChoices.length}}
+            <div class="item-name">
+              <select name="system.savingThrows.{{index}}.extraCostIndex" title="{{localize 'SKSK.Spell.ExtraCostSaveGateHint'}}">
+                {{selectOptions ../extraCostGateChoices selected=save.extraCostIndex}}
+              </select>
+            </div>
+            {{/if}}
             {{#if ../savingThrowValues}}
             <div class="item-name computed-total">= {{lookup ../savingThrowValues index}}</div>
             {{/if}}
@@ -647,6 +791,11 @@
               {{selectOptions ../savingThrowChoices selected=fx.savingThrowIndex}}
             </select>
             {{/if}}
+            {{#if ../extraCostChoices.length}}
+            <select name="system.statusEffects.{{index}}.extraCostIndex" title="{{localize 'SKSK.Spell.ExtraCostApplyHint'}}">
+              {{selectOptions ../extraCostApplyChoices selected=fx.extraCostIndex}}
+            </select>
+            {{/if}}
           </div>
           <div class="item-controls">
             <a class="item-control item-delete" data-action="removeArrayEntry" data-field="statusEffects"
@@ -683,6 +832,11 @@
             {{#if (eq fx.trigger "save")}}
             <select name="system.foundryEffects.{{index}}.savingThrowIndex">
               {{selectOptions ../savingThrowChoices selected=fx.savingThrowIndex}}
+            </select>
+            {{/if}}
+            {{#if ../extraCostChoices.length}}
+            <select name="system.foundryEffects.{{index}}.extraCostIndex" title="{{localize 'SKSK.Spell.ExtraCostApplyHint'}}">
+              {{selectOptions ../extraCostApplyChoices selected=fx.extraCostIndex}}
             </select>
             {{/if}}
           </div>

@@ -15,6 +15,7 @@ import { computeEffectiveProperties } from '../helpers/properties.mjs';
 import { getCombatStyles } from '../helpers/combatStyles.mjs';
 import {
   techniqueHasDuration, techniqueShowsEffectButton, getTechniqueStatusLabel, getTechniqueActionLabel, activateTechnique,
+  openableTechniqueEffect, ensureTechniqueTemplate,
 } from '../helpers/technique-rolls.mjs';
 import { getStatusEffectDefinitions } from '../helpers/statusEffects.mjs';
 import {
@@ -23,7 +24,7 @@ import {
 import {
   toggleClassSpeciesAbility, toggleTalentAbility, getAbilityStatusLabel, getAbilityActionLabel,
 } from '../helpers/abilityRolls.mjs';
-import { ensureLinkedSpellEffect } from '../helpers/spell-rolls.mjs';
+import { ensureLinkedSpellEffect, getSpellEffectTemplate } from '../helpers/spell-rolls.mjs';
 import { SKSKSoulPathElementsDialog } from '../apps/soul-path-elements-dialog.mjs';
 import { getWorldDeities } from '../helpers/religion.mjs';
 import { captureScrollPositions, restoreScrollPositions } from '../helpers/scrollPreservation.mjs';
@@ -54,6 +55,9 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       addAbilityEffect: SKSKItemSheet.#addAbilityEffect,
       addRange: SKSKItemSheet.#addRange,
       addExtraManaCost: SKSKItemSheet.#addExtraManaCost,
+      addExtraCostRangeChange: SKSKItemSheet.#addExtraCostRangeChange,
+      addExtraCostSaveDcChange: SKSKItemSheet.#addExtraCostSaveDcChange,
+      addExtraCostStatusStack: SKSKItemSheet.#addExtraCostStatusStack,
       addCombinedSkill: SKSKItemSheet.#addCombinedSkill,
       addSavingThrow: SKSKItemSheet.#addSavingThrow,
       addSavingThrowAttributeBonus: SKSKItemSheet.#addSavingThrowAttributeBonus,
@@ -664,6 +668,10 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       context.systemlessCategoryChoices = CONFIG.SKSK.systemlessMagicCategories;
       context.combinedSkillChoices = getSkillBonusChoices();
       context.rangeIndicatorChoices = CONFIG.SKSK.rangeIndicators;
+      context.overchargeEffectChoices = {
+        scaling: 'SKSK.Spell.OverchargeEffectScaling',
+        extraAttack: 'SKSK.Spell.OverchargeEffectExtraAttack',
+      };
       context.castingMethodChoices = CONFIG.SKSK.castingMethods;
       context.apCostUnitChoices = CONFIG.SKSK.apCostUnits;
       context.canRemoveRange = (item.system.ranges?.length ?? 0) > 1;
@@ -693,15 +701,52 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       // just that tier's own cost, tier 2 = tier 1 + tier 2, etc.) - shown
       // next to each row so the GM can see the cumulative cost without doing
       // the math by hand. Pure arithmetic, no actor needed.
+      // Selectors used inside the extra-cost step rows and the saving-throw
+      // rows: which of the spell's ranges a step changes, the optional
+      // indicator replacement, and the "only with step X" gate of a saving
+      // throw (blank = always).
+      context.rangeChoices = (item.system.ranges ?? []).map((range, index) => ({
+        value: index,
+        label: `${index + 1}: ${range.distance}m ${game.i18n.localize(CONFIG.SKSK.rangeIndicators[range.indicator] ?? range.indicator)}`,
+      }));
+      context.rangeIndicatorOverrideChoices = {
+        '': game.i18n.localize('SKSK.Spell.ExtraCostRangeUnchanged'),
+        ...CONFIG.SKSK.rangeIndicators,
+      };
+      context.extraCostGateChoices = [
+        { value: '', label: game.i18n.localize('SKSK.Spell.ExtraCostSaveGateAlways') },
+        ...context.extraCostChoices,
+      ];
       context.extraManaCostCumulative = (item.system.extraManaCosts ?? []).map(
         (_, index) => computeExtraManaCostSum(item.system, index + 1)
       );
+      // Highest possible total through each step when every repeatable step
+      // up to it is used its maximum number of times.
+      // Only filled where it differs from the plain total above.
+      context.extraManaCostCumulativeMax = (item.system.extraManaCosts ?? []).map((_, index) => {
+        const max = computeExtraManaCostSum(
+          item.system, index + 1,
+          (item.system.extraManaCosts ?? []).map(entry => (entry.repeatable ? entry.maxRepeats : 1))
+        );
+        return max !== context.extraManaCostCumulative[index] ? max : null;
+      });
       // The statusEffects sub-tab's own predefined-status-effect picker -
       // see apps/status-effects-config.mjs's own identical pattern (also
       // reused by Technique's own effectStatusEffects list).
       context.statusEffectChoices = Object.fromEntries(
         getStatusEffectDefinitions().map(def => [def.id, def.name])
       );
+      // The spell's own status entries as selectable targets for an
+      // extra-cost step's "extra stacks", and the "only with step X" gate
+      // of a status/Foundry effect entry (blank = always).
+      context.statusEntryChoices = (item.system.statusEffects ?? []).map((entry, index) => ({
+        value: index,
+        label: `${index + 1}: ${context.statusEffectChoices[entry.statusId] ?? '-'}`,
+      }));
+      context.extraCostApplyChoices = [
+        { value: '', label: game.i18n.localize('SKSK.Spell.ExtraCostApplyAlways') },
+        ...context.extraCostChoices,
+      ];
       // Only meaningful when the spell is owned by an actor - otherwise
       // there's no caster to derive attribute/skill values from.
       if (item.actor) {
@@ -777,6 +822,26 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
   #scrollPositions = new Map();
 
   /** @override */
+  /**
+   * A spell's Mana Cost field accepts "?" (cast-time amount, see
+   * data/spell.mjs#manaCostVariable): turn it into that switch instead of
+   * letting the Number coercion mangle it.
+   * @override
+   */
+  _processFormData(event, form, formData) {
+    const data = super._processFormData(event, form, formData);
+    if (this.document.type === 'spell' && data?.system && 'manaCost' in data.system) {
+      const raw = String(form?.elements?.['system.manaCost']?.value ?? '').trim();
+      if (raw === '?') {
+        data.system.manaCostVariable = true;
+        delete data.system.manaCost;
+      } else {
+        data.system.manaCostVariable = false;
+      }
+    }
+    return data;
+  }
+
   async _preRender(context, options) {
     await super._preRender(context, options);
     this.#scrollPositions = captureScrollPositions(this);
@@ -881,11 +946,32 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
   }
 
   static async #addRange(event, target) {
-    await this.#addArrayEntry('ranges', { distance: 10, indicator: 'projectile' });
+    await this.#addArrayEntry('ranges', { distance: 10, indicator: 'projectile', distancePerMana: 0 });
   }
 
   static async #addExtraManaCost(event, target) {
-    await this.#addArrayEntry('extraManaCosts', { label: '', manaCost: 0 });
+    await this.#addArrayEntry('extraManaCosts', {
+      label: '', manaCost: 0, repeatable: false, maxRepeats: 2, extraAttacks: 0, rangeChanges: [], saveDcChanges: [],
+      statusStackBonuses: [],
+    });
+  }
+
+  static async #addExtraCostRangeChange(event, target) {
+    await this.#addNestedArrayEntry('extraManaCosts', Number(target.dataset.index), 'rangeChanges', {
+      rangeIndex: 0, distanceBonus: 0, indicator: '',
+    });
+  }
+
+  static async #addExtraCostStatusStack(event, target) {
+    await this.#addNestedArrayEntry('extraManaCosts', Number(target.dataset.index), 'statusStackBonuses', {
+      statusIndex: 0, stacks: 1,
+    });
+  }
+
+  static async #addExtraCostSaveDcChange(event, target) {
+    await this.#addNestedArrayEntry('extraManaCosts', Number(target.dataset.index), 'saveDcChanges', {
+      savingThrowIndex: 0, dcBonus: 1,
+    });
   }
 
   static async #addCombinedSkill(event, target) {
@@ -951,7 +1037,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
     const entries = foundry.utils.deepClone(this.item.system.foundryEffects ?? []);
     const [removed] = entries.splice(index, 1);
     if (removed?.effectId) {
-      const effect = this.item.actor?.effects.get(removed.effectId);
+      const effect = getSpellEffectTemplate(this.item, removed.effectId);
       if (effect) await effect.delete();
     }
     await this.item.update({ 'system.foundryEffects': entries });
@@ -963,10 +1049,9 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
    * config sheet - see helpers/spell-rolls.mjs#ensureLinkedSpellEffect.
    */
   static async #openSpellFoundryEffect(event, target) {
-    if (!this.item.actor) return ui.notifications.warn(game.i18n.localize('SKSK.Spell.EffectNotOwned'));
     const index = Number(target.dataset.index);
     const effectId = await ensureLinkedSpellEffect(this.item, index);
-    const effect = effectId ? this.item.actor.effects.get(effectId) : null;
+    const effect = getSpellEffectTemplate(this.item, effectId);
     effect?.sheet.render(true);
   }
 
@@ -1050,8 +1135,10 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
    * Foundry's native effect config sheet.
    */
   static async #openTechniqueEffect(event, target) {
-    const effect = this.item.system.effectId ? this.item.actor?.effects.get(this.item.system.effectId) : null;
-    if (!effect) return ui.notifications.warn(game.i18n.localize('SKSK.Technique.NoEffectYet'));
+    // The effect already bound to the actor (after the first activation),
+    // else the template kept on the Technique item itself - editable even
+    // before the Technique is owned or ever activated.
+    const effect = openableTechniqueEffect(this.item) ?? await ensureTechniqueTemplate(this.item);
     effect.sheet.render(true);
   }
 

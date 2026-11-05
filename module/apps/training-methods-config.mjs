@@ -83,7 +83,8 @@ export class SKSKTrainingMethodsConfig extends HandlebarsApplicationMixin(Applic
     const methods = foundry.utils.deepClone(game.settings.get('sksk', 'trainingMethods') ?? []);
     methods.push({ id: foundry.utils.randomID(), name: '', mainSkill: '', mainRate: 0, secondarySkills: [] });
     await game.settings.set('sksk', 'trainingMethods', methods);
-    this.render();
+    await this.render();
+    this.element?.querySelector(`details[data-sync="training-method-entry-${methods.length - 1}"]`)?.setAttribute('open', '');
   }
 
   /** @private */

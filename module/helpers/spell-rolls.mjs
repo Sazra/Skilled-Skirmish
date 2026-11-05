@@ -1,7 +1,9 @@
 import {
   computeDamageBonus, computeSavingThrowValue, computeSavingThrowBonusSum, computeSpellManaCost, computeSpellApCost,
   computeRitualHours, computeMaxOverchargeCount, computeOverchargedRanges, computeExtraManaCostSum,
-  computeMaxExtraCostTier, computeCombinedSpellFpTargets,
+  getOverchargeSettings, formatOverchargeDuration, resolveSpellStatusStacks, isSpellFoundryEffectActive,
+  computeMaxExtraCostTier, normalizeExtraCostCounts, computeCombinedSpellFpTargets,
+  computeExtraCostEffects, isSavingThrowActive, computeEffectiveRanges,
 } from './spells.mjs';
 import { getActorSkillLevel, getSkillLabel } from './skills.mjs';
 import {
@@ -37,9 +39,23 @@ import {
 const ROUNDS_PER_MINUTE = 10;
 
 /**
+ * The template ActiveEffect behind one of a Spell's foundryEffects entries
+ * (its effectId): normally hosted on the spell item itself, or - for a
+ * spell set up before templates moved onto the item - on the caster's
+ * actor.
+ * @param {Item} item
+ * @param {string} effectId
+ * @return {ActiveEffect|null}
+ */
+export function getSpellEffectTemplate(item, effectId) {
+  if (!effectId) return null;
+  return item.effects.get(effectId) ?? item.actor?.effects.get(effectId) ?? null;
+}
+
+/**
  * Create (if none exists yet) one of a Spell's own foundryEffects entries'
  * linked ActiveEffect, initially disabled - lives as a template on the
- * CASTER's own actor, copied onto whoever it lands on at apply time (see
+ * spell item itself, copied onto whoever it lands on at apply time (see
  * helpers/damageApplication.mjs#applySpellEffectGroup), same bind-then-
  * toggle pattern as helpers/technique-rolls.mjs#ensureLinkedEffect. A no-op
  * (returns "") if the spell isn't owned by an actor - nothing to host the
@@ -49,16 +65,20 @@ const ROUNDS_PER_MINUTE = 10;
  * @return {Promise<string>}
  */
 export async function ensureLinkedSpellEffect(item, index) {
-  if (!item.actor) return '';
   const entry = item.system.foundryEffects[index];
   if (!entry) return '';
-  if (entry.effectId && item.actor.effects.get(entry.effectId)) return entry.effectId;
+  if (entry.effectId && getSpellEffectTemplate(item, entry.effectId)) return entry.effectId;
 
-  const [effect] = await item.actor.createEmbeddedDocuments('ActiveEffect', [{
+  // The template lives on the SPELL ITEM itself (never transferred to its
+  // owner - it only ever serves as a copy source), so it can be edited
+  // before the spell is owned by anyone. Templates an older version bound
+  // on the caster's actor keep working, see getSpellEffectTemplate.
+  const [effect] = await item.createEmbeddedDocuments('ActiveEffect', [{
     name: entry.name || item.name,
     img: item.img || 'icons/svg/aura.svg',
     origin: item.uuid,
     disabled: true,
+    transfer: false,
   }]);
   const foundryEffects = foundry.utils.deepClone(item.system.foundryEffects);
   foundryEffects[index].effectId = effect.id;
@@ -156,11 +176,34 @@ export async function chooseSpellCastOptions(actor, item) {
       <label>${game.i18n.localize('SKSK.Spell.Roll.ExtraCostLabel')}</label>
       <select name="extraCostTier">${options.join('')}</select>
     </div>`;
+    // One count input per repeatable step ("kann mehrfach gewählt werden"),
+    // shown only while the chosen tier reaches that step (see the render
+    // hook below).
+    extraTiers.forEach((tierEntry, index) => {
+      if (!tierEntry.repeatable) return;
+      const stepLabel = tierEntry.label || game.i18n.format('SKSK.Spell.ExtraManaCost.Numbered', { number: index + 1 });
+      const maxRepeats = Math.max(1, tierEntry.maxRepeats ?? 1);
+      extraCostFieldHTML += `<div class="form-group" data-extra-step="${index + 1}" style="display:none">
+        <label>${game.i18n.format('SKSK.Spell.Roll.ExtraCostRepeatLabel', { label: stepLabel, max: maxRepeats })}</label>
+        <input type="number" name="extraCostCount${index}" value="1" min="1" max="${maxRepeats}" step="1" />
+      </div>`;
+    });
   }
+
+  // A "?" Mana cost: ask for the base amount right here too (otherwise
+  // rollSpellItem asks on its own).
+  const isVariable = !!item.system.manaCostVariable;
+  const variableDefault = Math.max(1, item.system.variableManaPaid || 1);
+  const variableFieldHTML = isVariable
+    ? `<div class="form-group">
+      <label>${game.i18n.localize('SKSK.Spell.Roll.VariableManaLabel')}</label>
+      <input type="number" name="variableMana" value="${variableDefault}" min="0" step="1" autofocus />
+    </div>`
+    : '';
 
   let altResourceFieldHTML = '';
   if (hasAltResources) {
-    const baseManaCost = computeSpellManaCost(item.system, actor, 0, 0).cost;
+    const baseManaCost = computeSpellManaCost(item.system, actor, 0, 0, [], isVariable ? variableDefault : null).cost;
     const options = [`<option value="-1">${game.i18n.localize('SKSK.Spell.Roll.AltResourceNone')}</option>`];
     for (const { index, resource } of altResources) {
       const { resourcePointsSpent, manaCovered } = computeManaAlternativeCoverage(resource, baseManaCost, item.system.spellLevel);
@@ -174,30 +217,103 @@ export async function chooseSpellCastOptions(actor, item) {
     </div>`;
   }
 
-  const readChoice = (overchargeCount) => (event, button) => ({
+  const readChoice = (overchargeCount) => (event, button) => {
+    const extraCostTier = hasExtraTiers ? Number(button.form?.elements?.extraCostTier?.value ?? 0) : 0;
+    // Only steps the chosen tier actually reaches can be repeated.
+    const extraCostCounts = extraTiers.map((tierEntry, index) => {
+      if (!tierEntry.repeatable || extraCostTier < index + 1) return 1;
+      return Number(button.form?.elements?.[`extraCostCount${index}`]?.value ?? 1);
+    });
+    return {
     overchargeCount,
-    extraCostTier: hasExtraTiers ? Number(button.form?.elements?.extraCostTier?.value ?? 0) : 0,
+    extraCostTier,
+    variableMana: isVariable ? Math.max(0, Math.floor(Number(button.form?.elements?.variableMana?.value ?? variableDefault)) || 0) : null,
+    extraCostCounts: normalizeExtraCostCounts(item.system, extraCostCounts),
     altResourceIndex: hasAltResources ? Number(button.form?.elements?.altResourceIndex?.value ?? -1) : -1,
-  });
+    };
+  };
 
+  const buttonLabels = [game.i18n.localize('SKSK.Spell.Roll.CastWithoutOvercharge')];
+  for (let count = 1; count <= max; count++) buttonLabels.push(game.i18n.format('SKSK.Spell.Roll.OverchargeCount', { count }));
   const buttons = [{
     action: 'noOvercharge',
-    label: game.i18n.localize('SKSK.Spell.Roll.CastWithoutOvercharge'),
+    label: buttonLabels[0],
     callback: readChoice(0),
   }];
   for (let count = 1; count <= max; count++) {
     buttons.push({
       action: `overcharge${count}`,
-      label: game.i18n.format('SKSK.Spell.Roll.OverchargeCount', { count }),
+      label: buttonLabels[count],
       callback: readChoice(count),
     });
   }
   return foundry.applications.api.DialogV2.wait({
     window: { title: game.i18n.format('SKSK.Spell.Roll.OverchargeTitle', { name: item.name }) },
-    content: `<p>${game.i18n.localize('SKSK.Spell.Roll.ChooseOverchargePrompt')}</p>${extraCostFieldHTML}${altResourceFieldHTML}`,
+    content: `<p>${game.i18n.localize('SKSK.Spell.Roll.ChooseOverchargePrompt')}</p>${variableFieldHTML}${extraCostFieldHTML}${altResourceFieldHTML}`,
     buttons,
+    render: (event, dialog) => {
+      const root = dialog?.element ?? event?.target?.element;
+      if (!root?.querySelector) return;
+      const tierSelect = root.querySelector('select[name="extraCostTier"]');
+      const variableInput = root.querySelector('input[name="variableMana"]');
+      // Re-reads the whole form: shows/hides the repeat counts of the steps
+      // the chosen tier reaches, and updates every button's own Mana cost
+      // plus every alternative resource's own points for each possible
+      // number of Überladungen (the cast buttons only pick that number).
+      const sync = () => {
+        const tier = tierSelect ? Number(tierSelect.value) || 0 : 0;
+        root.querySelectorAll('[data-extra-step]').forEach(row => {
+          row.style.display = tier >= Number(row.dataset.extraStep) ? '' : 'none';
+        });
+        const counts = normalizeExtraCostCounts(item.system, extraTiers.map((entry, index) => (
+          entry.repeatable && tier >= index + 1 ? Number(root.querySelector(`input[name="extraCostCount${index}"]`)?.value ?? 1) : 1
+        )));
+        const mana = isVariable ? Math.max(0, Math.floor(Number(variableInput?.value)) || 0) : null;
+        const costFor = (n) => computeSpellManaCost(item.system, actor, n, tier, counts, mana).cost;
+        for (let n = 0; n <= max; n++) {
+          const button = root.querySelector(`button[data-action="${n ? `overcharge${n}` : 'noOvercharge'}"]`);
+          if (button) button.textContent = `${buttonLabels[n]} (${costFor(n)} Mana)`;
+        }
+        root.querySelectorAll('select[name="altResourceIndex"] option').forEach(option => {
+          const found = altResources.find(entry => String(entry.index) === option.value);
+          if (!found) return;
+          const points = [];
+          for (let n = 0; n <= max; n++) {
+            points.push(`${n}×: ${computeManaAlternativeCoverage(found.resource, costFor(n), item.system.spellLevel).resourcePointsSpent}`);
+          }
+          option.textContent = `${found.resource.name || found.resource.abbreviation} (${points.join(' | ')})`;
+        });
+      };
+      root.addEventListener('input', sync);
+      root.addEventListener('change', sync);
+      sync();
+    },
     rejectClose: false,
   });
+}
+
+/**
+ * Ask how much Mana a "?"-cost spell (data/spell.mjs#manaCostVariable)
+ * should cost this time.
+ * @param {Item} item
+ * @return {Promise<number|null>}   null if the prompt was closed/cancelled.
+ */
+async function promptVariableMana(item) {
+  const fallback = Math.max(1, item.system.variableManaPaid || 1);
+  const value = await foundry.applications.api.DialogV2.prompt({
+    window: { title: game.i18n.format('SKSK.Spell.Roll.VariableManaTitle', { name: item.name }) },
+    content: `<div class="form-group">
+      <label>${game.i18n.localize('SKSK.Spell.Roll.VariableManaLabel')}</label>
+      <input type="number" name="variableMana" value="${fallback}" min="0" step="1" autofocus />
+    </div>`,
+    ok: {
+      label: game.i18n.localize('SKSK.Spell.Roll.VariableManaConfirm'),
+      callback: (event, button) => Number(button.form?.elements?.variableMana?.value ?? fallback),
+    },
+    rejectClose: false,
+  });
+  if (value === null || value === undefined || Number.isNaN(value)) return null;
+  return Math.max(0, Math.floor(value));
 }
 
 /**
@@ -247,7 +363,8 @@ async function renderDamageRoll(damage, actor, overchargeCount = 0, spellSystem 
   const barrierFlag = spellSystem?.ignoresBarrier ? { ignoresBarrier: true } : {};
   let amount = rollTotal;
   let overchargeHTML = '';
-  const overchargeMultiplier = overchargeCount > 0 ? 1 + 0.5 * overchargeCount : null;
+  const overchargeMultiplier = overchargeCount > 0
+    ? (100 + getOverchargeSettings(spellSystem).damagePercent * overchargeCount) / 100 : null;
   if (overchargeMultiplier) {
     amount = Math.floor(amount * overchargeMultiplier);
     overchargeHTML = `<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.OverchargeDamage', { amount })}</div>`;
@@ -274,8 +391,8 @@ async function renderDamageRoll(damage, actor, overchargeCount = 0, spellSystem 
  * @param {Actor} actor   The caster.
  * @return {Promise<{roll: Roll, total: number}>}
  */
-async function rollContestCasterRoll(save, actor) {
-  const bonus = computeSavingThrowBonusSum(save, actor);
+async function rollContestCasterRoll(save, actor, dcBonus = 0) {
+  const bonus = computeSavingThrowBonusSum(save, actor) + dcBonus;
   const roll = await new Roll(`1d20 + ${bonus}`, actor?.getRollData()).evaluate();
   return { roll, total: roll.total };
 }
@@ -297,22 +414,23 @@ async function rollContestCasterRoll(save, actor) {
  * @param {number} index   Its index into savingThrows.
  * @param {Item} item      The spell item (owned by the caster).
  * @param {number} [overchargeCount=0]
+ * @param {number} [dcBonus=0]   DC change from paid extra-cost steps.
  * @return {Promise<string>}
  */
-async function renderSavingThrowButton(save, index, item, overchargeCount = 0) {
+async function renderSavingThrowButton(save, index, item, overchargeCount = 0, dcBonus = 0) {
   const label = save.label || game.i18n.format('SKSK.Spell.SavingThrow.Numbered', { number: index + 1 });
   if (save.contest) {
-    const casterRoll = await rollContestCasterRoll(save, item.actor);
+    const casterRoll = await rollContestCasterRoll(save, item.actor, dcBonus);
     const rollHTML = await casterRoll.roll.render();
     return `<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.ContestCasterRoll', { label })}</div>${rollHTML}
     <button type="button" class="sksk-roll-save" data-action="rollSavingThrow"
-      data-item-uuid="${item.uuid}" data-save-index="${index}" data-overcharge="${overchargeCount}" data-contest-total="${casterRoll.total}">
+      data-item-uuid="${item.uuid}" data-save-index="${index}" data-overcharge="${overchargeCount}" data-dc-bonus="${dcBonus}" data-contest-total="${casterRoll.total}">
       ${game.i18n.format('SKSK.Spell.Roll.ContestButton', { label, total: casterRoll.total })}
     </button>`;
   }
-  const dc = computeSavingThrowValue(save, item.actor, overchargeCount);
+  const dc = computeSavingThrowValue(save, item.actor, overchargeCount, dcBonus);
   return `<button type="button" class="sksk-roll-save" data-action="rollSavingThrow"
-    data-item-uuid="${item.uuid}" data-save-index="${index}" data-overcharge="${overchargeCount}">
+    data-item-uuid="${item.uuid}" data-save-index="${index}" data-overcharge="${overchargeCount}" data-dc-bonus="${dcBonus}">
     ${label} (DC ${dc})
   </button>`;
 }
@@ -366,17 +484,35 @@ async function postSpellChatCard(item, parts) {
  * (attack-triggered first, else save-triggered, else unconditional).
  * @param {Item} item   The spell item.
  * @param {number} [overchargeCount=0]
+ * @param {number[]} [extraCostCounts=[]]   Repeat count per extra-cost
+ *   step (see helpers/spells.mjs#normalizeExtraCostCounts).
+ * @param {number|null} [variableMana=null]   Base Mana chosen for a "?"
+ *   cost spell (scales its ranges, see helpers/spells.mjs#computeEffectiveRanges).
  * @param {number} [extraCostTier=0]   Which "Es kann mehr Mana gezahlt
  *   werden" tier was paid (see data/spell.mjs#extraManaCosts) - gates any
  *   damages entry whose trigger is "extraCost" (see the "extraCost" damage
  *   loop below), independent of overchargeAutoEffects.
  * @return {Promise<string[]>}
  */
-async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier = 0) {
+async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier = 0, extraCostCounts = [], variableMana = null) {
   const actor = item.actor;
   const system = item.system;
   const parts = [];
-  const effectiveOvercharge = system.overchargeAutoEffects !== false ? overchargeCount : 0;
+  // This spell's own Überladen rules (data/spell.mjs#overcharge): the
+  // DC/range/damage scaling only applies in "scaling" mode (and with the
+  // auto-effects switch on) - in "extraAttack" mode each Überladung is one
+  // more attack instead (see the attack section below).
+  const oc = getOverchargeSettings(system);
+  const effectiveOvercharge = system.overchargeAutoEffects !== false && oc.effect === 'scaling' ? overchargeCount : 0;
+  const ocDc = effectiveOvercharge * oc.dcBonus;
+  // What the paid extra-cost steps change besides the cost: additional
+  // attacks, saving-throw DCs (ranges: see the range line below).
+  const castFx = computeExtraCostEffects(system, extraCostTier, extraCostCounts);
+  const baseAttackCount = (system.attackRoll.enabled ? system.attackRoll.count : 0) + castFx.extraAttacks;
+  // Only a spell that attacks at all gets the extra Überladungs-Angriffe.
+  const overchargeAttackCount = oc.effect === 'extraAttack' && baseAttackCount > 0 ? overchargeCount : 0;
+  const attackCount = baseAttackCount + overchargeAttackCount;
+  const attacksEnabled = attackCount > 0;
   const technique = actor ? await consumePrimedTechnique(actor, 'spell') : null;
   // An "effect" Technique's own saving-throw-gated apply button (if
   // configured) - independent of damage entirely, so rendered once here
@@ -411,18 +547,27 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
   if (extraCostTier > 0) {
     const tierEntry = system.extraManaCosts?.[extraCostTier - 1];
     const tierLabel = tierEntry?.label || game.i18n.format('SKSK.Spell.ExtraManaCost.Numbered', { number: extraCostTier });
-    const sum = computeExtraManaCostSum(system, extraCostTier);
-    parts.push(`<div class="sksk-roll-line"><strong>${game.i18n.format('SKSK.Spell.Roll.ExtraCostActive', { label: tierLabel, amount: sum })}</strong></div>`);
+    const sum = computeExtraManaCostSum(system, extraCostTier, extraCostCounts);
+    const used = normalizeExtraCostCounts(system, extraCostCounts);
+    const repeated = (system.extraManaCosts ?? [])
+      .map((entry, index) => ({ entry, index, count: used[index] }))
+      .filter(({ index, count }) => index < extraCostTier && count > 1)
+      .map(({ entry, index, count }) => `${entry.label || game.i18n.format('SKSK.Spell.ExtraManaCost.Numbered', { number: index + 1 })} ×${count}`);
+    const fullLabel = repeated.length ? `${tierLabel} (${repeated.join(', ')})` : tierLabel;
+    parts.push(`<div class="sksk-roll-line"><strong>${game.i18n.format('SKSK.Spell.Roll.ExtraCostActive', { label: fullLabel, amount: sum })}</strong></div>`);
   }
   if (effectiveOvercharge > 0 && system.ranges?.length) {
     // The Elementarist ability's own Luft-Ladungen bonus (helpers/
     // elementalChargeEffects.mjs) applies on top of Überladen's own
     // percentage scaling, not before it.
     const airChargeBonus = actor ? getElementalAirRangeBonus(actor) : 0;
-    const rangeLabel = computeOverchargedRanges(system.ranges, effectiveOvercharge)
+    const rangeLabel = computeOverchargedRanges(computeEffectiveRanges(system, extraCostTier, extraCostCounts, variableMana), effectiveOvercharge, oc)
       .map(r => `${r.distance + airChargeBonus}m ${game.i18n.localize(CONFIG.SKSK.rangeIndicators[r.indicator] ?? r.indicator)}`)
       .join(', ');
     parts.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.OverchargeRanges', { ranges: rangeLabel })}</div>`);
+  }
+  if (overchargeCount > 0 && oc.durationText) {
+    parts.push(`<div class="sksk-roll-line"><strong>${game.i18n.localize('SKSK.Spell.Roll.OverchargeDuration')}:</strong> ${formatOverchargeDuration(oc.durationText, overchargeCount)}</div>`);
   }
 
   if (actor && system.castingMethods?.ritual) {
@@ -434,16 +579,21 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
   // it (one Angriffswurf+Schaden+Apply-Damage group per iteration, for
   // multi-attack spells) - independent of any saving throws below, so a
   // spell may use both an attack roll and a save at once.
-  if (system.attackRoll.enabled) {
+  if (attacksEnabled) {
     const attackDamages = system.damages.filter(d => d.trigger === 'attack');
     const damageDice = attackDamages.map(damage => ({
       damageType: damage.damageType, dieSizes: getDamageDieSizes(damage.formula), ...(system.ignoresBarrier ? { ignoresBarrier: true } : {}),
     }));
     const attackBonus = actor ? computeSpellAttackBonus(system, actor) + (technique?.styleAttackBonus ?? 0) + (technique?.hitBonusAmount ?? 0) : 0;
-    for (let i = 1; i <= system.attackRoll.count; i++) {
+    for (let i = 1; i <= attackCount; i++) {
       const rolls = await rollAttackPair(attackBonus, actor);
+      // The attacks an Überladung adds come last and give no FP.
+      const isOverchargeAttack = i > baseAttackCount;
       const rendered = await renderAttackPairHTML(rolls, 'magicResistance', actor, {
-        damageDice, bonus: attackBonus, label: game.i18n.format('SKSK.Spell.Roll.Attack', { number: i }),
+        damageDice, bonus: attackBonus, noFp: isOverchargeAttack,
+        label: isOverchargeAttack
+          ? game.i18n.format('SKSK.Spell.Roll.OverchargeAttack', { number: i - baseAttackCount })
+          : game.i18n.format('SKSK.Spell.Roll.Attack', { number: i }),
         // Every spell's own attack bonus always includes its Willpower
         // modifier (see computeSpellAttackBonus above), regardless of
         // spellType - so "wil" is the one attribute a Spell-Angriffswurf's
@@ -474,7 +624,7 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
       // this actually did something.
       if (actor) {
         const autoResolveHTML = await autoResolveAttackForTargets(rolls, 'magicResistance', actor, {
-          damageEntries, damageDice, killSkillKey: null, techniqueItemUuid: techniqueEffect?.itemUuid ?? null,
+          damageEntries, damageDice, killSkillKey: null, techniqueItemUuid: techniqueEffect?.itemUuid ?? null, noFp: isOverchargeAttack,
         });
         if (autoResolveHTML) {
           parts[attackBlockIndex] = stripRerollButton(greyOutManualEvalButtons(parts[attackBlockIndex]));
@@ -498,8 +648,8 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
     system.damages.filter(d => d.trigger === 'save').map(d => d.savingThrowIndex ?? 0)
   )];
   for (const idx of saveIndexesWithDamage) {
-    if (!system.savingThrows[idx]) continue;
-    parts.push(`<div class="sksk-roll-saves">${await renderSavingThrowButton(system.savingThrows[idx], idx, item, effectiveOvercharge)}</div>`);
+    if (!system.savingThrows[idx] || !isSavingThrowActive(system, idx, extraCostTier)) continue;
+    parts.push(`<div class="sksk-roll-saves">${await renderSavingThrowButton(system.savingThrows[idx], idx, item, 0, (castFx.dcBonus[idx] ?? 0) + ocDc)}</div>`);
     const saveDamageEntries = [];
     for (const damage of system.damages.filter(d => d.trigger === 'save' && (d.savingThrowIndex ?? 0) === idx)) {
       const { html, entry } = await rollDamageWithTechnique(damage);
@@ -524,19 +674,29 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
   // (extraCostIndex 0 = tier 1, etc. - see computeExtraManaCostSum's own
   // identical cumulative slicing). Independent of overchargeAutoEffects -
   // the extra cost was paid either way, so its damage always applies.
+  // An entry tied to a repeatable step ("kann mehrfach gewählt werden") is
+  // rolled once per time that step was chosen - the damage scales with the
+  // repeat count just like its Mana cost does.
   const extraCostDamageEntries = [];
+  const usedExtraCounts = normalizeExtraCostCounts(system, extraCostCounts);
   for (const damage of system.damages.filter(d => d.trigger === 'extraCost' && extraCostTier >= (d.extraCostIndex ?? 0) + 1)) {
-    const { html, entry } = await rollDamageWithTechnique(damage);
-    parts.push(html);
-    extraCostDamageEntries.push(entry);
+    const repeats = usedExtraCounts[damage.extraCostIndex ?? 0] ?? 1;
+    for (let n = 1; n <= repeats; n++) {
+      if (repeats > 1) {
+        parts.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.ExtraCostRepeatRoll', { n, total: repeats })}</div>`);
+      }
+      const { html, entry } = await rollDamageWithTechnique(damage);
+      parts.push(html);
+      extraCostDamageEntries.push(entry);
+    }
   }
   parts.push(renderApplyDamageButton(actor, extraCostDamageEntries, null, takeTechniqueEffect()));
 
   // 11. Status/Foundry effects tied to the attack roll - merged into one
   // "Effekt anwenden" button, separate from the attack's own Apply Damage
   // button(s) above (only relevant if the spell actually has an attack roll).
-  if (system.attackRoll.enabled) {
-    parts.push(renderSpellEffectApplyButtonHTML(item, 'attack'));
+  if (attacksEnabled) {
+    parts.push(renderSpellEffectApplyButtonHTML(item, 'attack', extraCostTier, extraCostCounts));
   }
 
   // 12. Rettungswürfe für Statuseffekte/Foundry-Effekte - one merged,
@@ -546,18 +706,33 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
   // savingThrowIndex defaults to 0 - see the identical fallback (and its
   // own comment) on saveIndexesWithDamage above.
   const saveIndexesWithEffects = new Set();
-  for (const entry of system.statusEffects ?? []) {
-    if (entry.trigger === 'save') saveIndexesWithEffects.add(entry.savingThrowIndex ?? 0);
+  // Entries gated on an extra-cost step that was not paid don't count.
+  for (const [i, entry] of (system.statusEffects ?? []).entries()) {
+    if (entry.trigger === 'save' && resolveSpellStatusStacks(system, i, extraCostTier, extraCostCounts) !== null) {
+      saveIndexesWithEffects.add(entry.savingThrowIndex ?? 0);
+    }
   }
-  for (const entry of system.foundryEffects ?? []) {
-    if (entry.trigger === 'save') saveIndexesWithEffects.add(entry.savingThrowIndex ?? 0);
+  for (const [i, entry] of (system.foundryEffects ?? []).entries()) {
+    if (entry.trigger === 'save' && isSpellFoundryEffectActive(system, i, extraCostTier)) {
+      saveIndexesWithEffects.add(entry.savingThrowIndex ?? 0);
+    }
   }
   for (const idx of saveIndexesWithEffects) {
-    parts.push(await renderSpellEffectSaveButtonHTML(item, idx, effectiveOvercharge));
+    if (!isSavingThrowActive(system, idx, extraCostTier)) continue;
+    parts.push(await renderSpellEffectSaveButtonHTML(item, idx, 0, (castFx.dcBonus[idx] ?? 0) + ocDc, extraCostTier, extraCostCounts));
+  }
+
+  // 12b. A saving throw an extra-cost step makes necessary, with no damage
+  // or effect of its own tied to it: still shown as a plain save button.
+  const tiedSaveIndexes = new Set([...saveIndexesWithDamage, ...saveIndexesWithEffects]);
+  for (const [idx, save] of (system.savingThrows ?? []).entries()) {
+    if (save.extraCostIndex === null || save.extraCostIndex === undefined) continue;
+    if (tiedSaveIndexes.has(idx) || !isSavingThrowActive(system, idx, extraCostTier)) continue;
+    parts.push(`<div class="sksk-roll-saves">${await renderSavingThrowButton(save, idx, item, 0, (castFx.dcBonus[idx] ?? 0) + ocDc)}</div>`);
   }
 
   // 13. Status/Foundry effects applied unconditionally.
-  parts.push(renderSpellEffectApplyButtonHTML(item, 'unconditional'));
+  parts.push(renderSpellEffectApplyButtonHTML(item, 'unconditional', extraCostTier, extraCostCounts));
 
   return parts;
 }
@@ -595,7 +770,7 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
  *   falls back to normal Mana payment. See helpers/customResources.mjs.
  * @return {Promise<ChatMessage|void>}
  */
-export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0, altResourceIndex = -1) {
+export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0, altResourceIndex = -1, extraCostCounts = [], variableMana = null) {
   const actor = item.actor;
   const system = item.system;
 
@@ -627,6 +802,21 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
 
   if (actor) overchargeCount = Math.min(overchargeCount, computeMaxOverchargeCount(actor));
   extraCostTier = Math.max(0, Math.min(extraCostTier, computeMaxExtraCostTier(system)));
+  extraCostCounts = normalizeExtraCostCounts(system, extraCostCounts);
+
+  // "?" as Mana cost: the caster chooses the base amount for this cast (the
+  // Shift+Click dialog already asked; a plain click asks here). Closing the
+  // prompt aborts the cast.
+  if (actor && system.manaCostVariable) {
+    if (variableMana === null || variableMana === undefined) {
+      variableMana = await promptVariableMana(item);
+      if (variableMana === null) return;
+    }
+    variableMana = Math.max(0, Math.floor(Number(variableMana)) || 0);
+    if (variableMana !== system.variableManaPaid) await item.update({ 'system.variableManaPaid': variableMana });
+  } else {
+    variableMana = null;
+  }
 
   // 1. Heading, 2. Magic school.
   const parts = [formatRollCardHeading(item.name)];
@@ -658,7 +848,7 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
       }
       if (system.apCostUnit === 'minutes') {
         const totalRounds = Math.max(1, system.apCost) * ROUNDS_PER_MINUTE;
-        await actor.update({ 'system.pendingSpell': { itemId: item.id, apCost: 0, roundsRemaining: totalRounds, overchargeCount, extraCostTier } });
+        await actor.update({ 'system.pendingSpell': { itemId: item.id, apCost: 0, roundsRemaining: totalRounds, overchargeCount, extraCostTier, extraCostCounts, variableMana: variableMana ?? 0 } });
         await setStatusStacks(actor, 'concentration', 1);
         parts.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.RitualMinutesStarted', { minutes: system.apCost, rounds: totalRounds })}</div>`);
         deferred = true;
@@ -711,7 +901,7 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
         }
 
         if (remaining > 0) {
-          await actor.update({ 'system.pendingSpell': { itemId: item.id, apCost: remaining, roundsRemaining: 0, overchargeCount, extraCostTier } });
+          await actor.update({ 'system.pendingSpell': { itemId: item.id, apCost: remaining, roundsRemaining: 0, overchargeCount, extraCostTier, extraCostCounts, variableMana: variableMana ?? 0 } });
           await setStatusStacks(actor, 'concentration', 1);
           parts.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.ApOwed', { paid: paidNow, remaining })}</div>`);
           deferred = true;
@@ -720,7 +910,7 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
     }
 
     // 4. Mana cost.
-    const { cost: manaCost, increased } = computeSpellManaCost(system, actor, overchargeCount, extraCostTier);
+    const { cost: manaCost, increased } = computeSpellManaCost(system, actor, overchargeCount, extraCostTier, extraCostCounts, variableMana);
     const costClass = increased ? 'sksk-roll-mana-cost-increased' : '';
     parts.push(`<div class="sksk-roll-mana-cost"><strong>${game.i18n.localize('SKSK.Spell.ManaCost')}:</strong> <span class="${costClass}">${manaCost}</span></div>`);
 
@@ -829,7 +1019,7 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
     // elementalChargeEffects.mjs) - +2m per charge on top of the spell's
     // own stored range.
     const airChargeBonus = actor ? getElementalAirRangeBonus(actor) : 0;
-    const rangesLabel = system.ranges
+    const rangesLabel = computeEffectiveRanges(system, extraCostTier, extraCostCounts, variableMana)
       .map(r => `${r.distance + airChargeBonus}m ${game.i18n.localize(CONFIG.SKSK.rangeIndicators[r.indicator] ?? r.indicator)}`)
       .join(', ');
     parts.push(`<div class="sksk-roll-line"><strong>${game.i18n.localize('SKSK.Spell.Ranges')}:</strong> ${rangesLabel}</div>`);
@@ -850,7 +1040,7 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
   parts.push(`<div class="sksk-roll-description">${descriptionHTML}</div>`);
 
   if (!deferred) {
-    parts.push(...(await renderSpellEffectParts(item, overchargeCount, extraCostTier)));
+    parts.push(...(await renderSpellEffectParts(item, overchargeCount, extraCostTier, extraCostCounts, variableMana)));
   }
 
   return postSpellChatCard(item, parts);
@@ -891,12 +1081,12 @@ async function postPendingSpellProgress(actor, label, lineHTML, reflexGrant) {
  * @param {number} [extraCostTier=0]
  * @return {Promise<void>}
  */
-async function resolvePendingSpell(actor, item, reflexGrant, overchargeCount = 0, extraCostTier = 0) {
+async function resolvePendingSpell(actor, item, reflexGrant, overchargeCount = 0, extraCostTier = 0, extraCostCounts = [], variableMana = null) {
   await actor.update({ 'system.pendingSpell.itemId': '' });
   await setStatusStacks(actor, 'concentration', 0);
   if (!item) return;
 
-  const parts = [formatRollCardHeading(item.name), ...(await renderSpellEffectParts(item, overchargeCount, extraCostTier))];
+  const parts = [formatRollCardHeading(item.name), ...(await renderSpellEffectParts(item, overchargeCount, extraCostTier, extraCostCounts, variableMana))];
   parts.push(formatSkillFpGrantLine(reflexGrant));
   await postSpellChatCard(item, parts);
 }
@@ -925,6 +1115,8 @@ export async function handlePendingSpellTurnStart(actor) {
   const label = item?.name ?? game.i18n.localize('SKSK.StatusEffect.Concentration.Name');
   const overchargeCount = pending.overchargeCount ?? 0;
   const extraCostTier = pending.extraCostTier ?? 0;
+  const extraCostCounts = pending.extraCostCounts ?? [];
+  const variableMana = item?.system.manaCostVariable ? (pending.variableMana ?? 0) : null;
 
   if (hasRoundsDebt) {
     const drained = actor.system.actionPoints.value;
@@ -944,7 +1136,7 @@ export async function handlePendingSpellTurnStart(actor) {
       return;
     }
 
-    await resolvePendingSpell(actor, item, reflexGrant, overchargeCount, extraCostTier);
+    await resolvePendingSpell(actor, item, reflexGrant, overchargeCount, extraCostTier, extraCostCounts, variableMana);
     return;
   }
 
@@ -966,7 +1158,7 @@ export async function handlePendingSpellTurnStart(actor) {
     return;
   }
 
-  await resolvePendingSpell(actor, item, reflexGrant, overchargeCount, extraCostTier);
+  await resolvePendingSpell(actor, item, reflexGrant, overchargeCount, extraCostTier, extraCostCounts, variableMana);
 }
 
 /**
@@ -1002,7 +1194,7 @@ export async function handlePendingSpellTurnStart(actor) {
  *   DC from save.baseValue.
  * @return {Promise<{dc: number, roll: Roll, criticalType: string|null, success: boolean, saveLabel: string, outcome: string, luckHTML: string, best: {label: string, value: number, attributeKey: string|null}, result: object, isContest: boolean}>}
  */
-async function resolveAndRollSavingThrow(rollingActor, casterItem, save, saveIndex, overchargeCount, mode, ignoreSpecial, contestTotal = null) {
+async function resolveAndRollSavingThrow(rollingActor, casterItem, save, saveIndex, overchargeCount, mode, ignoreSpecial, contestTotal = null, dcBonus = 0) {
   let best = null;
   const modField = ignoreSpecial ? 'modExcludingSpecial' : 'mod';
   for (const [attributeKey, enabled] of Object.entries(save.testAttributes ?? {})) {
@@ -1020,7 +1212,7 @@ async function resolveAndRollSavingThrow(rollingActor, casterItem, save, saveInd
   }
   best ??= { label: '', value: 0, attributeKey: null };
 
-  const dc = contestTotal ?? computeSavingThrowValue(save, casterItem.actor, overchargeCount);
+  const dc = contestTotal ?? computeSavingThrowValue(save, casterItem.actor, overchargeCount, dcBonus);
   const formula = applyD20Malus(`1d20 + ${best.value}`, rollingActor, best.attributeKey);
   const result = await evaluateD20WithMode(formula, rollingActor.getRollData(), mode);
   const { roll, criticalType, doubleCritical } = result;
@@ -1064,7 +1256,7 @@ async function resolveAndRollSavingThrow(rollingActor, casterItem, save, saveInd
  *   data-contest-total for a "Wettstreit" (contest) saving throw.
  * @return {Promise<ChatMessage|void>}
  */
-export async function rollSavingThrowFromChat(itemUuid, saveIndex, overchargeCount = 0, ignoreSpecial = false, contestTotal = null) {
+export async function rollSavingThrowFromChat(itemUuid, saveIndex, overchargeCount = 0, ignoreSpecial = false, contestTotal = null, dcBonus = 0) {
   const item = await fromUuid(itemUuid);
   if (!item) return ui.notifications.warn(game.i18n.localize('SKSK.Spell.Roll.ItemNotFound'));
 
@@ -1077,7 +1269,7 @@ export async function rollSavingThrowFromChat(itemUuid, saveIndex, overchargeCou
   const mode = await chooseGenericRollMode();
   if (!mode) return;
 
-  const r = await resolveAndRollSavingThrow(actor, item, save, saveIndex, overchargeCount, mode, ignoreSpecial, contestTotal);
+  const r = await resolveAndRollSavingThrow(actor, item, save, saveIndex, overchargeCount, mode, ignoreSpecial, contestTotal, dcBonus);
 
   const vsLabel = r.isContest ? game.i18n.format('SKSK.Spell.Roll.VsContestTotal', { total: r.dc }) : `DC ${r.dc}`;
   const flavor = `${r.saveLabel} (${r.best.label}) ${game.i18n.localize('SKSK.Spell.Roll.Vs')} ${vsLabel}: ${r.outcome}`;
@@ -1109,22 +1301,23 @@ export async function rollSavingThrowFromChat(itemUuid, saveIndex, overchargeCou
  * @param {number} [overchargeCount=0]
  * @return {Promise<string>}
  */
-async function renderSpellEffectSaveButtonHTML(item, savingThrowIndex, overchargeCount = 0) {
+async function renderSpellEffectSaveButtonHTML(item, savingThrowIndex, overchargeCount = 0, dcBonus = 0, extraCostTier = 0, extraCostCounts = []) {
+  const extraAttrs = `data-extra-tier="${extraCostTier}" data-extra-counts="${extraCostCounts.join(',')}"`;
   const save = item.system.savingThrows?.[savingThrowIndex];
   if (!save) return '';
   const label = save.label || game.i18n.format('SKSK.Spell.SavingThrow.Numbered', { number: savingThrowIndex + 1 });
   if (save.contest) {
-    const casterRoll = await rollContestCasterRoll(save, item.actor);
+    const casterRoll = await rollContestCasterRoll(save, item.actor, dcBonus);
     const rollHTML = await casterRoll.roll.render();
     return `<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.ContestCasterRoll', { label })}</div>${rollHTML}
     <button type="button" class="sksk-roll-hit-eval" data-action="rollSpellEffectSave"
-      data-item-uuid="${item.uuid}" data-save-index="${savingThrowIndex}" data-overcharge="${overchargeCount}" data-contest-total="${casterRoll.total}">
+      data-item-uuid="${item.uuid}" data-save-index="${savingThrowIndex}" data-overcharge="${overchargeCount}" data-dc-bonus="${dcBonus}" ${extraAttrs} data-contest-total="${casterRoll.total}">
       ${game.i18n.format('SKSK.Spell.RollEffectSavingThrowContest', { label, total: casterRoll.total })}
     </button>`;
   }
-  const dc = computeSavingThrowValue(save, item.actor, overchargeCount);
+  const dc = computeSavingThrowValue(save, item.actor, overchargeCount, dcBonus);
   return `<button type="button" class="sksk-roll-hit-eval" data-action="rollSpellEffectSave"
-    data-item-uuid="${item.uuid}" data-save-index="${savingThrowIndex}" data-overcharge="${overchargeCount}">
+    data-item-uuid="${item.uuid}" data-save-index="${savingThrowIndex}" data-overcharge="${overchargeCount}" data-dc-bonus="${dcBonus}" ${extraAttrs}>
     ${game.i18n.format('SKSK.Spell.RollEffectSavingThrow', { label, dc })}
   </button>`;
 }
@@ -1147,7 +1340,7 @@ async function renderSpellEffectSaveButtonHTML(item, savingThrowIndex, overcharg
  *   data-contest-total for a "Wettstreit" (contest) saving throw.
  * @return {Promise<ChatMessage|void>}
  */
-export async function rollSpellEffectSaveFromChat(itemUuid, saveIndex, overchargeCount = 0, ignoreSpecial = false, contestTotal = null) {
+export async function rollSpellEffectSaveFromChat(itemUuid, saveIndex, overchargeCount = 0, ignoreSpecial = false, contestTotal = null, dcBonus = 0, extraCostTier = 0, extraCostCounts = []) {
   const item = await fromUuid(itemUuid);
   if (!item) return ui.notifications.warn(game.i18n.localize('SKSK.Spell.Roll.ItemNotFound'));
 
@@ -1160,8 +1353,8 @@ export async function rollSpellEffectSaveFromChat(itemUuid, saveIndex, overcharg
   const mode = await chooseGenericRollMode();
   if (!mode) return;
 
-  const r = await resolveAndRollSavingThrow(actor, item, save, saveIndex, overchargeCount, mode, ignoreSpecial, contestTotal);
-  const appliedHTML = r.success ? '' : await applySpellEffectGroup(itemUuid, 'save', saveIndex, actor);
+  const r = await resolveAndRollSavingThrow(actor, item, save, saveIndex, overchargeCount, mode, ignoreSpecial, contestTotal, dcBonus);
+  const appliedHTML = r.success ? '' : await applySpellEffectGroup(itemUuid, 'save', saveIndex, actor, extraCostTier, extraCostCounts);
 
   const vsLabel = r.isContest ? game.i18n.format('SKSK.Spell.Roll.VsContestTotal', { total: r.dc }) : `DC ${r.dc}`;
   const flavor = `${r.saveLabel} (${r.best.label}) ${game.i18n.localize('SKSK.Spell.Roll.Vs')} ${vsLabel}: ${r.outcome}`;
@@ -1183,9 +1376,9 @@ export async function rollSpellEffectSaveFromChat(itemUuid, saveIndex, overcharg
  * @param {"attack"|"unconditional"} group
  * @return {boolean}
  */
-function spellHasEffectsForGroup(system, group) {
-  return (system.statusEffects ?? []).some(e => e.trigger === group)
-    || (system.foundryEffects ?? []).some(e => e.trigger === group);
+function spellHasEffectsForGroup(system, group, extraCostTier = 0) {
+  return (system.statusEffects ?? []).some((e, i) => e.trigger === group && resolveSpellStatusStacks(system, i, extraCostTier) !== null)
+    || (system.foundryEffects ?? []).some((e, i) => e.trigger === group && isSpellFoundryEffectActive(system, i, extraCostTier));
 }
 
 /**
@@ -1201,10 +1394,10 @@ function spellHasEffectsForGroup(system, group) {
  * @param {"attack"|"unconditional"} group
  * @return {string}
  */
-function renderSpellEffectApplyButtonHTML(item, group) {
-  if (!spellHasEffectsForGroup(item.system, group)) return '';
+function renderSpellEffectApplyButtonHTML(item, group, extraCostTier = 0, extraCostCounts = []) {
+  if (!spellHasEffectsForGroup(item.system, group, extraCostTier)) return '';
   return `<button type="button" class="sksk-apply-damage" data-action="applySpellEffect"
-    data-item-uuid="${item.uuid}" data-group="${group}">
+    data-item-uuid="${item.uuid}" data-group="${group}" data-extra-tier="${extraCostTier}" data-extra-counts="${extraCostCounts.join(',')}">
     ${game.i18n.localize('SKSK.Spell.ApplyEffect')}
   </button>`;
 }
@@ -1219,12 +1412,12 @@ function renderSpellEffectApplyButtonHTML(item, group) {
  * @param {"attack"|"unconditional"} group
  * @return {Promise<ChatMessage|void>}
  */
-export async function applySpellEffectFromChat(itemUuid, group) {
+export async function applySpellEffectFromChat(itemUuid, group, extraCostTier = 0, extraCostCounts = []) {
   const item = await fromUuid(itemUuid);
   const defender = resolveClickDefender(item?.actor ?? null);
   if (!defender) return ui.notifications.warn(game.i18n.localize('SKSK.AttackRoll.NoDefender'));
 
-  const html = await applySpellEffectGroup(itemUuid, group, null, defender);
+  const html = await applySpellEffectGroup(itemUuid, group, null, defender, extraCostTier, extraCostCounts);
   const messageData = {
     speaker: ChatMessage.getSpeaker({ actor: defender }),
     flavor: item?.name ?? '',

@@ -1298,6 +1298,12 @@ body.theme-light .application.sksk.actor {
   padding: 0 8px;
 }
 
+/* Extra-cost step effects (attacks/ranges/DC): stacked, not side by side. */
+.sksk .bonus-groups.extra-cost-effects {
+  flex-direction: column;
+  gap: 8px;
+}
+
 .sksk .bonus-groups {
   display: flex;
   gap: 16px;
@@ -2455,6 +2461,11 @@ span.sksk-critical-failure {
   color: var(--color-text-primary);
 }
 
+/* A filled slot can be clicked to consume it. */
+.sksk .elemental-charge-slot-consumable {
+  cursor: pointer;
+}
+
 .sksk .elemental-charge-abbr {
   pointer-events: none;
 }
@@ -2802,4 +2813,48 @@ span.sksk-critical-failure {
 
 .sksk .item-create-menu li a:hover {
   color: var(--color-text-hyperlink);
+}
+
+/* Autocomplete dropdown for the Active Effect sheet's "Attribute Key"
+   field (helpers/effectKeyAutocomplete.mjs). Appended to <body> (not inside
+   the sheet) so the sheet's scroll area can't clip it - hence not scoped
+   under .sksk. */
+.sksk-key-autocomplete {
+  position: fixed;
+  z-index: 10000;
+  overflow-y: auto;
+  background: var(--color-cool-5, #1f1f23);
+  color: var(--color-light-1, #eee);
+  border: 1px solid var(--color-border-light-tertiary, #7a7971);
+  border-radius: 4px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  font-size: var(--font-size-12, 12px);
+}
+.sksk-key-autocomplete-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 8px;
+  padding: 3px 8px;
+  cursor: pointer;
+}
+.sksk-key-autocomplete-row.active {
+  background: rgba(255, 255, 255, 0.16);
+}
+.sksk-key-autocomplete-row .label {
+  font-weight: bold;
+}
+.sksk-key-autocomplete-row code {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  opacity: 0.8;
+  background: none;
+  border: none;
+  padding: 0;
+}
+.sksk-key-autocomplete-row .category {
+  grid-row: 1;
+  grid-column: 2;
+  font-size: 11px;
+  opacity: 0.6;
+  align-self: center;
 }

@@ -27,6 +27,9 @@ function collectChargeBonuses(actor, resource) {
       else flat += entry.bonus ?? 0;
     }
   }
+  // The Active-Effect counterparts of those entries (see data/actor-base.mjs).
+  flat += actor.system.chargeBonusFlat?.[resource] ?? 0;
+  percent += actor.system.chargeBonusPercent?.[resource] ?? 0;
   return { flat, percent };
 }
 

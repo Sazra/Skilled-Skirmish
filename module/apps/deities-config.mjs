@@ -122,7 +122,8 @@ export class SKSKDeitiesConfig extends HandlebarsApplicationMixin(ApplicationV2)
       abilities: Array.from({ length: abilityCount }, () => ({ name: '', description: '' })),
     });
     await game.settings.set('sksk', 'deities', deities);
-    this.render();
+    await this.render();
+    this.element?.querySelector(`details[data-sync="deity-entry-${deities.length - 1}"]`)?.setAttribute('open', '');
   }
 
   /** @private */

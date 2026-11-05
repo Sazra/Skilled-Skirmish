@@ -37,6 +37,55 @@
   </div>
 
   <div class="resource">
+    <label class="resource-label" title="{{localize 'SKSK.Spell.OverchargeSettingsHint'}}">{{localize 'SKSK.Spell.OverchargeSettings'}}</label>
+    <div class="resource">
+      <label class="resource-label" title="{{localize 'SKSK.Spell.OverchargeEffectHint'}}">{{localize 'SKSK.Spell.OverchargeEffect'}}</label>
+      <select name="system.overcharge.effect">
+        {{selectOptions overchargeEffectChoices selected=system.overcharge.effect localize=true}}
+      </select>
+    </div>
+    <div class="grid grid-3col">
+      <div class="resource">
+        <label class="resource-label">{{localize 'SKSK.Spell.OverchargeManaPercent'}}</label>
+        <input type="text" name="system.overcharge.manaPercent" value="{{system.overcharge.manaPercent}}" data-dtype="Number" />
+      </div>
+      <div class="resource">
+        <label class="resource-label">{{localize 'SKSK.Spell.OverchargeManaFlat'}}</label>
+        <input type="text" name="system.overcharge.manaFlat" value="{{system.overcharge.manaFlat}}" data-dtype="Number" />
+      </div>
+      <div class="resource">
+        <label class="resource-label">{{localize 'SKSK.Spell.OverchargeApCost'}}</label>
+        <input type="text" name="system.overcharge.apCost" value="{{system.overcharge.apCost}}" data-dtype="Number" />
+      </div>
+      <div class="resource">
+        <label class="resource-label">{{localize 'SKSK.Spell.OverchargeDcBonus'}}</label>
+        <input type="text" name="system.overcharge.dcBonus" value="{{system.overcharge.dcBonus}}" data-dtype="Number"
+          {{#if (eq system.overcharge.effect "extraAttack")}}disabled{{/if}} />
+      </div>
+      <div class="resource">
+        <label class="resource-label">{{localize 'SKSK.Spell.OverchargeRangePercent'}}</label>
+        <input type="text" name="system.overcharge.rangePercent" value="{{system.overcharge.rangePercent}}" data-dtype="Number"
+          {{#if (eq system.overcharge.effect "extraAttack")}}disabled{{/if}} />
+      </div>
+      <div class="resource">
+        <label class="resource-label">{{localize 'SKSK.Spell.OverchargeRangeFlat'}}</label>
+        <input type="text" name="system.overcharge.rangeFlat" value="{{system.overcharge.rangeFlat}}" data-dtype="Number"
+          {{#if (eq system.overcharge.effect "extraAttack")}}disabled{{/if}} />
+      </div>
+      <div class="resource">
+        <label class="resource-label">{{localize 'SKSK.Spell.OverchargeDamagePercent'}}</label>
+        <input type="text" name="system.overcharge.damagePercent" value="{{system.overcharge.damagePercent}}" data-dtype="Number"
+          {{#if (eq system.overcharge.effect "extraAttack")}}disabled{{/if}} />
+      </div>
+    </div>
+    <div class="resource">
+      <label class="resource-label" title="{{localize 'SKSK.Spell.OverchargeDurationHint'}}">{{localize 'SKSK.Spell.OverchargeDurationText'}}</label>
+      <input type="text" name="system.overcharge.durationText" value="{{system.overcharge.durationText}}"
+        placeholder="{{localize 'SKSK.Spell.OverchargeDurationPlaceholder'}}" />
+    </div>
+  </div>
+
+  <div class="resource">
     <label class="resource-label casting-method-option" title="{{localize 'SKSK.Barrier.IgnoresBarrierHint'}}">
       <input type="checkbox" name="system.ignoresBarrier" {{checked system.ignoresBarrier}} />
       {{localize 'SKSK.Barrier.IgnoresBarrier'}}
