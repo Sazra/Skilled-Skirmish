@@ -1851,6 +1851,7 @@
       "TurnStartManaGain": "Mana +{amount} from {status}",
       "TurnStartManaLoss": "Mana -{amount} from {status}",
       "ElementalChargeLifeHeal": "{amount} healing from Elemental Charges (Life Magic)",
+      "NeedsMovementSpeed": "{actor} has no \"{type}\" speed - the status cannot be set.",
       "ElementalChargeManaGen": "Mana +{amount} from Elemental Charges (Nature Magic)",
       "MovementSpellBlocked": "Can't cast a Movement spell while Prone or Restrained.",
       "AttackBlocked": "Can't attack while Prone or Restrained.",

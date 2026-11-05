@@ -19,12 +19,12 @@ import { handleAttributeRerollFromChat } from './helpers/attributeReroll.mjs';
 import { handleDamageRerollOnesFromChat } from './helpers/damageReroll.mjs';
 import { rollTechniqueEffectSaveFromChat } from './helpers/technique-rolls.mjs';
 import { computeSpeciesAura } from './helpers/attributes.mjs';
-import { getMainSpeciesItem } from './helpers/movement.mjs';
+import { getMainSpeciesItem, computeMovementSpeeds } from './helpers/movement.mjs';
 import {
   computeMainSpeciesBaseDays, computeSubMultiplierProduct, computePermanentLifeManaTotal, recalculateDaysFromBaseline,
 } from './helpers/longevity.mjs';
 import {
-  ensurePredefinedStatusEffects, registerConfigStatusEffects, handleCombatTurnStart, handleCombatTurnEnd,
+  ensurePredefinedStatusEffects, registerConfigStatusEffects, STATUS_MOVEMENT_REQUIREMENTS, handleCombatTurnStart, handleCombatTurnEnd,
   activateActiveManaCore, deactivateActiveManaCore, handleConcentrationEnded,
 } from './helpers/statusEffects.mjs';
 import { clampSingleAttributeSelection } from './helpers/models.mjs';
@@ -45,6 +45,11 @@ Hooks.once('init', function () {
   };
 
   CONFIG.SKSK = SKSK;
+
+  // Foundry's own "invisible" token behaviour (half-transparent filter for
+  // the GM/owner, undetectable by sight) belongs to this system's own
+  // Tarnung (Concealed) status instead of the dropped core "Invisible".
+  CONFIG.specialStatusEffects.INVISIBLE = 'concealed';
 
   registerSettings();
 
@@ -156,6 +161,22 @@ Hooks.once('ready', async function () {
   // delete the same kind of ActiveEffect. Only the client that actually
   // made the change acts, so other connected clients don't also race to
   // make the same follow-up update.
+  // Foundry's own Fliegen/Schweben/Eingraben statuses can only be set while
+  // the actor has the matching movement speed (helpers/movement.mjs).
+  Hooks.on('preCreateActiveEffect', (effect, data, options, userId) => {
+    if (!(effect.parent instanceof Actor)) return;
+    for (const [statusId, movementType] of Object.entries(STATUS_MOVEMENT_REQUIREMENTS)) {
+      if (!effect.statuses.has(statusId)) continue;
+      if ((computeMovementSpeeds(effect.parent)[movementType] ?? 0) > 0) continue;
+      if (game.user.id === userId) {
+        ui.notifications.warn(game.i18n.format('SKSK.StatusEffect.NeedsMovementSpeed', {
+          actor: effect.parent.name,
+          type: game.i18n.localize(CONFIG.SKSK.movementTypes[movementType]),
+        }));
+      }
+      return false;
+    }
+  });
   Hooks.on('createActiveEffect', (effect, options, userId) => {
     if (game.user.id !== userId) return;
     if (!(effect.parent instanceof Actor) || !effect.statuses.has('activeManaCore')) return;

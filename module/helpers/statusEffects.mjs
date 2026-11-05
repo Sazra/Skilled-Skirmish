@@ -123,17 +123,46 @@ export async function ensurePredefinedStatusEffects() {
 }
 
 /**
+ * Foundry's own default status effects (CONFIG.statusEffects) that this
+ * system drops from the Token HUD: they carry no rules here. Kept on purpose:
+ * "dead" (CONFIG.specialStatusEffects.DEFEATED, used by the system) and
+ * "fly"/"hover"/"burrow" (Foundry's own vision/movement behaviour - only
+ * settable while the actor has the matching speed, see
+ * STATUS_MOVEMENT_REQUIREMENTS). "prone" and "blind" are dropped too, but
+ * come back as this system's own definitions of the same id (so
+ * CONFIG.specialStatusEffects.BLIND keeps working).
+ */
+const DROPPED_CORE_STATUS_IDS = new Set([
+  'unconscious', 'sleep', 'stun', 'prone', 'restrain', 'paralysis', 'blind', 'deaf', 'silence', 'fear',
+  'burning', 'frozen', 'shock', 'corrode', 'bleeding', 'disease', 'poison', 'curse', 'regen', 'degen',
+  'upgrade', 'downgrade', 'invisible', 'target', 'eye', 'bless', 'fireShield', 'coldShield', 'magicShield',
+  'holyShield',
+]);
+
+/**
+ * Foundry's movement-related special statuses and the movement type
+ * (CONFIG.SKSK.movementTypes) whose speed the actor needs to have (> 0)
+ * for the status to be settable.
+ */
+export const STATUS_MOVEMENT_REQUIREMENTS = { fly: 'flying', hover: 'hovering', burrow: 'digging' };
+
+/**
  * Register every status effect definition into Foundry's own
  * CONFIG.statusEffects (id/name/img only) so they show up as normal
  * toggleable icons on the Token HUD, in addition to this system's own
- * stack-aware handling below. Safe to call every "ready" hook (only adds
- * ids not already present, e.g. Foundry's own built-ins).
+ * stack-aware handling below. Also drops Foundry's own rule-less default
+ * statuses (DROPPED_CORE_STATUS_IDS) - the system's own "prone"/"blind"
+ * replace the core ones of the same id. Safe to call every "ready" hook.
  */
 export function registerConfigStatusEffects() {
-  const existingIds = new Set(CONFIG.statusEffects.map(e => e.id));
+  // CONFIG.statusEffects is a Proxy over an array that is also addressable
+  // by status id (Foundry v14) - go through its own id-keyed delete/assign
+  // (splice would desync the id lookup).
+  for (const id of DROPPED_CORE_STATUS_IDS) {
+    if (id in CONFIG.statusEffects) delete CONFIG.statusEffects[id];
+  }
   for (const def of getStatusEffectDefinitions()) {
-    if (existingIds.has(def.id)) continue;
-    CONFIG.statusEffects.push({ id: def.id, name: def.name, img: def.img });
+    CONFIG.statusEffects[def.id] = { id: def.id, name: def.name, img: def.img };
   }
 }
 
