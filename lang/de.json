@@ -1133,6 +1133,22 @@
             "NoActiveActor": "Kein eigener Token ausgewählt und kein Charakter zugewiesen - das Makro kann nicht ausgeführt werden.",
             "ItemNotOnActor": "{actor} besitzt keinen Gegenstand \"{name}\" - das Makro kann nicht ausgeführt werden."
         },
+        "EffectValue": {
+            "CategoryGeneral": "Allgemein",
+            "CategoryAttributes": "Attribute",
+            "CategorySkills": "Fertigkeitsstufen",
+            "CategoryResources": "Eigene Ressourcen",
+            "Level": "Charakterlevel",
+            "InitiativeBonus": "Initiative-Bonus",
+            "AttributeMod": "Modifikator",
+            "AttributeBaseMod": "Basis-Modifikator (ohne Boni)",
+            "AttributeModExcludingSpecial": "Modifikator ohne Spezial-Boni",
+            "AttributeValue": "Wert",
+            "AttributeBaseValue": "Basis-Wert",
+            "AttributeMax": "Maximum",
+            "SkillLevel": "{skill} (Stufe)",
+            "CustomResource": "{name} (aktueller Wert)"
+        },
         "GenericRoll": {
             "ChooseModeTitle": "Wurfmodus wählen",
             "ChooseModePrompt": "Welchen Modus soll dieser Wurf nutzen?",

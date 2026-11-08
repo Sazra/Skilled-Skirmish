@@ -1133,6 +1133,22 @@
       "NoActiveActor": "No own token selected and no character assigned - this macro cannot run.",
       "ItemNotOnActor": "{actor} has no item \"{name}\" - this macro cannot run."
     },
+    "EffectValue": {
+        "CategoryGeneral": "General",
+        "CategoryAttributes": "Attributes",
+        "CategorySkills": "Skill levels",
+        "CategoryResources": "Custom resources",
+        "Level": "Character level",
+        "InitiativeBonus": "Initiative bonus",
+        "AttributeMod": "Modifier",
+        "AttributeBaseMod": "Base modifier (no bonuses)",
+        "AttributeModExcludingSpecial": "Modifier without Special bonuses",
+        "AttributeValue": "Value",
+        "AttributeBaseValue": "Base value",
+        "AttributeMax": "Maximum",
+        "SkillLevel": "{skill} (level)",
+        "CustomResource": "{name} (current value)"
+    },
     "GenericRoll": {
       "ChooseModeTitle": "Choose Roll Mode",
       "ChooseModePrompt": "Which mode should this roll use?",

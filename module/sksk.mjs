@@ -31,6 +31,7 @@ import { clampSingleAttributeSelection } from './helpers/models.mjs';
 import { registerCalendariaIntegration } from './helpers/calendarIntegration.mjs';
 import { applyCustomActiveEffectChange, addPhaseSelectToActiveEffectChanges } from './helpers/effects.mjs';
 import { attachEffectKeyAutocomplete } from './helpers/effectKeyAutocomplete.mjs';
+import { attachEffectValueAutocomplete } from './helpers/effectValueAutocomplete.mjs';
 import { initGmRelay } from './helpers/gmRelay.mjs';
 import { createMacroFromDrop, runRollMacro, rollItemMacro } from './helpers/macroRolls.mjs';
 import { registerItemPilesIntegration } from './helpers/itemPiles.mjs';
@@ -194,6 +195,14 @@ Hooks.once('ready', async function () {
   // never applies a Custom change on its own; it only fires this hook.
   Hooks.on('applyActiveEffect', applyCustomActiveEffectChange);
 
+  // The same key and "@" value suggestions for a Status Effect's own key
+  // changes (Settings > Status Effects) - no owning actor there, so no
+  // custom resources among the "@" ones.
+  Hooks.on('renderSKSKStatusEffectsConfig', (app, element) => {
+    attachEffectKeyAutocomplete(element);
+    attachEffectValueAutocomplete(element);
+  });
+
   // Adds a visible Phase (Initial/Final) dropdown to every Change row in
   // the stock Active Effect Config sheet - see helpers/effects.mjs#
   // addPhaseSelectToActiveEffectChanges for why that matters. Also widens
@@ -204,6 +213,10 @@ Hooks.once('ready', async function () {
   Hooks.on('renderActiveEffectConfig', (app, element) => {
     addPhaseSelectToActiveEffectChanges(element);
     attachEffectKeyAutocomplete(element);
+    // "@" in a Value suggests the roll-data variables its formula may use -
+    // the effect's own owner (Actor, or Item on an Actor) supplies the custom
+    // resources among them.
+    attachEffectValueAutocomplete(element, app.document?.parent ?? null);
     if (!app._sksk_widenedForPhase) {
       app._sksk_widenedForPhase = true;
       app.setPosition({ width: app.position.width + 100 });

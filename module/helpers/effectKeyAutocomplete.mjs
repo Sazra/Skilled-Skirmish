@@ -3,12 +3,14 @@ import { SKSKEffectKeyReference } from '../apps/effect-key-reference.mjs';
 /**
  * Autocomplete for the "Attribute Key" field of every Active Effect Change
  * row in the stock Active Effect Config sheet (actor effects, item effects,
- * templates - it is one and the same sheet). Suggests every key from the
+ * templates - it is one and the same sheet) and of the key changes in the
+ * system's own Status Effects settings window. Suggests every key from the
  * Effect Key Reference catalog (apps/effect-key-reference.mjs), searchable
  * by German label, key and category; picking one fills the field. Free text
  * stays possible (any other path, e.g. "flags.*", is left alone).
- * Attached via the renderActiveEffectConfig hook (sksk.mjs) - re-run on
- * every render, so rows added by "Add Change" get it too.
+ * Attached via the renderActiveEffectConfig/renderSKSKStatusEffectsConfig
+ * hooks (sksk.mjs) - re-run on every render, so rows added by "Add Change"
+ * get it too.
  */
 
 const MAX_RESULTS = 40;
@@ -57,7 +59,13 @@ function closeDropdown() {
  * @param {HTMLElement} element   The Active Effect Config sheet's root element.
  */
 export function attachEffectKeyAutocomplete(element) {
-  for (const input of element.querySelectorAll('input[name^="system.changes."][name$=".key"]')) {
+  const keyInputs = element.querySelectorAll(
+    'input[name^="system.changes."][name$=".key"], input[name^="statusEffects."][name$=".key"]'
+  );
+  for (const input of keyInputs) {
+    // Only the Active Effect sheet's change rows and the Status Effects
+    // window's own key-change rows - not any other "...key" input.
+    if (!/\.changes\.\d+\.key$|\.keyChanges\.\d+\.key$/.test(input.name)) continue;
     if (input.dataset.skskAutocomplete) continue;
     input.dataset.skskAutocomplete = '1';
     input.setAttribute('autocomplete', 'off');
