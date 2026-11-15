@@ -293,6 +293,31 @@ export async function chooseSpellCastOptions(actor, item) {
 }
 
 /**
+ * Ask how many AP a "?"-AP-cost spell (data/spell.mjs#apCostVariable)
+ * should cost this time (never below its apCostMin).
+ * @param {Item} item
+ * @return {Promise<number|null>}   null if the prompt was closed/cancelled.
+ */
+async function promptVariableAp(item) {
+  const min = Math.max(0, item.system.apCostMin ?? 0);
+  const fallback = Math.max(min, item.system.variableApPaid || min, 1);
+  const value = await foundry.applications.api.DialogV2.prompt({
+    window: { title: game.i18n.format('SKSK.Spell.Roll.VariableApTitle', { name: item.name }) },
+    content: `<div class="form-group">
+      <label>${game.i18n.format('SKSK.Spell.Roll.VariableApLabel', { min })}</label>
+      <input type="number" name="variableAp" value="${fallback}" min="${min}" step="1" autofocus />
+    </div>`,
+    ok: {
+      label: game.i18n.localize('SKSK.Spell.Roll.VariableManaConfirm'),
+      callback: (event, button) => Number(button.form?.elements?.variableAp?.value ?? fallback),
+    },
+    rejectClose: false,
+  });
+  if (value === null || value === undefined || Number.isNaN(value)) return null;
+  return Math.max(min, Math.floor(value));
+}
+
+/**
  * Ask how much Mana a "?"-cost spell (data/spell.mjs#manaCostVariable)
  * should cost this time.
  * @param {Item} item
@@ -818,6 +843,15 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
     variableMana = null;
   }
 
+  // "?" as AP cost: likewise asked once per cast (closing the prompt aborts
+  // it). Only the plain "ap" unit has an AP amount to choose.
+  let variableAp = null;
+  if (actor && system.apCostVariable && system.apCostUnit === 'ap') {
+    variableAp = await promptVariableAp(item);
+    if (variableAp === null) return;
+    if (variableAp !== system.variableApPaid) await item.update({ 'system.variableApPaid': variableAp });
+  }
+
   // 1. Heading, 2. Magic school.
   const parts = [formatRollCardHeading(item.name)];
   const schoolLabel = resolveSpellSchoolLabel(system);
@@ -861,7 +895,7 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
         ui.notifications.warn(game.i18n.localize('SKSK.Spell.Roll.ReactiveOnlyBlocked'));
         return;
       }
-      const rpCost = computeSpellApCost(system, actor, overchargeCount);
+      const rpCost = computeSpellApCost(system, actor, overchargeCount, variableAp);
       const rp = actor.system.reactionPoints.value;
       if (rp < rpCost) {
         ui.notifications.warn(game.i18n.localize('SKSK.Action.NotEnoughRP'));
@@ -871,7 +905,7 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
       await actor.update({ 'system.reactionPoints.value': rp - rpCost });
       parts.push(formatSkillFpGrantLine(await checkReflexActionTrigger(actor)));
     } else if (offTurn) {
-      const apCost = computeSpellApCost(system, actor, overchargeCount);
+      const apCost = computeSpellApCost(system, actor, overchargeCount, variableAp);
       const rpCost = (system.rpCost ?? 0) > 0 ? system.rpCost : apCost;
       const rp = actor.system.reactionPoints.value;
       if (rp < rpCost) {
@@ -882,7 +916,7 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
       await actor.update({ 'system.reactionPoints.value': rp - rpCost });
       parts.push(formatSkillFpGrantLine(await checkReflexActionTrigger(actor)));
     } else {
-      const apCost = computeSpellApCost(system, actor, overchargeCount);
+      const apCost = computeSpellApCost(system, actor, overchargeCount, variableAp);
       parts.push(`<div class="sksk-roll-ap-cost"><strong>${game.i18n.localize('SKSK.Spell.APCost')}:</strong> ${apCost}</div>`);
 
       if (!isCombatActive()) {

@@ -1023,7 +1023,9 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       const { cost, increased } = computeSpellManaCost(item.system, actor);
       item.effectiveManaCost = item.system.manaCostVariable ? '?' : cost;
       item.manaCostIncreased = increased;
-      item.effectiveApCost = computeSpellApCost(item.system, actor);
+      item.effectiveApCost = (item.system.apCostVariable && item.system.apCostUnit === 'ap')
+        ? `${computeSpellApCost(item.system, actor, 0, item.system.apCostMin ?? 0)}+`
+        : computeSpellApCost(item.system, actor);
       if (item.system.spellType === 'simple' || item.system.spellType === 'advanced') {
         const { castable, missingLabel } = checkSimpleOrAdvancedSpellPrerequisite(item.system, actor);
         item.castable = castable;

@@ -872,10 +872,16 @@ export function computeSpellManaCost(spellSystem, actor, overchargeCount = 0, ex
  * @param {object} spellSystem
  * @param {Actor} actor
  * @param {number} [overchargeCount=0]
+ * @param {number|null} [variableAp=null]   The AP amount chosen for a spell
+ *   with a "?" AP cost (data/spell.mjs#apCostVariable); defaults to the
+ *   amount of the last cast. Never below the spell's own apCostMin.
  * @return {number}
  */
-export function computeSpellApCost(spellSystem, actor, overchargeCount = 0) {
+export function computeSpellApCost(spellSystem, actor, overchargeCount = 0, variableAp = null) {
   let apCost = spellSystem.apCost ?? 1;
+  if (spellSystem.apCostVariable && (spellSystem.apCostUnit ?? 'ap') === 'ap') {
+    apCost = Math.max(spellSystem.apCostMin ?? 0, Number(variableAp ?? spellSystem.variableApPaid ?? 0) || 0);
+  }
 
   if (isSpellDiscountEligible(spellSystem, actor)) {
     const school = getSpellSchool(spellSystem);

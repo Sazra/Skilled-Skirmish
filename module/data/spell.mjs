@@ -86,6 +86,16 @@ export default class SKSKSpell extends SKSKItemBase {
     // computeSpellApCost, which enforces the usual floor of 1 for every
     // other spell).
     schema.apCost = new fields.NumberField({ ...requiredInteger, initial: 1, min: 0 });
+    // "?" as AP cost (apCostUnit "ap" only): the caster picks the AP amount
+    // every time the spell is cast (helpers/spell-rolls.mjs#rollSpellItem
+    // asks for it; the AP Cost field's own "?" is converted to this switch
+    // by the item sheet). apCost itself is ignored while this is on -
+    // apCostMin is the lowest amount the caster may pick, and
+    // variableApPaid the amount chosen at the last cast (the default of the
+    // next prompt). AP reductions still apply on top of the chosen amount.
+    schema.apCostVariable = new fields.BooleanField({ required: true, initial: false });
+    schema.apCostMin = new fields.NumberField({ ...requiredInteger, initial: 1, min: 0 });
+    schema.variableApPaid = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
     // What apCost's own number actually counts - a flat AP amount (the
     // default), a casting time in minutes/hours/days, or a flat RP amount
     // (unit "rp" - see rpCost below for the different, additive-RP case).

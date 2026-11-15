@@ -93,9 +93,16 @@
           title="{{localize 'SKSK.Spell.ManaCostVariableHint'}}" />
       </div>
       <div class="resource">
-        <label class="resource-label">AP Cost</label>
-        <input type="text" name="system.apCost" value="{{system.apCost}}" data-dtype="Number" />
+        <label class="resource-label" title="{{localize 'SKSK.Spell.ApCostVariableHint'}}">AP Cost</label>
+        <input type="text" name="system.apCost" value="{{#if system.apCostVariable}}?{{else}}{{system.apCost}}{{/if}}" data-dtype="Number"
+          title="{{localize 'SKSK.Spell.ApCostVariableHint'}}" />
       </div>
+      {{#if system.apCostVariable}}
+      <div class="resource">
+        <label class="resource-label" title="{{localize 'SKSK.Spell.ApCostMinHint'}}">{{localize 'SKSK.Spell.ApCostMin'}}</label>
+        <input type="text" name="system.apCostMin" value="{{system.apCostMin}}" data-dtype="Number" />
+      </div>
+      {{/if}}
       <div class="resource">
         <label class="resource-label">{{localize 'SKSK.Spell.ApCostUnitLabel'}}</label>
         <select name="system.apCostUnit">

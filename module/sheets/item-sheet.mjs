@@ -823,9 +823,9 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
 
   /** @override */
   /**
-   * A spell's Mana Cost field accepts "?" (cast-time amount, see
-   * data/spell.mjs#manaCostVariable): turn it into that switch instead of
-   * letting the Number coercion mangle it.
+   * A spell's Mana Cost / AP Cost field accepts "?" (cast-time amount, see
+   * data/spell.mjs#manaCostVariable / #apCostVariable): turn it into that
+   * switch instead of letting the Number coercion mangle it.
    * @override
    */
   _processFormData(event, form, formData) {
@@ -837,6 +837,15 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
         delete data.system.manaCost;
       } else {
         data.system.manaCostVariable = false;
+      }
+    }
+    if (this.document.type === 'spell' && data?.system && 'apCost' in data.system) {
+      const raw = String(form?.elements?.['system.apCost']?.value ?? '').trim();
+      if (raw === '?') {
+        data.system.apCostVariable = true;
+        delete data.system.apCost;
+      } else {
+        data.system.apCostVariable = false;
       }
     }
     return data;
