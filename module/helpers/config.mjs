@@ -375,6 +375,8 @@ SKSK.rangeIndicators = {
   projectile: 'SKSK.Spell.RangeIndicator.Projectile',
   line: 'SKSK.Spell.RangeIndicator.Line',
   radius: 'SKSK.Spell.RangeIndicator.Radius',
+  sphere: 'SKSK.Spell.RangeIndicator.Sphere',
+  cuboid: 'SKSK.Spell.RangeIndicator.Cuboid',
   cone: 'SKSK.Spell.RangeIndicator.Cone',
   square: 'SKSK.Spell.RangeIndicator.Square',
 };

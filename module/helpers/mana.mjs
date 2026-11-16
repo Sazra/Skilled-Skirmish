@@ -1,6 +1,7 @@
 import { getActorSkillLevel, evaluateSkillFormula } from './skills.mjs';
 import { getClassAbilityLevels, actorHasAdvancedClass } from './abilities.mjs';
 import { computeLehrenTargetBonus } from './lehren.mjs';
+import { getSpellUpkeep } from './spells.mjs';
 
 /**
  * The shared building blocks behind computeMaxMana and getManaBreakdown
@@ -89,7 +90,7 @@ function computeManaComponents(actor) {
 export function computeActiveSpellUpkeepTotal(actor) {
   let total = 0;
   for (const item of actor.items) {
-    if (item.type === 'spell' && item.system.sustaining) total += item.system.upkeep ?? 0;
+    if (item.type === 'spell' && item.system.sustaining) total += getSpellUpkeep(item.system);
   }
   return total;
 }

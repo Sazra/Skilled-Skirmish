@@ -177,7 +177,7 @@
                   </div>
                   <div class="item-name">
                     <input type="number" name="system.extraManaCosts.{{index}}.rangeChanges.{{changeIndex}}.distanceBonus"
-                      value="{{change.distanceBonus}}" data-dtype="Number" step="1"
+                      value="{{change.distanceBonus}}" data-dtype="Number" step="any"
                       title="{{localize 'SKSK.Spell.ExtraCostRangeDistance'}}" />
                   </div>
                   <div class="item-name">
@@ -287,11 +287,12 @@
       </div>
       <div class="resource">
         <label class="resource-label" title="{{localize 'SKSK.Spell.UpkeepHint'}}">{{localize 'SKSK.Spell.Upkeep'}}</label>
-        <input type="text" name="system.upkeep" value="{{system.upkeep}}" data-dtype="Number" />
+        <input type="text" name="system.upkeep" value="{{#if system.upkeepVariable}}?{{else}}{{system.upkeep}}{{/if}}" data-dtype="Number"
+          title="{{localize 'SKSK.Spell.UpkeepVariableHint'}}" />
       </div>
       <div class="resource">
         <label class="resource-label casting-method-option" title="{{localize 'SKSK.Spell.SustainingHint'}}">
-          <input type="checkbox" name="system.sustaining" {{checked system.sustaining}} />
+          <input type="checkbox" data-action="toggleSustaining" {{checked system.sustaining}} />
           {{localize 'SKSK.Spell.Sustaining'}}
         </label>
       </div>
@@ -301,7 +302,7 @@
       <label class="resource-label">Ranges</label>
       <ol class="items-list">
         <li class="item flexrow items-header">
-          <div class="item-name">Distance (m)</div>
+          <div class="item-name" title="{{localize 'SKSK.Spell.RangeDistanceHint'}}">Distance (m / m³)</div>
           <div class="item-name">Indicator</div>
           {{#if system.manaCostVariable}}
           <div class="item-name" title="{{localize 'SKSK.Spell.RangePerManaHint'}}">{{localize 'SKSK.Spell.RangePerMana'}}</div>
@@ -315,8 +316,8 @@
         {{#each system.ranges as |entry index|}}
         <li class="item flexrow">
           <div class="item-name">
-            <input type="text" name="system.ranges.{{index}}.distance" value="{{entry.distance}}"
-              data-dtype="Number" />
+            <input type="number" name="system.ranges.{{index}}.distance" value="{{entry.distance}}"
+              data-dtype="Number" min="0" step="any" title="{{localize 'SKSK.Spell.RangeDistanceHint'}}" />
           </div>
           <div class="item-name">
             <select name="system.ranges.{{index}}.indicator">
@@ -325,8 +326,8 @@
           </div>
           {{#if ../system.manaCostVariable}}
           <div class="item-name">
-            <input type="text" name="system.ranges.{{index}}.distancePerMana" value="{{entry.distancePerMana}}"
-              data-dtype="Number" title="{{localize 'SKSK.Spell.RangePerManaHint'}}" />
+            <input type="number" name="system.ranges.{{index}}.distancePerMana" value="{{entry.distancePerMana}}"
+              data-dtype="Number" min="0" step="any" title="{{localize 'SKSK.Spell.RangePerManaHint'}}" />
           </div>
           {{/if}}
           <div class="item-controls">

@@ -1684,6 +1684,20 @@ li.chat-message:has(.sksk-chat-card) .flavor-text {
   margin-bottom: 6px;
 }
 
+/* One compact card for a spell cast several times in a row (see helpers/
+   spell-rolls.mjs#rollSpellItem castCount): every cast is its own block. */
+.sksk-chat-card .sksk-multicast-entry {
+  border-top: 1px solid var(--color-border-light-tertiary, #8884);
+  margin-top: 6px;
+  padding-top: 4px;
+}
+
+.sksk-chat-card .sksk-multicast-heading {
+  font-weight: bold;
+  font-size: 13px;
+  margin-bottom: 2px;
+}
+
 /* A Technique's own action card (see helpers/technique-rolls.mjs#
    postTechniqueActionCard) - the Kampfstil's own name above the heading,
    and a status line ("Vorbereitet"/"Aktiviert"/...) plus its resolved

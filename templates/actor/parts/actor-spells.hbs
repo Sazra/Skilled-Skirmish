@@ -56,7 +56,7 @@
                 {{/if}}
               </div>
               <div class="spell-range" title="{{localize 'SKSK.Spell.Ranges'}}">
-                {{#each item.system.ranges as |range|}}{{#unless @first}}/{{/unless}}{{range.distance}}m{{/each}}
+                {{item.rangeSummary}}
               </div>
               <div class="spell-methods">
                 {{#if item.system.castingMethods.vocal}}
@@ -146,7 +146,7 @@
                 {{/if}}
               </div>
               <div class="spell-range" title="{{localize 'SKSK.Spell.Ranges'}}">
-                {{#each item.system.ranges as |range|}}{{#unless @first}}/{{/unless}}{{range.distance}}m{{/each}}
+                {{item.rangeSummary}}
               </div>
               <div class="spell-methods">
                 {{#if item.system.castingMethods.vocal}}
@@ -236,7 +236,7 @@
                 {{/if}}
               </div>
               <div class="spell-range" title="{{localize 'SKSK.Spell.Ranges'}}">
-                {{#each item.system.ranges as |range|}}{{#unless @first}}/{{/unless}}{{range.distance}}m{{/each}}
+                {{item.rangeSummary}}
               </div>
               <div class="spell-methods">
                 {{#if item.system.castingMethods.vocal}}
@@ -323,7 +323,7 @@
                 <span class="spell-cost-line {{#if item.costGood}}ap-cost-good{{/if}}"><i class="fas fa-bolt"></i>{{item.effectiveApCost}}</span>
               </div>
               <div class="spell-range" title="{{localize 'SKSK.Spell.Ranges'}}">
-                {{#each item.system.ranges as |range|}}{{#unless @first}}/{{/unless}}{{range.distance}}m{{/each}}
+                {{item.rangeSummary}}
               </div>
               <div class="spell-methods">
                 {{#if item.system.castingMethods.vocal}}

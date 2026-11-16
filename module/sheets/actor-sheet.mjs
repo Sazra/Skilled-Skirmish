@@ -23,6 +23,7 @@ import {
   checkSimpleOrAdvancedSpellPrerequisite,
   computeSpellManaCost,
   computeSpellApCost,
+  formatRangeShort,
 } from '../helpers/spells.mjs';
 import { computeMovementSpeeds, getActorSizeCategory } from '../helpers/movement.mjs';
 import { computeCarriedWeight, computeMaxCarryWeight } from '../helpers/inventory.mjs';
@@ -40,7 +41,7 @@ import {
   rollMartialArtsAttack, rollRegeneration, rollMeditation, promptMultiRoll, rollAdrenalin, useMove, useDodge, useItem,
   postActionChatCard, hasEnoughActionPoints, hasEnoughReactionPoints, spendActionPoints, spendReactionPoints,
 } from '../helpers/actions.mjs';
-import { chooseSpellCastOptions } from '../helpers/spell-rolls.mjs';
+import { chooseSpellCastOptions, setSpellSustaining } from '../helpers/spell-rolls.mjs';
 import { captureScrollPositions, restoreScrollPositions } from '../helpers/scrollPreservation.mjs';
 import { SKSKRestDialog } from '../apps/rest-dialog.mjs';
 import { SKSKTrainingDialog } from '../apps/training-dialog.mjs';
@@ -1046,7 +1047,9 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       // Gates the Spells tab's own quick sustaining toggle (see
       // #toggleSpellSustaining/actor-spells.hbs) - only a spell with a real
       // ongoing cost to actually start/stop shows it at all.
-      item.canSustain = !!(item.system.manaCostPerRound || item.system.upkeep);
+      item.canSustain = !!(item.system.manaCostPerRound || item.system.upkeep || item.system.upkeepVariable);
+      // The ranges as short text ("30m/6m", "0,5m³") for the spell list.
+      item.rangeSummary = (item.system.ranges ?? []).map(range => formatRangeShort(range)).join('/');
     }
 
     const sortSpells = (list) => list.slice().sort((a, b) => {
@@ -1836,7 +1839,8 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
   static async #toggleSpellSustaining(event, target) {
     const li = target.closest('.item');
     const item = this.actor.items.get(li.dataset.itemId);
-    await item.update({ 'system.sustaining': !item.system.sustaining });
+    // A "?" Unterhalt asks for its amount when switched on.
+    await setSpellSustaining(item);
   }
 
   /**
@@ -2500,7 +2504,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
           }
           const choice = await chooseSpellCastOptions(this.actor, item);
           if (!choice) return;
-          return item.roll(choice.overchargeCount, choice.extraCostTier, choice.altResourceIndex, choice.extraCostCounts, choice.variableMana);
+          return item.roll(choice.overchargeCount, choice.extraCostTier, choice.altResourceIndex, choice.extraCostCounts, choice.variableMana, choice.castCount);
         }
 
         return item.roll();

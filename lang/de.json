@@ -1599,6 +1599,11 @@
             "ManaCostPerRoundHint": "Wenn aktiv, werden die Manakosten zu Beginn jeder Runde des Zaubernden automatisch vom aktuellen Mana abgezogen, solange \"Wird aufrechterhalten\" aktiv ist - deaktiviert sich automatisch bei unzureichendem Mana.",
             "Upkeep": "Unterhalt",
             "UpkeepHint": "Reduziert das maximale Mana des Zaubernden dauerhaft um diesen Betrag, solange \"Wird aufrechterhalten\" aktiv ist. Mehrere aktive Unterhaltskosten addieren sich, können das maximale Mana aber nie unter 0 senken.",
+            "UpkeepVariableHint": "Mit \"?\" wird der Unterhalt erst beim Aktivieren (\"Wird aufrechterhalten\") eingegeben.",
+            "UpkeepVariableTitle": "{name}: Unterhalt",
+            "UpkeepVariableLabel": "Unterhalt (max. Mana-Reduktion)",
+            "UpkeepVariableConfirm": "Aufrechterhalten",
+            "RangeDistanceHint": "Meter - auch mit Kommazahlen (z.B. 2,5). Bei \"Kugel\" ist es der Radius, bei \"Quader\" das Volumen in m³.",
             "Sustaining": "Wird aufrechterhalten",
             "SustainingHint": "Markiert diesen Zauber als aktuell aktiv (z.B. nachdem seine normale Wirkungsdauer abgelaufen ist und der Zaubernde ihn per \"kann aufrecht erhalten werden\" weiterlaufen lässt) - schaltet Manakosten pro Runde und Unterhalt scharf.",
             "UpkeepAutoDeactivated": "{name}: Wird nicht mehr aufrechterhalten - nicht genug Mana für die Kosten pro Runde.",
@@ -1701,7 +1706,9 @@
                 "Line": "Linie",
                 "Radius": "Radius",
                 "Cone": "Kegel",
-                "Square": "Quadrat"
+                "Square": "Quadrat",
+                "Sphere": "Kugel",
+                "Cuboid": "Quader"
             },
             "CastingMethod": {
                 "Vocal": "Vokal",
@@ -1765,6 +1772,10 @@
                 "VariableManaTitle": "{name}: Manakosten wählen",
                 "VariableManaConfirm": "Zaubern",
                 "VariableApLabel": "AP-Kosten (mindestens {min})",
+                "MultiCastLabel": "Anzahl Zauber",
+                "MultiCastHint": "Wie oft der Zauber hintereinander gewirkt wird (nur außerhalb des Kampfes). Jeder Zauber zahlt seine eigenen Kosten, alles landet in einer Roll-Card ohne Beschreibung.",
+                "MultiCastNumber": "Zauber {number} von {total}",
+                "MultiCastTotalMana": "Mana gesamt",
                 "VariableApTitle": "{name}: AP-Kosten wählen",
                 "ExtraCostRepeatRoll": "Extra-Kosten-Schaden: Durchgang {n}/{total}",
                 "ExtraCostRepeatLabel": "Anzahl: {label} (max. {max}×)",

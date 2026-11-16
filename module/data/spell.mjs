@@ -71,6 +71,15 @@ export default class SKSKSpell extends SKSKItemBase {
     // spell on the actor and capped so it can never push max mana below 0.
     // See helpers/mana.mjs#computeMaxMana.
     schema.upkeep = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+    // "?" as Unterhalt: the amount is entered every time the spell is
+    // switched to "sustaining" (helpers/spell-rolls.mjs#setSpellSustaining
+    // asks for it; the Upkeep field's own "?" is converted to this switch by
+    // the item sheet). upkeep itself is ignored while this is on -
+    // variableUpkeepPaid is the amount entered at the last activation (the
+    // default of the next prompt, and what is currently reducing maximum
+    // mana while the spell sustains). See helpers/spells.mjs#getSpellUpkeep.
+    schema.upkeepVariable = new fields.BooleanField({ required: true, initial: false });
+    schema.variableUpkeepPaid = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
     // Whether this spell's ongoing effect (and therefore its
     // manaCostPerRound/upkeep, if either is set) is currently active on its
     // owning actor. Toggled manually - e.g. once a spell's own stated
@@ -152,7 +161,8 @@ export default class SKSKSpell extends SKSKItemBase {
       extraAttacks: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
       rangeChanges: new fields.ArrayField(new fields.SchemaField({
         rangeIndex: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
-        distanceBonus: new fields.NumberField({ ...requiredInteger, initial: 0 }),
+        // Fractions allowed (e.g. 0.5 m, or 0.25 m³ for a cuboid).
+        distanceBonus: new fields.NumberField({ required: true, nullable: false, initial: 0 }),
         indicator: new fields.StringField({ required: true, blank: true, initial: "" }),
       })),
       saveDcChanges: new fields.ArrayField(new fields.SchemaField({
@@ -176,16 +186,20 @@ export default class SKSKSpell extends SKSKItemBase {
     // One or more ranges, each paired with the indicator describing how
     // that leg of the spell travels/applies (e.g. a fireball is a 30m
     // Projectile followed by a 6m Radius explosion).
+    // distance is in metres - fractions allowed (e.g. 2.5) - except for the
+    // "cuboid" indicator (Quader), where it is a volume in m³ (also with
+    // fractions); "sphere" (Kugel) is a radius in metres.
     schema.ranges = new fields.ArrayField(new fields.SchemaField({
-      distance: new fields.NumberField({ ...requiredInteger, initial: 10, min: 0 }),
+      distance: new fields.NumberField({ required: true, nullable: false, initial: 10, min: 0 }),
       indicator: new fields.StringField({
         required: true, blank: false, initial: "projectile",
-        choices: ["self", "touch", "targeted", "sight", "hearing", "projectile", "line", "radius", "cone", "square"]
+        choices: ["self", "touch", "targeted", "sight", "hearing", "projectile", "line", "radius", "sphere", "cuboid", "cone", "square"]
       }),
       // Only used by a spell with a "?" Mana cost (manaCostVariable): extra
-      // metres per Mana of the base amount chosen at cast time (e.g. 2 =
-      // "2 m per Mana"), added on top of distance. Fractions allowed; the
-      // product is rounded down.
+      // metres (m³ for a cuboid) per Mana of the base amount chosen at cast
+      // time (e.g. 2 = "2 m per Mana"), added on top of distance. Fractions
+      // allowed; a fractional product keeps up to 2 decimals (rounded
+      // down), a whole-number coefficient still yields whole metres.
       distancePerMana: new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 })
     }), {
       initial: [{ distance: 10, indicator: "projectile", distancePerMana: 0 }]

@@ -1599,6 +1599,11 @@
       "ManaCostPerRoundHint": "When on, the mana cost is automatically deducted from current mana at the start of every round of the caster's turn, as long as \"Sustaining\" is on - auto-deactivates on insufficient mana.",
       "Upkeep": "Upkeep",
       "UpkeepHint": "Permanently reduces the caster's maximum mana by this amount for as long as \"Sustaining\" is on. Multiple active upkeep costs add up, but can never push maximum mana below 0.",
+      "UpkeepVariableHint": "With \"?\" the upkeep is entered when the spell is activated (\"Sustaining\").",
+      "UpkeepVariableTitle": "{name}: Upkeep",
+      "UpkeepVariableLabel": "Upkeep (max Mana reduction)",
+      "UpkeepVariableConfirm": "Sustain",
+      "RangeDistanceHint": "Metres - fractions allowed (e.g. 2.5). For \"Sphere\" it is the radius, for \"Cuboid\" the volume in m³.",
       "Sustaining": "Sustaining",
       "SustainingHint": "Marks this spell as currently active (e.g. after its normal Duration has run out and the caster keeps it going via a \"can be sustained\" duration) - arms Mana Cost Per Round and Upkeep.",
       "UpkeepAutoDeactivated": "{name}: No longer sustained - not enough mana for the per-round cost.",
@@ -1701,7 +1706,9 @@
         "Line": "Line",
         "Radius": "Radius",
         "Cone": "Cone",
-        "Square": "Square"
+        "Square": "Square",
+        "Sphere": "Sphere",
+        "Cuboid": "Cuboid"
       },
       "CastingMethod": {
         "Vocal": "Vocal",
@@ -1765,6 +1772,10 @@
         "VariableManaTitle": "{name}: Choose Mana cost",
         "VariableManaConfirm": "Cast",
         "VariableApLabel": "AP cost (at least {min})",
+        "MultiCastLabel": "Number of casts",
+        "MultiCastHint": "How many times the spell is cast in a row (outside Combat only). Every cast pays its own costs; everything lands in one roll card without the description.",
+        "MultiCastNumber": "Cast {number} of {total}",
+        "MultiCastTotalMana": "Total Mana",
         "VariableApTitle": "{name}: Choose AP cost",
         "ExtraCostRepeatRoll": "Extra cost damage: roll {n}/{total}",
         "ExtraCostRepeatLabel": "Count: {label} (max. {max}×)",

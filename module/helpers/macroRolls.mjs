@@ -337,7 +337,7 @@ export async function rollItemMacro(itemUuid, itemName = '', itemType = '') {
     }
     const choice = await chooseSpellCastOptions(item.parent, item);
     if (!choice) return;
-    return item.roll(choice.overchargeCount, choice.extraCostTier, choice.altResourceIndex, choice.extraCostCounts, choice.variableMana);
+    return item.roll(choice.overchargeCount, choice.extraCostTier, choice.altResourceIndex, choice.extraCostCounts, choice.variableMana, choice.castCount);
   }
   // A weapon / usable item goes through the Actions tab's own "Use" path, so
   // its AP/RP cost and blocked-attack checks apply like a click there.

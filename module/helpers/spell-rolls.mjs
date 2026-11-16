@@ -3,7 +3,7 @@ import {
   computeRitualHours, computeMaxOverchargeCount, computeOverchargedRanges, computeExtraManaCostSum,
   getOverchargeSettings, formatOverchargeDuration, resolveSpellStatusStacks, isSpellFoundryEffectActive,
   computeMaxExtraCostTier, normalizeExtraCostCounts, computeCombinedSpellFpTargets,
-  computeExtraCostEffects, isSavingThrowActive, computeEffectiveRanges,
+  computeExtraCostEffects, isSavingThrowActive, computeEffectiveRanges, formatRangeLabel,
 } from './spells.mjs';
 import { getActorSkillLevel, getSkillLabel } from './skills.mjs';
 import {
@@ -37,6 +37,9 @@ import {
 // spell's own value converts to this many Combat rounds per minute - see
 // rollSpellItem/handlePendingSpellTurnStart.
 const ROUNDS_PER_MINUTE = 10;
+
+// The most times one Shift+Click cast may repeat a spell (outside Combat).
+const MAX_MULTI_CAST = 20;
 
 /**
  * The template ActiveEffect behind one of a Spell's foundryEffects entries
@@ -201,6 +204,20 @@ export async function chooseSpellCastOptions(actor, item) {
     </div>`
     : '';
 
+  // Outside Combat a spell may be cast several times in one go (one compact
+  // chat card, see rollSpellItem) - every cast pays its own costs, the
+  // Überladen/extra-cost/variable-Mana choices below apply to all of them.
+  const canMulti = canCastSpellMultiple(item);
+  const castCountFieldHTML = canMulti
+    ? `<div class="form-group">
+      <label title="${game.i18n.localize('SKSK.Spell.Roll.MultiCastHint')}">${game.i18n.localize('SKSK.Spell.Roll.MultiCastLabel')}</label>
+      <input type="number" name="castCount" value="1" min="1" max="${MAX_MULTI_CAST}" step="1" />
+    </div>`
+    : '';
+  const readCastCount = (form) => (canMulti
+    ? Math.max(1, Math.min(MAX_MULTI_CAST, Math.floor(Number(form?.elements?.castCount?.value ?? 1)) || 1))
+    : 1);
+
   let altResourceFieldHTML = '';
   if (hasAltResources) {
     const baseManaCost = computeSpellManaCost(item.system, actor, 0, 0, [], isVariable ? variableDefault : null).cost;
@@ -230,6 +247,7 @@ export async function chooseSpellCastOptions(actor, item) {
     variableMana: isVariable ? Math.max(0, Math.floor(Number(button.form?.elements?.variableMana?.value ?? variableDefault)) || 0) : null,
     extraCostCounts: normalizeExtraCostCounts(item.system, extraCostCounts),
     altResourceIndex: hasAltResources ? Number(button.form?.elements?.altResourceIndex?.value ?? -1) : -1,
+    castCount: readCastCount(button.form),
     };
   };
 
@@ -249,7 +267,7 @@ export async function chooseSpellCastOptions(actor, item) {
   }
   return foundry.applications.api.DialogV2.wait({
     window: { title: game.i18n.format('SKSK.Spell.Roll.OverchargeTitle', { name: item.name }) },
-    content: `<p>${game.i18n.localize('SKSK.Spell.Roll.ChooseOverchargePrompt')}</p>${variableFieldHTML}${extraCostFieldHTML}${altResourceFieldHTML}`,
+    content: `<p>${game.i18n.localize('SKSK.Spell.Roll.ChooseOverchargePrompt')}</p>${variableFieldHTML}${castCountFieldHTML}${extraCostFieldHTML}${altResourceFieldHTML}`,
     buttons,
     render: (event, dialog) => {
       const root = dialog?.element ?? event?.target?.element;
@@ -270,9 +288,16 @@ export async function chooseSpellCastOptions(actor, item) {
         )));
         const mana = isVariable ? Math.max(0, Math.floor(Number(variableInput?.value)) || 0) : null;
         const costFor = (n) => computeSpellManaCost(item.system, actor, n, tier, counts, mana).cost;
+        const casts = canMulti
+          ? Math.max(1, Math.min(MAX_MULTI_CAST, Math.floor(Number(root.querySelector('input[name="castCount"]')?.value)) || 1))
+          : 1;
         for (let n = 0; n <= max; n++) {
           const button = root.querySelector(`button[data-action="${n ? `overcharge${n}` : 'noOvercharge'}"]`);
-          if (button) button.textContent = `${buttonLabels[n]} (${costFor(n)} Mana)`;
+          if (!button) continue;
+          const cost = costFor(n);
+          button.textContent = casts > 1
+            ? `${buttonLabels[n]} (${casts}× ${cost} = ${cost * casts} Mana)`
+            : `${buttonLabels[n]} (${cost} Mana)`;
         }
         root.querySelectorAll('select[name="altResourceIndex"] option').forEach(option => {
           const found = altResources.find(entry => String(entry.index) === option.value);
@@ -339,6 +364,50 @@ async function promptVariableMana(item) {
   });
   if (value === null || value === undefined || Number.isNaN(value)) return null;
   return Math.max(0, Math.floor(value));
+}
+
+/**
+ * Ask how much Unterhalt a "?"-upkeep spell (data/spell.mjs#upkeepVariable)
+ * should cost while it is sustained this time.
+ * @param {Item} item
+ * @return {Promise<number|null>}   null if the prompt was closed/cancelled.
+ */
+async function promptVariableUpkeep(item) {
+  const fallback = Math.max(1, item.system.variableUpkeepPaid || 1);
+  const value = await foundry.applications.api.DialogV2.prompt({
+    window: { title: game.i18n.format('SKSK.Spell.UpkeepVariableTitle', { name: item.name }) },
+    content: `<div class="form-group">
+      <label>${game.i18n.localize('SKSK.Spell.UpkeepVariableLabel')}</label>
+      <input type="number" name="variableUpkeep" value="${fallback}" min="0" step="1" autofocus />
+    </div>`,
+    ok: {
+      label: game.i18n.localize('SKSK.Spell.UpkeepVariableConfirm'),
+      callback: (event, button) => Number(button.form?.elements?.variableUpkeep?.value ?? fallback),
+    },
+    rejectClose: false,
+  });
+  if (value === null || value === undefined || Number.isNaN(value)) return null;
+  return Math.max(0, Math.floor(value));
+}
+
+/**
+ * Switch a spell's "sustaining" flag on or off (the Spells tab's quick
+ * toggle and the item sheet's checkbox both come through here). For a "?"
+ * Unterhalt (data/spell.mjs#upkeepVariable) switching it ON asks for the
+ * amount first - closing the prompt leaves the spell as it was.
+ * @param {Item} item
+ * @param {boolean} [sustaining]   The wanted state; defaults to toggling.
+ * @return {Promise<boolean>}   Whether the flag was changed.
+ */
+export async function setSpellSustaining(item, sustaining = !item.system.sustaining) {
+  const update = { 'system.sustaining': sustaining };
+  if (sustaining && item.system.upkeepVariable) {
+    const amount = await promptVariableUpkeep(item);
+    if (amount === null) return false;
+    update['system.variableUpkeepPaid'] = amount;
+  }
+  await item.update(update);
+  return true;
 }
 
 /**
@@ -587,7 +656,7 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
     // percentage scaling, not before it.
     const airChargeBonus = actor ? getElementalAirRangeBonus(actor) : 0;
     const rangeLabel = computeOverchargedRanges(computeEffectiveRanges(system, extraCostTier, extraCostCounts, variableMana), effectiveOvercharge, oc)
-      .map(r => `${r.distance + airChargeBonus}m ${game.i18n.localize(CONFIG.SKSK.rangeIndicators[r.indicator] ?? r.indicator)}`)
+      .map(r => formatRangeLabel(r, airChargeBonus))
       .join(', ');
     parts.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.OverchargeRanges', { ranges: rangeLabel })}</div>`);
   }
@@ -793,9 +862,16 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
  *   system.customResources to spend (instead of Mana) toward this cast's
  *   final Mana cost - -1 for none. Whatever the resource doesn't cover
  *   falls back to normal Mana payment. See helpers/customResources.mjs.
+ * @param {number[]} [extraCostCounts=[]]
+ * @param {number|null} [variableMana=null]
+ * @param {number} [castCount=1]   How many times to cast it in a row
+ *   (only honoured outside Combat, see canCastSpellMultiple): every cast pays
+ *   its own costs and rolls its own effect, all in ONE compact chat card -
+ *   without the spell description, just ranges/duration, the costs and
+ *   every roll.
  * @return {Promise<ChatMessage|void>}
  */
-export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0, altResourceIndex = -1, extraCostCounts = [], variableMana = null) {
+export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0, altResourceIndex = -1, extraCostCounts = [], variableMana = null, castCount = 1) {
   const actor = item.actor;
   const system = item.system;
 
@@ -852,15 +928,82 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
     if (variableAp !== system.variableApPaid) await item.update({ 'system.variableApPaid': variableAp });
   }
 
+  // Casting the same spell several times in a row (Shift+Click dialog, only
+  // outside Combat - see canCastSpellMultiple): one compact card instead.
+  castCount = canCastSpellMultiple(item)
+    ? Math.max(1, Math.min(MAX_MULTI_CAST, Math.floor(Number(castCount)) || 1))
+    : 1;
+  const ctx = { overchargeCount, extraCostTier, extraCostCounts, variableMana, variableAp, altResourceIndex };
+
   // 1. Heading, 2. Magic school.
   const parts = [formatRollCardHeading(item.name)];
   const schoolLabel = resolveSpellSchoolLabel(system);
   if (schoolLabel) parts.push(`<div class="sksk-roll-magic-school">${schoolLabel}</div>`);
 
-  const descriptionHTML = await foundry.applications.ux.TextEditor.implementation.enrichHTML(
-    system.description ?? '', { relativeTo: item, secrets: item.isOwner }
-  );
+  if (castCount > 1) {
+    // Only the values that matter (ranges, duration, per-cast costs) and
+    // every roll - no casting methods, no description.
+    parts.push(...(await renderSpellInfoParts(item, ctx, true)));
+    let totalMana = 0;
+    for (let number = 1; number <= castCount; number++) {
+      const paid = await paySpellCast(item, ctx);
+      if (paid.aborted) {
+        if (number === 1) return;
+        break;
+      }
+      totalMana += paid.manaCost;
+      const entry = [`<div class="sksk-multicast-heading">${game.i18n.format('SKSK.Spell.Roll.MultiCastNumber', { number, total: castCount })}</div>`, ...paid.parts];
+      if (!paid.deferred) entry.push(...(await renderSpellEffectParts(item, overchargeCount, extraCostTier, extraCostCounts, variableMana)));
+      parts.push(`<div class="sksk-multicast-entry">${entry.join('')}</div>`);
+    }
+    if (actor && totalMana > 0) {
+      parts.push(`<div class="sksk-roll-mana-cost sksk-multicast-total"><strong>${game.i18n.localize('SKSK.Spell.Roll.MultiCastTotalMana')}:</strong> ${totalMana}</div>`);
+    }
+    return postSpellChatCard(item, parts);
+  }
 
+  const paid = await paySpellCast(item, ctx);
+  if (paid.aborted) return;
+  parts.push(...paid.parts);
+  parts.push(...(await renderSpellInfoParts(item, ctx, false)));
+  if (!paid.deferred) {
+    parts.push(...(await renderSpellEffectParts(item, overchargeCount, extraCostTier, extraCostCounts, variableMana)));
+  }
+
+  return postSpellChatCard(item, parts);
+}
+
+/**
+ * Whether a spell cast may be repeated several times in one go (the
+ * Shift+Click dialog's "how many times" field, see chooseSpellCastOptions):
+ * only outside Combat (nothing is turn-bound then), only for an owned spell,
+ * and only for the units that resolve immediately - a "minutes" ritual (AP
+ * drain over Combat rounds) or a pure-reaction "rp" spell can't be repeated.
+ * @param {Item} item
+ * @return {boolean}
+ */
+export function canCastSpellMultiple(item) {
+  if (!item?.actor || isCombatActive()) return false;
+  return ['ap', 'hours', 'days'].includes(item.system.apCostUnit ?? 'ap');
+}
+
+/**
+ * Pay for ONE cast of a spell (AP/RP, Mana, Manakapazität/skill FP, ...) and
+ * collect its own chat lines - the cost part of rollSpellItem, split out so
+ * a repeated cast can run it once per cast. Posts nothing itself.
+ * @param {Item} item
+ * @param {{overchargeCount: number, extraCostTier: number, extraCostCounts: number[],
+ *   variableMana: number|null, variableAp: number|null, altResourceIndex: number}} ctx
+ * @return {Promise<{aborted: boolean, parts: string[], deferred: boolean, manaCost: number}>}
+ *   aborted: the cast was blocked (a notification was shown, nothing paid).
+ *   deferred: its effect has to wait for an AP/ritual debt to be paid off.
+ */
+async function paySpellCast(item, ctx) {
+  const actor = item.actor;
+  const system = item.system;
+  const { overchargeCount, extraCostTier, extraCostCounts, variableMana, variableAp, altResourceIndex } = ctx;
+  const parts = [];
+  let manaCost = 0;
   let deferred = false;
 
   // Outside the caster's own turn, only apCostUnit "ap" (paying rpCost, or
@@ -878,7 +1021,7 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
     if (system.apCostUnit === 'minutes' || system.apCostUnit === 'hours' || system.apCostUnit === 'days') {
       if (offTurn) {
         ui.notifications.warn(game.i18n.localize('SKSK.Spell.Roll.RitualBlockedOffTurn'));
-        return;
+        return { aborted: true, parts: [], deferred: false, manaCost: 0 };
       }
       if (system.apCostUnit === 'minutes') {
         const totalRounds = Math.max(1, system.apCost) * ROUNDS_PER_MINUTE;
@@ -893,13 +1036,13 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
     } else if (system.apCostUnit === 'rp') {
       if (!offTurn) {
         ui.notifications.warn(game.i18n.localize('SKSK.Spell.Roll.ReactiveOnlyBlocked'));
-        return;
+        return { aborted: true, parts: [], deferred: false, manaCost: 0 };
       }
       const rpCost = computeSpellApCost(system, actor, overchargeCount, variableAp);
       const rp = actor.system.reactionPoints.value;
       if (rp < rpCost) {
         ui.notifications.warn(game.i18n.localize('SKSK.Action.NotEnoughRP'));
-        return;
+        return { aborted: true, parts: [], deferred: false, manaCost: 0 };
       }
       parts.push(`<div class="sksk-roll-rp-cost"><strong>${game.i18n.localize('SKSK.Spell.RPCost')}:</strong> ${rpCost}</div>`);
       await actor.update({ 'system.reactionPoints.value': rp - rpCost });
@@ -910,7 +1053,7 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
       const rp = actor.system.reactionPoints.value;
       if (rp < rpCost) {
         ui.notifications.warn(game.i18n.localize('SKSK.Action.NotEnoughRP'));
-        return;
+        return { aborted: true, parts: [], deferred: false, manaCost: 0 };
       }
       parts.push(`<div class="sksk-roll-rp-cost"><strong>${game.i18n.localize('SKSK.Spell.RPCost')}:</strong> ${rpCost}</div>`);
       await actor.update({ 'system.reactionPoints.value': rp - rpCost });
@@ -944,7 +1087,9 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
     }
 
     // 4. Mana cost.
-    const { cost: manaCost, increased } = computeSpellManaCost(system, actor, overchargeCount, extraCostTier, extraCostCounts, variableMana);
+    const manaResult = computeSpellManaCost(system, actor, overchargeCount, extraCostTier, extraCostCounts, variableMana);
+    manaCost = manaResult.cost;
+    const increased = manaResult.increased;
     const costClass = increased ? 'sksk-roll-mana-cost-increased' : '';
     parts.push(`<div class="sksk-roll-mana-cost"><strong>${game.i18n.localize('SKSK.Spell.ManaCost')}:</strong> <span class="${costClass}">${manaCost}</span></div>`);
 
@@ -1047,14 +1192,30 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
     }
   }
 
+  return { aborted: false, parts, deferred, manaCost };
+}
+
+/**
+ * The informational lines of a cast: ranges, duration and - unless compact -
+ * the casting methods and the (enriched) description.
+ * @param {Item} item
+ * @param {object} ctx   See paySpellCast.
+ * @param {boolean} compact   Leave out casting methods and description.
+ * @return {Promise<string[]>}
+ */
+async function renderSpellInfoParts(item, ctx, compact) {
+  const actor = item.actor;
+  const system = item.system;
+  const parts = [];
+
   // 5. Ranges + indicator.
   if (system.ranges?.length) {
     // The Elementarist ability's own Luft-Ladungen bonus (helpers/
     // elementalChargeEffects.mjs) - +2m per charge on top of the spell's
-    // own stored range.
+    // own stored range (never on a cuboid's volume).
     const airChargeBonus = actor ? getElementalAirRangeBonus(actor) : 0;
-    const rangesLabel = computeEffectiveRanges(system, extraCostTier, extraCostCounts, variableMana)
-      .map(r => `${r.distance + airChargeBonus}m ${game.i18n.localize(CONFIG.SKSK.rangeIndicators[r.indicator] ?? r.indicator)}`)
+    const rangesLabel = computeEffectiveRanges(system, ctx.extraCostTier, ctx.extraCostCounts, ctx.variableMana)
+      .map(r => formatRangeLabel(r, airChargeBonus))
       .join(', ');
     parts.push(`<div class="sksk-roll-line"><strong>${game.i18n.localize('SKSK.Spell.Ranges')}:</strong> ${rangesLabel}</div>`);
   }
@@ -1063,6 +1224,7 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
   if (system.duration) {
     parts.push(`<div class="sksk-roll-line"><strong>${game.i18n.localize('SKSK.Spell.DurationLabel')}:</strong> ${system.duration}</div>`);
   }
+  if (compact) return parts;
 
   // 7. Wirkmethoden (casting methods).
   const castingMethodsLabel = formatCastingMethodsLine(system);
@@ -1071,14 +1233,13 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
   }
 
   // 8. Description.
+  const descriptionHTML = await foundry.applications.ux.TextEditor.implementation.enrichHTML(
+    system.description ?? '', { relativeTo: item, secrets: item.isOwner }
+  );
   parts.push(`<div class="sksk-roll-description">${descriptionHTML}</div>`);
-
-  if (!deferred) {
-    parts.push(...(await renderSpellEffectParts(item, overchargeCount, extraCostTier, extraCostCounts, variableMana)));
-  }
-
-  return postSpellChatCard(item, parts);
+  return parts;
 }
+
 
 /**
  * Post a mid-payoff progress line for a still-pending spell (own chat

@@ -5,9 +5,10 @@ import {
   prepareActiveEffectCategories,
 } from '../helpers/effects.mjs';
 import { getSkillBonusChoices } from '../helpers/skills.mjs';
+import { setSpellSustaining } from '../helpers/spell-rolls.mjs';
 import {
   computeSavingThrowValue, computeSavingThrowBonusSum, computeDamageBonus, computeCombinedSchoolOverrideLevel,
-  computeExtraManaCostSum,
+  computeExtraManaCostSum, formatRangeLabel,
 } from '../helpers/spells.mjs';
 import { getMaterials, getMaterial, isDurabilityEnabled } from '../helpers/materials.mjs';
 import { getWeaponModels, getArmorModels, getWeaponModel, getArmorModel, getOverridablePropertiesFor } from '../helpers/models.mjs';
@@ -54,6 +55,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       removeArrayEntry: SKSKItemSheet.#removeArrayEntry,
       addAbilityEffect: SKSKItemSheet.#addAbilityEffect,
       addRange: SKSKItemSheet.#addRange,
+      toggleSustaining: SKSKItemSheet.#toggleSustaining,
       addExtraManaCost: SKSKItemSheet.#addExtraManaCost,
       addExtraCostRangeChange: SKSKItemSheet.#addExtraCostRangeChange,
       addExtraCostSaveDcChange: SKSKItemSheet.#addExtraCostSaveDcChange,
@@ -707,7 +709,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       // throw (blank = always).
       context.rangeChoices = (item.system.ranges ?? []).map((range, index) => ({
         value: index,
-        label: `${index + 1}: ${range.distance}m ${game.i18n.localize(CONFIG.SKSK.rangeIndicators[range.indicator] ?? range.indicator)}`,
+        label: `${index + 1}: ${formatRangeLabel(range)}`,
       }));
       context.rangeIndicatorOverrideChoices = {
         '': game.i18n.localize('SKSK.Spell.ExtraCostRangeUnchanged'),
@@ -823,8 +825,9 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
 
   /** @override */
   /**
-   * A spell's Mana Cost / AP Cost field accepts "?" (cast-time amount, see
-   * data/spell.mjs#manaCostVariable / #apCostVariable): turn it into that
+   * A spell's Mana Cost / AP Cost / Upkeep field accepts "?" (cast-time amount, see
+   * data/spell.mjs#manaCostVariable / #apCostVariable; for the Upkeep the amount
+   * is entered when the spell is switched to sustaining, see #upkeepVariable): turn it into that
    * switch instead of letting the Number coercion mangle it.
    * @override
    */
@@ -846,6 +849,15 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
         delete data.system.apCost;
       } else {
         data.system.apCostVariable = false;
+      }
+    }
+    if (this.document.type === 'spell' && data?.system && 'upkeep' in data.system) {
+      const raw = String(form?.elements?.['system.upkeep']?.value ?? '').trim();
+      if (raw === '?') {
+        data.system.upkeepVariable = true;
+        delete data.system.upkeep;
+      } else {
+        data.system.upkeepVariable = false;
       }
     }
     return data;
@@ -952,6 +964,17 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
   static async #addAbility(event, target) {
     if ((this.item.system.abilities?.length ?? 0) >= 3) return;
     await this.#addArrayEntry('abilities', { name: '', description: '', lifeBonusFormula: '0', manaBonusFormula: '0' });
+  }
+
+  /**
+   * The spell sheet's "sustaining" checkbox: goes through the shared helper
+   * so a "?" Unterhalt asks for its amount when switched on (the checkbox
+   * itself is never submitted with the form - the sheet re-renders with the
+   * real state afterwards).
+   */
+  static async #toggleSustaining(event, target) {
+    event.preventDefault();
+    await setSpellSustaining(this.document);
   }
 
   static async #addRange(event, target) {

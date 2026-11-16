@@ -634,13 +634,69 @@ export function computeEffectiveRanges(spellSystem, tier = 0, counts = [], varia
   const fx = computeExtraCostEffects(spellSystem, tier, counts);
   const mana = Number(variableMana ?? spellSystem.variableManaPaid ?? 0) || 0;
   return (spellSystem.ranges ?? []).map((range, index) => {
-    const perMana = spellSystem.manaCostVariable ? Math.floor((range.distancePerMana ?? 0) * mana) : 0;
+    const perMana = spellSystem.manaCostVariable
+      ? floorRangeValue((range.distancePerMana ?? 0) * mana, range.distancePerMana ?? 0) : 0;
     return {
       ...range,
-      distance: Math.max(0, (range.distance ?? 0) + perMana + (fx.rangeDistanceBonus[index] ?? 0)),
+      distance: roundRangeValue(Math.max(0, (range.distance ?? 0) + perMana + (fx.rangeDistanceBonus[index] ?? 0))),
       indicator: fx.rangeIndicator[index] ?? range.indicator,
     };
   });
+}
+
+/**
+ * Round a computed range value down: to whole metres when the value it was
+ * derived from is a whole number (the long-standing rule), else down to 2
+ * decimals - a spell with a fractional range (e.g. 2.5 m or 0.5 m³) must not
+ * lose its fraction when it is scaled.
+ * @param {number} value
+ * @param {number} base   The value it was scaled from.
+ * @return {number}
+ */
+function floorRangeValue(value, base) {
+  return Number.isInteger(base) ? Math.floor(value) : Math.floor(value * 100 + 1e-9) / 100;
+}
+
+/** Strip floating-point noise (0.1 + 0.2) from a range value - 2 decimals. */
+function roundRangeValue(value) {
+  return Math.round(value * 100) / 100;
+}
+
+/**
+ * A range's own value as text: "12 m Projektil", "2,5 m Kugel" or
+ * "0,5 m³ Quader" - a cuboid's value is a volume in m³, and the Luft-
+ * Ladungen bonus (metres) never applies to it.
+ * @param {{distance: number, indicator: string}} range
+ * @param {number} [airChargeBonus=0]   Extra metres (Elementarist Luft).
+ * @return {string}
+ */
+export function formatRangeLabel(range, airChargeBonus = 0) {
+  const indicator = game.i18n.localize(CONFIG.SKSK.rangeIndicators[range.indicator] ?? range.indicator);
+  return `${formatRangeShort(range, airChargeBonus)} ${indicator}`;
+}
+
+/**
+ * Just a range's number with its unit ("12m", "0,5m³"), for compact lists.
+ * @param {{distance: number, indicator: string}} range
+ * @param {number} [airChargeBonus=0]
+ * @return {string}
+ */
+export function formatRangeShort(range, airChargeBonus = 0) {
+  const cuboid = range.indicator === 'cuboid';
+  const value = roundRangeValue((range.distance ?? 0) + (cuboid ? 0 : airChargeBonus));
+  const text = new Intl.NumberFormat(game.i18n.lang, { maximumFractionDigits: 2 }).format(value);
+  return `${text}${cuboid ? 'm³' : 'm'}`;
+}
+
+/**
+ * The Unterhalt (maximum-Mana reduction) a spell currently counts for while
+ * sustaining: its own fixed upkeep, or - for a "?" Unterhalt - the amount
+ * entered when it was last switched on.
+ * @param {object} spellSystem
+ * @return {number}
+ */
+export function getSpellUpkeep(spellSystem) {
+  return spellSystem.upkeepVariable ? (spellSystem.variableUpkeepPaid ?? 0) : (spellSystem.upkeep ?? 0);
 }
 
 /**
@@ -699,7 +755,7 @@ export function computeOverchargedRanges(ranges, overchargeCount, settings = OVE
   const flat = settings.rangeFlat ?? 0;
   return ranges.map(r => ({
     ...r,
-    distance: Math.max(0, Math.floor(r.distance * (100 + percent * overchargeCount) / 100) + flat * overchargeCount),
+    distance: roundRangeValue(Math.max(0, floorRangeValue(r.distance * (100 + percent * overchargeCount) / 100, r.distance) + flat * overchargeCount)),
   }));
 }
 
