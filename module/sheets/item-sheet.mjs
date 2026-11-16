@@ -8,7 +8,7 @@ import { getSkillBonusChoices } from '../helpers/skills.mjs';
 import { setSpellSustaining } from '../helpers/spell-rolls.mjs';
 import {
   computeSavingThrowValue, computeSavingThrowBonusSum, computeDamageBonus, computeCombinedSchoolOverrideLevel,
-  computeExtraManaCostSum, formatRangeLabel,
+  computeExtraManaCostSum, formatRangeLabel, SPELL_ELEMENT,
 } from '../helpers/spells.mjs';
 import { getMaterials, getMaterial, isDurabilityEnabled } from '../helpers/materials.mjs';
 import { getWeaponModels, getArmorModels, getWeaponModel, getArmorModel, getOverridablePropertiesFor } from '../helpers/models.mjs';
@@ -71,6 +71,11 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       addDamageSkillBonus: SKSKItemSheet.#addDamageSkillBonus,
       addStatusEffect: SKSKItemSheet.#addStatusEffect,
       addFoundryEffect: SKSKItemSheet.#addFoundryEffect,
+      addVariant: SKSKItemSheet.#addVariant,
+      addVariantCondition: SKSKItemSheet.#addVariantCondition,
+      addVariantChange: SKSKItemSheet.#addVariantChange,
+      addVariantDamage: SKSKItemSheet.#addVariantDamage,
+      addVariantStatus: SKSKItemSheet.#addVariantStatus,
       removeFoundryEffect: SKSKItemSheet.#removeFoundryEffect,
       openSpellFoundryEffect: SKSKItemSheet.#openSpellFoundryEffect,
       addCombinedSchoolOverride: SKSKItemSheet.#addCombinedSchoolOverride,
@@ -143,6 +148,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
         { id: "savingThrows", label: "SKSK.Spell.Section.SavingThrows" },
         { id: "damage", label: "SKSK.Spell.Section.Damage" },
         { id: "statusEffects", label: "SKSK.Spell.Section.StatusEffects" },
+        { id: "variants", label: "SKSK.Spell.Section.Variants" },
       ],
       initial: "general",
     },
@@ -679,7 +685,17 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       context.canRemoveRange = (item.system.ranges?.length ?? 0) > 1;
 
       context.attributeChoices = CONFIG.SKSK.attributes;
-      context.damageTypeChoices = CONFIG.SKSK.damageTypes;
+      // A Damage entry may also deal "the element chosen at cast time" (see
+      // data/spell.mjs#elementChoice) - only offered while the spell has one.
+      context.damageTypeChoices = item.system.elementChoice?.mode !== 'none' || (item.system.damages ?? []).some(d => d.damageType === SPELL_ELEMENT)
+        ? { [SPELL_ELEMENT]: 'SKSK.Spell.Element.DamageType', ...CONFIG.SKSK.damageTypes }
+        : CONFIG.SKSK.damageTypes;
+      context.elementModeChoices = {
+        none: 'SKSK.Spell.Element.ModeNone',
+        choice: 'SKSK.Spell.Element.ModeChoice',
+        random: 'SKSK.Spell.Element.ModeRandom',
+      };
+      context.elementList = Object.entries(CONFIG.SKSK.damageTypes).map(([key, label]) => ({ key, label }));
       context.spellTriggerChoices = CONFIG.SKSK.spellTriggers;
       // Damage entries additionally allow the "extraCost" trigger (see
       // data/spell.mjs#damages.extraCostIndex) - Status/Foundry effects
@@ -738,6 +754,27 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       context.statusEffectChoices = Object.fromEntries(
         getStatusEffectDefinitions().map(def => [def.id, def.name])
       );
+      // Varianten tab (data/spell.mjs#variants): condition kinds, change types
+      // and the option paths a change may target (a datalist - any path of the
+      // spell's data works, these are the common ones for this very spell).
+      context.variantConditionKindChoices = {
+        status: 'SKSK.Spell.Variant.KindStatus',
+        effect: 'SKSK.Spell.Variant.KindEffect',
+      };
+      context.variantChangeTypeChoices = {
+        set: 'SKSK.Spell.Variant.TypeSet',
+        add: 'SKSK.Spell.Variant.TypeAdd',
+        multiply: 'SKSK.Spell.Variant.TypeMultiply',
+        append: 'SKSK.Spell.Variant.TypeAppend',
+      };
+      context.variantChangeKeys = [
+        'manaCost', 'apCost', 'rpCost', 'upkeep', 'duration', 'spellLevel', 'attackRoll.count', 'attackRoll.enabled',
+        'ignoresBarrier', 'manaCoreFpGrant',
+        ...(item.system.ranges ?? []).flatMap((range, i) => [`ranges.${i}.distance`, `ranges.${i}.indicator`, `ranges.${i}.distancePerMana`]),
+        ...(item.system.damages ?? []).flatMap((damage, i) => [`damages.${i}.formula`, `damages.${i}.damageType`]),
+        ...(item.system.savingThrows ?? []).map((save, i) => `savingThrows.${i}.baseValue`),
+        ...(item.system.statusEffects ?? []).map((status, i) => `statusEffects.${i}.stacks`),
+      ];
       // The spell's own status entries as selectable targets for an
       // extra-cost step's "extra stacks", and the "only with step X" gate
       // of a status/Foundry effect entry (blank = always).
@@ -1048,6 +1085,33 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
   static async #addStatusEffect(event, target) {
     await this.#addArrayEntry('statusEffects', {
       statusId: '', stacks: 1, trigger: 'unconditional', savingThrowIndex: null,
+    });
+  }
+
+  static async #addVariant(event, target) {
+    await this.#addArrayEntry('variants', {
+      label: '', note: '', conditions: [{ kind: 'status', key: '' }], changes: [], addDamages: [], addStatusEffects: [],
+    });
+  }
+
+  static async #addVariantCondition(event, target) {
+    await this.#addNestedArrayEntry('variants', Number(target.dataset.parentIndex), 'conditions', { kind: 'status', key: '' });
+  }
+
+  static async #addVariantChange(event, target) {
+    await this.#addNestedArrayEntry('variants', Number(target.dataset.parentIndex), 'changes', { key: '', type: 'add', value: '' });
+  }
+
+  static async #addVariantDamage(event, target) {
+    await this.#addNestedArrayEntry('variants', Number(target.dataset.parentIndex), 'addDamages', {
+      formula: '1d6', damageType: 'fire', trigger: 'unconditional', savingThrowIndex: null, extraCostIndex: null,
+      attributeBonuses: [], skillBonuses: [],
+    });
+  }
+
+  static async #addVariantStatus(event, target) {
+    await this.#addNestedArrayEntry('variants', Number(target.dataset.parentIndex), 'addStatusEffects', {
+      statusId: '', stacks: 1, trigger: 'unconditional', savingThrowIndex: null, extraCostIndex: null,
     });
   }
 

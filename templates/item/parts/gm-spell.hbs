@@ -86,6 +86,30 @@
   </div>
 
   <div class="resource">
+    <label class="resource-label" title="{{localize 'SKSK.Spell.Element.Hint'}}">{{localize 'SKSK.Spell.Element.Title'}}</label>
+    <select name="system.elementChoice.mode">
+      {{selectOptions elementModeChoices selected=system.elementChoice.mode localize=true}}
+    </select>
+    {{#if (eq system.elementChoice.mode "choice")}}
+    <label class="resource-label casting-method-option" title="{{localize 'SKSK.Spell.Element.AllowRandomHint'}}">
+      <input type="checkbox" name="system.elementChoice.allowRandom" {{checked system.elementChoice.allowRandom}} />
+      {{localize 'SKSK.Spell.Element.AllowRandom'}}
+    </label>
+    {{/if}}
+    {{#unless (eq system.elementChoice.mode "none")}}
+    <label class="resource-label">{{localize 'SKSK.Spell.Element.Allowed'}}</label>
+    <div class="casting-methods">
+      {{#each elementList as |el|}}
+      <label class="casting-method-option">
+        <input type="checkbox" name="system.elementChoice.allowed.{{el.key}}" {{checked (lookup ../system.elementChoice.allowed el.key)}} />
+        {{localize el.label}}
+      </label>
+      {{/each}}
+    </div>
+    {{/unless}}
+  </div>
+
+  <div class="resource">
     <label class="resource-label casting-method-option" title="{{localize 'SKSK.Barrier.IgnoresBarrierHint'}}">
       <input type="checkbox" name="system.ignoresBarrier" {{checked system.ignoresBarrier}} />
       {{localize 'SKSK.Barrier.IgnoresBarrier'}}

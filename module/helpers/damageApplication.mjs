@@ -5,7 +5,8 @@ import {
   checkConcentration, damageDealtFrom,
 } from './statusEffects.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
-import { resolveSpellStatusStacks, isSpellFoundryEffectActive } from './spells.mjs';
+import { resolveSpellStatusStacks, isSpellFoundryEffectActive, replaceElementPlaceholders } from './spells.mjs';
+import { createVariantItem } from './spellVariants.mjs';
 import { getElementalDeathChargeHeal } from './elementalChargeEffects.mjs';
 import { requestGmAction, registerGmRelayAction } from './gmRelay.mjs';
 
@@ -178,11 +179,19 @@ export async function applyTechniqueEffectBundle(itemUuid, defender) {
  *   - gates entries bound to a step and adds step-granted stacks (see
  *   helpers/spells.mjs#resolveSpellStatusStacks).
  * @param {number[]} [extraCostCounts=[]]
+ * @param {number[]} [variants=[]]   The active variant indexes of the cast.
+ * @param {string|null} [element=null]   The element of the cast (see
+ *   data/spell.mjs#elementChoice): "{element}"/"{elementLabel}" in a Foundry
+ *   effect's name and in the key/value of each of its changes are replaced
+ *   by it on the copy that lands on the defender.
  * @return {Promise<string>}
  */
-export async function applySpellEffectGroup(itemUuid, group, savingThrowIndex, defender, extraCostTier = 0, extraCostCounts = []) {
-  const item = itemUuid ? await fromUuid(itemUuid) : null;
-  if (!item) return '';
+export async function applySpellEffectGroup(itemUuid, group, savingThrowIndex, defender, extraCostTier = 0, extraCostCounts = [], element = null, variants = []) {
+  const realItem = itemUuid ? await fromUuid(itemUuid) : null;
+  if (!realItem) return '';
+  // The cast's active Varianten (helpers/spellVariants.mjs) may have added
+  // status effects - read the spell as it was cast.
+  const item = createVariantItem(realItem, variants);
 
   // A blank/null savingThrowIndex on the entry itself defaults to 0 - see
   // helpers/spell-rolls.mjs#renderSpellEffectParts's own identical fallback
@@ -208,6 +217,13 @@ export async function applySpellEffectGroup(itemUuid, group, savingThrowIndex, d
     delete effectData._id;
     effectData.disabled = false;
     effectData.origin = item.uuid;
+    if (element) {
+      effectData.name = replaceElementPlaceholders(effectData.name, element);
+      for (const change of effectData.changes ?? []) {
+        change.key = replaceElementPlaceholders(change.key, element);
+        change.value = replaceElementPlaceholders(change.value, element);
+      }
+    }
     await defender.createEmbeddedDocuments('ActiveEffect', [effectData]);
     lines.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.EffectApplied', { name: entry.name || item.name, target: defender.name })}</div>`);
   }

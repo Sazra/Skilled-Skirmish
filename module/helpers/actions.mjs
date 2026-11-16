@@ -24,6 +24,7 @@ import {
   hasRollTwiceWeapon, rollPossiblyDoubledDamage, renderDamageRerollOnesIcon, wrapDamageBlock,
 } from "./damageReroll.mjs";
 import { wrapRerollIcons } from "./luck.mjs";
+import { rollExtraDamage, consumeUsedEffects } from "./extraDamage.mjs";
 
 /**
  * The intended target's flanking result (see helpers/flanking.mjs) for an
@@ -186,6 +187,7 @@ export async function rollWeaponItem(item) {
   }
 
   let applyButtonIndex = -1;
+  const usedEffects = new Set();
   if (item.system.formula) {
     const attributeBonus = actor ? computeWeaponAttributeBonus(actor, item.system) : 0;
     const lehrenDamageBonus = actor
@@ -214,6 +216,11 @@ export async function rollWeaponItem(item) {
       `<div class="sksk-roll-damage"><strong>${game.i18n.localize('SKSK.Spell.Roll.Damage')}</strong>${wrapRerollIcons(rerollOnesIcon)}</div>${rendered}${line}`
     ));
     damageEntries.push({ damageType, amount: total, ...barrierFlag });
+    // Zusatzschaden from Active Effects (helpers/extraDamage.mjs) - its own
+    // roll and entries, so defenses treat it separately.
+    const extraDamage = await rollExtraDamage(actor, { kind: 'weapon', damageType, skillKey: item.system.weaponType }, { entryFlags: barrierFlag, used: usedEffects });
+    parts.push(extraDamage.html);
+    damageEntries.push(...extraDamage.entries);
     applyButtonIndex = parts.length;
     parts.push(renderApplyDamageButton(actor, damageEntries, item.system.weaponType, techniqueEffect, 'armorClass'));
     parts.push(renderTechniqueSavingThrowHTML(technique));
@@ -242,6 +249,15 @@ export async function rollWeaponItem(item) {
       if (applyButtonIndex >= 0) parts[applyButtonIndex] = greyOutManualEvalButtons(parts[applyButtonIndex]);
       parts.push(autoResolveHTML);
     }
+  }
+
+  // "Bis Nutzung": an effect this attack used (see helpers/extraDamage.mjs)
+  // is removed now.
+  if (actor) {
+    parts.push(await consumeUsedEffects(actor, {
+      kind: 'weapon', damageType, damageTypes: damageEntries.map(entry => entry.damageType),
+      skillKey: item.system.weaponType, rolled: !!(rolls || item.system.formula),
+    }, usedEffects));
   }
 
   // Haltbarkeit (Durability) - every actual shot/swing costs 1, regardless
@@ -409,6 +425,10 @@ export async function rollMartialArtsAttack(actor, index) {
   const { total: rollTotal, html: renderedRoll, pickedRoll } = await rollPossiblyDoubledDamage(formula, actor.getRollData(), rollTwice);
   const { total: damageTotal, line: techniqueLine } = await applyTechniqueBonusDamage(rollTotal, technique, actor.getRollData());
   const damageEntries = [{ damageType: attack.damageType, amount: damageTotal }];
+  // Zusatzschaden from Active Effects (helpers/extraDamage.mjs).
+  const usedEffects = new Set();
+  const extraDamage = await rollExtraDamage(actor, { kind: 'martialArts', damageType: attack.damageType }, { used: usedEffects });
+  damageEntries.push(...extraDamage.entries);
   const damageBlockId = foundry.utils.randomID();
   const rerollOnesIcon = renderDamageRerollOnesIcon(
     actor, attack.damageType, pickedRoll, damageBlockId, { type: 'delta', value: damageTotal - rollTotal }
@@ -435,6 +455,10 @@ export async function rollMartialArtsAttack(actor, index) {
   }
 
   await actor.update(offTurn ? spendReactionPoints(actor, attack.apCost) : spendActionPoints(actor, attack.apCost));
+  // "Bis Nutzung": an effect this attack used is removed now.
+  const consumedHTML = await consumeUsedEffects(actor, {
+    kind: 'martialArts', damageType: attack.damageType, damageTypes: damageEntries.map(entry => entry.damageType), rolled: true,
+  }, usedEffects);
   let fpHTML = formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'martialArts', 'weaponAttack'));
   if (flank.flanking) fpHTML += formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'tactic', 'flankAttack'));
   // Every attack beyond the first (see the default-seeded "Main Hand"/
@@ -452,7 +476,7 @@ export async function rollMartialArtsAttack(actor, index) {
   const messageData = {
     speaker: ChatMessage.getSpeaker({ actor }),
     flavor: title,
-    content: `<div class="sksk-chat-card sksk-action-card">${formatRollCardHeading(title)}${apCostHTML}${attackHTML}${renderedDamage}${techniqueLine}${applyDamageHTML}${fpHTML}${autoResolveHTML}</div>`,
+    content: `<div class="sksk-chat-card sksk-action-card">${formatRollCardHeading(title)}${apCostHTML}${attackHTML}${renderedDamage}${extraDamage.html}${techniqueLine}${applyDamageHTML}${fpHTML}${autoResolveHTML}${consumedHTML}</div>`,
   };
   ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));
   return ChatMessage.create(messageData);

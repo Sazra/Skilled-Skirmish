@@ -2872,3 +2872,20 @@ span.sksk-critical-failure {
   opacity: 0.6;
   align-self: center;
 }
+
+/* Spell sheet: one Variante (marker-triggered spell change). */
+.sksk fieldset.spell-variant {
+  border: 1px solid var(--color-border-light-tertiary, #888);
+  border-radius: 4px;
+  margin: 6px 0;
+  padding: 4px 8px 8px;
+}
+
+.sksk fieldset.spell-variant > legend {
+  font-weight: bold;
+  padding: 0 6px;
+}
+
+.sksk-chat-card .sksk-roll-variant {
+  font-style: italic;
+}

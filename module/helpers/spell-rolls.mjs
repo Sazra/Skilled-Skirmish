@@ -4,7 +4,12 @@ import {
   getOverchargeSettings, formatOverchargeDuration, resolveSpellStatusStacks, isSpellFoundryEffectActive,
   computeMaxExtraCostTier, normalizeExtraCostCounts, computeCombinedSpellFpTargets,
   computeExtraCostEffects, isSavingThrowActive, computeEffectiveRanges, formatRangeLabel,
+  getSpellElementOptions, resolveSpellDamages, getSpellSchool,
 } from './spells.mjs';
+import { rollExtraDamage, consumeUsedEffects } from './extraDamage.mjs';
+import {
+  detectSpellVariants, createVariantItem, renderVariantLines, consumeVariantMarkers, variantAttribute,
+} from './spellVariants.mjs';
 import { getActorSkillLevel, getSkillLabel } from './skills.mjs';
 import {
   applyD20Malus, canCastMovementSpell, getStatusStacks, setStatusStacks, payManaCost, negativeLifeOverflowHTML,
@@ -367,6 +372,60 @@ async function promptVariableMana(item) {
 }
 
 /**
+ * Let the caster pick the element of a spell with an element choice
+ * (data/spell.mjs#elementChoice, mode "choice") - one of its allowed
+ * elements, or - if the spell allows it - "random" (rolled for every cast).
+ * @param {Item} item
+ * @return {Promise<string|null>}   An element key, "random", or null if the
+ *   prompt was closed/cancelled.
+ */
+async function promptSpellElement(item) {
+  const options = getSpellElementOptions(item.system);
+  const allowRandom = !!item.system.elementChoice?.allowRandom;
+  const optionHTML = [
+    ...(allowRandom ? [`<option value="random">${game.i18n.format('SKSK.Spell.Element.RandomOption', { count: options.length })}</option>`] : []),
+    ...options.map(key => `<option value="${key}">${game.i18n.localize(CONFIG.SKSK.damageTypes[key] ?? key)}</option>`),
+  ].join('');
+  const value = await foundry.applications.api.DialogV2.prompt({
+    window: { title: game.i18n.format('SKSK.Spell.Element.PromptTitle', { name: item.name }) },
+    content: `<div class="form-group">
+      <label>${game.i18n.localize('SKSK.Spell.Element.PromptLabel')}</label>
+      <select name="element" autofocus>${optionHTML}</select>
+    </div>`,
+    ok: {
+      label: game.i18n.localize('SKSK.Spell.Element.PromptConfirm'),
+      callback: (event, button) => button.form?.elements?.element?.value ?? null,
+    },
+    rejectClose: false,
+  });
+  return value || null;
+}
+
+/**
+ * The element of ONE cast of a spell with an element choice: the picked one,
+ * or - for mode "random" / a picked "random" - a 1dN roll over the allowed
+ * elements (N = how many there are, in CONFIG.SKSK.damageTypes order).
+ * @param {Item} item
+ * @param {string|null} pick   An element key, "random" or null (no choice).
+ * @return {Promise<{element: string|null, html: string}>}   html: the chat
+ *   lines announcing the element (and the roll, if one was made).
+ */
+async function resolveCastElement(item, pick) {
+  const options = getSpellElementOptions(item.system);
+  if (!options.length) return { element: null, html: '' };
+  let element = options.includes(pick) ? pick : null;
+  let rollHTML = '';
+  if (!element) {
+    const roll = await new Roll(`1d${options.length}`).evaluate();
+    element = options[roll.total - 1];
+    rollHTML = await roll.render();
+  }
+  const label = game.i18n.localize(CONFIG.SKSK.damageTypes[element] ?? element);
+  const line = `<div class="sksk-roll-line sksk-roll-element"><strong>${game.i18n.localize('SKSK.Spell.Element.Label')}:</strong> ${label}</div>`;
+  return { element, html: rollHTML + line };
+}
+
+/**
  * Ask how much Unterhalt a "?"-upkeep spell (data/spell.mjs#upkeepVariable)
  * should cost while it is sustained this time.
  * @param {Item} item
@@ -518,13 +577,13 @@ async function renderSavingThrowButton(save, index, item, overchargeCount = 0, d
     const rollHTML = await casterRoll.roll.render();
     return `<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.ContestCasterRoll', { label })}</div>${rollHTML}
     <button type="button" class="sksk-roll-save" data-action="rollSavingThrow"
-      data-item-uuid="${item.uuid}" data-save-index="${index}" data-overcharge="${overchargeCount}" data-dc-bonus="${dcBonus}" data-contest-total="${casterRoll.total}">
+      data-item-uuid="${item.uuid}" data-save-index="${index}" data-overcharge="${overchargeCount}" data-dc-bonus="${dcBonus}" data-variants="${variantAttribute(item)}" data-contest-total="${casterRoll.total}">
       ${game.i18n.format('SKSK.Spell.Roll.ContestButton', { label, total: casterRoll.total })}
     </button>`;
   }
   const dc = computeSavingThrowValue(save, item.actor, overchargeCount, dcBonus);
   return `<button type="button" class="sksk-roll-save" data-action="rollSavingThrow"
-    data-item-uuid="${item.uuid}" data-save-index="${index}" data-overcharge="${overchargeCount}" data-dc-bonus="${dcBonus}">
+    data-item-uuid="${item.uuid}" data-save-index="${index}" data-overcharge="${overchargeCount}" data-dc-bonus="${dcBonus}" data-variants="${variantAttribute(item)}">
     ${label} (DC ${dc})
   </button>`;
 }
@@ -588,10 +647,13 @@ async function postSpellChatCard(item, parts) {
  *   loop below), independent of overchargeAutoEffects.
  * @return {Promise<string[]>}
  */
-async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier = 0, extraCostCounts = [], variableMana = null) {
+async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier = 0, extraCostCounts = [], variableMana = null, element = null) {
   const actor = item.actor;
   const system = item.system;
   const parts = [];
+  // The Damage entries with this cast's element filled in for "Gewähltes
+  // Element" (see helpers/spells.mjs#resolveSpellDamages).
+  const damages = resolveSpellDamages(system.damages, element, system);
   // This spell's own Überladen rules (data/spell.mjs#overcharge): the
   // DC/range/damage scaling only applies in "scaling" mode (and with the
   // auto-effects switch on) - in "extraAttack" mode each Überladung is one
@@ -623,16 +685,28 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
     return payload;
   };
 
+  // Zusatzschaden from Active Effects (helpers/extraDamage.mjs): rolled once
+  // per damage entry, as its own roll + entries.
+  const usedEffects = new Set();
+  const dealtTypes = new Set();
+  let damageRolled = false;
+  const extraSchool = system.spellType === 'systemless' ? null : getSpellSchool(system);
   const rollDamageWithTechnique = async (damage) => {
     const applyTech = technique && !techniqueDamageApplied;
     const { html, entry } = await renderDamageRoll(damage, actor, effectiveOvercharge, system, applyTech ? technique : null);
+    let fullHTML = html;
     if (applyTech) {
       const adjusted = await applyTechniqueBonusDamage(entry.amount, technique, actor?.getRollData());
       entry.amount = adjusted.total;
       techniqueDamageApplied = true;
-      return { html: html + adjusted.line, entry };
+      fullHTML = html + adjusted.line;
     }
-    return { html, entry };
+    damageRolled = true;
+    dealtTypes.add(entry.damageType);
+    const extra = await rollExtraDamage(actor, { kind: 'spell', damageType: entry.damageType, school: extraSchool }, {
+      entryFlags: system.ignoresBarrier ? { ignoresBarrier: true } : {}, used: usedEffects,
+    });
+    return { html: fullHTML + extra.html, entry, extras: extra.entries };
   };
 
   if (overchargeCount > 0) {
@@ -674,7 +748,7 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
   // multi-attack spells) - independent of any saving throws below, so a
   // spell may use both an attack roll and a save at once.
   if (attacksEnabled) {
-    const attackDamages = system.damages.filter(d => d.trigger === 'attack');
+    const attackDamages = damages.filter(d => d.trigger === 'attack');
     const damageDice = attackDamages.map(damage => ({
       damageType: damage.damageType, dieSizes: getDamageDieSizes(damage.formula), ...(system.ignoresBarrier ? { ignoresBarrier: true } : {}),
     }));
@@ -699,9 +773,9 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
 
       const damageEntries = [];
       for (const damage of attackDamages) {
-        const { html, entry } = await rollDamageWithTechnique(damage);
+        const { html, entry, extras } = await rollDamageWithTechnique(damage);
         parts.push(html);
-        damageEntries.push(entry);
+        damageEntries.push(entry, ...extras);
       }
       const techniqueEffect = takeTechniqueEffect();
       const applyButtonIndex = parts.length;
@@ -739,25 +813,25 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
   // reading it as 0 keeps that visual default and the actual applied
   // saving throw in sync instead of silently dropping the entry.
   const saveIndexesWithDamage = [...new Set(
-    system.damages.filter(d => d.trigger === 'save').map(d => d.savingThrowIndex ?? 0)
+    damages.filter(d => d.trigger === 'save').map(d => d.savingThrowIndex ?? 0)
   )];
   for (const idx of saveIndexesWithDamage) {
     if (!system.savingThrows[idx] || !isSavingThrowActive(system, idx, extraCostTier)) continue;
     parts.push(`<div class="sksk-roll-saves">${await renderSavingThrowButton(system.savingThrows[idx], idx, item, 0, (castFx.dcBonus[idx] ?? 0) + ocDc)}</div>`);
     const saveDamageEntries = [];
-    for (const damage of system.damages.filter(d => d.trigger === 'save' && (d.savingThrowIndex ?? 0) === idx)) {
-      const { html, entry } = await rollDamageWithTechnique(damage);
+    for (const damage of damages.filter(d => d.trigger === 'save' && (d.savingThrowIndex ?? 0) === idx)) {
+      const { html, entry, extras } = await rollDamageWithTechnique(damage);
       parts.push(html);
-      saveDamageEntries.push(entry);
+      saveDamageEntries.push(entry, ...extras);
     }
     parts.push(renderApplyDamageButton(actor, saveDamageEntries, null, takeTechniqueEffect()));
   }
 
   const unconditionalDamageEntries = [];
-  for (const damage of system.damages.filter(d => d.trigger === 'unconditional')) {
-    const { html, entry } = await rollDamageWithTechnique(damage);
+  for (const damage of damages.filter(d => d.trigger === 'unconditional')) {
+    const { html, entry, extras } = await rollDamageWithTechnique(damage);
     parts.push(html);
-    unconditionalDamageEntries.push(entry);
+    unconditionalDamageEntries.push(entry, ...extras);
   }
   parts.push(renderApplyDamageButton(actor, unconditionalDamageEntries, null, takeTechniqueEffect()));
 
@@ -773,15 +847,15 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
   // repeat count just like its Mana cost does.
   const extraCostDamageEntries = [];
   const usedExtraCounts = normalizeExtraCostCounts(system, extraCostCounts);
-  for (const damage of system.damages.filter(d => d.trigger === 'extraCost' && extraCostTier >= (d.extraCostIndex ?? 0) + 1)) {
+  for (const damage of damages.filter(d => d.trigger === 'extraCost' && extraCostTier >= (d.extraCostIndex ?? 0) + 1)) {
     const repeats = usedExtraCounts[damage.extraCostIndex ?? 0] ?? 1;
     for (let n = 1; n <= repeats; n++) {
       if (repeats > 1) {
         parts.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.ExtraCostRepeatRoll', { n, total: repeats })}</div>`);
       }
-      const { html, entry } = await rollDamageWithTechnique(damage);
+      const { html, entry, extras } = await rollDamageWithTechnique(damage);
       parts.push(html);
-      extraCostDamageEntries.push(entry);
+      extraCostDamageEntries.push(entry, ...extras);
     }
   }
   parts.push(renderApplyDamageButton(actor, extraCostDamageEntries, null, takeTechniqueEffect()));
@@ -790,7 +864,7 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
   // "Effekt anwenden" button, separate from the attack's own Apply Damage
   // button(s) above (only relevant if the spell actually has an attack roll).
   if (attacksEnabled) {
-    parts.push(renderSpellEffectApplyButtonHTML(item, 'attack', extraCostTier, extraCostCounts));
+    parts.push(renderSpellEffectApplyButtonHTML(item, 'attack', extraCostTier, extraCostCounts, element));
   }
 
   // 12. Rettungswürfe für Statuseffekte/Foundry-Effekte - one merged,
@@ -813,7 +887,7 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
   }
   for (const idx of saveIndexesWithEffects) {
     if (!isSavingThrowActive(system, idx, extraCostTier)) continue;
-    parts.push(await renderSpellEffectSaveButtonHTML(item, idx, 0, (castFx.dcBonus[idx] ?? 0) + ocDc, extraCostTier, extraCostCounts));
+    parts.push(await renderSpellEffectSaveButtonHTML(item, idx, 0, (castFx.dcBonus[idx] ?? 0) + ocDc, extraCostTier, extraCostCounts, element));
   }
 
   // 12b. A saving throw an extra-cost step makes necessary, with no damage
@@ -826,7 +900,15 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
   }
 
   // 13. Status/Foundry effects applied unconditionally.
-  parts.push(renderSpellEffectApplyButtonHTML(item, 'unconditional', extraCostTier, extraCostCounts));
+  parts.push(renderSpellEffectApplyButtonHTML(item, 'unconditional', extraCostTier, extraCostCounts, element));
+
+  // "Bis Nutzung": an effect this cast used (an attack/damage was rolled) is
+  // removed now - see helpers/extraDamage.mjs#consumeUsedEffects.
+  if (actor) {
+    parts.push(await consumeUsedEffects(actor, {
+      kind: 'spell', school: extraSchool, damageTypes: [...dealtTypes], rolled: attacksEnabled || damageRolled,
+    }, usedEffects));
+  }
 
   return parts;
 }
@@ -928,12 +1010,21 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
     if (variableAp !== system.variableApPaid) await item.update({ 'system.variableApPaid': variableAp });
   }
 
+  // An element-choice spell (data/spell.mjs#elementChoice): "choice" asks
+  // which element once (closing the prompt aborts the cast); each cast then
+  // resolves it - a "random" pick (or mode "random") is rolled per cast.
+  let elementPick = null;
+  if (actor && system.elementChoice?.mode === 'choice' && getSpellElementOptions(system).length) {
+    elementPick = await promptSpellElement(item);
+    if (elementPick === null) return;
+  }
+
   // Casting the same spell several times in a row (Shift+Click dialog, only
   // outside Combat - see canCastSpellMultiple): one compact card instead.
   castCount = canCastSpellMultiple(item)
     ? Math.max(1, Math.min(MAX_MULTI_CAST, Math.floor(Number(castCount)) || 1))
     : 1;
-  const ctx = { overchargeCount, extraCostTier, extraCostCounts, variableMana, variableAp, altResourceIndex };
+  const ctx = { overchargeCount, extraCostTier, extraCostCounts, variableMana, variableAp, altResourceIndex, element: null, variants: [] };
 
   // 1. Heading, 2. Magic school.
   const parts = [formatRollCardHeading(item.name)];
@@ -946,14 +1037,21 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
     parts.push(...(await renderSpellInfoParts(item, ctx, true)));
     let totalMana = 0;
     for (let number = 1; number <= castCount; number++) {
-      const paid = await paySpellCast(item, ctx);
+      // Varianten (helpers/spellVariants.mjs): re-detected for every cast, so
+      // a marker with "Bis Nutzung" only changes the first of them.
+      const found = detectSpellVariants(item);
+      const castItem = createVariantItem(item, found.indexes);
+      const cast = await resolveCastElement(castItem, elementPick);
+      const castCtx = { ...ctx, element: cast.element, variants: found.indexes };
+      const paid = await paySpellCast(castItem, castCtx);
       if (paid.aborted) {
         if (number === 1) return;
         break;
       }
       totalMana += paid.manaCost;
-      const entry = [`<div class="sksk-multicast-heading">${game.i18n.format('SKSK.Spell.Roll.MultiCastNumber', { number, total: castCount })}</div>`, ...paid.parts];
-      if (!paid.deferred) entry.push(...(await renderSpellEffectParts(item, overchargeCount, extraCostTier, extraCostCounts, variableMana)));
+      const markerHTML = await consumeVariantMarkers(actor, found.markerIds);
+      const entry = [`<div class="sksk-multicast-heading">${game.i18n.format('SKSK.Spell.Roll.MultiCastNumber', { number, total: castCount })}</div>`, renderVariantLines(item, found.indexes), markerHTML, cast.html, ...paid.parts];
+      if (!paid.deferred) entry.push(...(await renderSpellEffectParts(castItem, overchargeCount, extraCostTier, extraCostCounts, variableMana, cast.element)));
       parts.push(`<div class="sksk-multicast-entry">${entry.join('')}</div>`);
     }
     if (actor && totalMana > 0) {
@@ -962,12 +1060,21 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
     return postSpellChatCard(item, parts);
   }
 
-  const paid = await paySpellCast(item, ctx);
+  // Varianten (helpers/spellVariants.mjs): markers on the caster that change
+  // this cast - everything below runs on the variant-modified stand-in item.
+  const found = detectSpellVariants(item);
+  const castItem = createVariantItem(item, found.indexes);
+  const cast = await resolveCastElement(castItem, elementPick);
+  ctx.element = cast.element;
+  ctx.variants = found.indexes;
+  const paid = await paySpellCast(castItem, ctx);
   if (paid.aborted) return;
   parts.push(...paid.parts);
-  parts.push(...(await renderSpellInfoParts(item, ctx, false)));
+  parts.push(renderVariantLines(item, found.indexes), await consumeVariantMarkers(actor, found.markerIds));
+  if (cast.html) parts.push(cast.html);
+  parts.push(...(await renderSpellInfoParts(castItem, ctx, false)));
   if (!paid.deferred) {
-    parts.push(...(await renderSpellEffectParts(item, overchargeCount, extraCostTier, extraCostCounts, variableMana)));
+    parts.push(...(await renderSpellEffectParts(castItem, overchargeCount, extraCostTier, extraCostCounts, variableMana, cast.element)));
   }
 
   return postSpellChatCard(item, parts);
@@ -993,7 +1100,9 @@ export function canCastSpellMultiple(item) {
  * a repeated cast can run it once per cast. Posts nothing itself.
  * @param {Item} item
  * @param {{overchargeCount: number, extraCostTier: number, extraCostCounts: number[],
- *   variableMana: number|null, variableAp: number|null, altResourceIndex: number}} ctx
+ *   variableMana: number|null, variableAp: number|null, altResourceIndex: number,
+ *   element: string|null, variants: number[]}} ctx   element: this cast's element (see
+ *   data/spell.mjs#elementChoice), kept on a pending spell until it resolves.
  * @return {Promise<{aborted: boolean, parts: string[], deferred: boolean, manaCost: number}>}
  *   aborted: the cast was blocked (a notification was shown, nothing paid).
  *   deferred: its effect has to wait for an AP/ritual debt to be paid off.
@@ -1025,7 +1134,7 @@ async function paySpellCast(item, ctx) {
       }
       if (system.apCostUnit === 'minutes') {
         const totalRounds = Math.max(1, system.apCost) * ROUNDS_PER_MINUTE;
-        await actor.update({ 'system.pendingSpell': { itemId: item.id, apCost: 0, roundsRemaining: totalRounds, overchargeCount, extraCostTier, extraCostCounts, variableMana: variableMana ?? 0 } });
+        await actor.update({ 'system.pendingSpell': { itemId: item.id, apCost: 0, roundsRemaining: totalRounds, overchargeCount, extraCostTier, extraCostCounts, variableMana: variableMana ?? 0, element: ctx.element ?? '', variants: ctx.variants ?? [] } });
         await setStatusStacks(actor, 'concentration', 1);
         parts.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.RitualMinutesStarted', { minutes: system.apCost, rounds: totalRounds })}</div>`);
         deferred = true;
@@ -1078,7 +1187,7 @@ async function paySpellCast(item, ctx) {
         }
 
         if (remaining > 0) {
-          await actor.update({ 'system.pendingSpell': { itemId: item.id, apCost: remaining, roundsRemaining: 0, overchargeCount, extraCostTier, extraCostCounts, variableMana: variableMana ?? 0 } });
+          await actor.update({ 'system.pendingSpell': { itemId: item.id, apCost: remaining, roundsRemaining: 0, overchargeCount, extraCostTier, extraCostCounts, variableMana: variableMana ?? 0, element: ctx.element ?? '', variants: ctx.variants ?? [] } });
           await setStatusStacks(actor, 'concentration', 1);
           parts.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.ApOwed', { paid: paidNow, remaining })}</div>`);
           deferred = true;
@@ -1276,12 +1385,16 @@ async function postPendingSpellProgress(actor, label, lineHTML, reflexGrant) {
  * @param {number} [extraCostTier=0]
  * @return {Promise<void>}
  */
-async function resolvePendingSpell(actor, item, reflexGrant, overchargeCount = 0, extraCostTier = 0, extraCostCounts = [], variableMana = null) {
+async function resolvePendingSpell(actor, item, reflexGrant, overchargeCount = 0, extraCostTier = 0, extraCostCounts = [], variableMana = null, element = null, variants = []) {
   await actor.update({ 'system.pendingSpell.itemId': '' });
   await setStatusStacks(actor, 'concentration', 0);
   if (!item) return;
 
-  const parts = [formatRollCardHeading(item.name), ...(await renderSpellEffectParts(item, overchargeCount, extraCostTier, extraCostCounts, variableMana))];
+  const parts = [formatRollCardHeading(item.name)];
+  if (element) {
+    parts.push(`<div class="sksk-roll-line sksk-roll-element"><strong>${game.i18n.localize('SKSK.Spell.Element.Label')}:</strong> ${game.i18n.localize(CONFIG.SKSK.damageTypes[element] ?? element)}</div>`);
+  }
+  parts.push(...(await renderSpellEffectParts(createVariantItem(item, variants), overchargeCount, extraCostTier, extraCostCounts, variableMana, element)));
   parts.push(formatSkillFpGrantLine(reflexGrant));
   await postSpellChatCard(item, parts);
 }
@@ -1312,6 +1425,8 @@ export async function handlePendingSpellTurnStart(actor) {
   const extraCostTier = pending.extraCostTier ?? 0;
   const extraCostCounts = pending.extraCostCounts ?? [];
   const variableMana = item?.system.manaCostVariable ? (pending.variableMana ?? 0) : null;
+  const element = pending.element || null;
+  const variants = [...(pending.variants ?? [])];
 
   if (hasRoundsDebt) {
     const drained = actor.system.actionPoints.value;
@@ -1331,7 +1446,7 @@ export async function handlePendingSpellTurnStart(actor) {
       return;
     }
 
-    await resolvePendingSpell(actor, item, reflexGrant, overchargeCount, extraCostTier, extraCostCounts, variableMana);
+    await resolvePendingSpell(actor, item, reflexGrant, overchargeCount, extraCostTier, extraCostCounts, variableMana, element, variants);
     return;
   }
 
@@ -1353,7 +1468,7 @@ export async function handlePendingSpellTurnStart(actor) {
     return;
   }
 
-  await resolvePendingSpell(actor, item, reflexGrant, overchargeCount, extraCostTier, extraCostCounts, variableMana);
+  await resolvePendingSpell(actor, item, reflexGrant, overchargeCount, extraCostTier, extraCostCounts, variableMana, element, variants);
 }
 
 /**
@@ -1451,8 +1566,9 @@ async function resolveAndRollSavingThrow(rollingActor, casterItem, save, saveInd
  *   data-contest-total for a "Wettstreit" (contest) saving throw.
  * @return {Promise<ChatMessage|void>}
  */
-export async function rollSavingThrowFromChat(itemUuid, saveIndex, overchargeCount = 0, ignoreSpecial = false, contestTotal = null, dcBonus = 0) {
-  const item = await fromUuid(itemUuid);
+export async function rollSavingThrowFromChat(itemUuid, saveIndex, overchargeCount = 0, ignoreSpecial = false, contestTotal = null, dcBonus = 0, variants = []) {
+  const realItem = await fromUuid(itemUuid);
+  const item = realItem ? createVariantItem(realItem, variants) : null;
   if (!item) return ui.notifications.warn(game.i18n.localize('SKSK.Spell.Roll.ItemNotFound'));
 
   const save = item.system.savingThrows?.[saveIndex];
@@ -1496,8 +1612,8 @@ export async function rollSavingThrowFromChat(itemUuid, saveIndex, overchargeCou
  * @param {number} [overchargeCount=0]
  * @return {Promise<string>}
  */
-async function renderSpellEffectSaveButtonHTML(item, savingThrowIndex, overchargeCount = 0, dcBonus = 0, extraCostTier = 0, extraCostCounts = []) {
-  const extraAttrs = `data-extra-tier="${extraCostTier}" data-extra-counts="${extraCostCounts.join(',')}"`;
+async function renderSpellEffectSaveButtonHTML(item, savingThrowIndex, overchargeCount = 0, dcBonus = 0, extraCostTier = 0, extraCostCounts = [], element = null) {
+  const extraAttrs = `data-extra-tier="${extraCostTier}" data-extra-counts="${extraCostCounts.join(',')}"${element ? ` data-element="${element}"` : ''} data-variants="${variantAttribute(item)}"`;
   const save = item.system.savingThrows?.[savingThrowIndex];
   if (!save) return '';
   const label = save.label || game.i18n.format('SKSK.Spell.SavingThrow.Numbered', { number: savingThrowIndex + 1 });
@@ -1535,8 +1651,9 @@ async function renderSpellEffectSaveButtonHTML(item, savingThrowIndex, overcharg
  *   data-contest-total for a "Wettstreit" (contest) saving throw.
  * @return {Promise<ChatMessage|void>}
  */
-export async function rollSpellEffectSaveFromChat(itemUuid, saveIndex, overchargeCount = 0, ignoreSpecial = false, contestTotal = null, dcBonus = 0, extraCostTier = 0, extraCostCounts = []) {
-  const item = await fromUuid(itemUuid);
+export async function rollSpellEffectSaveFromChat(itemUuid, saveIndex, overchargeCount = 0, ignoreSpecial = false, contestTotal = null, dcBonus = 0, extraCostTier = 0, extraCostCounts = [], element = null, variants = []) {
+  const realItem = await fromUuid(itemUuid);
+  const item = realItem ? createVariantItem(realItem, variants) : null;
   if (!item) return ui.notifications.warn(game.i18n.localize('SKSK.Spell.Roll.ItemNotFound'));
 
   const save = item.system.savingThrows?.[saveIndex];
@@ -1549,7 +1666,7 @@ export async function rollSpellEffectSaveFromChat(itemUuid, saveIndex, overcharg
   if (!mode) return;
 
   const r = await resolveAndRollSavingThrow(actor, item, save, saveIndex, overchargeCount, mode, ignoreSpecial, contestTotal, dcBonus);
-  const appliedHTML = r.success ? '' : await applySpellEffectGroup(itemUuid, 'save', saveIndex, actor, extraCostTier, extraCostCounts);
+  const appliedHTML = r.success ? '' : await applySpellEffectGroup(itemUuid, 'save', saveIndex, actor, extraCostTier, extraCostCounts, element, variants);
 
   const vsLabel = r.isContest ? game.i18n.format('SKSK.Spell.Roll.VsContestTotal', { total: r.dc }) : `DC ${r.dc}`;
   const flavor = `${r.saveLabel} (${r.best.label}) ${game.i18n.localize('SKSK.Spell.Roll.Vs')} ${vsLabel}: ${r.outcome}`;
@@ -1589,10 +1706,10 @@ function spellHasEffectsForGroup(system, group, extraCostTier = 0) {
  * @param {"attack"|"unconditional"} group
  * @return {string}
  */
-function renderSpellEffectApplyButtonHTML(item, group, extraCostTier = 0, extraCostCounts = []) {
+function renderSpellEffectApplyButtonHTML(item, group, extraCostTier = 0, extraCostCounts = [], element = null) {
   if (!spellHasEffectsForGroup(item.system, group, extraCostTier)) return '';
   return `<button type="button" class="sksk-apply-damage" data-action="applySpellEffect"
-    data-item-uuid="${item.uuid}" data-group="${group}" data-extra-tier="${extraCostTier}" data-extra-counts="${extraCostCounts.join(',')}">
+    data-item-uuid="${item.uuid}" data-group="${group}" data-extra-tier="${extraCostTier}" data-extra-counts="${extraCostCounts.join(',')}"${element ? ` data-element="${element}"` : ''} data-variants="${variantAttribute(item)}">
     ${game.i18n.localize('SKSK.Spell.ApplyEffect')}
   </button>`;
 }
@@ -1607,12 +1724,12 @@ function renderSpellEffectApplyButtonHTML(item, group, extraCostTier = 0, extraC
  * @param {"attack"|"unconditional"} group
  * @return {Promise<ChatMessage|void>}
  */
-export async function applySpellEffectFromChat(itemUuid, group, extraCostTier = 0, extraCostCounts = []) {
+export async function applySpellEffectFromChat(itemUuid, group, extraCostTier = 0, extraCostCounts = [], element = null, variants = []) {
   const item = await fromUuid(itemUuid);
   const defender = resolveClickDefender(item?.actor ?? null);
   if (!defender) return ui.notifications.warn(game.i18n.localize('SKSK.AttackRoll.NoDefender'));
 
-  const html = await applySpellEffectGroup(itemUuid, group, null, defender, extraCostTier, extraCostCounts);
+  const html = await applySpellEffectGroup(itemUuid, group, null, defender, extraCostTier, extraCostCounts, element, variants);
   const messageData = {
     speaker: ChatMessage.getSpeaker({ actor: defender }),
     flavor: item?.name ?? '',

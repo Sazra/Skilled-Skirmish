@@ -105,6 +105,10 @@ export default class SKSKSpell extends SKSKItemBase {
     schema.apCostVariable = new fields.BooleanField({ required: true, initial: false });
     schema.apCostMin = new fields.NumberField({ ...requiredInteger, initial: 1, min: 0 });
     schema.variableApPaid = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+    // Switch: this spell's AP cost can't be reduced - neither by the school/
+    // Active-Effect AP reductions nor by Chant Shortening (see helpers/
+    // spells.mjs#computeSpellApCost). Überladen's surcharge still applies.
+    schema.apCostFixed = new fields.BooleanField({ required: true, initial: false });
     // What apCost's own number actually counts - a flat AP amount (the
     // default), a casting time in minutes/hours/days, or a flat RP amount
     // (unit "rp" - see rpCost below for the different, additive-RP case).
@@ -260,6 +264,29 @@ export default class SKSKSpell extends SKSKItemBase {
       durationText: new fields.StringField({ required: true, blank: true, initial: "" }),
     });
 
+    // An element picked (or rolled) for every single cast, which the spell's
+    // effect then adapts to - see helpers/spells.mjs#SPELL_ELEMENT/
+    // resolveSpellDamages and helpers/damageApplication.mjs#
+    // applySpellEffectGroup:
+    // - Damage entries whose type is "Gewähltes Element" deal that element.
+    // - "{element}" in the key/value/name of a Foundry effect's changes is
+    //   replaced by the element's key when it is applied (e.g. key
+    //   "system.skillLevelBonus.{element}Resistance" = a resistance to
+    //   whichever element was chosen).
+    // mode: "none" (off), "choice" (the caster picks one of the allowed
+    // elements at cast time - optionally with a "random" option too, for
+    // spells where choosing is gated by a check) or "random" (rolled by the
+    // system, 1dN over the allowed elements, again for every cast).
+    schema.elementChoice = new fields.SchemaField({
+      mode: new fields.StringField({ required: true, blank: false, initial: "none", choices: ["none", "choice", "random"] }),
+      allowRandom: new fields.BooleanField({ required: true, initial: false }),
+      // Which elements may be chosen/rolled (a damage type each, see
+      // CONFIG.SKSK.damageTypes) - all of them by default.
+      allowed: new fields.SchemaField(Object.fromEntries(
+        Object.keys(CONFIG.SKSK.damageTypes).map(key => [key, new fields.BooleanField({ required: true, initial: true })])
+      )),
+    });
+
     // Switch: this spell's damage ignores the target's Barrier and goes
     // straight to Life - see helpers/damageApplication.mjs#
     // applyResolvedDamageEntries (damage entries carry it as ignoresBarrier).
@@ -398,6 +425,59 @@ export default class SKSKSpell extends SKSKItemBase {
         choices: ["attack", "save", "unconditional"]
       }),
       savingThrowIndex: new fields.NumberField({ required: false, nullable: true, integer: true, initial: null }),
+    }));
+
+    // Varianten: extra effects this spell triggers when a marker is present
+    // on the caster - e.g. the Trickkunst "Infusion" spells or "Wasser
+    // sammeln" (which merely put a status/effect on the caster) change the
+    // NEXT spell cast. A variant is active while ALL its conditions are met
+    // by the caster's active effects/statuses; its changes then apply to
+    // this cast only (see helpers/spellVariants.mjs):
+    // - changes: edits of any option of the spell, addressed by a path into
+    //   its system data (e.g. "manaCost", "ranges.0.distance",
+    //   "damages.0.formula", "duration") - set / add / multiply / append.
+    // - addDamages/addStatusEffects: extra Damage/Status Effect entries.
+    // - note: a free text line shown on the chat card.
+    // A matching marker with the duration option "Bis Nutzung" is removed
+    // once it was used by a cast; one with any other duration triggers the
+    // variant on every cast while it lasts.
+    schema.variants = new fields.ArrayField(new fields.SchemaField({
+      label: new fields.StringField({ required: true, blank: true, initial: "" }),
+      note: new fields.StringField({ required: true, blank: true, initial: "" }),
+      conditions: new fields.ArrayField(new fields.SchemaField({
+        // "status": a status effect id (see the world's Status Effects);
+        // "effect": an Active Effect with exactly this name.
+        kind: new fields.StringField({ required: true, blank: false, initial: "status", choices: ["status", "effect"] }),
+        key: new fields.StringField({ required: true, blank: true, initial: "" }),
+      })),
+      changes: new fields.ArrayField(new fields.SchemaField({
+        key: new fields.StringField({ required: true, blank: true, initial: "" }),
+        type: new fields.StringField({ required: true, blank: false, initial: "add", choices: ["set", "add", "multiply", "append"] }),
+        value: new fields.StringField({ required: true, blank: true, initial: "" }),
+      })),
+      addDamages: new fields.ArrayField(new fields.SchemaField({
+        formula: new fields.StringField({ required: true, blank: true, initial: "1d6" }),
+        damageType: new fields.StringField({ required: true, blank: false, initial: "fire" }),
+        trigger: new fields.StringField({ required: true, blank: false, initial: "unconditional", choices: ["attack", "save", "unconditional"] }),
+        savingThrowIndex: new fields.NumberField({ required: false, nullable: true, integer: true, initial: null }),
+        extraCostIndex: new fields.NumberField({ required: false, nullable: true, integer: true, initial: null }),
+        attributeBonuses: new fields.ArrayField(new fields.SchemaField({
+          attribute: new fields.StringField({ required: true, blank: false, initial: "str" }),
+          useModifier: new fields.BooleanField({ initial: true }),
+          formula: new fields.StringField({ required: true, blank: true, initial: "@value" }),
+        })),
+        skillBonuses: new fields.ArrayField(new fields.SchemaField({
+          skill: new fields.StringField({ required: true, blank: false, initial: "axe" }),
+          formula: new fields.StringField({ required: true, blank: true, initial: "@value" }),
+        })),
+      })),
+      addStatusEffects: new fields.ArrayField(new fields.SchemaField({
+        statusId: new fields.StringField({ required: true, blank: true, initial: "" }),
+        stacks: new fields.NumberField({ ...requiredInteger, initial: 1, min: 1 }),
+        extraCostIndex: new fields.NumberField({ required: false, nullable: true, integer: true, initial: null }),
+        trigger: new fields.StringField({ required: true, blank: false, initial: "unconditional", choices: ["attack", "save", "unconditional"] }),
+        savingThrowIndex: new fields.NumberField({ required: false, nullable: true, integer: true, initial: null }),
+      })),
     }));
 
     return schema;

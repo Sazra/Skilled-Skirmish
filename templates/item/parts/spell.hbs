@@ -116,6 +116,13 @@
     </div>
 
     <div class="resource">
+      <label class="resource-label casting-method-option" title="{{localize 'SKSK.Spell.ApCostFixedHint'}}">
+        <input type="checkbox" name="system.apCostFixed" {{checked system.apCostFixed}} />
+        {{localize 'SKSK.Spell.ApCostFixed'}}
+      </label>
+    </div>
+
+    <div class="resource">
       <label class="resource-label" title="{{localize 'SKSK.Spell.ExtraManaCostsHint'}}">{{localize 'SKSK.Spell.ExtraManaCostsLabel'}}</label>
       <ol class="items-list items-list-compact">
         <li class="item flexrow items-header">
@@ -861,6 +868,202 @@
         </li>
         {{/each}}
       </ol>
+    </div>
+
+  </section>
+
+  <section class="tab" data-group="spellSections" data-tab="variants">
+
+    <p class="hint">{{localize 'SKSK.Spell.Variant.Hint'}}</p>
+
+    <datalist id="sksk-variant-keys">
+      {{#each variantChangeKeys as |key|}}<option value="{{key}}"></option>{{/each}}
+    </datalist>
+
+    <div class="resource">
+      <label class="resource-label">
+        {{localize 'SKSK.Spell.Variant.Label'}}
+        <a class="item-control item-create" data-action="addVariant" title="{{localize 'SKSK.Spell.Variant.Add'}}">
+          <i class="fas fa-plus"></i>
+        </a>
+      </label>
+
+      {{#each system.variants as |variant index|}}
+      <fieldset class="spell-variant">
+        <legend>
+          {{index}}: {{#if variant.label}}{{variant.label}}{{else}}{{localize 'SKSK.Spell.Variant.Unnamed'}}{{/if}}
+          <a class="item-control item-delete" data-action="removeArrayEntry" data-field="variants" data-index="{{index}}"
+            title="{{localize 'SKSK.Spell.Variant.Remove'}}"><i class="fas fa-trash"></i></a>
+        </legend>
+
+        <div class="grid grid-2col">
+          <div class="resource">
+            <label class="resource-label">{{localize 'SKSK.Spell.Variant.Name'}}</label>
+            <input type="text" name="system.variants.{{index}}.label" value="{{variant.label}}" />
+          </div>
+          <div class="resource">
+            <label class="resource-label" title="{{localize 'SKSK.Spell.Variant.NoteHint'}}">{{localize 'SKSK.Spell.Variant.Note'}}</label>
+            <input type="text" name="system.variants.{{index}}.note" value="{{variant.note}}" />
+          </div>
+        </div>
+
+        <div class="resource">
+          <label class="resource-label" title="{{localize 'SKSK.Spell.Variant.ConditionsHint'}}">{{localize 'SKSK.Spell.Variant.Conditions'}}</label>
+          <ol class="items-list items-list-compact">
+            <li class="item flexrow items-header">
+              <div class="item-name">{{localize 'SKSK.Spell.Variant.Kind'}}</div>
+              <div class="item-name">{{localize 'SKSK.Spell.Variant.Marker'}}</div>
+              <div class="item-controls">
+                <a class="item-control item-create" data-action="addVariantCondition" data-parent-index="{{index}}"
+                  title="{{localize 'SKSK.Spell.Variant.AddCondition'}}"><i class="fas fa-plus"></i></a>
+              </div>
+            </li>
+            {{#each variant.conditions as |cond ci|}}
+            <li class="item flexrow">
+              <div class="item-name">
+                <select name="system.variants.{{index}}.conditions.{{ci}}.kind">
+                  {{selectOptions ../../variantConditionKindChoices selected=cond.kind localize=true}}
+                </select>
+              </div>
+              <div class="item-name">
+                {{#if (eq cond.kind "status")}}
+                <select name="system.variants.{{index}}.conditions.{{ci}}.key">
+                  <option value=""></option>
+                  {{selectOptions ../../statusEffectChoices selected=cond.key}}
+                </select>
+                {{else}}
+                <input type="text" name="system.variants.{{index}}.conditions.{{ci}}.key" value="{{cond.key}}"
+                  placeholder="{{localize 'SKSK.Spell.Variant.EffectNamePlaceholder'}}" />
+                {{/if}}
+              </div>
+              <div class="item-controls">
+                <a class="item-control item-delete" data-action="removeNestedArrayEntry" data-parent-field="variants"
+                  data-parent-index="{{index}}" data-field="conditions" data-index="{{ci}}"><i class="fas fa-trash"></i></a>
+              </div>
+            </li>
+            {{/each}}
+          </ol>
+        </div>
+
+        <div class="resource">
+          <label class="resource-label" title="{{localize 'SKSK.Spell.Variant.ChangesHint'}}">{{localize 'SKSK.Spell.Variant.Changes'}}</label>
+          <ol class="items-list items-list-compact">
+            <li class="item flexrow items-header">
+              <div class="item-name">{{localize 'SKSK.Spell.Variant.Option'}}</div>
+              <div class="item-name">{{localize 'SKSK.Spell.Variant.Type'}}</div>
+              <div class="item-name">{{localize 'SKSK.General.Value'}}</div>
+              <div class="item-controls">
+                <a class="item-control item-create" data-action="addVariantChange" data-parent-index="{{index}}"
+                  title="{{localize 'SKSK.Spell.Variant.AddChange'}}"><i class="fas fa-plus"></i></a>
+              </div>
+            </li>
+            {{#each variant.changes as |change ci|}}
+            <li class="item flexrow">
+              <div class="item-name">
+                <input type="text" list="sksk-variant-keys" name="system.variants.{{index}}.changes.{{ci}}.key" value="{{change.key}}" />
+              </div>
+              <div class="item-name">
+                <select name="system.variants.{{index}}.changes.{{ci}}.type">
+                  {{selectOptions ../../variantChangeTypeChoices selected=change.type localize=true}}
+                </select>
+              </div>
+              <div class="item-name">
+                <input type="text" name="system.variants.{{index}}.changes.{{ci}}.value" value="{{change.value}}" />
+              </div>
+              <div class="item-controls">
+                <a class="item-control item-delete" data-action="removeNestedArrayEntry" data-parent-field="variants"
+                  data-parent-index="{{index}}" data-field="changes" data-index="{{ci}}"><i class="fas fa-trash"></i></a>
+              </div>
+            </li>
+            {{/each}}
+          </ol>
+        </div>
+
+        <div class="resource">
+          <label class="resource-label">{{localize 'SKSK.Spell.Variant.AddDamages'}}</label>
+          <ol class="items-list items-list-compact">
+            <li class="item flexrow items-header">
+              <div class="item-name">Formula</div>
+              <div class="item-name">{{localize 'SKSK.General.Type'}}</div>
+              <div class="item-name">Trigger</div>
+              <div class="item-controls">
+                <a class="item-control item-create" data-action="addVariantDamage" data-parent-index="{{index}}"
+                  title="{{localize 'SKSK.Spell.Variant.AddDamage'}}"><i class="fas fa-plus"></i></a>
+              </div>
+            </li>
+            {{#each variant.addDamages as |dmg di|}}
+            <li class="item flexrow">
+              <div class="item-name">
+                <input type="text" name="system.variants.{{index}}.addDamages.{{di}}.formula" value="{{dmg.formula}}" />
+              </div>
+              <div class="item-name">
+                <select name="system.variants.{{index}}.addDamages.{{di}}.damageType">
+                  {{selectOptions ../../damageTypeChoices selected=dmg.damageType localize=true}}
+                </select>
+              </div>
+              <div class="item-name">
+                <select name="system.variants.{{index}}.addDamages.{{di}}.trigger">
+                  {{selectOptions ../../spellTriggerChoices selected=dmg.trigger localize=true}}
+                </select>
+                {{#if (eq dmg.trigger "save")}}
+                <select name="system.variants.{{index}}.addDamages.{{di}}.savingThrowIndex">
+                  {{selectOptions ../../savingThrowChoices selected=dmg.savingThrowIndex}}
+                </select>
+                {{/if}}
+              </div>
+              <div class="item-controls">
+                <a class="item-control item-delete" data-action="removeNestedArrayEntry" data-parent-field="variants"
+                  data-parent-index="{{index}}" data-field="addDamages" data-index="{{di}}"><i class="fas fa-trash"></i></a>
+              </div>
+            </li>
+            {{/each}}
+          </ol>
+        </div>
+
+        <div class="resource">
+          <label class="resource-label">{{localize 'SKSK.Spell.Variant.AddStatuses'}}</label>
+          <ol class="items-list items-list-compact">
+            <li class="item flexrow items-header">
+              <div class="item-name">Status Effect</div>
+              <div class="item-name">{{localize 'SKSK.General.Value'}}</div>
+              <div class="item-name">Trigger</div>
+              <div class="item-controls">
+                <a class="item-control item-create" data-action="addVariantStatus" data-parent-index="{{index}}"
+                  title="{{localize 'SKSK.Spell.AddStatusEffect'}}"><i class="fas fa-plus"></i></a>
+              </div>
+            </li>
+            {{#each variant.addStatusEffects as |fx si|}}
+            <li class="item flexrow">
+              <div class="item-name">
+                <select name="system.variants.{{index}}.addStatusEffects.{{si}}.statusId">
+                  <option value=""></option>
+                  {{selectOptions ../../statusEffectChoices selected=fx.statusId}}
+                </select>
+              </div>
+              <div class="item-name">
+                <input type="text" name="system.variants.{{index}}.addStatusEffects.{{si}}.stacks" value="{{fx.stacks}}" data-dtype="Number" />
+              </div>
+              <div class="item-name">
+                <select name="system.variants.{{index}}.addStatusEffects.{{si}}.trigger">
+                  {{selectOptions ../../spellTriggerChoices selected=fx.trigger localize=true}}
+                </select>
+                {{#if (eq fx.trigger "save")}}
+                <select name="system.variants.{{index}}.addStatusEffects.{{si}}.savingThrowIndex">
+                  {{selectOptions ../../savingThrowChoices selected=fx.savingThrowIndex}}
+                </select>
+                {{/if}}
+              </div>
+              <div class="item-controls">
+                <a class="item-control item-delete" data-action="removeNestedArrayEntry" data-parent-field="variants"
+                  data-parent-index="{{index}}" data-field="addStatusEffects" data-index="{{si}}"><i class="fas fa-trash"></i></a>
+              </div>
+            </li>
+            {{/each}}
+          </ol>
+        </div>
+
+      </fieldset>
+      {{/each}}
     </div>
 
   </section>

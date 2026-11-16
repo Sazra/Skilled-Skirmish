@@ -36,6 +36,8 @@ import { initGmRelay } from './helpers/gmRelay.mjs';
 import { createMacroFromDrop, runRollMacro, rollItemMacro } from './helpers/macroRolls.mjs';
 import { registerItemPilesIntegration } from './helpers/itemPiles.mjs';
 import * as models from './data/_module.mjs';
+import { EXTRA_DAMAGE_USE_EVENT } from './helpers/extraDamage.mjs';
+import { parseVariantAttribute } from './helpers/spellVariants.mjs';
 
 Hooks.once('init', function () {
   game.sksk = {
@@ -46,6 +48,23 @@ Hooks.once('init', function () {
   };
 
   CONFIG.SKSK = SKSK;
+
+  // "Bis Nutzung" (until used): an extra choice for an Active Effect's own
+  // duration "Expiry". Unlike Foundry's built-in events it never fires on its
+  // own - helpers/extraDamage.mjs#consumeUsedEffects removes such an effect
+  // once an attack/spell roll has used it.
+  CONFIG.ActiveEffect.expiryEvents[EXTRA_DAMAGE_USE_EVENT] = 'SKSK.Effect.ExpiryUsed';
+  // Foundry only lets an effect with an expiry event expire once that event
+  // fires AFTER its duration ran out. "Bis Nutzung" must also work together
+  // with a duration - "until the duration runs out OR it is used" - so for
+  // such an effect the duration alone ends it (any registry refresh counts as
+  // the event; an effect without a duration never expires by time).
+  const effectProto = CONFIG.ActiveEffect.documentClass.prototype;
+  const baseIsExpiryEvent = effectProto.isExpiryEvent;
+  effectProto.isExpiryEvent = function (event, context) {
+    if (this.duration?.expiry === EXTRA_DAMAGE_USE_EVENT) return Number.isFinite(this.duration.value);
+    return baseIsExpiryEvent.call(this, event, context);
+  };
 
   // Foundry's own "invisible" token behaviour (half-transparent filter for
   // the GM/owner, undetectable by sight) belongs to this system's own
@@ -237,7 +256,7 @@ Hooks.once('ready', async function () {
     rollSavingThrowFromChat(
       button.dataset.itemUuid, Number(button.dataset.saveIndex), Number(button.dataset.overcharge) || 0, event.shiftKey,
       button.dataset.contestTotal !== undefined ? Number(button.dataset.contestTotal) : null,
-      Number(button.dataset.dcBonus) || 0
+      Number(button.dataset.dcBonus) || 0, parseVariantAttribute(button.dataset.variants)
     );
   });
 
@@ -326,7 +345,8 @@ Hooks.once('ready', async function () {
       button.dataset.itemUuid, Number(button.dataset.saveIndex), Number(button.dataset.overcharge) || 0, event.shiftKey,
       button.dataset.contestTotal !== undefined ? Number(button.dataset.contestTotal) : null,
       Number(button.dataset.dcBonus) || 0,
-      Number(button.dataset.extraTier) || 0, parseExtraCounts(button.dataset.extraCounts)
+      Number(button.dataset.extraTier) || 0, parseExtraCounts(button.dataset.extraCounts),
+      button.dataset.element || null, parseVariantAttribute(button.dataset.variants)
     );
   });
 
@@ -337,7 +357,7 @@ Hooks.once('ready', async function () {
     const button = event.target.closest('[data-action="applySpellEffect"]');
     if (!button) return;
     event.preventDefault();
-    applySpellEffectFromChat(button.dataset.itemUuid, button.dataset.group, Number(button.dataset.extraTier) || 0, parseExtraCounts(button.dataset.extraCounts));
+    applySpellEffectFromChat(button.dataset.itemUuid, button.dataset.group, Number(button.dataset.extraTier) || 0, parseExtraCounts(button.dataset.extraCounts), button.dataset.element || null, parseVariantAttribute(button.dataset.variants));
   });
 
   // A weapon's attributeOverride enforces the same single-attribute rule

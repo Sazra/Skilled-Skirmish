@@ -939,7 +939,9 @@ export function computeSpellApCost(spellSystem, actor, overchargeCount = 0, vari
     apCost = Math.max(spellSystem.apCostMin ?? 0, Number(variableAp ?? spellSystem.variableApPaid ?? 0) || 0);
   }
 
-  if (isSpellDiscountEligible(spellSystem, actor)) {
+  // A spell with "AP-Kosten nicht reduzierbar" skips every AP reduction
+  // (school/Active-Effect reductions and Chant Shortening alike).
+  if (!spellSystem.apCostFixed && isSpellDiscountEligible(spellSystem, actor)) {
     const school = getSpellSchool(spellSystem);
     apCost -= getApCostReduction(actor, spellSystem.spellType, school);
 
@@ -951,4 +953,54 @@ export function computeSpellApCost(spellSystem, actor, overchargeCount = 0, vari
 
   const floor = (spellSystem.rpCost ?? 0) > 0 ? 0 : 1;
   return Math.max(floor, Math.floor(apCost)) + getOverchargeSurcharges(spellSystem, actor).apCost * overchargeCount;
+}
+
+/**
+ * The marker a Spell's Damage entry carries as its damage type to mean "the
+ * element chosen/rolled for this cast" (see data/spell.mjs#elementChoice).
+ */
+export const SPELL_ELEMENT = '@element';
+
+/**
+ * The elements a spell with an element choice (data/spell.mjs#elementChoice)
+ * may use, in the order of CONFIG.SKSK.damageTypes (that order is also the
+ * table a "random" roll indexes into). Empty if the spell has no element
+ * choice at all.
+ * @param {object} spellSystem
+ * @return {string[]}
+ */
+export function getSpellElementOptions(spellSystem) {
+  const choice = spellSystem.elementChoice;
+  if (!choice || choice.mode === 'none') return [];
+  return Object.keys(CONFIG.SKSK.damageTypes).filter(key => choice.allowed?.[key] !== false);
+}
+
+/**
+ * A copy of a spell's Damage entries with every "chosen element" type
+ * replaced by the element of this cast (see SPELL_ELEMENT). A spell cast
+ * without any element falls back to the first allowed one (or Fire) so a
+ * misconfigured spell still rolls something sensible.
+ * @param {object[]} damages
+ * @param {string|null} element
+ * @param {object} [spellSystem]
+ * @return {object[]}
+ */
+export function resolveSpellDamages(damages, element, spellSystem = null) {
+  const fallback = element || (spellSystem ? getSpellElementOptions(spellSystem)[0] : null) || 'fire';
+  return (damages ?? []).map(damage => (damage.damageType === SPELL_ELEMENT ? { ...damage, damageType: fallback } : damage));
+}
+
+/**
+ * Replace the "{element}" placeholder (the element's key, e.g. "fire") and
+ * "{elementLabel}" (its localized name) in a string - used for the keys,
+ * values and name of a Foundry effect a spell applies (see helpers/
+ * damageApplication.mjs#applySpellEffectGroup).
+ * @param {string} text
+ * @param {string|null} element
+ * @return {string}
+ */
+export function replaceElementPlaceholders(text, element) {
+  if (typeof text !== 'string' || !element) return text;
+  const label = game.i18n.localize(CONFIG.SKSK.damageTypes[element] ?? element);
+  return text.replaceAll('{elementLabel}', label).replaceAll('{element}', element);
 }

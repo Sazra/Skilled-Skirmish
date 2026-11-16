@@ -8,6 +8,7 @@ import { computeMaxLife, computeMaxNegativeLife } from '../helpers/life.mjs';
 import { computeMaxMana } from '../helpers/mana.mjs';
 import { computeMaxActionPoints, computeMaxReactionPoints } from '../helpers/points.mjs';
 import { computeNaturalMaterialBonus, computeArmorClass, computeMagicResistance } from '../helpers/defense.mjs';
+import { buildExtraDamageSchema } from '../helpers/extraDamage.mjs';
 import {
   computeMaxMeditationCharges, computeMaxRegenerationCharges,
   computeMaxInspirationCharges, computeMaxAdrenalinCharges, computeMaxLuckCharges,
@@ -389,6 +390,13 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     schema.damageBonus = new fields.SchemaField(Object.fromEntries(
       Object.keys(CONFIG.SKSK.damageTypes).map(key => [key, new fields.NumberField({ ...requiredInteger, initial: 0 })])
     ));
+
+    // Zusatzschaden (extra damage) - Active Effect targets holding a flat
+    // number or dice formula (e.g. "system.extraDamage.weapons" = "1d6[fire]"),
+    // rolled as its own damage on top of the attack/spell it applies to. The
+    // values are read straight from the effects at roll time, see
+    // helpers/extraDamage.mjs.
+    schema.extraDamage = buildExtraDamageSchema(fields);
 
     // Per-attribute bonus to ONLY that attribute's own standalone roll button
     // - deliberately separate from attributeBonuses.modifier above (which
@@ -911,6 +919,12 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       extraCostCounts: new fields.ArrayField(new fields.NumberField({ ...requiredInteger, initial: 1, min: 1 })),
       // The base Mana amount chosen for a "?"-cost spell (scales its ranges).
       variableMana: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+      // The element this cast got (see data/spell.mjs#elementChoice) - blank
+      // for a spell without an element choice.
+      element: new fields.StringField({ required: true, blank: true, initial: "" }),
+      // The indexes of the spell's Varianten (data/spell.mjs#variants) that
+      // were active at cast time, carried through the same way.
+      variants: new fields.ArrayField(new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 })),
     });
     // Elementarladungen - an opt-in Bottom-Bar widget (see templates/actor/
     // parts/elemental-charges-bar.hbs) easing certain elemental-focused

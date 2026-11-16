@@ -213,6 +213,28 @@ export class SKSKEffectKeyReference extends HandlebarsApplicationMixin(Applicati
         rows: vocabRows(CONFIG.SKSK.damageTypes, 'system.damageBonus.'),
       },
       {
+        // Zusatzschaden - formula/number values, see helpers/extraDamage.mjs.
+        title: 'SKSK.EffectKeyReference.Category.ExtraDamage',
+        hint: 'SKSK.EffectKeyReference.Category.ExtraDamageHint',
+        rows: [
+          { label: game.i18n.localize('SKSK.EffectKeyReference.Category.ExtraDamageMartialArts'), key: 'system.extraDamage.martialArts' },
+          { label: game.i18n.localize('SKSK.EffectKeyReference.Category.ExtraDamageWeaponsAll'), key: 'system.extraDamage.weaponsAll' },
+          { label: game.i18n.localize('SKSK.EffectKeyReference.Category.ExtraDamageWeapons'), key: 'system.extraDamage.weapons' },
+          { label: game.i18n.localize('SKSK.EffectKeyReference.Category.ExtraDamageSpells'), key: 'system.extraDamage.spells' },
+          ...[
+            ...Object.entries(CONFIG.SKSK.simpleMagicSchools), ...Object.entries(CONFIG.SKSK.advancedMagicSchools),
+            ...Object.entries(CONFIG.SKSK.combinedMagicSchools),
+          ].map(([key, labelKey]) => ({
+            label: game.i18n.format('SKSK.EffectKeyReference.Category.ExtraDamageSchool', { school: game.i18n.localize(labelKey) }),
+            key: `system.extraDamage.schools.${key}`,
+          })),
+          ...Object.entries(CONFIG.SKSK.damageTypes).map(([key, labelKey]) => ({
+            label: game.i18n.format('SKSK.EffectKeyReference.Category.ExtraDamageElement', { element: game.i18n.localize(labelKey) }),
+            key: `system.extraDamage.elements.${key}`,
+          })),
+        ],
+      },
+      {
         title: 'SKSK.EffectKeyReference.Category.AttributeRoll',
         rows: vocabRows(CONFIG.SKSK.attributes, 'system.attributeRollBonus.'),
       },
