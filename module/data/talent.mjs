@@ -1,4 +1,5 @@
 import SKSKItemBase from "./item-base.mjs";
+import { buildTalentOnceAbilityFields } from "./abilityOnce.mjs";
 
 export default class SKSKTalent extends SKSKItemBase {
 
@@ -57,7 +58,7 @@ export default class SKSKTalent extends SKSKItemBase {
     // "ability" (rather than reusing "type", which would shadow this
     // Item's own document type "talent") since these all live directly on
     // this schema's root rather than nested in an array like Class/Species.
-    schema.abilityType = new fields.StringField({ required: true, blank: false, initial: "passive", choices: ["passive", "active"] });
+    schema.abilityType = new fields.StringField({ required: true, blank: false, initial: "passive", choices: ["passive", "active", "once"] });
     schema.abilityApCost = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
     schema.abilityRpCost = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
     schema.abilityManaCost = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
@@ -68,6 +69,10 @@ export default class SKSKTalent extends SKSKItemBase {
     schema.abilityActive = new fields.BooleanField({ initial: false });
     schema.abilityRoundsRemaining = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
     schema.abilityEffectId = new fields.StringField({ required: true, blank: true, initial: "" });
+    // Only for abilityType "once" (Aktiv, einmaliger Effekt) - linked Spell effect,
+    // charges and their recovery, see data/abilityOnce.mjs (same names as a
+    // Class/Species ability entry's, prefixed with "ability").
+    Object.assign(schema, buildTalentOnceAbilityFields(fields, requiredInteger));
 
     // Zero or more overrides granting the ability to cast spells from a
     // specific combined magic school (CONFIG.SKSK.combinedMagicSchools) up

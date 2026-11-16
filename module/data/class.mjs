@@ -1,4 +1,5 @@
 import SKSKItemBase from "./item-base.mjs";
+import { buildOnceAbilityFields } from "./abilityOnce.mjs";
 
 export default class SKSKClass extends SKSKItemBase {
 
@@ -72,7 +73,7 @@ export default class SKSKClass extends SKSKItemBase {
       // existing ability's own purely-descriptive behavior) shows no cost
       // fields or toggle button at all - see templates/actor/parts/
       // abilities.hbs.
-      type: new fields.StringField({ required: true, blank: false, initial: "passive", choices: ["passive", "active"] }),
+      type: new fields.StringField({ required: true, blank: false, initial: "passive", choices: ["passive", "active", "once"] }),
       apCost: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
       // 0 = "not set", mirrors apCost 1:1 for an off-turn activation instead
       // - same convention as data/technique.mjs#rpCost.
@@ -94,6 +95,10 @@ export default class SKSKClass extends SKSKItemBase {
         choices: ["none", "rollTwiceWeapon", "rollTwiceSpell", "rerollOnes"],
       }),
       damageRerollElement: new fields.StringField({ required: true, blank: true, initial: "" }),
+      // Only for type "once" (Aktiv, einmaliger Effekt): a one-off, spell-like
+      // activation - linked Spell effect, charges and their recovery. See
+      // data/abilityOnce.mjs and helpers/abilityRolls.mjs#useOnceAbility.
+      ...buildOnceAbilityFields(fields, requiredInteger),
     }), {
       // Every field spelled out: a partial entry here is not cleaned, so any
       // field left out fails validation ("may not be undefined") and makes a
@@ -102,17 +107,20 @@ export default class SKSKClass extends SKSKItemBase {
         {
           name: "", description: "", lifeBonusFormula: "0", manaBonusFormula: "0", patronAbilityIndex: 0,
           type: "passive", apCost: 0, rpCost: 0, manaCost: 0, durationRounds: 1, cooldownRounds: 0,
-          active: false, roundsRemaining: 0, effectId: "", damageRerollMode: "none", damageRerollElement: ""
+          active: false, roundsRemaining: 0, effectId: "", damageRerollMode: "none", damageRerollElement: "",
+          effectSpellUuid: "", chargesFormula: "", chargesUsed: 0, chargeRecovery: []
         },
         {
           name: "", description: "", lifeBonusFormula: "0", manaBonusFormula: "0", patronAbilityIndex: 0,
           type: "passive", apCost: 0, rpCost: 0, manaCost: 0, durationRounds: 1, cooldownRounds: 0,
-          active: false, roundsRemaining: 0, effectId: "", damageRerollMode: "none", damageRerollElement: ""
+          active: false, roundsRemaining: 0, effectId: "", damageRerollMode: "none", damageRerollElement: "",
+          effectSpellUuid: "", chargesFormula: "", chargesUsed: 0, chargeRecovery: []
         },
         {
           name: "", description: "", lifeBonusFormula: "0", manaBonusFormula: "0", patronAbilityIndex: 0,
           type: "passive", apCost: 0, rpCost: 0, manaCost: 0, durationRounds: 1, cooldownRounds: 0,
-          active: false, roundsRemaining: 0, effectId: "", damageRerollMode: "none", damageRerollElement: ""
+          active: false, roundsRemaining: 0, effectId: "", damageRerollMode: "none", damageRerollElement: "",
+          effectSpellUuid: "", chargesFormula: "", chargesUsed: 0, chargeRecovery: []
         }
       ]
     });

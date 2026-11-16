@@ -596,10 +596,10 @@ async function renderSavingThrowButton(save, index, item, overchargeCount = 0, d
  * @param {string[]} parts
  * @return {Promise<ChatMessage>}
  */
-async function postSpellChatCard(item, parts) {
+async function postSpellChatCard(item, parts, flavor = item.name) {
   const messageData = {
     speaker: ChatMessage.getSpeaker({ actor: item.actor }),
-    flavor: item.name,
+    flavor,
     content: `<div class="sksk-chat-card sksk-spell-card">${parts.join('')}</div>`,
   };
   ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));
@@ -951,20 +951,27 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
  *   its own costs and rolls its own effect, all in ONE compact chat card -
  *   without the spell description, just ranges/duration, the costs and
  *   every roll.
+ * @param {{name: string, descriptionHTML?: string, pay: function(): Promise<string[]|null>, onPaid?: function(): Promise<void>}|null} [abilityOptions=null]
+ *   Set when a Class/Species/Talent ability of the type "once" casts this
+ *   (linked) spell as its effect (see helpers/abilityRolls.mjs#useOnceAbility):
+ *   the spell's own costs, casting restrictions and prompts are skipped -
+ *   `pay` settles the ABILITY's cost instead (null = it could not be paid, the
+ *   cast is aborted), `onPaid` runs once after that - and the card carries
+ *   the ability's name/description.
  * @return {Promise<ChatMessage|void>}
  */
-export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0, altResourceIndex = -1, extraCostCounts = [], variableMana = null, castCount = 1) {
+export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0, altResourceIndex = -1, extraCostCounts = [], variableMana = null, castCount = 1, abilityOptions = null) {
   const actor = item.actor;
   const system = item.system;
 
   // Prone/Restrained block any spell whose casting method is Movement -
   // see helpers/statusEffects.mjs#canCastMovementSpell.
-  if (actor && system.castingMethods?.movement && !canCastMovementSpell(actor)) {
+  if (actor && !abilityOptions && system.castingMethods?.movement && !canCastMovementSpell(actor)) {
     ui.notifications.warn(game.i18n.localize('SKSK.StatusEffect.MovementSpellBlocked'));
     return;
   }
 
-  if (actor) {
+  if (actor && !abilityOptions) {
     const hasPendingDebt = (actor.system.pendingSpell?.apCost ?? 0) > 0 || (actor.system.pendingSpell?.roundsRemaining ?? 0) > 0;
     if (hasPendingDebt && getStatusStacks(actor, 'concentration') > 0) {
       ui.notifications.warn(game.i18n.localize('SKSK.Spell.Roll.AlreadyConcentrating'));
@@ -990,7 +997,7 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
   // "?" as Mana cost: the caster chooses the base amount for this cast (the
   // Shift+Click dialog already asked; a plain click asks here). Closing the
   // prompt aborts the cast.
-  if (actor && system.manaCostVariable) {
+  if (actor && !abilityOptions && system.manaCostVariable) {
     if (variableMana === null || variableMana === undefined) {
       variableMana = await promptVariableMana(item);
       if (variableMana === null) return;
@@ -1004,7 +1011,7 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
   // "?" as AP cost: likewise asked once per cast (closing the prompt aborts
   // it). Only the plain "ap" unit has an AP amount to choose.
   let variableAp = null;
-  if (actor && system.apCostVariable && system.apCostUnit === 'ap') {
+  if (actor && !abilityOptions && system.apCostVariable && system.apCostUnit === 'ap') {
     variableAp = await promptVariableAp(item);
     if (variableAp === null) return;
     if (variableAp !== system.variableApPaid) await item.update({ 'system.variableApPaid': variableAp });
@@ -1021,14 +1028,14 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
 
   // Casting the same spell several times in a row (Shift+Click dialog, only
   // outside Combat - see canCastSpellMultiple): one compact card instead.
-  castCount = canCastSpellMultiple(item)
+  castCount = !abilityOptions && canCastSpellMultiple(item)
     ? Math.max(1, Math.min(MAX_MULTI_CAST, Math.floor(Number(castCount)) || 1))
     : 1;
   const ctx = { overchargeCount, extraCostTier, extraCostCounts, variableMana, variableAp, altResourceIndex, element: null, variants: [] };
 
-  // 1. Heading, 2. Magic school.
-  const parts = [formatRollCardHeading(item.name)];
-  const schoolLabel = resolveSpellSchoolLabel(system);
+  // 1. Heading, 2. Magic school (an ability shows its own name instead).
+  const parts = [formatRollCardHeading(abilityOptions?.name ?? item.name)];
+  const schoolLabel = abilityOptions ? '' : resolveSpellSchoolLabel(system);
   if (schoolLabel) parts.push(`<div class="sksk-roll-magic-school">${schoolLabel}</div>`);
 
   if (castCount > 1) {
@@ -1067,17 +1074,31 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
   const cast = await resolveCastElement(castItem, elementPick);
   ctx.element = cast.element;
   ctx.variants = found.indexes;
-  const paid = await paySpellCast(castItem, ctx);
+  const paid = abilityOptions ? await payAbilityCast(abilityOptions) : await paySpellCast(castItem, ctx);
   if (paid.aborted) return;
   parts.push(...paid.parts);
   parts.push(renderVariantLines(item, found.indexes), await consumeVariantMarkers(actor, found.markerIds));
   if (cast.html) parts.push(cast.html);
-  parts.push(...(await renderSpellInfoParts(castItem, ctx, false)));
+  if (abilityOptions?.descriptionHTML) parts.push(abilityOptions.descriptionHTML);
+  parts.push(...(await renderSpellInfoParts(castItem, ctx, !!abilityOptions)));
   if (!paid.deferred) {
     parts.push(...(await renderSpellEffectParts(castItem, overchargeCount, extraCostTier, extraCostCounts, variableMana, cast.element)));
   }
 
-  return postSpellChatCard(item, parts);
+  return postSpellChatCard(item, parts, abilityOptions?.name ?? item.name);
+}
+
+/**
+ * Settle the cost of an ability that casts a spell as its effect (see
+ * rollSpellItem's abilityOptions) - the counterpart of paySpellCast.
+ * @param {{pay: function(): Promise<string[]|null>, onPaid?: function(): Promise<void>}} options
+ * @return {Promise<{aborted: boolean, parts: string[], deferred: boolean, manaCost: number}>}
+ */
+async function payAbilityCast(options) {
+  const costLines = await options.pay();
+  if (costLines === null) return { aborted: true, parts: [], deferred: false, manaCost: 0 };
+  await options.onPaid?.();
+  return { aborted: false, parts: costLines, deferred: false, manaCost: 0 };
 }
 
 /**

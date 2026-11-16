@@ -2,6 +2,7 @@ import { countActiveSummons } from './summoning.mjs';
 import { grantSkillUsageFp } from './skillFp.mjs';
 import { advanceTechniquesByRounds } from './statusEffects.mjs';
 import { applyLongevityDelta } from './longevity.mjs';
+import { recoverChargesOnDayChange, postChargeLines } from './abilityCharges.mjs';
 
 /**
  * Whether the optional "Calendaria" module (github.com/Sayshal/calendaria)
@@ -196,6 +197,14 @@ export function registerCalendariaIntegration() {
     for (const actor of game.actors) {
       if (actor.type !== 'character' || !actor.system.longevity?.initialized) continue;
       await applyLongevityDelta(actor, -days);
+    }
+
+    // "Zum Tageswechsel" charge recoveries of "once" abilities (see helpers/
+    // abilityCharges.mjs) - without Calendaria they come back after an
+    // Anpassungspause instead (helpers/rest.mjs#applyRest).
+    for (const actor of getTechniqueTickActors()) {
+      if (!actor.items.some(item => item.type === 'class' || item.type === 'species' || item.type === 'talent')) continue;
+      await postChargeLines(actor, await recoverChargesOnDayChange(actor, days));
     }
 
     if (isCalendariaDailySettlementEnabled()) await settleDailyAccumulatorsForAllActors(days);

@@ -1,0 +1,86 @@
+{{!--
+  The fields of a Class/Species ability of the type "once" (Aktiv, einmaliger
+  Effekt) - rendered inside class.hbs/species.hbs's ability loop.
+  Context: entry, index, spellName, recoveryModeChoices, recoveryUnitChoices,
+  hasActor, statusLabel, actionLabel, itemId. See data/abilityOnce.mjs.
+--}}
+{{#if (eq entry.type "once")}}
+<div class="grid grid-4col">
+  <div class="grid-span-1">
+    <label class="resource-label">{{localize 'SKSK.Ability.ApCost'}}</label>
+    <input type="text" name="system.abilities.{{index}}.apCost" value="{{entry.apCost}}" data-dtype="Number" />
+  </div>
+  <div class="grid-span-1">
+    <label class="resource-label">{{localize 'SKSK.Ability.RpCost'}}</label>
+    <input type="text" name="system.abilities.{{index}}.rpCost" value="{{entry.rpCost}}" data-dtype="Number" />
+  </div>
+  <div class="grid-span-1">
+    <label class="resource-label">{{localize 'SKSK.Ability.ManaCost'}}</label>
+    <input type="text" name="system.abilities.{{index}}.manaCost" value="{{entry.manaCost}}" data-dtype="Number" />
+  </div>
+  <div class="grid-span-1">
+    <label class="resource-label">{{localize 'SKSK.Ability.Cooldown'}}</label>
+    <input type="text" name="system.abilities.{{index}}.cooldownRounds" value="{{entry.cooldownRounds}}" data-dtype="Number" />
+  </div>
+</div>
+
+<label class="resource-label" title="{{localize 'SKSK.Ability.Once.EffectSpellHint'}}">{{localize 'SKSK.Ability.Once.EffectSpell'}}</label>
+<div class="ability-spell-drop" title="{{localize 'SKSK.Ability.Once.EffectSpellHint'}}">
+  <input type="text" name="system.abilities.{{index}}.effectSpellUuid" value="{{entry.effectSpellUuid}}"
+    placeholder="{{localize 'SKSK.Ability.Once.EffectSpellPlaceholder'}}" />
+  {{#if spellName}}<span class="ability-spell-name"><i class="fas fa-wand-sparkles"></i> {{spellName}}</span>{{/if}}
+</div>
+
+<label class="resource-label" title="{{localize 'SKSK.Ability.Charges.FormulaHint'}}">{{localize 'SKSK.Ability.Charges.Formula'}}</label>
+<input type="text" name="system.abilities.{{index}}.chargesFormula" value="{{entry.chargesFormula}}"
+  title="{{localize 'SKSK.Ability.Charges.FormulaHint'}}" placeholder="{{localize 'SKSK.Ability.Charges.FormulaPlaceholder'}}" />
+
+{{#if entry.chargesFormula}}
+<label class="resource-label" title="{{localize 'SKSK.Ability.Charges.RecoveryHint'}}">
+  {{localize 'SKSK.Ability.Charges.Recovery'}}
+  <a class="item-control item-create" data-action="addAbilityChargeRecovery" data-parent-index="{{index}}"
+    title="{{localize 'SKSK.Ability.Charges.AddRecovery'}}"><i class="fas fa-plus"></i></a>
+</label>
+<ol class="items-list items-list-compact">
+  {{#each entry.chargeRecovery as |rec ri|}}
+  <li class="item flexrow">
+    <div class="item-name">
+      <select name="system.abilities.{{../index}}.chargeRecovery.{{ri}}.mode">
+        {{selectOptions ../recoveryModeChoices selected=rec.mode localize=true}}
+      </select>
+    </div>
+    {{#if (or (eq rec.mode "segments") (eq rec.mode "time"))}}
+    <div class="item-name">
+      <input type="text" name="system.abilities.{{../index}}.chargeRecovery.{{ri}}.interval" value="{{rec.interval}}"
+        data-dtype="Number" title="{{localize 'SKSK.Ability.Charges.Interval'}}" />
+    </div>
+    {{/if}}
+    {{#if (eq rec.mode "time")}}
+    <div class="item-name">
+      <select name="system.abilities.{{../index}}.chargeRecovery.{{ri}}.unit">
+        {{selectOptions ../recoveryUnitChoices selected=rec.unit localize=true}}
+      </select>
+    </div>
+    {{/if}}
+    <div class="item-name">
+      <input type="text" name="system.abilities.{{../index}}.chargeRecovery.{{ri}}.amountFormula" value="{{rec.amountFormula}}"
+        title="{{localize 'SKSK.Ability.Charges.AmountHint'}}" placeholder="1" />
+    </div>
+    <div class="item-controls">
+      <a class="item-control item-delete" data-action="removeNestedArrayEntry" data-parent-field="abilities"
+        data-parent-index="{{../index}}" data-field="chargeRecovery" data-index="{{ri}}"><i class="fas fa-trash"></i></a>
+    </div>
+  </li>
+  {{/each}}
+</ol>
+{{/if}}
+
+{{#if hasActor}}
+<div class="flexrow flex-center action-row-controls">
+  <span class="ap-cost-label">{{statusLabel}}</span>
+  <button type="button" data-action="toggleClassSpeciesAbility" data-item-id="{{itemId}}" data-index="{{index}}">
+    {{localize actionLabel}}
+  </button>
+</div>
+{{/if}}
+{{/if}}

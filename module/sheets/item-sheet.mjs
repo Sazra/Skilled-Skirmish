@@ -71,6 +71,8 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       addDamageSkillBonus: SKSKItemSheet.#addDamageSkillBonus,
       addStatusEffect: SKSKItemSheet.#addStatusEffect,
       addFoundryEffect: SKSKItemSheet.#addFoundryEffect,
+      addAbilityChargeRecovery: SKSKItemSheet.#addAbilityChargeRecovery,
+      addTalentChargeRecovery: SKSKItemSheet.#addTalentChargeRecovery,
       addVariant: SKSKItemSheet.#addVariant,
       addVariantCondition: SKSKItemSheet.#addVariantCondition,
       addVariantChange: SKSKItemSheet.#addVariantChange,
@@ -482,6 +484,29 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       context.skillBonusChoices = getSkillBonusChoices();
       context.abilityTypeChoices = CONFIG.SKSK.abilityTypes;
       context.damageRerollModeChoices = CONFIG.SKSK.damageRerollModes;
+      // "once" abilities (Aktiv, einmaliger Effekt): how spent charges come back.
+      context.abilityRecoveryModeChoices = {
+        turnStart: 'SKSK.Ability.Charges.Mode.turnStart',
+        segments: 'SKSK.Ability.Charges.Mode.segments',
+        day: 'SKSK.Ability.Charges.Mode.day',
+        time: 'SKSK.Ability.Charges.Mode.time',
+      };
+      context.abilityRecoveryUnitChoices = {
+        minutes: 'SKSK.Ability.Charges.UnitChoice.minutes',
+        hours: 'SKSK.Ability.Charges.UnitChoice.hours',
+        days: 'SKSK.Ability.Charges.UnitChoice.days',
+      };
+      // The name of the linked effect spell of each ability (blank if the
+      // UUID does not resolve to a spell).
+      const spellName = (uuid) => {
+        if (!uuid) return '';
+        try {
+          const doc = fromUuidSync(uuid);
+          return doc?.type === 'spell' ? doc.name : '';
+        } catch (error) { return ''; }
+      };
+      if (item.type === 'talent') context.talentEffectSpellName = spellName(item.system.abilityEffectSpellUuid);
+      else context.abilityEffectSpellNames = (item.system.abilities ?? []).map(entry => spellName(entry.effectSpellUuid));
       // A blank leading option (unlike weapon/armor's own damageTypeChoices
       // further below) - damageRerollElement is blank until a GM actually
       // picks one, and blank is a valid "not yet chosen" state, not a
@@ -909,6 +934,22 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
   async _onRender(context, options) {
     await super._onRender(context, options);
 
+    // A Spell dragged from the sidebar/compendium onto a "once" ability's
+    // effect-spell field fills in its UUID.
+    for (const zone of this.element.querySelectorAll('.ability-spell-drop')) {
+      zone.addEventListener('dragover', event => event.preventDefault());
+      zone.addEventListener('drop', async (event) => {
+        event.preventDefault();
+        const data = foundry.applications.ux.TextEditor.implementation.getDragEventData(event);
+        if (data?.type !== 'Item' || !data.uuid) return;
+        const dropped = await fromUuid(data.uuid);
+        if (dropped?.type !== 'spell') return ui.notifications.warn(game.i18n.localize('SKSK.Ability.Once.NotASpell'));
+        const input = zone.querySelector('input');
+        input.value = data.uuid;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+    }
+
     // Foundry's own tabGroups.primary always initializes to static
     // TABS.primary.initial ("description") regardless of item type, even
     // though Soul Path has no "description" tab at all (see
@@ -1085,6 +1126,18 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
   static async #addStatusEffect(event, target) {
     await this.#addArrayEntry('statusEffects', {
       statusId: '', stacks: 1, trigger: 'unconditional', savingThrowIndex: null,
+    });
+  }
+
+  static async #addAbilityChargeRecovery(event, target) {
+    await this.#addNestedArrayEntry('abilities', Number(target.dataset.parentIndex), 'chargeRecovery', {
+      mode: 'turnStart', interval: 1, unit: 'hours', amountFormula: '1', clock: 0, carry: 0,
+    });
+  }
+
+  static async #addTalentChargeRecovery(event, target) {
+    await this.#addArrayEntry('abilityChargeRecovery', {
+      mode: 'turnStart', interval: 1, unit: 'hours', amountFormula: '1', clock: 0, carry: 0,
     });
   }
 

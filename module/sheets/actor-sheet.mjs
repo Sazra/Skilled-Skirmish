@@ -69,8 +69,11 @@ import {
   attemptBreakthrough, togglePathAbility,
 } from '../helpers/soulPathRolls.mjs';
 import {
-  getAbilityStatusLabel, getAbilityActionLabel, toggleClassSpeciesAbility, toggleTalentAbility,
+  getAbilityStatusLabel, getAbilityActionLabel, toggleClassSpeciesAbility, toggleTalentAbility, useOnceAbility,
 } from '../helpers/abilityRolls.mjs';
+import {
+  readAbility, listChargeAbilities, getChargeState, changeCharges, describeRecovery,
+} from '../helpers/abilityCharges.mjs';
 import {
   getStatusEffectDefinitions, getStatusStacks, increaseStatusStacks, decreaseStatusStacks, applyD20Malus,
   getStatusEffect, getStatusInstances, getStatusInstancesTotal, addStatusInstance, applyCauterization,
@@ -193,6 +196,8 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       togglePathAbility: SKSKActorSheet.#togglePathAbility,
       toggleClassSpeciesAbility: SKSKActorSheet.#toggleClassSpeciesAbility,
       toggleTalentAbility: SKSKActorSheet.#toggleTalentAbility,
+      useAbilityCharge: SKSKActorSheet.#useAbilityCharge,
+      adjustAbilityCharge: SKSKActorSheet.#adjustAbilityCharge,
       openPathAbilityEffect: SKSKActorSheet.#openPathAbilityEffect,
       openBreakthroughEffect: SKSKActorSheet.#openBreakthroughEffect,
       createSoulPath: SKSKActorSheet.#createSoulPath,
@@ -891,7 +896,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
           // index addresses back into source.system.abilities).
           index,
           type: ability.type,
-          statusLabel: getAbilityStatusLabel(ability),
+          statusLabel: this.#abilityStatus(source, index, ability),
           actionLabel: getAbilityActionLabel(ability),
         });
       });
@@ -912,7 +917,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
           requiredLevel: 0,
           index,
           type: ability.type,
-          statusLabel: getAbilityStatusLabel(ability),
+          statusLabel: this.#abilityStatus(source, index, ability),
           actionLabel: getAbilityActionLabel(ability),
         });
       });
@@ -957,10 +962,10 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
         i.typeLabel = game.i18n.localize(CONFIG.SKSK.talentTypes[i.system.talentType]).replace('Level ', 'Lvl ');
         // Activation state (only meaningful for abilityType "active" - see
         // helpers/abilityRolls.mjs#toggleTalentAbility).
-        i.abilityStatusLabel = getAbilityStatusLabel({
+        i.abilityStatusLabel = this.#abilityStatus(this.actor.items.get(i._id), null, {
           type: i.system.abilityType, active: i.system.abilityActive, roundsRemaining: i.system.abilityRoundsRemaining,
         });
-        i.abilityActionLabel = getAbilityActionLabel({ active: i.system.abilityActive });
+        i.abilityActionLabel = getAbilityActionLabel({ type: i.system.abilityType, active: i.system.abilityActive });
         talents.push(i);
       }
       // Append to classes.
@@ -1012,7 +1017,9 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
    */
   _prepareSpells(context) {
     const actor = this.actor;
-    const spells = context.items.filter(i => i.type === 'spell');
+    // The hidden copies of the spells "once" abilities cast (see helpers/
+    // abilitySpell.mjs) are not part of the spellbook.
+    const spells = context.items.filter(i => i.type === 'spell' && !foundry.utils.getProperty(i, 'flags.sksk.abilitySpell'));
 
     // Every spell's actual mana cost (see helpers/spells.mjs#
     // computeSpellManaCost) and, for Simple/Advanced/Combined spells,
@@ -1270,6 +1277,19 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     // only ever makes sense below Seelenstärke's own max level (5), once
     // the GM tab's own soulPowerMechanicEnabled switch is on, regardless
     // of *why* the row itself is currently shown.
+    // Charges of "once" abilities (see helpers/abilityCharges.mjs) - listed
+    // among the other resources in the overview, where they can be used and
+    // corrected by hand.
+    context.abilityCharges = listChargeAbilities(actor).map(ability => {
+      const state = getChargeState(actor, ability);
+      return {
+        itemId: ability.item.id, index: ability.index ?? '', name: ability.name,
+        current: state.current, max: state.max,
+        recovery: ability.chargeRecovery.map(describeRecovery).join('\n'),
+        onCooldown: ability.roundsRemaining > 0,
+      };
+    });
+
     if (this.#isSoulPathUnlocked) {
       context.generalResources.push({
         key: 'soulPower', label: 'SKSK.Resource.SoulPower', value: actor.system.soulPower.value, noMax: true,
@@ -2199,6 +2219,48 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     const item = this.actor.items.get(target.dataset.itemId);
     if (!item) return;
     await toggleTalentAbility(this.actor, item);
+  }
+
+  /**
+   * Use a "once" ability from its charges row in the overview.
+   * @param {PointerEvent} event
+   * @param {HTMLElement} target   Carries data-item-id and data-index (blank for a Talent).
+   */
+  static async #useAbilityCharge(event, target) {
+    const item = this.actor.items.get(target.dataset.itemId);
+    if (!item) return;
+    const index = target.dataset.index === '' ? null : Number(target.dataset.index);
+    await useOnceAbility(this.actor, item, index);
+  }
+
+  /**
+   * Correct the charges of a "once" ability by hand (+1 / -1).
+   * @param {PointerEvent} event
+   * @param {HTMLElement} target   Carries data-item-id, data-index and data-delta.
+   */
+  static async #adjustAbilityCharge(event, target) {
+    const item = this.actor.items.get(target.dataset.itemId);
+    if (!item) return;
+    const index = target.dataset.index === '' ? null : Number(target.dataset.index);
+    const ability = readAbility(item, index);
+    if (!ability) return;
+    await changeCharges(this.actor, ability, Number(target.dataset.delta) || 0);
+  }
+
+  /**
+   * The status text of an ability row: for a "once" ability its charges and
+   * cooldown, otherwise the usual activation status.
+   * @param {Item} item   The Class/Species/Talent holding the ability.
+   * @param {number|null} index
+   * @param {{type: string, active: boolean, roundsRemaining: number}} entry
+   * @return {string}
+   */
+  #abilityStatus(item, index, entry) {
+    if (entry.type !== 'once') return getAbilityStatusLabel(entry);
+    const ability = item ? readAbility(item, index) : null;
+    const state = ability ? getChargeState(this.actor, ability) : { has: false };
+    const charges = state.has ? game.i18n.format('SKSK.Ability.Charges.Remaining', { current: state.current, max: state.max }) : '';
+    return [charges, getAbilityStatusLabel(entry)].filter(Boolean).join(' - ');
   }
 
   /**

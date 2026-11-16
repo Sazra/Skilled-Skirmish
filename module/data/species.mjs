@@ -1,4 +1,5 @@
 import SKSKItemBase from "./item-base.mjs";
+import { buildOnceAbilityFields } from "./abilityOnce.mjs";
 
 export default class SKSKSpecies extends SKSKItemBase {
 
@@ -117,7 +118,7 @@ export default class SKSKSpecies extends SKSKItemBase {
       // existing ability's own purely-descriptive behavior) shows no cost
       // fields or toggle button at all - see templates/actor/parts/
       // abilities.hbs.
-      type: new fields.StringField({ required: true, blank: false, initial: "passive", choices: ["passive", "active"] }),
+      type: new fields.StringField({ required: true, blank: false, initial: "passive", choices: ["passive", "active", "once"] }),
       apCost: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
       // 0 = "not set", mirrors apCost 1:1 for an off-turn activation instead
       // - same convention as data/technique.mjs#rpCost.
@@ -139,6 +140,10 @@ export default class SKSKSpecies extends SKSKItemBase {
         choices: ["none", "rollTwiceWeapon", "rollTwiceSpell", "rerollOnes"],
       }),
       damageRerollElement: new fields.StringField({ required: true, blank: true, initial: "" }),
+      // Only for type "once" (Aktiv, einmaliger Effekt): a one-off, spell-like
+      // activation - linked Spell effect, charges and their recovery. See
+      // data/abilityOnce.mjs and helpers/abilityRolls.mjs#useOnceAbility.
+      ...buildOnceAbilityFields(fields, requiredInteger),
     }));
 
     // Zero or more overrides granting the ability to cast spells from a

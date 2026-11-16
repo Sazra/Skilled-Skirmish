@@ -38,6 +38,8 @@ import { registerItemPilesIntegration } from './helpers/itemPiles.mjs';
 import * as models from './data/_module.mjs';
 import { EXTRA_DAMAGE_USE_EVENT } from './helpers/extraDamage.mjs';
 import { parseVariantAttribute } from './helpers/spellVariants.mjs';
+import { registerAbilityChargeHooks } from './helpers/abilityCharges.mjs';
+import { registerAbilitySpellHooks } from './helpers/abilitySpell.mjs';
 
 Hooks.once('init', function () {
   game.sksk = {
@@ -167,6 +169,11 @@ Hooks.once('ready', async function () {
   // helpers/calendarIntegration.mjs. Safe to call even when Calendaria
   // isn't installed; the hook it listens for then simply never fires.
   registerCalendariaIntegration();
+
+  // Charge recovery over world time and the clean-up of the hidden spell copies
+  // "once" abilities use - see helpers/abilityCharges.mjs/abilitySpell.mjs.
+  registerAbilityChargeHooks();
+  registerAbilitySpellHooks();
 
   // Drag-to-hotbar macros (a sheet roll, or an owned Item) - see
   // helpers/macroRolls.mjs.

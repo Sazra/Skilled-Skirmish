@@ -1,0 +1,85 @@
+{{!--
+  The fields of a Talent's ability of the type "once" (Aktiv, einmaliger
+  Effekt) - the Talent's own single ability, see talent.hbs. Same as
+  ability-once.hbs, just on the item's root "ability*" fields.
+--}}
+{{#if (eq system.abilityType "once")}}
+<div class="grid grid-4col">
+  <div class="grid-span-1">
+    <label class="resource-label">{{localize 'SKSK.Ability.ApCost'}}</label>
+    <input type="text" name="system.abilityApCost" value="{{system.abilityApCost}}" data-dtype="Number" />
+  </div>
+  <div class="grid-span-1">
+    <label class="resource-label">{{localize 'SKSK.Ability.RpCost'}}</label>
+    <input type="text" name="system.abilityRpCost" value="{{system.abilityRpCost}}" data-dtype="Number" />
+  </div>
+  <div class="grid-span-1">
+    <label class="resource-label">{{localize 'SKSK.Ability.ManaCost'}}</label>
+    <input type="text" name="system.abilityManaCost" value="{{system.abilityManaCost}}" data-dtype="Number" />
+  </div>
+  <div class="grid-span-1">
+    <label class="resource-label">{{localize 'SKSK.Ability.Cooldown'}}</label>
+    <input type="text" name="system.abilityCooldownRounds" value="{{system.abilityCooldownRounds}}" data-dtype="Number" />
+  </div>
+</div>
+
+<label class="resource-label" title="{{localize 'SKSK.Ability.Once.EffectSpellHint'}}">{{localize 'SKSK.Ability.Once.EffectSpell'}}</label>
+<div class="ability-spell-drop" title="{{localize 'SKSK.Ability.Once.EffectSpellHint'}}">
+  <input type="text" name="system.abilityEffectSpellUuid" value="{{system.abilityEffectSpellUuid}}"
+    placeholder="{{localize 'SKSK.Ability.Once.EffectSpellPlaceholder'}}" />
+  {{#if talentEffectSpellName}}<span class="ability-spell-name"><i class="fas fa-wand-sparkles"></i> {{talentEffectSpellName}}</span>{{/if}}
+</div>
+
+<label class="resource-label" title="{{localize 'SKSK.Ability.Charges.FormulaHint'}}">{{localize 'SKSK.Ability.Charges.Formula'}}</label>
+<input type="text" name="system.abilityChargesFormula" value="{{system.abilityChargesFormula}}"
+  title="{{localize 'SKSK.Ability.Charges.FormulaHint'}}" placeholder="{{localize 'SKSK.Ability.Charges.FormulaPlaceholder'}}" />
+
+{{#if system.abilityChargesFormula}}
+<label class="resource-label" title="{{localize 'SKSK.Ability.Charges.RecoveryHint'}}">
+  {{localize 'SKSK.Ability.Charges.Recovery'}}
+  <a class="item-control item-create" data-action="addTalentChargeRecovery"
+    title="{{localize 'SKSK.Ability.Charges.AddRecovery'}}"><i class="fas fa-plus"></i></a>
+</label>
+<ol class="items-list items-list-compact">
+  {{#each system.abilityChargeRecovery as |rec ri|}}
+  <li class="item flexrow">
+    <div class="item-name">
+      <select name="system.abilityChargeRecovery.{{ri}}.mode">
+        {{selectOptions ../abilityRecoveryModeChoices selected=rec.mode localize=true}}
+      </select>
+    </div>
+    {{#if (or (eq rec.mode "segments") (eq rec.mode "time"))}}
+    <div class="item-name">
+      <input type="text" name="system.abilityChargeRecovery.{{ri}}.interval" value="{{rec.interval}}"
+        data-dtype="Number" title="{{localize 'SKSK.Ability.Charges.Interval'}}" />
+    </div>
+    {{/if}}
+    {{#if (eq rec.mode "time")}}
+    <div class="item-name">
+      <select name="system.abilityChargeRecovery.{{ri}}.unit">
+        {{selectOptions ../abilityRecoveryUnitChoices selected=rec.unit localize=true}}
+      </select>
+    </div>
+    {{/if}}
+    <div class="item-name">
+      <input type="text" name="system.abilityChargeRecovery.{{ri}}.amountFormula" value="{{rec.amountFormula}}"
+        title="{{localize 'SKSK.Ability.Charges.AmountHint'}}" placeholder="1" />
+    </div>
+    <div class="item-controls">
+      <a class="item-control item-delete" data-action="removeArrayEntry" data-field="abilityChargeRecovery"
+        data-index="{{ri}}"><i class="fas fa-trash"></i></a>
+    </div>
+  </li>
+  {{/each}}
+</ol>
+{{/if}}
+
+{{#if item.actor}}
+<div class="flexrow flex-center action-row-controls">
+  <span class="ap-cost-label">{{talentAbilityStatus}}</span>
+  <button type="button" data-action="toggleTalentAbility" data-item-id="{{item.id}}">
+    {{localize talentAbilityActionLabel}}
+  </button>
+</div>
+{{/if}}
+{{/if}}

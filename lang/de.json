@@ -1578,6 +1578,55 @@
             "StatusActive": "Aktiv (noch {rounds} Runden)",
             "StatusCooldown": "Abklingzeit (noch {rounds} Runden)",
             "StatusReady": "Bereit",
+            "Use": "Auslösen",
+            "Used": "{name} wird ausgelöst",
+            "EffectSpellMissing": "{name}: Der verknüpfte Effekt-Zauber wurde nicht gefunden.",
+            "Type": {
+                "passive": "Passiv",
+                "active": "Aktiv (aktivierbarer temporärer Effekt)",
+                "once": "Aktiv (einmaliger Effekt)"
+            },
+            "Once": {
+                "EffectSpell": "Effekt-Zauber (verknüpft)",
+                "EffectSpellHint": "Ein Zauber-Item, dessen Effekt (Angriff, Schaden, Rettungswürfe, Status-/Foundry-Effekte, Varianten, ...) beim Auslösen über die normale Zauber-Wurflogik gewürfelt wird. Kosten, Ladungen und Abklingzeit kommen von der Fähigkeit, nicht vom Zauber. Ohne Zauber wird nur die Beschreibung in den Chat gestellt.",
+                "EffectSpellPlaceholder": "Zauber hierher ziehen oder UUID eintragen",
+                "NotASpell": "Nur Zauber können als Effekt verknüpft werden."
+            },
+            "Charges": {
+                "Formula": "Ladungen (Maximum, Formel)",
+                "FormulaHint": "Leer = keine Ladungen. In der Formel: L = Level, @attributes.str.mod bzw. @attributes.str.value = Attributsmodifikator/-wert, @skills.adrenalin = Fertigkeitsstufe; dazu + - * / ( ) und floor(), ceil(), round(), min(), max(). Beispiele: L / 2 - @attributes.str.mod * L - @skills.adrenalin * @attributes.con.mod. Das Ergebnis wird abgerundet.",
+                "FormulaPlaceholder": "z.B. L / 2",
+                "Recovery": "Wiederherstellung der Ladungen",
+                "RecoveryHint": "Wie verbrauchte Ladungen zurückkommen. Mehrere Regeln können kombiniert werden. Die Menge ist eine Formel (z.B. 1 oder @attributes.con.mod oder @skills.adrenalin).",
+                "AddRecovery": "Regel hinzufügen",
+                "Interval": "Intervall (Anzahl Abschnitte bzw. Zeiteinheiten)",
+                "AmountHint": "Anzahl wiederhergestellter Ladungen (Formel)",
+                "Remaining": "Ladungen {current}/{max}",
+                "None": "{name}: Keine Ladungen mehr.",
+                "Restored": "{name}: +{amount} Ladung(en) wiederhergestellt ({current}/{max}).",
+                "Spend": "Ladung verbrauchen",
+                "Restore": "Ladung wiederherstellen",
+                "Mode": {
+                    "turnStart": "Am Anfang des Zuges",
+                    "segments": "Nach X Abschnitten Pause",
+                    "day": "Zum Tageswechsel",
+                    "time": "Nach X Minuten/Stunden/Tagen"
+                },
+                "UnitChoice": {
+                    "minutes": "Minuten",
+                    "hours": "Stunden",
+                    "days": "Tage"
+                },
+                "Unit": {
+                    "minutes": "Minuten",
+                    "hours": "Stunden",
+                    "days": "Tagen"
+                },
+                "DescribeTurnStart": "Am Anfang des Zuges: +{amount}",
+                "DescribeSegments": "Nach {interval} Abschnitten Pause: +{amount}",
+                "DescribeDay": "Zum Tageswechsel (ohne Calendaria nach einer Anpassungspause): +{amount}",
+                "DescribeTime": "Nach {interval} {unit}: +{amount}"
+            },
             "Activate": "Aktivieren",
             "Deactivate": "Deaktivieren",
             "Activated": "{name} aktiviert.",

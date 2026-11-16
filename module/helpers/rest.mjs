@@ -5,7 +5,8 @@ import { postActionChatCard, getRegenerationDieSizes } from './actions.mjs';
 import { getStatusStacks, decreaseStatusStacks, getAdrenalinDamage, reduceAdrenalinDamage } from './statusEffects.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantText } from './skillFp.mjs';
 import { countActiveSummons } from './summoning.mjs';
-import { isCalendariaDailySettlementEnabled } from './calendarIntegration.mjs';
+import { isCalendariaDailySettlementEnabled, isCalendariaActive } from './calendarIntegration.mjs';
+import { recoverChargesOnRest } from './abilityCharges.mjs';
 
 /**
  * A time segment - the atomic unit "spending time" is measured in.
@@ -500,6 +501,10 @@ export async function applyRest(actor, options) {
   updates['system.meditationCharges.value'] = meditationCharges;
   updates['system.manaRegenerationAccumulator'] = manaRegenerationAccumulator;
   await actor.update(updates);
+
+  // Charges of "once" abilities: per Abschnitt of a Pause, and - without
+  // Calendaria - the "change of day" recovery after an Anpassungspause.
+  lines.push(...await recoverChargesOnRest(actor, { segments, isBreak, tier, calendariaActive: isCalendariaActive() }));
 
   const title = tier ? game.i18n.localize(`SKSK.Rest.Tier.${tier}`) : game.i18n.localize('SKSK.Rest.PlainTime');
   const hours = segments * SEGMENT_MINUTES / 60;

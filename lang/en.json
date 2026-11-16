@@ -1578,6 +1578,55 @@
       "StatusActive": "Active ({rounds} rounds left)",
       "StatusCooldown": "Cooldown ({rounds} rounds left)",
       "StatusReady": "Ready",
+      "Use": "Trigger",
+      "Used": "{name} is triggered",
+      "EffectSpellMissing": "{name}: The linked effect spell was not found.",
+      "Type": {
+        "passive": "Passive",
+        "active": "Active (activatable temporary effect)",
+        "once": "Active (one-time effect)"
+      },
+      "Once": {
+        "EffectSpell": "Effect spell (linked)",
+        "EffectSpellHint": "A Spell item whose effect (attack, damage, saving throws, status/Foundry effects, variants, ...) is rolled through the normal spell logic when triggered. Costs, charges and cooldown come from the ability, not from the spell. Without a spell only the description is posted to chat.",
+        "EffectSpellPlaceholder": "Drag a spell here or enter its UUID",
+        "NotASpell": "Only spells can be linked as an effect."
+      },
+      "Charges": {
+        "Formula": "Charges (maximum, formula)",
+        "FormulaHint": "Blank = no charges. In the formula: L = level, @attributes.str.mod / @attributes.str.value = attribute modifier/value, @skills.adrenalin = skill level; plus + - * / ( ) and floor(), ceil(), round(), min(), max(). Examples: L / 2 - @attributes.str.mod * L - @skills.adrenalin * @attributes.con.mod. The result is rounded down.",
+        "FormulaPlaceholder": "e.g. L / 2",
+        "Recovery": "Charge recovery",
+        "RecoveryHint": "How spent charges come back. Several rules can be combined. The amount is a formula (e.g. 1 or @attributes.con.mod or @skills.adrenalin).",
+        "AddRecovery": "Add rule",
+        "Interval": "Interval (number of Abschnitte or time units)",
+        "AmountHint": "Number of charges restored (formula)",
+        "Remaining": "Charges {current}/{max}",
+        "None": "{name}: No charges left.",
+        "Restored": "{name}: +{amount} charge(s) restored ({current}/{max}).",
+        "Spend": "Spend a charge",
+        "Restore": "Restore a charge",
+        "Mode": {
+          "turnStart": "At the start of the turn",
+          "segments": "After X Abschnitte of a Pause",
+          "day": "At the change of day",
+          "time": "After X minutes/hours/days"
+        },
+        "UnitChoice": {
+          "minutes": "Minutes",
+          "hours": "Hours",
+          "days": "Days"
+        },
+        "Unit": {
+          "minutes": "minutes",
+          "hours": "hours",
+          "days": "days"
+        },
+        "DescribeTurnStart": "At the start of the turn: +{amount}",
+        "DescribeSegments": "After {interval} Abschnitte of a Pause: +{amount}",
+        "DescribeDay": "At the change of day (without Calendaria after an Anpassungspause): +{amount}",
+        "DescribeTime": "After {interval} {unit}: +{amount}"
+      },
       "Activate": "Activate",
       "Deactivate": "Deactivate",
       "Activated": "{name} activated.",

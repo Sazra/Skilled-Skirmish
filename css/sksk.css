@@ -2889,3 +2889,18 @@ span.sksk-critical-failure {
 .sksk-chat-card .sksk-roll-variant {
   font-style: italic;
 }
+
+/* Ability of the type "once": the linked effect spell drop zone. */
+.sksk .ability-spell-drop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sksk .ability-spell-drop .ability-spell-name {
+  white-space: nowrap;
+  font-style: italic;
+}
+.sksk .ability-spell-drop input {
+  flex: 1;
+}

@@ -934,8 +934,9 @@ SKSK.pathAbilityTypes = {
 // data/class.mjs#abilities.type/data/species.mjs#abilities.type/
 // data/talent.mjs#abilityType and helpers/abilityRolls.mjs.
 SKSK.abilityTypes = {
-  active: 'SKSK.SoulPath.AbilityType.Active',
-  passive: 'SKSK.SoulPath.AbilityType.Passive',
+  passive: 'SKSK.Ability.Type.passive',
+  active: 'SKSK.Ability.Type.active',
+  once: 'SKSK.Ability.Type.once',
 };
 
 // A Talent's own single ability, or one Class/Species ability array entry

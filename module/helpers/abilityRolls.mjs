@@ -1,6 +1,10 @@
 import { postActionChatCard } from './actions.mjs';
 import { isCombatActive, isActorsOwnTurn } from './statusEffects.mjs';
 import { getManaAlternativeResources, computeManaAlternativeCoverage, payWithManaAlternative } from './customResources.mjs';
+import {
+  readAbility, updateAbility, getChargeState, changeCharges, startChargeClocks, recoverChargesOnTurnStart,
+} from './abilityCharges.mjs';
+import { ensureAbilitySpell } from './abilitySpell.mjs';
 
 /**
  * A Class/Species/Talent "Fähigkeit"'s own AP-/RP-/Mana-costed activation -
@@ -112,6 +116,12 @@ async function ensureClassSpeciesAbilityEffect(item, index) {
  * @return {string}
  */
 export function getAbilityStatusLabel(entry) {
+  // A "once" ability only has a cooldown (its charges are shown separately).
+  if (entry.type === 'once') {
+    return entry.roundsRemaining > 0
+      ? game.i18n.format('SKSK.Ability.StatusCooldown', { rounds: entry.roundsRemaining })
+      : game.i18n.localize('SKSK.Ability.StatusReady');
+  }
   if (entry.type !== 'active') return '';
   if (entry.active) return game.i18n.format('SKSK.Ability.StatusActive', { rounds: entry.roundsRemaining });
   return entry.roundsRemaining > 0
@@ -125,7 +135,99 @@ export function getAbilityStatusLabel(entry) {
  * @return {string}
  */
 export function getAbilityActionLabel(entry) {
+  if (entry.type === 'once') return 'SKSK.Ability.Use';
   return entry.active ? 'SKSK.Ability.Deactivate' : 'SKSK.Ability.Activate';
+}
+
+/**
+ * The cost lines of a "once" ability activation, for its chat card.
+ * @param {import("./abilityCharges.mjs").AbilityDescriptor} ability
+ * @param {boolean} offTurn
+ * @return {string[]}
+ */
+function onceAbilityCostLines(ability, offTurn) {
+  const result = [];
+  if (offTurn && (ability.rpCost > 0 || ability.apCost > 0)) {
+    const rp = ability.rpCost > 0 ? ability.rpCost : ability.apCost;
+    result.push(`<div class="sksk-roll-rp-cost"><strong>${game.i18n.localize('SKSK.Spell.RPCost')}:</strong> ${rp}</div>`);
+  } else if (ability.apCost > 0) {
+    result.push(`<div class="sksk-roll-ap-cost"><strong>${game.i18n.localize('SKSK.Spell.APCost')}:</strong> ${ability.apCost}</div>`);
+  }
+  if (ability.manaCost > 0) {
+    result.push(`<div class="sksk-roll-mana-cost"><strong>${game.i18n.localize('SKSK.Spell.ManaCost')}:</strong> ${ability.manaCost}</div>`);
+  }
+  return result;
+}
+
+/**
+ * Activate a Class/Species/Talent ability of the type "once" ("Aktiv,
+ * einmaliger Effekt"): a one-off activation similar to casting a spell.
+ * Checks the cooldown and the charges, pays the ability's own AP/RP/Mana
+ * (Mana-Alternative-aware, see payAbilityCost), spends one charge and starts
+ * the cooldown (in Combat only), then rolls the effect of the linked Spell
+ * (data/abilityOnce.mjs#effectSpellUuid) through the normal spell logic - or,
+ * without a linked spell, just posts the ability's description.
+ * @param {Actor} actor
+ * @param {Item} item   The Class/Species/Talent holding the ability.
+ * @param {number|null} [index=null]   Index into item.system.abilities
+ *   (Class/Species); null for a Talent's single ability.
+ * @return {Promise<ChatMessage|void>}
+ */
+export async function useOnceAbility(actor, item, index = null) {
+  const ability = readAbility(item, index);
+  if (!ability || ability.type !== 'once') return;
+  const name = ability.name;
+
+  if (ability.roundsRemaining > 0) {
+    return ui.notifications.warn(game.i18n.format('SKSK.Technique.OnCooldown', { name, rounds: ability.roundsRemaining }));
+  }
+  const charges = getChargeState(actor, ability);
+  if (charges.has && charges.current <= 0) {
+    return ui.notifications.warn(game.i18n.format('SKSK.Ability.Charges.None', { name }));
+  }
+
+  const combatActive = isCombatActive();
+  const offTurn = !isActorsOwnTurn(actor);
+
+  // Settled by the spell logic (or below) at the moment the activation is
+  // certain - after any prompt (e.g. the element choice) was answered.
+  const pay = async () => {
+    const paidLines = await payAbilityCost(actor, ability.apCost, ability.rpCost, ability.manaCost);
+    if (paidLines === null) return null;
+    return [...onceAbilityCostLines(ability, combatActive && offTurn), ...paidLines];
+  };
+  const onPaid = async () => {
+    if (charges.has) {
+      await changeCharges(actor, ability, -1);
+      // The "time" recoveries only run while charges are missing.
+      if (charges.used === 0) await startChargeClocks(ability);
+    }
+    if (combatActive && ability.cooldownRounds > 0) {
+      await updateAbility(ability, { roundsRemaining: ability.cooldownRounds });
+    }
+  };
+
+  const descriptionHTML = ability.description
+    ? `<div class="sksk-roll-description">${await foundry.applications.ux.TextEditor.implementation.enrichHTML(ability.description, { relativeTo: item })}</div>`
+    : '';
+
+  if (ability.effectSpellUuid) {
+    const spell = await ensureAbilitySpell(actor, ability.effectSpellUuid);
+    if (!spell) {
+      return ui.notifications.warn(game.i18n.format('SKSK.Ability.EffectSpellMissing', { name }));
+    }
+    const { rollSpellItem } = await import('./spell-rolls.mjs');
+    return rollSpellItem(spell, 0, 0, -1, [], null, 1, { name, descriptionHTML, pay, onPaid });
+  }
+
+  const costLines = await pay();
+  if (costLines === null) return;
+  await onPaid();
+  const after = getChargeState(actor, readAbility(item, index));
+  const chargeLine = after.has
+    ? `<div class="sksk-roll-line">${game.i18n.format('SKSK.Ability.Charges.Remaining', { current: after.current, max: after.max })}</div>`
+    : '';
+  return postActionChatCard(actor, game.i18n.format('SKSK.Ability.Used', { name }), null, 0, costLines.join('') + chargeLine + descriptionHTML);
 }
 
 /**
@@ -142,6 +244,7 @@ export function getAbilityActionLabel(entry) {
 export async function toggleClassSpeciesAbility(actor, item, index) {
   const abilities = item.system.abilities ?? [];
   const entry = abilities[index];
+  if (entry?.type === 'once') return useOnceAbility(actor, item, index);
   if (!entry || entry.type !== 'active') return;
 
   const combatActive = isCombatActive();
@@ -185,6 +288,7 @@ export async function toggleClassSpeciesAbility(actor, item, index) {
  */
 export async function toggleTalentAbility(actor, item) {
   const system = item.system;
+  if (system.abilityType === 'once') return useOnceAbility(actor, item);
   if (system.abilityType !== 'active') return;
 
   const combatActive = isCombatActive();
@@ -242,6 +346,13 @@ export async function handleAbilityTurnStart(actor) {
     const abilities = foundry.utils.deepClone(item.system.abilities ?? []);
     let changed = false;
     for (const entry of abilities) {
+      if (entry.type === 'once') {
+        if ((entry.roundsRemaining ?? 0) > 0) {
+          entry.roundsRemaining -= 1;
+          changed = true;
+        }
+        continue;
+      }
       if (entry.type !== 'active') continue;
 
       if (entry.active) {
@@ -267,6 +378,12 @@ export async function handleAbilityTurnStart(actor) {
 
   for (const item of actor.items.filter(i => i.type === 'talent')) {
     const system = item.system;
+    if (system.abilityType === 'once') {
+      if ((system.abilityRoundsRemaining ?? 0) > 0) {
+        await item.update({ 'system.abilityRoundsRemaining': system.abilityRoundsRemaining - 1 });
+      }
+      continue;
+    }
     if (system.abilityType !== 'active') continue;
 
     if (system.abilityActive) {
@@ -283,6 +400,9 @@ export async function handleAbilityTurnStart(actor) {
       await item.update({ 'system.abilityRoundsRemaining': system.abilityRoundsRemaining - 1 });
     }
   }
+
+  // Charges of "once" abilities that come back at the start of the turn.
+  lines.push(...await recoverChargesOnTurnStart(actor));
 
   return lines;
 }

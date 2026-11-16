@@ -102,6 +102,7 @@
         </div>
         {{/if}}
         {{/if}}
+        {{> "systems/sksk/templates/item/parts/ability-once.hbs" entry=entry index=index spellName=(lookup ../abilityEffectSpellNames index) recoveryModeChoices=../abilityRecoveryModeChoices recoveryUnitChoices=../abilityRecoveryUnitChoices hasActor=../item.actor statusLabel=(lookup ../abilityStatuses index) actionLabel=(lookup ../abilityActionLabels index) itemId=../item.id}}
 
         {{#if ../system.isFaithClass}}
         <label class="resource-label">{{localize 'SKSK.Class.PatronAbility'}}</label>

@@ -93,6 +93,24 @@
           </div>
         </li>
         {{/each}}
+        {{#each abilityCharges as |charge|}}
+        <li class="item flexrow">
+          <div class="item-name" title="{{charge.recovery}}">{{charge.name}}</div>
+          <div class="item-name flexrow flex-center">
+            <span class="resource-computed">{{charge.current}}</span>
+            <span>/</span>
+            <span class="resource-computed">{{charge.max}}</span>
+          </div>
+          <div class="item-controls">
+            <a class="item-control" data-action="adjustAbilityCharge" data-item-id="{{charge.itemId}}" data-index="{{charge.index}}"
+              data-delta="-1" title="{{localize 'SKSK.Ability.Charges.Spend'}}"><i class="fas fa-minus"></i></a>
+            <a class="item-control" data-action="adjustAbilityCharge" data-item-id="{{charge.itemId}}" data-index="{{charge.index}}"
+              data-delta="1" title="{{localize 'SKSK.Ability.Charges.Restore'}}"><i class="fas fa-plus"></i></a>
+            <a class="item-control" data-action="useAbilityCharge" data-item-id="{{charge.itemId}}" data-index="{{charge.index}}"
+              title="{{localize 'SKSK.Ability.Use'}}"><i class="fas fa-bolt"></i></a>
+          </div>
+        </li>
+        {{/each}}
       </ol>
     </div>
 
