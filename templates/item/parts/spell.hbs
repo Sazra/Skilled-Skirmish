@@ -172,6 +172,11 @@
               <input type="number" name="system.extraManaCosts.{{index}}.extraAttacks" value="{{tier.extraAttacks}}"
                 data-dtype="Number" min="0" step="1" />
             </div>
+            <div class="bonus-group" title="{{localize 'SKSK.Spell.ExtraCostUpkeepHint'}}">
+              <label class="resource-label">{{localize 'SKSK.Spell.ExtraCostUpkeep'}}</label>
+              <input type="number" name="system.extraManaCosts.{{index}}.upkeepBonus" value="{{tier.upkeepBonus}}"
+                data-dtype="Number" min="0" step="1" />
+            </div>
             <div class="bonus-group">
               <label class="resource-label" title="{{localize 'SKSK.Spell.ExtraCostEffectsHint'}}">{{localize 'SKSK.Spell.ExtraCostRangeChanges'}}</label>
               <ol class="items-list items-list-compact">
@@ -304,6 +309,14 @@
         </label>
       </div>
     </div>
+
+    {{#if system.manaCostVariable}}
+    <div class="resource">
+      <label class="resource-label" title="{{localize 'SKSK.Spell.UpkeepPerManaHint'}}">{{localize 'SKSK.Spell.UpkeepPerMana'}}</label>
+      <input type="number" name="system.upkeepPerMana" value="{{system.upkeepPerMana}}"
+        data-dtype="Number" min="0" step="any" title="{{localize 'SKSK.Spell.UpkeepPerManaHint'}}" />
+    </div>
+    {{/if}}
 
     <div class="resource">
       <label class="resource-label">Ranges</label>

@@ -3,7 +3,7 @@ import {
   computeRitualHours, computeMaxOverchargeCount, computeOverchargedRanges, computeExtraManaCostSum,
   getOverchargeSettings, formatOverchargeDuration, resolveSpellStatusStacks, isSpellFoundryEffectActive,
   computeMaxExtraCostTier, normalizeExtraCostCounts, computeCombinedSpellFpTargets,
-  computeExtraCostEffects, isSavingThrowActive, computeEffectiveRanges, formatRangeLabel,
+  computeExtraCostEffects, computeExtraUpkeep, isSavingThrowActive, computeEffectiveRanges, formatRangeLabel,
   getSpellElementOptions, resolveSpellDamages, getSpellSchool,
 } from './spells.mjs';
 import { rollExtraDamage, consumeUsedEffects } from './extraDamage.mjs';
@@ -1007,6 +1007,14 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
     if (variableMana !== system.variableManaPaid) await item.update({ 'system.variableManaPaid': variableMana });
   } else {
     variableMana = null;
+  }
+
+  // The Unterhalt of the paid extra-cost steps is remembered on the spell:
+  // it is switched to "sustaining" only after the cast (setSpellSustaining),
+  // by when the chosen steps would otherwise be forgotten.
+  if (actor && !abilityOptions) {
+    const extraUpkeep = computeExtraUpkeep(system, extraCostTier, extraCostCounts);
+    if (extraUpkeep !== (system.extraUpkeepPaid ?? 0)) await item.update({ 'system.extraUpkeepPaid': extraUpkeep });
   }
 
   // "?" as AP cost: likewise asked once per cast (closing the prompt aborts

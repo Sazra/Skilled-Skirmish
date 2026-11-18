@@ -691,12 +691,33 @@ export function formatRangeShort(range, airChargeBonus = 0) {
 /**
  * The Unterhalt (maximum-Mana reduction) a spell currently counts for while
  * sustaining: its own fixed upkeep, or - for a "?" Unterhalt - the amount
- * entered when it was last switched on.
+ * entered when it was last switched on; plus upkeepPerMana × the Mana
+ * chosen at the last cast (rounded up, "?" Mana cost spells only) and the
+ * Unterhalt of the extra-cost steps paid at the last cast.
  * @param {object} spellSystem
  * @return {number}
  */
 export function getSpellUpkeep(spellSystem) {
-  return spellSystem.upkeepVariable ? (spellSystem.variableUpkeepPaid ?? 0) : (spellSystem.upkeep ?? 0);
+  const base = spellSystem.upkeepVariable ? (spellSystem.variableUpkeepPaid ?? 0) : (spellSystem.upkeep ?? 0);
+  const perMana = spellSystem.manaCostVariable
+    ? Math.ceil((spellSystem.upkeepPerMana ?? 0) * (spellSystem.variableManaPaid ?? 0) - 1e-9) : 0;
+  return base + perMana + (spellSystem.extraUpkeepPaid ?? 0);
+}
+
+/**
+ * The Unterhalt the extra-cost steps of one cast add (steps 1..tier, each
+ * counted once per time it was chosen) - see data/spell.mjs#extraManaCosts.
+ * upkeepBonus.
+ * @param {object} spellSystem
+ * @param {number} tier
+ * @param {number[]} [counts]
+ * @return {number}
+ */
+export function computeExtraUpkeep(spellSystem, tier, counts = []) {
+  if (tier <= 0) return 0;
+  const used = normalizeExtraCostCounts(spellSystem, counts);
+  return (spellSystem.extraManaCosts ?? []).slice(0, tier)
+    .reduce((sum, entry, index) => sum + (entry.upkeepBonus ?? 0) * used[index], 0);
 }
 
 /**

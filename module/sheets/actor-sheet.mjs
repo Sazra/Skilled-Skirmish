@@ -1054,7 +1054,9 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       // Gates the Spells tab's own quick sustaining toggle (see
       // #toggleSpellSustaining/actor-spells.hbs) - only a spell with a real
       // ongoing cost to actually start/stop shows it at all.
-      item.canSustain = !!(item.system.manaCostPerRound || item.system.upkeep || item.system.upkeepVariable);
+      item.canSustain = !!(item.system.manaCostPerRound || item.system.upkeep || item.system.upkeepVariable
+        || (item.system.manaCostVariable && item.system.upkeepPerMana)
+        || item.system.extraManaCosts?.some(tier => tier.upkeepBonus));
       // The ranges as short text ("30m/6m", "0,5m³") for the spell list.
       item.rangeSummary = (item.system.ranges ?? []).map(range => formatRangeShort(range)).join('/');
     }

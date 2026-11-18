@@ -80,6 +80,17 @@ export default class SKSKSpell extends SKSKItemBase {
     // mana while the spell sustains). See helpers/spells.mjs#getSpellUpkeep.
     schema.upkeepVariable = new fields.BooleanField({ required: true, initial: false });
     schema.variableUpkeepPaid = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+    // Unterhalt that scales with the "?" Mana cost: this many Unterhalt per
+    // Mana of the base amount chosen at cast time (e.g. 3 = "3 Unterhalt pro
+    // Mana", 0.5 = "50 % der Kosten"); added to upkeep / the amount entered
+    // for a "?" Unterhalt, rounded up. Only counts with a "?" Mana cost
+    // (manaCostVariable). See helpers/spells.mjs#getSpellUpkeep.
+    schema.upkeepPerMana = new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 });
+    // Unterhalt added by the extra-cost steps (extraManaCosts[].upkeepBonus)
+    // paid at the last cast - stored at cast time (helpers/spell-rolls.mjs#
+    // rollSpellItem), because the spell is only switched to "sustaining"
+    // afterwards and the chosen steps would be forgotten by then.
+    schema.extraUpkeepPaid = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
     // Whether this spell's ongoing effect (and therefore its
     // manaCostPerRound/upkeep, if either is set) is currently active on its
     // owning actor. Toggled manually - e.g. once a spell's own stated
@@ -163,6 +174,9 @@ export default class SKSKSpell extends SKSKItemBase {
       // - saveDcChanges: raises/lowers the DC of one saving throw
       //   (savingThrowIndex is 0-based into "savingThrows").
       extraAttacks: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+      // Additional Unterhalt (maximum-Mana reduction while sustaining) per
+      // time this step was chosen - see computeExtraUpkeep.
+      upkeepBonus: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
       rangeChanges: new fields.ArrayField(new fields.SchemaField({
         rangeIndex: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
         // Fractions allowed (e.g. 0.5 m, or 0.25 m³ for a cuboid).
