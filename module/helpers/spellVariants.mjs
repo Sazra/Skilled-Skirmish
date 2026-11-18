@@ -18,6 +18,7 @@
  */
 
 import { consumeUsedEffects } from './extraDamage.mjs';
+import { applyMetamagic, findMetamagicMarkers, isMetamagicCode, renderMetamagicLines } from './metamagic.mjs';
 
 const normalize = (text) => String(text ?? '').trim().toLowerCase();
 
@@ -39,7 +40,9 @@ function findMarkerEffects(actor, condition) {
  * Which of a spell's variants are active for its caster right now.
  * @param {Item} item   An owned spell.
  * @return {{indexes: number[], markerIds: Set<string>}}   markerIds: the ids
- *   of every effect that satisfied a condition of an active variant.
+ *   of every effect that satisfied a condition of an active variant. The
+ *   indexes also hold the Metamagie codes (helpers/metamagic.mjs) of the
+ *   caster's markers - a Metamagie spell itself is never changed by them.
  */
 export function detectSpellVariants(item) {
   const result = { indexes: [], markerIds: new Set() };
@@ -53,6 +56,12 @@ export function detectSpellVariants(item) {
     if (matches.some(found => !found.length)) continue;
     result.indexes.push(index);
     for (const found of matches) for (const effect of found) result.markerIds.add(effect.id);
+  }
+
+  if (!item.system.metamagic) {
+    const meta = findMetamagicMarkers(actor);
+    result.indexes.push(...meta.codes);
+    for (const id of meta.markerIds) result.markerIds.add(id);
   }
   return result;
 }
@@ -100,12 +109,15 @@ function applyChange(data, { key, type, value }) {
 export function buildVariantSystem(item, indexes) {
   const data = item.system.toObject();
   for (const index of indexes) {
+    if (isMetamagicCode(index)) continue;
     const variant = item.system.variants?.[index];
     if (!variant) continue;
     for (const change of variant.changes ?? []) applyChange(data, change);
     for (const damage of variant.addDamages ?? []) data.damages.push(foundry.utils.deepClone(damage));
     for (const status of variant.addStatusEffects ?? []) data.statusEffects.push(foundry.utils.deepClone(status));
   }
+  // Metamagie (helpers/metamagic.mjs) comes last, on top of the variants.
+  applyMetamagic(data, indexes.filter(isMetamagicCode), item.actor);
   return data;
 }
 
@@ -156,7 +168,7 @@ export function parseVariantAttribute(text) {
  * @return {string}
  */
 export function renderVariantLines(realItem, indexes) {
-  return indexes.map(index => {
+  return renderMetamagicLines(realItem, indexes) + indexes.filter(index => !isMetamagicCode(index)).map(index => {
     const variant = realItem.system.variants?.[index];
     if (!variant) return '';
     const label = foundry.utils.escapeHTML(variant.label || game.i18n.format('SKSK.Spell.Variant.Numbered', { number: index + 1 }));

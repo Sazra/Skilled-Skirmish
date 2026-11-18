@@ -701,6 +701,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       context.systemlessCategoryChoices = CONFIG.SKSK.systemlessMagicCategories;
       context.combinedSkillChoices = getSkillBonusChoices();
       context.rangeIndicatorChoices = CONFIG.SKSK.rangeIndicators;
+      context.metamagicChoices = CONFIG.SKSK.metamagicTypes;
       context.overchargeEffectChoices = {
         scaling: 'SKSK.Spell.OverchargeEffectScaling',
         extraAttack: 'SKSK.Spell.OverchargeEffectExtraAttack',

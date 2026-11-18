@@ -217,6 +217,9 @@ export async function applySpellEffectGroup(itemUuid, group, savingThrowIndex, d
     delete effectData._id;
     effectData.disabled = false;
     effectData.origin = item.uuid;
+    // Verlängere/Transzendiere (helpers/metamagic.mjs): a longer duration.
+    const durationFactor = item.system.metaDurationMultiplier ?? 1;
+    if (durationFactor > 1 && effectData.duration?.value) effectData.duration.value *= durationFactor;
     if (element) {
       effectData.name = replaceElementPlaceholders(effectData.name, element);
       for (const change of effectData.changes ?? []) {

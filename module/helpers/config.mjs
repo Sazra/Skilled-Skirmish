@@ -364,6 +364,24 @@ SKSK.systemlessMagicCategories = {
   general: 'SKSK.Spell.SystemlessCategory.General',
 };
 
+// The rules a Metamagie spell can stand for - see data/spell.mjs#metamagic.
+SKSK.metamagicTypes = {
+  '': 'SKSK.Metamagic.None',
+  distance: 'SKSK.Metamagic.Type.distance',
+  raise: 'SKSK.Metamagic.Type.raise',
+  element: 'SKSK.Metamagic.Type.element',
+  hinder: 'SKSK.Metamagic.Type.hinder',
+  silent: 'SKSK.Metamagic.Type.silent',
+  secure: 'SKSK.Metamagic.Type.secure',
+  immobile: 'SKSK.Metamagic.Type.immobile',
+  extend: 'SKSK.Metamagic.Type.extend',
+  overcharge: 'SKSK.Metamagic.Type.overcharge',
+  double: 'SKSK.Metamagic.Type.double',
+  strengthen: 'SKSK.Metamagic.Type.strengthen',
+  maximize: 'SKSK.Metamagic.Type.maximize',
+  transcend: 'SKSK.Metamagic.Type.transcend',
+};
+
 // The indicator paired with each of a spell's ranges - e.g. a fireball is
 // a 30m Projectile followed by a 6m Radius explosion.
 SKSK.rangeIndicators = {

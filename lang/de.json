@@ -1634,6 +1634,126 @@
             "Expired": "{name}: Wirkungsdauer abgelaufen - deaktiviert.",
             "NotEnoughMana": "Nicht genug Mana."
         },
+        "Metamagic": {
+            "Label": "Metamagie",
+            "Hint": "Wirkt dieser Zauber auf den nächsten Zauber des Zaubernden? Beim Wirken erscheint ein Marker (Bis Nutzung), der den nächsten Zauber nach der gewählten Regel verändert.",
+            "None": "Keine (normaler Zauber)",
+            "Type": {
+                "distance": "Distanziere",
+                "raise": "Erhöhe",
+                "element": "Elementarisierung",
+                "hinder": "Erschwere",
+                "silent": "Still",
+                "secure": "Sichere",
+                "immobile": "Unbeweglich",
+                "extend": "Verlängere",
+                "overcharge": "Überlade",
+                "double": "Verdopple",
+                "strengthen": "Verstärke",
+                "maximize": "Maximiere",
+                "transcend": "Transzendiere"
+            },
+            "MarkerPlaced": "{name}: Der nächste Zauber wird verändert.",
+            "SecondTarget": "Zweites Ziel (Verdopple)",
+            "Prompt": {
+                "Title": "{name}",
+                "Confirm": "Wirken",
+                "Levels": "Zauberstufen erhöhen (höchstens {max})",
+                "Overcharge": "Überladungen (höchstens {max})",
+                "Element": "Element",
+                "Hinder": "Rettungswürfe",
+                "HinderHarder": "Erschweren (SG höher)",
+                "HinderEasier": "Erleichtern (SG niedriger)"
+            },
+            "Note": {
+                "distance": {
+                    "Applied": "Reichweite {from} → {to}.",
+                    "None": {
+                        "Excluded": "Wirkt nicht auf Kampfkunst- und Drakonische Zauber.",
+                        "Range": "Der Zauber hat keine Reichweite, die sich ändern lässt.",
+                        "Limit": "Direkte Reichweite lässt sich erst ab Magiekontrolle 5 ändern."
+                    }
+                },
+                "raise": {
+                    "Applied": "Zauberstufe {from} → {to}, SG erhöht, Schadenswürfel: {dice}.",
+                    "Clamped": "Gewünscht waren {wanted} Stufen, möglich sind {got} (Magiekontrolle, Stufe 10, Schulenstufe + 3).",
+                    "None": {
+                        "Limit": "Keine Erhöhung möglich (Magiekontrolle, Höchststufe 10 oder Schulenstufe + 3)."
+                    }
+                },
+                "element": {
+                    "Applied": "Schaden jetzt: {element}.",
+                    "LifeNoRoll": "Element Leben: Der Schaden braucht weder Angriffs- noch Rettungswurf.",
+                    "FromLife": "Vorher Element Leben: Der Zauber braucht jetzt einen Angriffswurf gegen die Magieresistenz.",
+                    "None": {
+                        "Choice": "Kein gültiges Element gewählt.",
+                        "Damage": "Der Zauber verursacht keinen Schaden."
+                    }
+                },
+                "hinder": {
+                    "Applied": "Rettungswürfe {delta} (SG {dc}).",
+                    "None": {
+                        "Save": "Der Zauber hat keinen Rettungswurf.",
+                        "Limit": "Magiekontrolle zu niedrig (mindestens 2)."
+                    }
+                },
+                "silent": {
+                    "Applied": "Wirkweise Vokal entfällt, {saved} AP gespart.",
+                    "AppliedRunes": "Vokal wird zu Runenzeichen, {saved} AP gespart.",
+                    "None": {
+                        "Excluded": "Wirkt nicht auf Bardenmagie.",
+                        "Method": "Der Zauber hat die Wirkweise Vokal nicht."
+                    }
+                },
+                "immobile": {
+                    "Applied": "Wirkweise Bewegung entfällt, {saved} AP gespart.",
+                    "AppliedRunes": "Bewegung wird zu Runenzeichen, {saved} AP gespart.",
+                    "None": {
+                        "Excluded": "Wirkt nicht auf Kampfkunst.",
+                        "Method": "Der Zauber hat die Wirkweise Bewegung nicht."
+                    }
+                },
+                "secure": {
+                    "Applied": "Bis zu {count} Kreaturen werden ignoriert (bei Zaubern über mehrere Runden {rounds} Runden lang)."
+                },
+                "extend": {
+                    "Applied": "Dauer ×{factor}: {from} → {to}.",
+                    "None": {
+                        "Duration": "Keine Dauer, die sich verlängern ließe (oder bereits 24 Stunden)."
+                    }
+                },
+                "overcharge": {
+                    "Applied": "{count} Überladung(en) ohne zusätzliche AP, 50 % Mehrkosten je Stufe.",
+                    "None": {
+                        "Limit": "Keine Überladung möglich."
+                    }
+                },
+                "double": {
+                    "Applied": "Der Zauber wird ein weiteres Mal auf ein anderes Ziel gewirkt.",
+                    "None": {
+                        "Range": "Nur gezielte, direkte oder Projektilzauber lassen sich verdoppeln."
+                    }
+                },
+                "strengthen": {
+                    "Applied": "Jeder der {dice} Schadenswürfel zählt mindestens halb.",
+                    "None": {
+                        "Dice": "Der Zauber würfelt keinen Schaden."
+                    }
+                },
+                "maximize": {
+                    "Applied": "Maximaler Schaden bzw. maximale Heilung.",
+                    "None": {
+                        "Dice": "Der Zauber würfelt keinen Schaden."
+                    }
+                },
+                "transcend": {
+                    "Applied": "Doppelte Würfel, 1 AP, doppelte Dauer und Reichweite.",
+                    "None": {
+                        "Nothing": "Der Zauber lässt sich nicht verstärken."
+                    }
+                }
+            }
+        },
         "Spell": {
             "ManaCost": "Mana",
             "APCost": "AP",

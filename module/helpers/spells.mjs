@@ -868,6 +868,9 @@ export function computeSpellManaCost(spellSystem, actor, overchargeCount = 0, ex
     ? Math.max(0, Number(variableMana ?? spellSystem.variableManaPaid ?? 0) || 0)
     : (spellSystem.manaCost ?? 0);
   let cost = baseCost + computeExtraManaCostSum(spellSystem, extraCostTier, extraCostCounts);
+  // Metamagie (helpers/metamagic.mjs) surcharges, present on the stand-in data
+  // of a changed cast only.
+  cost = cost * (1 + (spellSystem.manaSurchargePercent ?? 0) / 100) + (spellSystem.manaSurchargeFlat ?? 0);
   let discountPercent = 0;
   let increased = false;
 

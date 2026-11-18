@@ -441,6 +441,14 @@ export default class SKSKSpell extends SKSKItemBase {
     // A matching marker with the duration option "Bis Nutzung" is removed
     // once it was used by a cast; one with any other duration triggers the
     // variant on every cast while it lasts.
+    // Metamagie: the rule this spell stands for when it changes the NEXT spell
+    // its caster casts, whatever that is (see helpers/metamagic.mjs). Blank for
+    // an ordinary spell.
+    schema.metamagic = new fields.StringField({
+      required: true, blank: true, initial: "",
+      choices: ["", "distance", "raise", "element", "hinder", "silent", "secure", "immobile", "extend", "overcharge", "double", "strengthen", "maximize", "transcend"]
+    });
+
     schema.variants = new fields.ArrayField(new fields.SchemaField({
       label: new fields.StringField({ required: true, blank: true, initial: "" }),
       note: new fields.StringField({ required: true, blank: true, initial: "" }),

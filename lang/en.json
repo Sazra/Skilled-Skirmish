@@ -1634,6 +1634,126 @@
       "Expired": "{name}: duration expired - deactivated.",
       "NotEnoughMana": "Not enough Mana."
     },
+    "Metamagic": {
+      "Label": "Metamagic",
+      "Hint": "Does this spell change the caster's NEXT spell? Casting it puts a marker (until used) on the caster that changes the next spell by the chosen rule.",
+      "None": "None (ordinary spell)",
+      "Type": {
+        "distance": "Extend Range",
+        "raise": "Raise",
+        "element": "Elementalize",
+        "hinder": "Hinder",
+        "silent": "Silent",
+        "secure": "Safeguard",
+        "immobile": "Still Body",
+        "extend": "Prolong",
+        "overcharge": "Overload",
+        "double": "Duplicate",
+        "strengthen": "Steady",
+        "maximize": "Maximize",
+        "transcend": "Transcend"
+      },
+      "MarkerPlaced": "{name}: The next spell will be changed.",
+      "SecondTarget": "Second target (Duplicate)",
+      "Prompt": {
+        "Title": "{name}",
+        "Confirm": "Cast",
+        "Levels": "Spell levels to raise (at most {max})",
+        "Overcharge": "Overcharges (at most {max})",
+        "Element": "Element",
+        "Hinder": "Saving throws",
+        "HinderHarder": "Harder (higher DC)",
+        "HinderEasier": "Easier (lower DC)"
+      },
+      "Note": {
+        "distance": {
+          "Applied": "Range {from} → {to}.",
+          "None": {
+            "Excluded": "Does not affect Martial Arts or Draconic spells.",
+            "Range": "The spell has no range that can be changed.",
+            "Limit": "A direct range can only be changed from Magic Control 5."
+          }
+        },
+        "raise": {
+          "Applied": "Spell level {from} → {to}, DC raised, damage dice: {dice}.",
+          "Clamped": "Wanted {wanted} levels, possible {got} (Magic Control, level 10, school level + 3).",
+          "None": {
+            "Limit": "No increase possible (Magic Control, maximum level 10 or school level + 3)."
+          }
+        },
+        "element": {
+          "Applied": "Damage is now: {element}.",
+          "LifeNoRoll": "Element Life: the damage needs neither an attack roll nor a saving throw.",
+          "FromLife": "Was Element Life before: the spell now needs an attack roll against Magic Resistance.",
+          "None": {
+            "Choice": "No valid element chosen.",
+            "Damage": "The spell deals no damage."
+          }
+        },
+        "hinder": {
+          "Applied": "Saving throws {delta} (DC {dc}).",
+          "None": {
+            "Save": "The spell has no saving throw.",
+            "Limit": "Magic Control too low (at least 2)."
+          }
+        },
+        "silent": {
+          "Applied": "Vocal casting method removed, {saved} AP saved.",
+          "AppliedRunes": "Vocal becomes Runes, {saved} AP saved.",
+          "None": {
+            "Excluded": "Does not affect Bardic magic.",
+            "Method": "The spell does not use the Vocal casting method."
+          }
+        },
+        "immobile": {
+          "Applied": "Movement casting method removed, {saved} AP saved.",
+          "AppliedRunes": "Movement becomes Runes, {saved} AP saved.",
+          "None": {
+            "Excluded": "Does not affect Martial Arts.",
+            "Method": "The spell does not use the Movement casting method."
+          }
+        },
+        "secure": {
+          "Applied": "Up to {count} creatures are ignored (for multi-round spells for {rounds} rounds)."
+        },
+        "extend": {
+          "Applied": "Duration ×{factor}: {from} → {to}.",
+          "None": {
+            "Duration": "No duration that could be extended (or already 24 hours)."
+          }
+        },
+        "overcharge": {
+          "Applied": "{count} overcharge(s) without extra AP, 50% extra Mana per level.",
+          "None": {
+            "Limit": "No overcharge possible."
+          }
+        },
+        "double": {
+          "Applied": "The spell is cast a second time on another target.",
+          "None": {
+            "Range": "Only targeted, direct or projectile spells can be duplicated."
+          }
+        },
+        "strengthen": {
+          "Applied": "Each of the {dice} damage dice counts at least half.",
+          "None": {
+            "Dice": "The spell rolls no damage."
+          }
+        },
+        "maximize": {
+          "Applied": "Maximum damage or healing.",
+          "None": {
+            "Dice": "The spell rolls no damage."
+          }
+        },
+        "transcend": {
+          "Applied": "Doubled dice, 1 AP, doubled duration and range.",
+          "None": {
+            "Nothing": "The spell cannot be strengthened."
+          }
+        }
+      }
+    },
     "Spell": {
       "ManaCost": "Mana",
       "APCost": "AP",

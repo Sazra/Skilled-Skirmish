@@ -30,6 +30,13 @@
   </div>
 
   <div class="resource">
+    <label class="resource-label" title="{{localize 'SKSK.Metamagic.Hint'}}">{{localize 'SKSK.Metamagic.Label'}}</label>
+    <select name="system.metamagic">
+      {{selectOptions metamagicChoices selected=system.metamagic localize=true}}
+    </select>
+  </div>
+
+  <div class="resource">
     <label class="resource-label casting-method-option" title="{{localize 'SKSK.Spell.OverchargeAutoEffectsHint'}}">
       <input type="checkbox" name="system.overchargeAutoEffects" {{checked system.overchargeAutoEffects}} />
       {{localize 'SKSK.Spell.OverchargeAutoEffects'}}

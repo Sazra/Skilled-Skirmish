@@ -7,6 +7,7 @@ import {
   getSpellElementOptions, resolveSpellDamages, getSpellSchool,
 } from './spells.mjs';
 import { rollExtraDamage, consumeUsedEffects } from './extraDamage.mjs';
+import { promptMetamagicChoice, placeMetamagicMarker } from './metamagic.mjs';
 import {
   detectSpellVariants, createVariantItem, renderVariantLines, consumeVariantMarkers, variantAttribute,
 } from './spellVariants.mjs';
@@ -1017,6 +1018,14 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
     if (variableAp !== system.variableApPaid) await item.update({ 'system.variableApPaid': variableAp });
   }
 
+  // A Metamagie spell (helpers/metamagic.mjs) may need a choice (how many
+  // levels, which element, ...): asked now, closing the prompt aborts the cast.
+  let metaChoice = null;
+  if (actor && !abilityOptions && system.metamagic) {
+    metaChoice = await promptMetamagicChoice(item);
+    if (metaChoice === null) return;
+  }
+
   // An element-choice spell (data/spell.mjs#elementChoice): "choice" asks
   // which element once (closing the prompt aborts the cast); each cast then
   // resolves it - a "random" pick (or mode "random") is rolled per cast.
@@ -1049,7 +1058,8 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
       const found = detectSpellVariants(item);
       const castItem = createVariantItem(item, found.indexes);
       const cast = await resolveCastElement(castItem, elementPick);
-      const castCtx = { ...ctx, element: cast.element, variants: found.indexes };
+      const castOvercharge = overchargeCount + (castItem.system.metaOvercharge ?? 0);
+      const castCtx = { ...ctx, overchargeCount: castOvercharge, element: cast.element, variants: found.indexes };
       const paid = await paySpellCast(castItem, castCtx);
       if (paid.aborted) {
         if (number === 1) return;
@@ -1058,7 +1068,13 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
       totalMana += paid.manaCost;
       const markerHTML = await consumeVariantMarkers(actor, found.markerIds);
       const entry = [`<div class="sksk-multicast-heading">${game.i18n.format('SKSK.Spell.Roll.MultiCastNumber', { number, total: castCount })}</div>`, renderVariantLines(item, found.indexes), markerHTML, cast.html, ...paid.parts];
-      if (!paid.deferred) entry.push(...(await renderSpellEffectParts(castItem, overchargeCount, extraCostTier, extraCostCounts, variableMana, cast.element)));
+      if (!paid.deferred) {
+        entry.push(...(await renderSpellEffectParts(castItem, castOvercharge, extraCostTier, extraCostCounts, variableMana, cast.element)));
+        if (castItem.system.metaDouble) {
+          entry.push(`<div class="sksk-multicast-heading">${game.i18n.localize('SKSK.Metamagic.SecondTarget')}</div>`,
+            ...(await renderSpellEffectParts(castItem, castOvercharge, extraCostTier, extraCostCounts, variableMana, cast.element)));
+        }
+      }
       parts.push(`<div class="sksk-multicast-entry">${entry.join('')}</div>`);
     }
     if (actor && totalMana > 0) {
@@ -1074,15 +1090,24 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
   const cast = await resolveCastElement(castItem, elementPick);
   ctx.element = cast.element;
   ctx.variants = found.indexes;
+  // Überlade (Metamagie): extra Überladungen on top of the chosen ones.
+  overchargeCount += castItem.system.metaOvercharge ?? 0;
+  ctx.overchargeCount = overchargeCount;
   const paid = abilityOptions ? await payAbilityCast(abilityOptions) : await paySpellCast(castItem, ctx);
   if (paid.aborted) return;
   parts.push(...paid.parts);
+  if (metaChoice !== null) parts.push(await placeMetamagicMarker(actor, item, metaChoice));
   parts.push(renderVariantLines(item, found.indexes), await consumeVariantMarkers(actor, found.markerIds));
   if (cast.html) parts.push(cast.html);
   if (abilityOptions?.descriptionHTML) parts.push(abilityOptions.descriptionHTML);
   parts.push(...(await renderSpellInfoParts(castItem, ctx, !!abilityOptions)));
   if (!paid.deferred) {
     parts.push(...(await renderSpellEffectParts(castItem, overchargeCount, extraCostTier, extraCostCounts, variableMana, cast.element)));
+    // Verdopple (Metamagie): the spell takes effect a second time.
+    if (castItem.system.metaDouble) {
+      parts.push(`<div class="sksk-multicast-heading">${game.i18n.localize('SKSK.Metamagic.SecondTarget')}</div>`,
+        ...(await renderSpellEffectParts(castItem, overchargeCount, extraCostTier, extraCostCounts, variableMana, cast.element)));
+    }
   }
 
   return postSpellChatCard(item, parts, abilityOptions?.name ?? item.name);
@@ -1111,7 +1136,7 @@ async function payAbilityCast(options) {
  * @return {boolean}
  */
 export function canCastSpellMultiple(item) {
-  if (!item?.actor || isCombatActive()) return false;
+  if (!item?.actor || isCombatActive() || item.system.metamagic) return false;
   return ['ap', 'hours', 'days'].includes(item.system.apCostUnit ?? 'ap');
 }
 
@@ -1415,7 +1440,12 @@ async function resolvePendingSpell(actor, item, reflexGrant, overchargeCount = 0
   if (element) {
     parts.push(`<div class="sksk-roll-line sksk-roll-element"><strong>${game.i18n.localize('SKSK.Spell.Element.Label')}:</strong> ${game.i18n.localize(CONFIG.SKSK.damageTypes[element] ?? element)}</div>`);
   }
-  parts.push(...(await renderSpellEffectParts(createVariantItem(item, variants), overchargeCount, extraCostTier, extraCostCounts, variableMana, element)));
+  const pendingItem = createVariantItem(item, variants);
+  parts.push(...(await renderSpellEffectParts(pendingItem, overchargeCount, extraCostTier, extraCostCounts, variableMana, element)));
+  if (pendingItem.system.metaDouble) {
+    parts.push(`<div class="sksk-multicast-heading">${game.i18n.localize('SKSK.Metamagic.SecondTarget')}</div>`,
+      ...(await renderSpellEffectParts(pendingItem, overchargeCount, extraCostTier, extraCostCounts, variableMana, element)));
+  }
   parts.push(formatSkillFpGrantLine(reflexGrant));
   await postSpellChatCard(item, parts);
 }
