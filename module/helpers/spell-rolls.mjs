@@ -33,6 +33,7 @@ import {
   getTechniqueEffectPayload, renderTechniqueSavingThrowHTML,
 } from './technique-rolls.mjs';
 import { formatRollCardHeading } from './rollCard.mjs';
+import { computePassiveManaRegenPerSegment } from './rest.mjs';
 import { wrapRerollIcons } from './luck.mjs';
 import {
   hasRollTwiceSpell, rollPossiblyDoubledDamage, renderDamageRerollOnesIcon, wrapDamageBlock,
@@ -511,7 +512,14 @@ async function renderDamageRoll(damage, actor, overchargeCount = 0, spellSystem 
   // rollData exposes the actor's custom resources (see actor-base.mjs#
   // getRollData) as "@<abbreviation>", usable directly in the formula.
   const rollTwice = hasRollTwiceSpell(actor);
-  const { total: rollTotal, html: rendered, pickedRoll } = await rollPossiblyDoubledDamage(formula, actor?.getRollData(), rollTwice);
+  // A Barrier entry may use the Mana paid for the spell (@mana) and the
+  // caster's passive Mana regeneration (@manaRegen) in its formula.
+  const rollData = actor?.getRollData();
+  if (isBarrier && rollData) {
+    rollData.mana = source?.mana ?? 0;
+    rollData.manaRegen = Math.max(0, computePassiveManaRegenPerSegment(actor));
+  }
+  const { total: rollTotal, html: rendered, pickedRoll } = await rollPossiblyDoubledDamage(formula, rollData, rollTwice);
   const typeLabel = game.i18n.localize(isBarrier ? 'SKSK.Barrier.DamageType' : (CONFIG.SKSK.damageTypes[damage.damageType] ?? damage.damageType));
   // A Spell with its own "ignores Barrier" switch tags every damage entry it
   // produces - see helpers/damageApplication.mjs#applyResolvedDamageEntries.
@@ -712,7 +720,10 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
     // A Barrier entry is no damage: no technique bonus, no extra damage, and
     // it does not count as "an attack/damage was rolled" for "Bis Nutzung".
     if (damage.damageType === SPELL_BARRIER) {
-      const barrierRoll = await renderDamageRoll(damage, actor, effectiveOvercharge, system, null, { name: item.name, uuid: item.uuid });
+      const barrierRoll = await renderDamageRoll(damage, actor, effectiveOvercharge, system, null, {
+        name: item.name, uuid: item.uuid,
+        mana: system.manaCostVariable ? Math.max(0, Number(variableMana ?? system.variableManaPaid ?? 0) || 0) : (system.manaCost ?? 0),
+      });
       return { html: barrierRoll.html, entry: barrierRoll.entry, extras: [] };
     }
     const applyTech = technique && !techniqueDamageApplied;
