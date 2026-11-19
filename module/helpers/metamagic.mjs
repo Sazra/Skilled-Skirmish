@@ -40,6 +40,13 @@ export const METAMAGIC_TYPES = [
 
 const CODE_BASE = 100000;
 
+/**
+ * Variant list entries from this value on are "next spell" Varianten (see
+ * helpers/spellVariants.mjs - a variant stored on another spell that changes
+ * whatever spell is cast next), not Metamagie.
+ */
+export const ENHANCEMENT_CODE_BASE = 1000000;
+
 /** Elements Elementarisierung offers; the second group from Magiekontrolle 5. */
 export const METAMAGIC_ELEMENTS = ['fire', 'water', 'earth', 'air', 'dark', 'light', 'nature', 'mental', 'life', 'death'];
 export const METAMAGIC_ELEMENTS_ADVANCED = ['electricity', 'acid', 'poison', 'piercing', 'sharp', 'blunt'];
@@ -62,7 +69,7 @@ export function encodeMetamagic(type, param = 0) {
 
 /** @param {*} value   @return {boolean} */
 export function isMetamagicCode(value) {
-  return Number.isInteger(value) && value >= CODE_BASE;
+  return Number.isInteger(value) && value >= CODE_BASE && value < ENHANCEMENT_CODE_BASE;
 }
 
 /**

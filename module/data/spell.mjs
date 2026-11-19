@@ -473,9 +473,32 @@ export default class SKSKSpell extends SKSKItemBase {
       choices: ["", "distance", "raise", "element", "hinder", "silent", "secure", "immobile", "extend", "overcharge", "double", "strengthen", "maximize", "transcend"]
     });
 
+    // Scope "next" (Nächster Zauber): the variant is stored on THIS spell but
+    // changes whatever spell its caster casts next - a general
+    // infusion/enhancement layer that needs no code per spell (see
+    // helpers/spellVariants.mjs#findEnhancements). It applies while its
+    // conditions are met (blank = while this spell's own marker effect is on
+    // the caster) and the next spell passes its filter; the marker (duration
+    // option "Bis Nutzung") is used up by that next spell, also when the
+    // filter does not match (consumeOnMismatch).
     schema.variants = new fields.ArrayField(new fields.SchemaField({
       label: new fields.StringField({ required: true, blank: true, initial: "" }),
       note: new fields.StringField({ required: true, blank: true, initial: "" }),
+      scope: new fields.StringField({ required: true, blank: false, initial: "spell", choices: ["spell", "next"] }),
+      // Only for scope "next". Every list is comma separated, blank = no
+      // restriction; all given restrictions must hold.
+      filter: new fields.SchemaField({
+        spellNames: new fields.StringField({ required: true, blank: true, initial: "" }),
+        spellTypes: new fields.StringField({ required: true, blank: true, initial: "" }),
+        schools: new fields.StringField({ required: true, blank: true, initial: "" }),
+        excludeSchools: new fields.StringField({ required: true, blank: true, initial: "" }),
+        damageTypes: new fields.StringField({ required: true, blank: true, initial: "" }),
+        excludeDamageTypes: new fields.StringField({ required: true, blank: true, initial: "" }),
+        requiresAttack: new fields.BooleanField({ initial: false }),
+        requiresDamage: new fields.BooleanField({ initial: false }),
+        requiresSavingThrow: new fields.BooleanField({ initial: false }),
+        consumeOnMismatch: new fields.BooleanField({ initial: true }),
+      }),
       conditions: new fields.ArrayField(new fields.SchemaField({
         // "status": a status effect id (see the world's Status Effects);
         // "effect": an Active Effect with exactly this name.
@@ -493,6 +516,12 @@ export default class SKSKSpell extends SKSKItemBase {
         trigger: new fields.StringField({ required: true, blank: false, initial: "unconditional", choices: ["attack", "save", "unconditional"] }),
         savingThrowIndex: new fields.NumberField({ required: false, nullable: true, integer: true, initial: null }),
         extraCostIndex: new fields.NumberField({ required: false, nullable: true, integer: true, initial: null }),
+        // Only for damageType "@barrier" - see damages above.
+        barrierStackable: new fields.BooleanField({ initial: false }),
+        barrierDuration: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+        barrierDurationUnit: new fields.StringField({
+          required: true, blank: false, initial: "rounds", choices: ["rounds", "minutes", "hours", "days"]
+        }),
         attributeBonuses: new fields.ArrayField(new fields.SchemaField({
           attribute: new fields.StringField({ required: true, blank: false, initial: "str" }),
           useModifier: new fields.BooleanField({ initial: true }),

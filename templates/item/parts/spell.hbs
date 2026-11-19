@@ -940,6 +940,63 @@
         </div>
 
         <div class="resource">
+          <label class="resource-label" title="{{localize 'SKSK.Spell.Variant.ScopeHint'}}">{{localize 'SKSK.Spell.Variant.Scope'}}</label>
+          <select name="system.variants.{{index}}.scope">
+            {{selectOptions ../variantScopeChoices selected=variant.scope localize=true}}
+          </select>
+        </div>
+
+        {{#if (eq variant.scope "next")}}
+        <div class="resource">
+          <label class="resource-label" title="{{localize 'SKSK.Spell.Variant.FilterHint'}}">{{localize 'SKSK.Spell.Variant.Filter'}}</label>
+          <div class="grid grid-2col">
+            <div>
+              <label class="resource-label">{{localize 'SKSK.Spell.Variant.FilterNames'}}</label>
+              <input type="text" name="system.variants.{{index}}.filter.spellNames" value="{{variant.filter.spellNames}}" />
+            </div>
+            <div>
+              <label class="resource-label">{{localize 'SKSK.Spell.Variant.FilterTypes'}}</label>
+              <input type="text" name="system.variants.{{index}}.filter.spellTypes" value="{{variant.filter.spellTypes}}" placeholder="simple, advanced, combined, systemless" />
+            </div>
+            <div>
+              <label class="resource-label">{{localize 'SKSK.Spell.Variant.FilterSchools'}}</label>
+              <input type="text" name="system.variants.{{index}}.filter.schools" value="{{variant.filter.schools}}" />
+            </div>
+            <div>
+              <label class="resource-label">{{localize 'SKSK.Spell.Variant.FilterExcludeSchools'}}</label>
+              <input type="text" name="system.variants.{{index}}.filter.excludeSchools" value="{{variant.filter.excludeSchools}}" />
+            </div>
+            <div>
+              <label class="resource-label">{{localize 'SKSK.Spell.Variant.FilterDamageTypes'}}</label>
+              <input type="text" name="system.variants.{{index}}.filter.damageTypes" value="{{variant.filter.damageTypes}}" placeholder="fire, electricity" />
+            </div>
+            <div>
+              <label class="resource-label">{{localize 'SKSK.Spell.Variant.FilterExcludeDamageTypes'}}</label>
+              <input type="text" name="system.variants.{{index}}.filter.excludeDamageTypes" value="{{variant.filter.excludeDamageTypes}}" placeholder="dark" />
+            </div>
+          </div>
+          <div class="grid grid-2col">
+            <label class="casting-method-option">
+              <input type="checkbox" name="system.variants.{{index}}.filter.requiresAttack" {{checked variant.filter.requiresAttack}} />
+              {{localize 'SKSK.Spell.Variant.FilterRequiresAttack'}}
+            </label>
+            <label class="casting-method-option">
+              <input type="checkbox" name="system.variants.{{index}}.filter.requiresDamage" {{checked variant.filter.requiresDamage}} />
+              {{localize 'SKSK.Spell.Variant.FilterRequiresDamage'}}
+            </label>
+            <label class="casting-method-option">
+              <input type="checkbox" name="system.variants.{{index}}.filter.requiresSavingThrow" {{checked variant.filter.requiresSavingThrow}} />
+              {{localize 'SKSK.Spell.Variant.FilterRequiresSave'}}
+            </label>
+            <label class="casting-method-option" title="{{localize 'SKSK.Spell.Variant.ConsumeOnMismatchHint'}}">
+              <input type="checkbox" name="system.variants.{{index}}.filter.consumeOnMismatch" {{checked variant.filter.consumeOnMismatch}} />
+              {{localize 'SKSK.Spell.Variant.ConsumeOnMismatch'}}
+            </label>
+          </div>
+        </div>
+        {{/if}}
+
+        <div class="resource">
           <label class="resource-label" title="{{localize 'SKSK.Spell.Variant.ConditionsHint'}}">{{localize 'SKSK.Spell.Variant.Conditions'}}</label>
           <ol class="items-list items-list-compact">
             <li class="item flexrow items-header">

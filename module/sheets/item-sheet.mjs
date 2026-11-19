@@ -795,6 +795,10 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
         status: 'SKSK.Spell.Variant.KindStatus',
         effect: 'SKSK.Spell.Variant.KindEffect',
       };
+      context.variantScopeChoices = {
+        spell: 'SKSK.Spell.Variant.ScopeSpell',
+        next: 'SKSK.Spell.Variant.ScopeNext',
+      };
       context.variantChangeTypeChoices = {
         set: 'SKSK.Spell.Variant.TypeSet',
         add: 'SKSK.Spell.Variant.TypeAdd',
@@ -1156,7 +1160,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
 
   static async #addVariant(event, target) {
     await this.#addArrayEntry('variants', {
-      label: '', note: '', conditions: [{ kind: 'status', key: '' }], changes: [], addDamages: [], addStatusEffects: [],
+      label: '', note: '', scope: 'spell', conditions: [{ kind: 'status', key: '' }], changes: [], addDamages: [], addStatusEffects: [],
     });
   }
 
