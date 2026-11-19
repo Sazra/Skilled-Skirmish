@@ -9,6 +9,7 @@ import { resolveSpellStatusStacks, isSpellFoundryEffectActive, replaceElementPla
 import { createVariantItem } from './spellVariants.mjs';
 import { getElementalDeathChargeHeal } from './elementalChargeEffects.mjs';
 import { requestGmAction, registerGmRelayAction } from './gmRelay.mjs';
+import { getBarrierTotal, reduceBarrier, grantBarrier, rollAndGrantBarrier } from './barrier.mjs';
 
 /**
  * NPC-facing chat line per helpers/defense.mjs#applyElementalDefense
@@ -85,10 +86,12 @@ export function resolveClickRoller() {
  */
 export function mergeDamageEntries(entries) {
   const totals = new Map();
-  for (const { damageType, amount, ignoresBarrier } of entries) {
+  for (const { damageType, amount, ignoresBarrier, barrier } of entries) {
     if (!(amount > 0)) continue;
-    const key = `${damageType}|${ignoresBarrier ? 1 : 0}`;
-    const existing = totals.get(key) ?? { damageType, amount: 0, ...(ignoresBarrier ? { ignoresBarrier: true } : {}) };
+    // A Barrier grant (damageType "barrier", see helpers/barrier.mjs) only
+    // merges with another one of the same kind and duration.
+    const key = `${damageType}|${ignoresBarrier ? 1 : 0}|${barrier ? JSON.stringify(barrier) : ''}`;
+    const existing = totals.get(key) ?? { damageType, amount: 0, ...(ignoresBarrier ? { ignoresBarrier: true } : {}), ...(barrier ? { barrier } : {}) };
     existing.amount += amount;
     totals.set(key, existing);
   }
@@ -152,6 +155,10 @@ export async function applyTechniqueEffectBundle(itemUuid, defender) {
     await increaseStatusStacks(defender, entry.statusId, entry.stacks ?? 1);
     const def = getStatusEffectDefinitions().find(d => d.id === entry.statusId);
     lines.push(`<div class="sksk-roll-line sksk-roll-status-effect">${game.i18n.format('SKSK.Technique.StatusEffectApplied', { name: def?.name ?? entry.statusId, target: defender.name })}</div>`);
+  }
+  // Barrier the Technique grants whoever its effect(s) land on.
+  if (item.system.barrierGrant?.formula) {
+    lines.push(await rollAndGrantBarrier(defender, item.actor, item.system.barrierGrant, { name: item.name, origin: item.uuid }));
   }
   return lines.join('');
 }
@@ -275,7 +282,9 @@ export function renderApplyDamageButton(attacker, damageEntries, killSkillKey = 
   const payload = encodeURIComponent(JSON.stringify(entries));
   const techniqueAttrs = (techniqueEffect ? ` data-technique-item-uuid="${techniqueEffect.itemUuid}"` : '')
     + (attackComparison ? ` data-attack-comparison="${attackComparison}"` : '');
-  const label = entries.length
+  const label = entries.length && entries.every(entry => entry.damageType === 'barrier')
+    ? game.i18n.localize('SKSK.Barrier.ApplyButton')
+    : entries.length
     ? game.i18n.localize('SKSK.AttackRoll.ApplyDamage')
     : game.i18n.localize('SKSK.Technique.ApplyEffect');
   return `<button type="button" class="sksk-apply-damage" data-action="applyDamage"
@@ -325,7 +334,8 @@ export function renderApplyDamageButton(attacker, damageEntries, killSkillKey = 
  * @return {Promise<{lines: string[]}>}
  */
 export async function applyResolvedDamageEntries(defender, attacker, entries, killSkillKey, techniqueItemUuid = null) {
-  if (isDurabilityEnabled()) {
+  // A pure Barrier grant is not a hit - armor durability only suffers from damage.
+  if (isDurabilityEnabled() && entries.some(entry => entry.damageType !== 'barrier')) {
     for (const armorItem of getDurabilityAffectedArmor(defender)) {
       await armorItem.update({ 'system.durability.value': Math.max(0, armorItem.system.durability.value - 1) });
     }
@@ -339,13 +349,14 @@ export async function applyResolvedDamageEntries(defender, attacker, entries, ki
   // target) makes its damage drain Barrier faster: each point of damage
   // costs (1 + bonus/100) Barrier points, rounded up per entry.
   const barrierFactor = 1 + Math.max(0, attacker?.system.barrierDamageBonus ?? 0) / 100;
-  const barrierStart = defender.system.barrier?.value ?? 0;
+  const barrierStart = getBarrierTotal(defender);
   let barrierValue = barrierStart;
   let barrierAbsorbed = 0;
   let healTotal = 0;
   let lifeDamage = 0;
   const lines = [];
-  for (const { damageType, amount, ignoresBarrier } of entries) {
+  const barrierGrants = entries.filter(entry => entry.damageType === 'barrier');
+  for (const { damageType, amount, ignoresBarrier } of entries.filter(entry => entry.damageType !== 'barrier')) {
     const { amount: adjusted, healing, outcome } = applyElementalDefense(defender, damageType, amount);
     if (healing) {
       healTotal += adjusted;
@@ -389,7 +400,7 @@ export async function applyResolvedDamageEntries(defender, attacker, entries, ki
   }
 
   if (barrierValue !== barrierStart) {
-    await defender.update({ 'system.barrier.value': barrierValue });
+    await reduceBarrier(defender, barrierStart - barrierValue);
     // NPCs again report only the qualitative outcome, never the real amounts.
     lines.push(defender.type === 'npc'
       ? `<div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.NpcBarrierAbsorbed')}</div>`
@@ -397,6 +408,15 @@ export async function applyResolvedDamageEntries(defender, attacker, entries, ki
     if (barrierValue === 0) {
       lines.push(`<div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.BarrierBroken')}</div>`);
     }
+  }
+
+  // Barrier granted by the same source (a spell's/technique's Barrier entry).
+  for (const grant of barrierGrants) {
+    const { line } = await grantBarrier(defender, {
+      amount: grant.amount, stackable: !!grant.barrier?.stackable, duration: grant.barrier ?? null,
+      name: grant.barrier?.name ?? '', origin: grant.barrier?.origin ?? null,
+    });
+    if (line) lines.push(line);
   }
 
   if (techniqueItemUuid) {
@@ -682,7 +702,10 @@ registerGmRelayAction('applyDamage', handleApplyDamageRelay);
  * @return {Array<{damageType: string, amount: number}>}
  */
 export function halveDamageEntries(entries) {
-  return entries.map(entry => ({ ...entry, amount: Math.ceil(entry.amount / 2) })).filter(entry => entry.amount > 0);
+  // A Barrier grant is not damage - it is never halved.
+  return entries
+    .map(entry => (entry.damageType === 'barrier' ? entry : { ...entry, amount: Math.ceil(entry.amount / 2) }))
+    .filter(entry => entry.amount > 0);
 }
 
 /** A message flag key can't contain dots (it would nest) - a uuid does. */

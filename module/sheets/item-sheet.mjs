@@ -8,7 +8,7 @@ import { getSkillBonusChoices } from '../helpers/skills.mjs';
 import { setSpellSustaining } from '../helpers/spell-rolls.mjs';
 import {
   computeSavingThrowValue, computeSavingThrowBonusSum, computeDamageBonus, computeCombinedSchoolOverrideLevel,
-  computeExtraManaCostSum, formatRangeLabel, SPELL_ELEMENT,
+  computeExtraManaCostSum, formatRangeLabel, SPELL_ELEMENT, SPELL_BARRIER,
 } from '../helpers/spells.mjs';
 import { getMaterials, getMaterial, isDurabilityEnabled } from '../helpers/materials.mjs';
 import { getWeaponModels, getArmorModels, getWeaponModel, getArmorModel, getOverridablePropertiesFor } from '../helpers/models.mjs';
@@ -472,6 +472,8 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
     if (item.type === 'item') {
       context.isEquippable = item.system.equippable;
       context.isUsable = item.system.isUsable;
+      context.barrierUnitChoices = Object.fromEntries(
+        ['rounds', 'minutes', 'hours', 'days'].map(unit => [unit, `SKSK.Barrier.Units.${unit}`]));
       if (item.system.enchanted) {
         context.enchantmentHTML = await foundry.applications.ux.TextEditor.implementation.enrichHTML(
           item.system.enchantmentDescription ?? "",
@@ -713,9 +715,15 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       context.attributeChoices = CONFIG.SKSK.attributes;
       // A Damage entry may also deal "the element chosen at cast time" (see
       // data/spell.mjs#elementChoice) - only offered while the spell has one.
-      context.damageTypeChoices = item.system.elementChoice?.mode !== 'none' || (item.system.damages ?? []).some(d => d.damageType === SPELL_ELEMENT)
-        ? { [SPELL_ELEMENT]: 'SKSK.Spell.Element.DamageType', ...CONFIG.SKSK.damageTypes }
-        : CONFIG.SKSK.damageTypes;
+      // ... or Barrier instead of damage (see helpers/barrier.mjs).
+      context.damageTypeChoices = {
+        [SPELL_BARRIER]: 'SKSK.Barrier.DamageType',
+        ...(item.system.elementChoice?.mode !== 'none' || (item.system.damages ?? []).some(d => d.damageType === SPELL_ELEMENT)
+          ? { [SPELL_ELEMENT]: 'SKSK.Spell.Element.DamageType' } : {}),
+        ...CONFIG.SKSK.damageTypes,
+      };
+      context.barrierUnitChoices = Object.fromEntries(
+        ['rounds', 'minutes', 'hours', 'days'].map(unit => [unit, `SKSK.Barrier.Units.${unit}`]));
       context.elementModeChoices = {
         none: 'SKSK.Spell.Element.ModeNone',
         choice: 'SKSK.Spell.Element.ModeChoice',
@@ -847,6 +855,10 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       // cast (see helpers/technique-rolls.mjs).
       context.showDuration = techniqueHasDuration(item);
       context.showEffectId = techniqueShowsEffectButton(item);
+      // Barrier the Technique grants (stand, and every effect target).
+      context.showBarrierGrant = item.system.category !== 'attackBonus';
+      context.barrierUnitChoices = Object.fromEntries(
+        ['rounds', 'minutes', 'hours', 'days'].map(unit => [unit, `SKSK.Barrier.Units.${unit}`]));
       context.statusLabel = getTechniqueStatusLabel(item);
       context.actionLabel = getTechniqueActionLabel(item);
       // The Effekte category's own predefined-status-effect picker - see

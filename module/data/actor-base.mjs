@@ -831,6 +831,11 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // an Active Effect target ("system.barrierDamageBonus"), read from the
     // ATTACKER in helpers/damageApplication.mjs#applyResolvedDamageEntries.
     schema.barrierDamageBonus = new fields.NumberField({ ...requiredInteger, initial: 0 });
+    // Barrier this actor gets at the start of each of its own turns - purely
+    // an Active Effect target ("system.barrierTurnStart", an amount): never
+    // stackable, lasting until its next turn starts. See helpers/barrier.mjs#
+    // handleBarrierTurnStart.
+    schema.barrierTurnStart = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
     // GM-tab switch: a spell's own Angriffswurf that fails to exceed this
     // actor's Magic Resistance normally still deals half its rolled damage
     // (rounded up) anyway - see helpers/attackRolls.mjs#

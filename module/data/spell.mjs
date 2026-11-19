@@ -387,6 +387,16 @@ export default class SKSKSpell extends SKSKItemBase {
       }),
       savingThrowIndex: new fields.NumberField({ required: false, nullable: true, integer: true, initial: null }),
       extraCostIndex: new fields.NumberField({ required: false, nullable: true, integer: true, initial: null }),
+      // Only for damageType "@barrier" ("Barriere": the roll is not damage
+      // but Barrier this spell grants, see helpers/barrier.mjs): whether it
+      // stacks with other stackable Barrier (default: no), and how long it
+      // lasts - barrierDuration 0 = unlimited, else that many
+      // barrierDurationUnit ("rounds", "minutes", "hours", "days").
+      barrierStackable: new fields.BooleanField({ initial: false }),
+      barrierDuration: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
+      barrierDurationUnit: new fields.StringField({
+        required: true, blank: false, initial: "rounds", choices: ["rounds", "minutes", "hours", "days"]
+      }),
       attributeBonuses: new fields.ArrayField(new fields.SchemaField({
         attribute: new fields.StringField({ required: true, blank: false, initial: "str" }),
         useModifier: new fields.BooleanField({ initial: true }),

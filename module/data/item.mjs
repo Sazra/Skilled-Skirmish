@@ -1,4 +1,5 @@
 import SKSKItemBase from "./item-base.mjs";
+import { buildBarrierGrantSchema } from "../helpers/barrier.mjs";
 import { computeTotalManaCapacity, resolveMaterialBonus, resolveMaterialDurability, isDurabilityEnabled } from "../helpers/materials.mjs";
 
 export default class SKSKItem extends SKSKItemBase {
@@ -65,6 +66,11 @@ export default class SKSKItem extends SKSKItemBase {
     });
 
     schema.formula = new fields.StringField({ blank: true });
+
+    // Barrier this item grants when it is Used (see helpers/barrier.mjs and
+    // helpers/actions.mjs#rollItemUsage): rolled on the Roll-Card, which gets a
+    // "Barriere gewähren" button for the chosen target. Blank formula = none.
+    schema.barrierGrant = buildBarrierGrantSchema(fields);
 
     // A freeform description of this item's own enchantment - only shown
     // (its own tab, and on the Roll-Card) once system.enchanted is on. See

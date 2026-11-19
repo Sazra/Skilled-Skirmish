@@ -700,6 +700,25 @@
             </div>
           </div>
 
+          {{#if (eq dmg.damageType "@barrier")}}
+          <div class="bonus-groups">
+            <div class="bonus-group" title="{{localize 'SKSK.Barrier.StackableHint'}}">
+              <label class="resource-label casting-method-option">
+                <input type="checkbox" name="system.damages.{{index}}.barrierStackable" {{checked dmg.barrierStackable}} />
+                {{localize 'SKSK.Barrier.Stackable'}}
+              </label>
+            </div>
+            <div class="bonus-group" title="{{localize 'SKSK.Barrier.DurationHint'}}">
+              <label class="resource-label">{{localize 'SKSK.Barrier.Duration'}}</label>
+              <input type="number" name="system.damages.{{index}}.barrierDuration" value="{{dmg.barrierDuration}}"
+                data-dtype="Number" min="0" step="1" />
+              <select name="system.damages.{{index}}.barrierDurationUnit">
+                {{selectOptions ../barrierUnitChoices selected=dmg.barrierDurationUnit localize=true}}
+              </select>
+            </div>
+          </div>
+          {{/if}}
+
           <div class="bonus-groups">
             <div class="bonus-group">
               <label class="resource-label">Attribute Bonuses</label>

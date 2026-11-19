@@ -31,9 +31,10 @@
     </div>
 
     <div class="resource flex-group-center">
-      <label class="resource-label">{{localize 'SKSK.Resource.Barrier'}}</label>
+      <label class="resource-label" {{#if barrierTooltip}}data-tooltip="{{localize 'SKSK.Resource.Barrier'}}" data-tooltip-html="{{barrierTooltip}}"{{/if}}>{{localize 'SKSK.Resource.Barrier'}}</label>
       <div class="resource-content flexrow flex-center flex-between">
         <input type="text" name="system.barrier.value" value="{{system.barrier.value}}" data-dtype="Number" />
+        {{#if barrierTooltip}}<span class="resource-computed" title="{{localize 'SKSK.Barrier.TotalHint'}}">= {{barrierTotal}}</span>{{/if}}
       </div>
     </div>
 

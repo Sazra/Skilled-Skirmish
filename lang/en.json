@@ -189,6 +189,8 @@
       "QuantityAbbr": "Qty",
       "Description": "Description",
       "Consumable": "Consumable",
+      "BarrierLabel": "Barrier on use",
+      "BarrierHint": "Barrier this item grants when used: the formula is rolled, the card button gives it to the chosen target. Not stackable unless stated explicitly. Empty formula = no Barrier.",
       "ConsumableAbbr": "Cons.",
       "CreateNew": "Add new item",
       "CreateItem": "Item",
@@ -712,10 +714,6 @@
         "Divide": "Divide"
       }
     },
-    "Barrier": {
-      "IgnoresBarrier": "Ignores Barrier",
-      "IgnoresBarrierHint": "This weapon's / spell's damage bypasses Barriers and hits the target's Life directly. Without this switch, damage hits the Barrier first."
-    },
     "FpGainBonus": {
       "Label": "FP Gain Bonuses",
       "Type": {
@@ -901,6 +899,9 @@
       "ApplicableToWeapon": "Weapon Attacks",
       "ApplicableToMartialArts": "Martial Arts Attacks",
       "ApplicableToSpell": "Spells",
+      "BarrierLabel": "Barrier",
+      "BarrierHint": "Barrier this Technique grants: to its wielder on activation (stand, effect on self), otherwise to whoever its effect lands on. Not stackable unless stated explicitly. Empty formula = no Barrier.",
+      "BarrierFormula": "Formula",
       "EffectTargetLabel": "Effect Target",
       "EffectTarget": {
         "Self": "Self (like a Stand)",
@@ -1634,7 +1635,39 @@
       "Expired": "{name}: duration expired - deactivated.",
       "NotEnoughMana": "Not enough Mana."
     },
-    "Metamagic": {
+    "Barrier": {
+      "IgnoresBarrier": "Ignores Barrier",
+      "IgnoresBarrierHint": "This weapon's / spell's damage bypasses Barriers and hits the target's Life directly. Without this switch, damage hits the Barrier first.",
+      "DamageType": "Barrier",
+      "ApplyButton": "Grant Barrier",
+      "BadFormula": "Invalid Barrier formula: {formula}",
+      "Stackable": "Stackable",
+      "NotStackable": "Not stackable",
+      "StackableHint": "Stackable Barrier adds up with other stackable Barrier. Stackable and non-stackable cannot be mixed: when one kind meets the other, only the higher counts (the longer remaining duration on a tie). Unchecked (default) the Barrier is not stackable.",
+      "Duration": "Duration",
+      "DurationHint": "0 = unlimited. Otherwise this many rounds/minutes/hours/days.",
+      "Unlimited": "unlimited",
+      "Manual": "Manual (base Barrier)",
+      "TotalHint": "Total Barrier: manual value plus all Barrier effects",
+      "Units": {
+        "rounds": "rounds",
+        "minutes": "minutes",
+        "hours": "hours",
+        "days": "days"
+      },
+      "Granted": "{target} gains {amount} Barrier ({kind}, {duration}).",
+      "GrantedNpc": "{target} gains Barrier ({kind}, {duration}).",
+      "Stacked": "{target} gains {amount} stackable Barrier ({duration}) - total {total}.",
+      "StackedNpc": "{target} gains additional stackable Barrier ({duration}).",
+      "Replaced": "{target} gains {amount} Barrier ({kind}, {duration}) - it replaces the previous Barrier ({existing}).",
+      "ReplacedNpc": "{target} gains Barrier ({kind}, {duration}) - it replaces the previous Barrier.",
+      "Rejected": "{target}: the existing Barrier ({existing}) is stronger - {amount} Barrier ({kind}) is lost.",
+      "RejectedNpc": "{target}: the existing Barrier is stronger - the new one is lost.",
+      "TurnStartName": "Turn-start Barrier",
+      "TurnStart": "Barrier at turn start: +{amount}.",
+      "TurnStartNpc": "Barrier at turn start."
+    },
+        "Metamagic": {
       "Label": "Metamagic",
       "Hint": "Does this spell change the caster's NEXT spell? Casting it puts a marker (until used) on the caster that changes the next spell by the chosen rule.",
       "None": "None (ordinary spell)",

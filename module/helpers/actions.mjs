@@ -11,6 +11,7 @@ import { wrapCriticalBlock } from "./criticalRolls.mjs";
 import { formatRollCardHeading } from "./rollCard.mjs";
 import { grantSkillUsageFp, formatSkillFpGrantLine, checkReflexActionTrigger, grantFlatSkillFp } from "./skillFp.mjs";
 import { renderApplyDamageButton, resolveClickDefender } from "./damageApplication.mjs";
+import { rollBarrierEntry } from "./barrier.mjs";
 import {
   consumePrimedTechnique, applyTechniqueBonusDamage, applyTechniqueDiceIncrease,
   getTechniqueEffectPayload, renderTechniqueSavingThrowHTML,
@@ -954,6 +955,11 @@ export async function rollItemUsage(item) {
     roll = await new Roll(rollData.formula, rollData).evaluate();
     parts.push(await roll.render());
   }
+
+  // 8. Barrier the item grants (data/item.mjs#barrierGrant): rolled here, the
+  // "Barriere gewähren" button gives it to the target chosen on click.
+  const barrier = await rollBarrierEntry(actor, system.barrierGrant, { name: item.name, origin: item.uuid });
+  if (barrier) parts.push(barrier.html, renderApplyDamageButton(actor, [barrier.entry]));
 
   return postItemUsageCard(actor, item, parts, roll);
 }

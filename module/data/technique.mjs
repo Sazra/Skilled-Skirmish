@@ -1,4 +1,5 @@
 import SKSKItemBase from "./item-base.mjs";
+import { buildBarrierGrantSchema } from "../helpers/barrier.mjs";
 
 /**
  * A "Technik" (Technique) - modifies a weapon/Martial Arts attack or a
@@ -157,6 +158,15 @@ export default class SKSKTechnique extends SKSKItemBase {
       statusId: new fields.StringField({ required: true, blank: true, initial: "" }),
       stacks: new fields.NumberField({ ...requiredInteger, initial: 1, min: 1 }),
     }));
+
+    // Only meaningful for category "stand" and "effect": Barrier this
+    // Technique grants (see helpers/barrier.mjs) - to its own wielder on
+    // activation ("stand", "effect"/"self"), else to whoever its effect(s)
+    // land on, together with them ("attackTarget"/"direct"). formula is rolled
+    // (with the wielder's roll data); blank = no Barrier. duration 0 =
+    // unlimited, else that many durationUnit ("rounds", "minutes", "hours",
+    // "days"). Not stackable unless the Technique explicitly says so.
+    schema.barrierGrant = buildBarrierGrantSchema(fields);
 
     // Only meaningful for category "effect" with effectTarget "attackTarget"
     // or "direct" - whether landing effectId/effectStatusEffects requires

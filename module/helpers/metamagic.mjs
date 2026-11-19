@@ -201,14 +201,16 @@ export function applyMetamagic(data, codes, actor, env = {}) {
         const options = [...METAMAGIC_ELEMENTS, ...(mk >= 5 ? METAMAGIC_ELEMENTS_ADVANCED : [])];
         const element = options[param];
         if (!element) { none(type, 'Choice'); break; }
-        if (!(data.damages ?? []).length) { none(type, 'Damage'); break; }
-        const wasLife = data.damages.some(damage => damage.damageType === 'life');
-        for (const damage of data.damages) damage.damageType = element;
+        // Barrier entries ("@barrier") are no damage and keep their kind.
+        const damaging = (data.damages ?? []).filter(damage => damage.damageType !== '@barrier');
+        if (!damaging.length) { none(type, 'Damage'); break; }
+        const wasLife = damaging.some(damage => damage.damageType === 'life');
+        for (const damage of damaging) damage.damageType = element;
         if (element === 'life' && !wasLife) {
           // Element Leben: the damage needs neither an attack roll nor a saving
           // throw - it applies unconditionally. An attack roll that is still
           // needed for a status/Foundry effect stays.
-          for (const damage of data.damages) {
+          for (const damage of damaging) {
             if (damage.trigger === 'attack' || damage.trigger === 'save') { damage.trigger = 'unconditional'; damage.savingThrowIndex = null; }
           }
           const needsAttack = [...(data.statusEffects ?? []), ...(data.foundryEffects ?? [])].some(entry => entry.trigger === 'attack');
@@ -217,7 +219,7 @@ export function applyMetamagic(data, codes, actor, env = {}) {
         } else if (wasLife && element !== 'life') {
           // A spell that was Leben before now needs an attack roll against the
           // target's Magieresistenz.
-          for (const damage of data.damages) {
+          for (const damage of damaging) {
             if (damage.trigger === 'unconditional') damage.trigger = 'attack';
           }
           data.attackRoll = { ...(data.attackRoll ?? {}), enabled: true, count: Math.max(1, data.attackRoll?.count ?? 1) };

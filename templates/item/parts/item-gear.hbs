@@ -93,6 +93,29 @@
     {{/if}}
     {{/if}}
   </div>
+
+  <div class="resource">
+    <label class="resource-label" title="{{localize 'SKSK.Items.BarrierHint'}}">{{localize 'SKSK.Items.BarrierLabel'}}</label>
+    <div class="grid grid-3col">
+      <div>
+        <label class="resource-label">{{localize 'SKSK.Technique.BarrierFormula'}}</label>
+        <input type="text" name="system.barrierGrant.formula" value="{{system.barrierGrant.formula}}" placeholder="2d6 + @abilities.wil.mod" />
+      </div>
+      <div title="{{localize 'SKSK.Barrier.DurationHint'}}">
+        <label class="resource-label">{{localize 'SKSK.Barrier.Duration'}}</label>
+        <input type="number" name="system.barrierGrant.duration" value="{{system.barrierGrant.duration}}" data-dtype="Number" min="0" step="1" />
+        <select name="system.barrierGrant.durationUnit">
+          {{selectOptions barrierUnitChoices selected=system.barrierGrant.durationUnit localize=true}}
+        </select>
+      </div>
+      <div title="{{localize 'SKSK.Barrier.StackableHint'}}">
+        <label class="resource-label casting-method-option">
+          <input type="checkbox" name="system.barrierGrant.stackable" {{checked system.barrierGrant.stackable}} />
+          {{localize 'SKSK.Barrier.Stackable'}}
+        </label>
+      </div>
+    </div>
+  </div>
   {{/if}}
 
   {{> "systems/sksk/templates/item/parts/material-section.hbs" showRollBonus=true}}

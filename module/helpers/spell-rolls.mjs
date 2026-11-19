@@ -4,7 +4,7 @@ import {
   getOverchargeSettings, formatOverchargeDuration, resolveSpellStatusStacks, isSpellFoundryEffectActive,
   computeMaxExtraCostTier, normalizeExtraCostCounts, computeCombinedSpellFpTargets,
   computeExtraCostEffects, computeExtraUpkeep, isSavingThrowActive, computeEffectiveRanges, formatRangeLabel,
-  getSpellElementOptions, resolveSpellDamages, getSpellSchool,
+  getSpellElementOptions, resolveSpellDamages, getSpellSchool, SPELL_BARRIER,
 } from './spells.mjs';
 import { rollExtraDamage, consumeUsedEffects } from './extraDamage.mjs';
 import { promptMetamagicChoice, placeMetamagicMarker } from './metamagic.mjs';
@@ -503,7 +503,8 @@ export async function setSpellSustaining(item, sustaining = !item.system.sustain
  * than threading that late adjustment back through this function too.
  * @return {Promise<{html: string, entry: {damageType: string, amount: number}}>}
  */
-async function renderDamageRoll(damage, actor, overchargeCount = 0, spellSystem = null, technique = null) {
+async function renderDamageRoll(damage, actor, overchargeCount = 0, spellSystem = null, technique = null, source = null) {
+  const isBarrier = damage.damageType === SPELL_BARRIER;
   const bonus = computeDamageBonus(damage, actor, spellSystem);
   const formulaBase = bonus ? `${damage.formula} + ${bonus}` : damage.formula;
   const formula = applyTechniqueDiceIncrease(formulaBase, technique);
@@ -511,7 +512,7 @@ async function renderDamageRoll(damage, actor, overchargeCount = 0, spellSystem 
   // getRollData) as "@<abbreviation>", usable directly in the formula.
   const rollTwice = hasRollTwiceSpell(actor);
   const { total: rollTotal, html: rendered, pickedRoll } = await rollPossiblyDoubledDamage(formula, actor?.getRollData(), rollTwice);
-  const typeLabel = game.i18n.localize(CONFIG.SKSK.damageTypes[damage.damageType] ?? damage.damageType);
+  const typeLabel = game.i18n.localize(isBarrier ? 'SKSK.Barrier.DamageType' : (CONFIG.SKSK.damageTypes[damage.damageType] ?? damage.damageType));
   // A Spell with its own "ignores Barrier" switch tags every damage entry it
   // produces - see helpers/damageApplication.mjs#applyResolvedDamageEntries.
   const barrierFlag = spellSystem?.ignoresBarrier ? { ignoresBarrier: true } : {};
@@ -525,10 +526,22 @@ async function renderDamageRoll(damage, actor, overchargeCount = 0, spellSystem 
   }
   const postAdjust = overchargeMultiplier ? { type: 'multiplier', value: overchargeMultiplier } : { type: 'delta', value: 0 };
   const blockId = foundry.utils.randomID();
-  const rerollOnesIcon = actor ? renderDamageRerollOnesIcon(actor, damage.damageType, pickedRoll, blockId, postAdjust) : '';
+  const rerollOnesIcon = actor && !isBarrier ? renderDamageRerollOnesIcon(actor, damage.damageType, pickedRoll, blockId, postAdjust) : '';
   const html = wrapDamageBlock(blockId,
-    `<div class="sksk-roll-damage"><strong>${typeLabel} ${game.i18n.localize('SKSK.Spell.Roll.Damage')}</strong>${wrapRerollIcons(rerollOnesIcon)}</div>${rendered}${overchargeHTML}`
+    `<div class="sksk-roll-damage"><strong>${isBarrier ? typeLabel : `${typeLabel} ${game.i18n.localize('SKSK.Spell.Roll.Damage')}`}</strong>${wrapRerollIcons(rerollOnesIcon)}</div>${rendered}${overchargeHTML}`
   );
+  if (isBarrier) {
+    // Barrier granted instead of damage (helpers/barrier.mjs): the entry
+    // carries what the Apply button needs to grant it.
+    const barrier = {
+      stackable: !!damage.barrierStackable,
+      value: damage.barrierDuration ?? 0,
+      units: damage.barrierDurationUnit ?? 'rounds',
+      name: source?.name ?? '',
+      origin: source?.uuid ?? null,
+    };
+    return { html, entry: { damageType: 'barrier', amount, barrier } };
+  }
   return { html, entry: { damageType: damage.damageType, amount, ...barrierFlag } };
 }
 
@@ -654,7 +667,10 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
   const parts = [];
   // The Damage entries with this cast's element filled in for "Gewähltes
   // Element" (see helpers/spells.mjs#resolveSpellDamages).
-  const damages = resolveSpellDamages(system.damages, element, system);
+  // A Barrier entry (SPELL_BARRIER) is never attack- or save-gated: it is
+  // granted unconditionally, or by a paid extra-cost step.
+  const damages = resolveSpellDamages(system.damages, element, system)
+    .map(damage => (damage.damageType === SPELL_BARRIER && damage.trigger !== 'extraCost' ? { ...damage, trigger: 'unconditional' } : damage));
   // This spell's own Überladen rules (data/spell.mjs#overcharge): the
   // DC/range/damage scaling only applies in "scaling" mode (and with the
   // auto-effects switch on) - in "extraAttack" mode each Überladung is one
@@ -693,6 +709,12 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
   let damageRolled = false;
   const extraSchool = system.spellType === 'systemless' ? null : getSpellSchool(system);
   const rollDamageWithTechnique = async (damage) => {
+    // A Barrier entry is no damage: no technique bonus, no extra damage, and
+    // it does not count as "an attack/damage was rolled" for "Bis Nutzung".
+    if (damage.damageType === SPELL_BARRIER) {
+      const barrierRoll = await renderDamageRoll(damage, actor, effectiveOvercharge, system, null, { name: item.name, uuid: item.uuid });
+      return { html: barrierRoll.html, entry: barrierRoll.entry, extras: [] };
+    }
     const applyTech = technique && !techniqueDamageApplied;
     const { html, entry } = await renderDamageRoll(damage, actor, effectiveOvercharge, system, applyTech ? technique : null);
     let fullHTML = html;

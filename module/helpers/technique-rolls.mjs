@@ -9,6 +9,7 @@ import { getActorSkillLevel, getSkillLabel } from './skills.mjs';
 import { formatRollCardHeading } from './rollCard.mjs';
 import { grantSkillUsageFp } from './skillFp.mjs';
 import { isCalendariaActive } from './calendarIntegration.mjs';
+import { rollAndGrantBarrier } from './barrier.mjs';
 
 /**
  * The roundsRemaining value to store the moment a Technique goes on
@@ -337,7 +338,9 @@ async function toggleDurationTechnique(actor, item) {
   await item.update({ 'system.active': true, 'system.roundsRemaining': item.system.durationRounds });
   await grantSimulatedCooldownFp(actor, item);
 
-  return postTechniqueActionCard(actor, item, game.i18n.localize('SKSK.Technique.StatusLine.Activated'));
+  // Barrier the Technique grants its own wielder (data/technique.mjs#barrierGrant).
+  const barrierHTML = await rollAndGrantBarrier(actor, actor, item.system.barrierGrant, { name: item.name, origin: item.uuid });
+  return postTechniqueActionCard(actor, item, game.i18n.localize('SKSK.Technique.StatusLine.Activated'), null, barrierHTML);
 }
 
 /**
@@ -573,6 +576,7 @@ export async function consumePrimedTechnique(actor, contextType = null) {
     effectTarget: isEffect ? item.system.effectTarget : null,
     effectId: isEffect ? item.system.effectId : null,
     effectHasStatusEffects: isEffect && (item.system.effectStatusEffects?.length ?? 0) > 0,
+    effectHasBarrier: isEffect && !!item.system.barrierGrant?.formula,
     effectSavingThrowEnabled: isEffect && item.system.effectSavingThrowEnabled,
   };
 }
@@ -664,7 +668,7 @@ export async function applyTechniqueBonusDamage(total, technique, rollData = {})
 export function getTechniqueEffectPayload(technique) {
   if (!technique || technique.effectTarget !== 'attackTarget') return null;
   if (technique.effectSavingThrowEnabled) return null;
-  if (!technique.effectId && !technique.effectHasStatusEffects) return null;
+  if (!technique.effectId && !technique.effectHasStatusEffects && !technique.effectHasBarrier) return null;
   return { itemUuid: technique.item.uuid };
 }
 

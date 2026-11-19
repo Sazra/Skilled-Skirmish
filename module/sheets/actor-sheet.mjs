@@ -31,6 +31,7 @@ import { getClassAbilityLevels, actorHasAdvancedClass } from '../helpers/abiliti
 import { getActorPatron, getEffectiveClassPatron, isPatronSkill } from '../helpers/religion.mjs';
 import { getLifeBreakdown, getNegativeLifeBreakdown } from '../helpers/life.mjs';
 import { getManaBreakdown } from '../helpers/mana.mjs';
+import { getBarrierTotal, renderBarrierTooltip } from '../helpers/barrier.mjs';
 import { daysToBreakdown, applyPendingLongevityGrowth, adjustLongevity, resetLongevityToFull } from '../helpers/longevity.mjs';
 import { getArmorClassBreakdown, getMagicResistanceBreakdown, computeArmorPieceBonus } from '../helpers/defense.mjs';
 import { isDurabilityEnabled } from '../helpers/materials.mjs';
@@ -778,6 +779,9 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     // to compute unconditionally since system.longevity.days is just 0 for
     // NPCs (never grown - see helpers/longevity.mjs#applyPendingLongevityGrowth).
     context.longevityBreakdown = daysToBreakdown(actor.system.longevity.days);
+    // Barrier layers (helpers/barrier.mjs) on top of the manual pool in the input.
+    context.barrierTooltip = renderBarrierTooltip(actor);
+    context.barrierTotal = getBarrierTotal(actor);
     context.armorClassTooltip = renderBreakdownHtml(game.i18n.localize('SKSK.Resource.AC'), getArmorClassBreakdown(actor));
     context.magicResistanceTooltip = renderBreakdownHtml(
       game.i18n.localize('SKSK.Resource.MR'), getMagicResistanceBreakdown(actor)

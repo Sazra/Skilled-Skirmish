@@ -157,6 +157,7 @@ export class SKSKEffectKeyReference extends HandlebarsApplicationMixin(Applicati
           { label: 'Überladung: Mana-Mehrkosten (flat pro Überladung)', key: 'system.overchargeManaFlatBonus' },
           { label: 'Überladung: AP-Mehrkosten (pro Überladung)', key: 'system.overchargeApCostBonus' },
           { label: 'Zusatzschaden an Barrieren (%)', key: 'system.barrierDamageBonus' },
+          { label: 'Barriere am Zugbeginn (nicht stapelnd, bis zum nächsten Zug)', key: 'system.barrierTurnStart' },
           { label: 'Soul Path Breakthrough Bonus', key: 'system.soulPathBreakthroughBonus' },
           { label: 'Summon Slots Bonus', key: 'system.summonSlotsBonus' },
           { label: 'Totem Slots Bonus', key: 'system.totemSlotsBonus' },

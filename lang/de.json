@@ -189,6 +189,8 @@
             "QuantityAbbr": "Anz.",
             "Description": "Beschreibung",
             "Consumable": "Verbrauchbar",
+            "BarrierLabel": "Barriere beim Benutzen",
+            "BarrierHint": "Barriere, die dieser Gegenstand beim Benutzen gewährt: die Formel wird gewürfelt, der Button auf der Karte gibt sie dem gewählten Ziel. Nicht stapelnd, wenn nicht ausdrücklich angegeben. Formel leer = keine Barriere.",
             "ConsumableAbbr": "Verbr.",
             "CreateNew": "Neuen Gegenstand hinzufügen",
             "CreateItem": "Gegenstand",
@@ -712,10 +714,6 @@
                 "Divide": "Dividieren"
             }
         },
-        "Barrier": {
-            "IgnoresBarrier": "Ignoriert Barriere",
-            "IgnoresBarrierHint": "Der Schaden dieser Waffe bzw. dieses Zaubers geht an Barrieren vorbei direkt auf das Leben des Ziels. Ohne diesen Schalter trifft Schaden zuerst die Barriere."
-        },
         "FpGainBonus": {
             "Label": "FP-Gewinn-Boni",
             "Type": {
@@ -901,6 +899,9 @@
             "ApplicableToWeapon": "Waffenangriffe",
             "ApplicableToMartialArts": "Kampfkunstangriffe",
             "ApplicableToSpell": "Zauber",
+            "BarrierLabel": "Barriere",
+            "BarrierHint": "Barriere, die diese Technik gewährt: dem Anwender bei der Aktivierung (Haltung, Effekt auf sich selbst), sonst dem Ziel, bei dem ihr Effekt ankommt. Nicht stapelnd, wenn nicht ausdrücklich angegeben. Formel leer = keine Barriere.",
+            "BarrierFormula": "Formel",
             "EffectTargetLabel": "Effekt-Ziel",
             "EffectTarget": {
                 "Self": "Sich selbst (wie eine Haltung)",
@@ -1634,7 +1635,39 @@
             "Expired": "{name}: Wirkungsdauer abgelaufen - deaktiviert.",
             "NotEnoughMana": "Nicht genug Mana."
         },
-        "Metamagic": {
+        "Barrier": {
+            "IgnoresBarrier": "Ignoriert Barriere",
+            "IgnoresBarrierHint": "Der Schaden dieser Waffe bzw. dieses Zaubers geht an Barrieren vorbei direkt auf das Leben des Ziels. Ohne diesen Schalter trifft Schaden zuerst die Barriere.",
+            "DamageType": "Barriere",
+            "ApplyButton": "Barriere gewähren",
+            "BadFormula": "Ungültige Barriere-Formel: {formula}",
+            "Stackable": "Stapelnd",
+            "NotStackable": "Nicht stapelnd",
+            "StackableHint": "Stapelnde Barriere addiert sich mit anderer stapelnder Barriere. Stapelnd und nicht stapelnd lassen sich nicht mischen: trifft die eine Art auf die andere, zählt nur die höhere (bei Gleichstand die mit der längeren Restdauer). Ohne Haken (Standard) gilt die Barriere als nicht stapelnd.",
+            "Duration": "Dauer",
+            "DurationHint": "0 = unbegrenzt. Sonst so viele Runden/Minuten/Stunden/Tage.",
+            "Unlimited": "unbegrenzt",
+            "Manual": "Manuell (Grundbarriere)",
+            "TotalHint": "Gesamtbarriere: manueller Wert plus alle Barriere-Effekte",
+            "Units": {
+                "rounds": "Runden",
+                "minutes": "Minuten",
+                "hours": "Stunden",
+                "days": "Tage"
+            },
+            "Granted": "{target} erhält {amount} Barriere ({kind}, {duration}).",
+            "GrantedNpc": "{target} erhält Barriere ({kind}, {duration}).",
+            "Stacked": "{target} erhält {amount} stapelnde Barriere ({duration}) - gesamt {total}.",
+            "StackedNpc": "{target} erhält zusätzliche stapelnde Barriere ({duration}).",
+            "Replaced": "{target} erhält {amount} Barriere ({kind}, {duration}) - sie ersetzt die bisherige Barriere ({existing}).",
+            "ReplacedNpc": "{target} erhält Barriere ({kind}, {duration}) - sie ersetzt die bisherige Barriere.",
+            "Rejected": "{target}: Die bestehende Barriere ({existing}) ist stärker - {amount} Barriere ({kind}) verfällt.",
+            "RejectedNpc": "{target}: Die bestehende Barriere ist stärker - die neue verfällt.",
+            "TurnStartName": "Zugbeginn-Barriere",
+            "TurnStart": "Barriere zum Zugbeginn: +{amount}.",
+            "TurnStartNpc": "Barriere zum Zugbeginn."
+        },
+                "Metamagic": {
             "Label": "Metamagie",
             "Hint": "Wirkt dieser Zauber auf den nächsten Zauber des Zaubernden? Beim Wirken erscheint ein Marker (Bis Nutzung), der den nächsten Zauber nach der gewählten Regel verändert.",
             "None": "Keine (normaler Zauber)",

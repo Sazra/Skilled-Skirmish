@@ -3,6 +3,7 @@ import { formatRollCardHeading } from './rollCard.mjs';
 import { getClassAbilityLevels, actorHasAdvancedClass } from './abilities.mjs';
 import { getActorSkillLevel } from './skills.mjs';
 import { handlePendingSpellTurnStart } from './spell-rolls.mjs';
+import { handleBarrierTurnStart } from './barrier.mjs';
 import { handlePathAbilityTurnStart } from './soulPathRolls.mjs';
 import { handleAbilityTurnStart } from './abilityRolls.mjs';
 import {
@@ -1888,12 +1889,13 @@ export async function handleCombatTurnStart(actor, round) {
   const elementalChargeLines = await handleElementalChargeTurnStart(actor);
   const pathAbilityLines = await handlePathAbilityTurnStart(actor);
   const abilityLines = await handleAbilityTurnStart(actor);
+  const barrierLines = await handleBarrierTurnStart(actor);
 
   const totalDamage = poison.damage + frostbite.damage + wound.damage + custom.damage;
   const descriptionLines = [
     ...dazedLines,
     ...poison.descriptionLines, ...frostbite.descriptionLines, ...wound.descriptionLines, ...custom.descriptionLines,
-    ...totemLines, ...techniqueLines, ...spellUpkeepLines, ...elementalChargeLines, ...pathAbilityLines, ...abilityLines,
+    ...totemLines, ...techniqueLines, ...spellUpkeepLines, ...elementalChargeLines, ...pathAbilityLines, ...abilityLines, ...barrierLines,
   ];
   const extraSections = [
     ...poison.extraSections, ...frostbite.extraSections, ...wound.extraSections, ...custom.extraSections,
