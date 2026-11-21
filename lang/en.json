@@ -128,7 +128,8 @@
       "Drake": "Drake",
       "Diera": "Diera",
       "Otherworldly": "Otherworldly",
-      "Construct": "Construct"
+      "Construct": "Construct",
+      "Object": "Object"
     },
     "General": {
       "Overview": "Overview",
@@ -184,6 +185,10 @@
       "Equipped": "Equipped",
       "EquippedAbbr": "Eq.",
       "Enchanted": "Enchanted",
+      "HeldOneHanded": "Held one-handed",
+      "HeldOneHandedHint": "A two-handed weapon is normally held with both hands, a flexible one can be switched freely. Held one-handed, Specialized loses its effect; a flexible weapon then uses its Model's one-handed roll formula.",
+      "HeldOneHandedNow": "Held one-handed (click to switch)",
+      "HeldTwoHandedNow": "Held two-handed (click to switch)",
       "EnchantedAbbr": "Ench.",
       "Quantity": "Quantity",
       "QuantityAbbr": "Qty",
@@ -573,6 +578,8 @@
       "SkillGrantLabel": "+{fp} FP {skill}",
       "ImprovedMagicResistance": "Improved Magic Resistance",
       "ImprovedMagicResistanceHint": "A spell attack roll that misses this actor normally still deals half damage (rounded up) anyway - with this switch on, Magic Resistance blocks that damage entirely on a miss instead. Targetable by Active Effects.",
+      "SilverWeakness": "Weak to silver",
+      "SilverWeaknessHint": "Silvered weapons (Silvered property) deal +100% damage to this actor. Also settable on the species. Targetable by Active Effects.",
       "ConcealmentBreaksOnlyOnHit": "Concealment doesn't break unless the attack hits",
       "ConcealmentBreaksOnlyOnHitHint": "Attacking from Concealment normally lifts it immediately regardless of hit or miss - with this switch on, Concealment stays up after a miss instead. Assassination attacks are always calculated normally either way (based on Concealment at the moment of the attack). Targetable by Active Effects.",
       "ConcealmentNeverBreaksOnAttack": "Concealment doesn't break on attack",
@@ -1525,6 +1532,10 @@
       "GmNotes": "GM Notes",
       "CreatureCategories": "Creature Categories",
       "AddCreatureCategory": "Add creature category",
+      "UndeadForm": "Form of the undead",
+      "UndeadFormHint": "Material undead have a body (e.g. skeleton, zombie) and take double damage from Rending, immaterial ones (e.g. ghosts) do not.",
+      "UndeadFormMaterial": "Material",
+      "UndeadFormImmaterial": "Immaterial",
       "ElementalSpecializations": "Elemental Charge Specialization",
       "ElementalSpecializationsHint": "Simple magic schools whose Elemental Charge effect this Species doubles - always active, no minimum level (see Class's own version with a minimum level). Freely editable."
     },
@@ -1847,6 +1858,8 @@
       "ApCostMinHint": "Lowest AP amount that can be chosen when casting.",
       "ApCostFixed": "AP cost cannot be reduced",
       "ApCostFixedHint": "This spell's AP cost cannot be reduced (neither by abilities/effects nor by Chant Shortening). Overcharging still increases it.",
+      "RequiresInfusionWeapon": "Must be cast with an Infusion weapon",
+      "RequiresInfusionWeaponHint": "This spell can only be cast while the caster has an equipped weapon with the Infusion property. Also applies to abilities with an attached spell.",
       "Variant": {
         "Hint": "Variants change this spell while a marker status or effect is on the caster (e.g. the Trickery \"Infusion\" spells or \"Gather Water\"). A marker with the effect duration \"Until used\" is used up by the cast; with any other duration the variant applies to every cast while it is active.",
         "Label": "Variants",
@@ -2033,6 +2046,7 @@
         "ApOwed": "Not enough AP - {paid} paid now, {remaining} still owed. Concentration is required to finish casting.",
         "ApPaidTowardSpell": "{paid} AP paid toward the pending spell ({remaining} still owed)",
         "AlreadyConcentrating": "Finish casting (or let Concentration break on) your current spell before casting another.",
+        "InfusionWeaponRequired": "This spell must be cast with an Infusion weapon - equip a weapon with the Infusion property first.",
         "SpellCancelled": "The spell being channeled is cancelled - its Mana cost is lost.",
         "RitualMinutesStarted": "Ritual begun - {minutes} minutes casting time ({rounds} rounds). All AP is spent every round.",
         "RitualRoundPassed": "Ritual round completed - {remaining} rounds remaining.",
@@ -2107,6 +2121,44 @@
       "ExtraDamage": "Extra damage",
       "ExtraDamageHalved": "halved",
       "EffectConsumed": "Effect used up: {name}"
+    },
+    "WeaponProperty": {
+      "AntimagicIgnoresSpellAc": "Antimagic: AC bonuses from spells ({bonus}) are ignored.",
+      "FlawlessBlocksCrit": "Flawless: {defender} is still hit automatically, but critical bonus effects are lost.",
+      "ConcealedRecommendation": "Recommendation: the target gains advantage on its next Perception roll to uncover the attacker.",
+      "StunningApplied": "Stunning: {defender} gains {stacks} stacks of Dazed.",
+      "GiantSlayerBonus": "Giant Slayer: +{percent}% damage.",
+      "RendingDouble": "Rending: double damage.",
+      "SpikyApplied": "Spiky ({item}): {attacker} suffers {amount} piercing damage.",
+      "ReflectApplied": "Reflective: {attacker} suffers {amount} reflected {type} damage.",
+      "RangedBlocked": "Ranged weapons cannot attack targets at 2m or less.",
+      "RequirementUnmet": "Requirement not met ({requirements}): attribute and skill bonuses of this item are lost.",
+      "OneHandedNeeds": "Can be held one-handed with: {needs}.",
+      "SilveredDouble": "Silvered: +100% damage against a weakness to silver.",
+      "ReactionCheckLine": "{actor}: {attribute} against DC {dc} - {total} - {outcome}",
+      "DisarmChooseTitle": "Disarm",
+      "DisarmChoosePrompt": "{attacker} has to pass a check against being disarmed of {weapon}. Which check does {attacker} use?",
+      "ReactionDisarm": "Disarm",
+      "ReactionRedirect": "Redirect to {target}",
+      "ReactionNone": "No reaction",
+      "ReactionTitle": "Reaction of {defender}",
+      "ReactionPrompt": "{attacker} attacks {defender}. {defender} can react for {cost} RP (available: {rp}).",
+      "ReactionPaid": "{defender} reacts ({cost} RP).",
+      "ReactionUsed": "{defender} reacts (free outside of combat).",
+      "DisarmResisted": "The disarm fails - the attack goes on.",
+      "DisarmSucceeded": "{attacker} is disarmed: {weapon} is unequipped.",
+      "DisarmAttackFails": "The attack fails.",
+      "RedirectResisted": "{target} resists - the attack still hits the original target.",
+      "RedirectSucceeded": "The attack is redirected to {target}.",
+      "RedirectNewRoll": "New attack roll against the new target:",
+      "ShapeshiftingUsed": "{actor} uses Shapeshifting: {item} changes its form - the GM switches the item.",
+      "UseShapeshifting": "Use Shapeshifting",
+      "UseShapeshiftingHint": "Costs 3 AP. The GM switches the item afterwards.",
+      "DistantAttributes": "Attack over more than 2m: the attributes of the reach property are used.",
+      "UnstableRoll": "Unstable: d10 roll",
+      "UnstableChanges": "{item} takes another form by itself (the GM decides)!",
+      "StealthRecommendationLoud": "Recommendation: disadvantage on the stealth roll ({item} is loud).",
+      "StealthRecommendationHeavy": "Recommendation: disadvantage on the stealth roll (heavy armor {item})."
     },
     "Wound": {
       "Applied": "{target} suffers {count}x {name}: +{gained} Wound value (total {total})."
@@ -2270,12 +2322,17 @@
     "Models": {
       "Name": "Name",
       "DiceFormula": "Roll Formula",
+      "TwoHandedDiceFormula": "Roll formula two-handed",
+      "TwoHandedDiceFormulaHint": "Only for weapons with Flexible: roll formula while the weapon is held two-handed (the normal roll formula applies one-handed). Empty: same formula.",
       "FlatBonus": "Flat Value",
       "DamageType": "Damage Type",
       "Attributes": "Attribute Modifiers Used",
       "Properties": "Properties",
       "HardenedValue": "Hardened Value (X)",
       "Requirement": "Requirement",
+      "Level": "Level (X)",
+      "Formula": "Formula (e.g. 1d6)",
+      "DistantAttributesHint": "Optional: attributes an attack over more than 2m (attack and damage roll) is calculated with instead of the normal ones.",
       "Range": "Range",
       "ApCost": "AP Cost",
       "MagazineSize": "Magazine Size",
@@ -2318,15 +2375,15 @@
     "ModelProperty": {
       "Heavy": {
         "Name": "Heavy",
-        "Hint": "This item is heavy and requires a Strength score of at least the given requirement to use effectively. A weapon with this modifier can't be wielded in both hands until the character's Strength is well above that requirement."
+        "Hint": "This item is heavy and requires a Strength score of at least the given requirement to use effectively. Below it, all attribute and skill bonuses of the wielder for this item are lost (the Material bonus stays). A two-handed weapon with this modifier can only be held one-handed with Strength of at least X + 25% of X (rounded up)."
       },
       "Demanding": {
         "Name": "Demanding",
-        "Hint": "This item is hard to handle and requires a Dexterity score of at least the given requirement to use effectively. A weapon with this modifier can't be wielded in both hands until the character's Dexterity is well above that requirement."
+        "Hint": "This item is hard to handle and requires a Dexterity score of at least the given requirement to use effectively. Below it, all attribute and skill bonuses of the wielder for this item are lost (the Material bonus stays). A two-handed weapon with this modifier can only be held one-handed with Dexterity of at least X + 25% of X (rounded up)."
       },
       "Draining": {
         "Name": "Draining",
-        "Hint": "Using this item quickly tires its bearer and requires a Constitution score of at least the given requirement to use effectively. A weapon with this modifier can't be wielded in both hands until the character's Constitution is well above that requirement."
+        "Hint": "Using this item tires the bearer quickly and requires a Constitution score of at least the given requirement to use effectively. Below it, all attribute and skill bonuses of the wielder for this item are lost (the Material bonus stays). A two-handed weapon with this modifier can only be held one-handed with Constitution of at least X + 25% of X (rounded up)."
       },
       "Refined": {
         "Name": "Refined",
@@ -2342,19 +2399,19 @@
       },
       "Rending": {
         "Name": "Rending",
-        "Hint": "A weapon with this modifier deals double damage to buildings, constructs, corporeal undead, objects, and inorganic obstacles."
+        "Hint": "A weapon with this modifier deals double damage to constructs, material undead, objects (creature category Object) and inorganic obstacles. Buildings are not implemented yet."
       },
       "Stunning": {
         "Name": "Stunning",
-        "Hint": "A critical hit with a weapon with this modifier grants the target several stacks of Dazed. The amount equals Material Bonus / 2, multiplied by 1.5 / 2 / 2.5 if this weapon has the Heavy (Reduced) / Heavy / Heavy (Increased) modifier."
+        "Hint": "A critical attack with a weapon with this modifier gives the target several stacks of Dazed. The amount is the Material bonus / 2, multiplied by (X/10) if the weapon has the Heavy (X) modifier."
       },
       "Disarming": {
         "Name": "Disarming",
-        "Hint": "A creature using an item with this modifier can, as a reaction to a weapon attack, attempt to disarm the attacker. The attacker must succeed a DC 16 Dexterity or DC 18 Strength save (attacker's choice) or be disarmed on failure. The target's attack also fails on a failed save."
+        "Hint": "A creature using an item with this modifier can try, as a reaction (3 RP) to a melee weapon attack, to disarm the attacker. They must pass a DC 16 Dexterity or DC 18 Strength check (attacker's choice) and are disarmed on a failure, the weapon is unequipped. The attack then fails."
       },
       "Ranged": {
         "Name": "Ranged",
-        "Hint": "A weapon with this modifier can be used to attack at range (given in parentheses / disadvantage at extended range). In melee, i.e. 2m or less from the target, such a weapon can't be used to attack."
+        "Hint": "A weapon with this modifier can attack at range (given in brackets / disadvantage at extended range, not automatic). In direct combat, i.e. 2m or less from the targeted target, such a weapon cannot be used to attack."
       },
       "Reload": {
         "Name": "Reload",
@@ -2362,35 +2419,35 @@
       },
       "Flexible": {
         "Name": "Flexible",
-        "Hint": "A weapon with this modifier can be used either one-handed or two-handed."
+        "Hint": "A weapon with this modifier can be held one-handed or two-handed at any time (switch in the Actions tab/inventory). Its Model can have a separate two-handed roll formula."
       },
       "Shapeshifting": {
         "Name": "Shapeshifting",
-        "Hint": "This item can change its shape. It can turn a weapon into another one, or even into a piece of armor. This modifier can't change the item's overall mass. Costs 3 Action Points."
+        "Hint": "This item can change its form. A weapon can turn into another one or even an armor piece. The overall mass of the item cannot change through this modifier. Costs 3 action points (button \"Use Shapeshifting\" in the Actions tab, the GM switches the item)."
       },
       "Infusion": {
         "Name": "Infusion",
-        "Hint": "This weapon can be charged with mana, enabling the Magical Attacks and Deadly Attacks abilities. If this effect is natural to a material, it's lost if the weapon is enchanted (unless with this modifier). Antimagic items with this modifier can be enchanted or magically enhanced."
+        "Hint": "This weapon can be charged with mana and used for the abilities Magic Attacks and Deadly Attacks. Spells with the switch \"Must be cast with an Infusion weapon\" can only be cast with an equipped Infusion weapon. If this effect is natural on a material, it is lost when the weapon is enchanted (except with this modifier). Antimagic items with this modifier can be enchanted or reinforced with magic."
       },
       "Unstable": {
         "Name": "Unstable",
-        "Hint": "An item with this modifier is unstable. Each round, a D10 must be rolled - on a 10, the item spontaneously changes shape. This modifier can only be applied to items with the Shapeshifting modifier or the Shape-Adapting enchantment."
+        "Hint": "An item with this modifier is unstable. A d10 is rolled every round; on a 10 the item takes another form by itself - the GM decides which. This modifier can only be applied to items with the Shapeshifting modifier or the Form-Adapting enchantment."
       },
       "Long": {
         "Name": "Long",
-        "Hint": "A weapon with this modifier has double the melee reach."
+        "Hint": "A weapon with this modifier has double melee reach. Optionally attributes can be set that attack and damage rolls over more than 2m use instead of the normal ones (mostly for the overrides on the item)."
       },
       "Light": {
         "Name": "Light",
-        "Hint": "A weapon with this modifier grants its bearer an additional AP."
+        "Hint": "A weapon with this modifier is (X*5%) lighter than normal without getting weaker. Heavy armor with this modifier gives no disadvantage on stealth rolls if X is at least 6."
       },
       "Antimagic": {
         "Name": "Antimagic",
-        "Hint": "An item with this modifier can't be enchanted, deals double damage to magical shields, and makes an illusion flicker on touch. The attacked creature also has disadvantage on its Concentration save. Armor made from materials with this modifier grants Magic Resistance equal to (AC granted / 2, rounded down)."
+        "Hint": "An item with this modifier cannot be enchanted, deals double damage to Barriers (magic shields) and ignores AC bonuses the target has from spells. The attacked creature also has disadvantage on its Concentration check. Armor made of materials with this modifier grants Magic Resistance equal to (armor AC / 2, rounded down)."
       },
       "Reach": {
         "Name": "Reach",
-        "Hint": "A weapon with this modifier can be used to attack at range (given in parentheses). Beyond 2m, the attack and damage roll use the given attribute modifier."
+        "Hint": "A weapon with this modifier can attack at range (given in brackets). Over more than 2m, attack and damage rolls use the attributes set here (the normal ones if none are set)."
       },
       "GiantSlayer": {
         "Name": "Giant Slayer",
@@ -2398,7 +2455,7 @@
       },
       "VeryLong": {
         "Name": "Very Long",
-        "Hint": "A weapon with this modifier has triple the melee reach."
+        "Hint": "A weapon with this modifier has triple melee reach. Optionally attributes can be set that attack and damage rolls over more than 2m use instead of the normal ones (mostly for the overrides on the item)."
       },
       "Simple": {
         "Name": "Simple",
@@ -2406,15 +2463,15 @@
       },
       "Redirection": {
         "Name": "Redirection",
-        "Hint": "The bearer of an item with this modifier can, as a reaction, redirect a non-area attack to the nearest creature within 2m, unless that creature succeeds a DC 15 Constitution save. Magical attacks can only be redirected with this modifier if it was granted via enchantment."
+        "Hint": "The bearer of an item with this modifier can, as a reaction (3 RP), redirect an attack without an area effect to the nearest creature within 2m, unless that creature passes a DC 15 Constitution check. The new target gets a new attack roll against AC or MR. Spell attacks can only be redirected if the item is enchanted."
       },
       "Silvered": {
         "Name": "Silvered",
-        "Hint": "Weapons made from this material deal extra damage to certain creatures."
+        "Hint": "Weapons of this material deal +100% damage to creatures weak to silver (switch on the actor or the species)."
       },
       "Concealed": {
         "Name": "Concealed",
-        "Hint": "An attack with this weapon doesn't automatically break stealth. Creatures hit by an attack with such a weapon gain advantage on their next Observation check to reveal the attacker."
+        "Hint": "An attack with this weapon does not automatically remove Concealment. Creatures hit by an attack with such a weapon gain advantage on their next Perception roll to uncover the attacker (only a recommendation in chat)."
       },
       "Wounding": {
         "Name": "Wounding",
@@ -2426,11 +2483,11 @@
       },
       "Shattering": {
         "Name": "Shattering",
-        "Hint": "The AC of a creature hit by a weapon with this modifier is reduced for one round by the number of weapon dice. This effect can stack until the equipment's AC modifier reaches 0."
+        "Hint": "Attacks with a weapon with this modifier deal five times the durability damage to the armor / shield of the attacked target or to the weapon used to parry."
       },
       "TwoHanded": {
         "Name": "Two-Handed",
-        "Hint": "A weapon with this modifier must be wielded two-handed. Unless such a weapon also has the Heavy, Demanding or Draining modifier, it can be wielded one-handed if the bearer has a Strength score of 18 or higher."
+        "Hint": "A weapon with this modifier is wielded with both hands. One-handed only works with the switch in the Actions tab/inventory and only if the bearer has the attributes: with Heavy/Demanding/Draining (X) at least X + 25% of X (rounded up) in that attribute, otherwise at least 16 in the attribute the weapon uses. Held one-handed, Specialized loses its effect."
       },
       "Deployable": {
         "Name": "Deployable",
@@ -2446,7 +2503,7 @@
       },
       "Loud": {
         "Name": "Loud",
-        "Hint": "The bearer has disadvantage on Stealth checks while wearing this item."
+        "Hint": "The wearer should have disadvantage on stealth rolls while wearing this item (only a recommendation in chat - whether it applies depends on the situation)."
       },
       "Reflective": {
         "Name": "Reflective",
@@ -2458,7 +2515,7 @@
       },
       "Spiky": {
         "Name": "Spiky",
-        "Hint": "Creatures that attack the bearer of such an item with a melee weapon attack take 1d6 piercing damage."
+        "Hint": "Creatures that attack the wearer of such an item with a melee weapon attack suffer the given piercing damage (formula, 1d6 if blank)."
       }
     },
     "ItemSheet": {

@@ -5,8 +5,12 @@ import { canUseWeaponAttack, canMove, applyAdrenalinDamage, isActorsOwnTurn, isC
 import {
   computeWeaponAttackBonus, computeWeaponAttributeBonus, computeMartialArtsAttackBonus, rollAttackPair, renderAttackPairHTML,
   getDamageDieSizes, getWeaponDamageType, autoResolveAttackForTargets, greyOutManualEvalButtons, stripRerollButton,
-  getWeaponAttributeKeys, getMartialArtsAttributeKeys,
+  getWeaponAttributeKeys, getMartialArtsAttributeKeys, getWeaponAttackAttributeKeys,
 } from "./attackRolls.mjs";
+import {
+  buildWeaponFlags, hasEffectiveProperty, isDistantAttack, isRangedAttackBlocked, getDistantAttackAttributes,
+  getUnmetRequirements, renderUnmetRequirementsLine,
+} from "./weaponProperties.mjs";
 import { wrapCriticalBlock } from "./criticalRolls.mjs";
 import { formatRollCardHeading } from "./rollCard.mjs";
 import { grantSkillUsageFp, formatSkillFpGrantLine, checkReflexActionTrigger, grantFlatSkillFp } from "./skillFp.mjs";
@@ -148,13 +152,24 @@ export async function rollWeaponItem(item) {
     if (ammoRemaining <= 0) return rollWeaponReload(item, reloadEntry.value ?? 0);
   }
 
+  // Fernkampf (Ranged): such a weapon can't attack a target at 2m or less.
+  if (actor && hasEffectiveProperty(item.system, 'ranged') && isRangedAttackBlocked(actor)) {
+    return ui.notifications.warn(game.i18n.localize('SKSK.WeaponProperty.RangedBlocked'));
+  }
+  // Reach/Long/Very Long: an attack over more than 2m is rolled with the
+  // attributes picked on those properties (if any) instead of the usual ones.
+  const distant = actor ? isDistantAttack(actor) : false;
+
   const parts = [formatRollCardHeading(item.name)];
   const damageType = getWeaponDamageType(item.system);
   // A Weapon with its own "ignores Barrier" switch tags every damage entry it
   // produces, so helpers/damageApplication.mjs#applyResolvedDamageEntries
   // sends them straight to Life.
   const barrierFlag = item.system.ignoresBarrier ? { ignoresBarrier: true } : {};
-  const damageDice = [{ damageType, dieSizes: getDamageDieSizes(item.system.formula), ...barrierFlag }];
+  // The properties of this weapon that matter for hit evaluation/damage
+  // application (see helpers/weaponProperties.mjs).
+  const weaponFlags = buildWeaponFlags(item);
+  const damageDice = [{ damageType, dieSizes: getDamageDieSizes(item.system.formula), ...barrierFlag, ...weaponFlags.dice }];
   // The "Verwundend" property (from the Model or the Material): a hit also
   // inflicts a Wound - rolled and added to the target's Wound status when the
   // damage is applied (see helpers/wounds.mjs#applyWounds).
@@ -175,16 +190,21 @@ export async function rollWeaponItem(item) {
   if (actor) {
     flank = resolveAttackFlanking(actor);
     const flankBonus = flank.flanking ? getActorSkillLevel(actor, 'tactic') : 0;
-    const attackBonus = computeWeaponAttackBonus(actor, item) + (technique?.styleAttackBonus ?? 0) + (technique?.hitBonusAmount ?? 0) + flankBonus;
+    const attackBonus = computeWeaponAttackBonus(actor, item, { distant }) + (technique?.styleAttackBonus ?? 0) + (technique?.hitBonusAmount ?? 0) + flankBonus;
     rolls = await rollAttackPair(attackBonus, actor);
     const rendered = await renderAttackPairHTML(rolls, 'armorClass', actor, {
       damageDice, killSkillKey: item.system.weaponType, flanking: flank.flanking,
       bonus: attackBonus, label: game.i18n.localize('SKSK.AttackRoll.Attack'),
-      attributeKeys: getWeaponAttributeKeys(item.system),
+      attributeKeys: getWeaponAttackAttributeKeys(item.system, distant),
     });
     attackBlockIndex = parts.length;
     parts.push(rendered);
     parts.push(formatFlankingBonusLine(flank, flankBonus));
+    const requirementLine = renderUnmetRequirementsLine(actor, item.system);
+    if (requirementLine) parts.push(requirementLine);
+    if (distant && getDistantAttackAttributes(item.system).length) {
+      parts.push(`<div class="sksk-roll-line">${game.i18n.localize('SKSK.WeaponProperty.DistantAttributes')}</div>`);
+    }
 
     const fpGrant = await grantSkillUsageFp(actor, item.system.weaponType, 'weaponAttack');
     parts.push(formatSkillFpGrantLine(fpGrant));
@@ -194,14 +214,16 @@ export async function rollWeaponItem(item) {
   let applyButtonIndex = -1;
   const usedEffects = new Set();
   if (item.system.formula) {
-    const attributeBonus = actor ? computeWeaponAttributeBonus(actor, item.system) : 0;
-    const lehrenDamageBonus = actor
+    const attributeBonus = actor ? computeWeaponAttributeBonus(actor, item.system, { distant }) : 0;
+    // Unmet Schwer/Fordernd/Zehrend: no skill-based bonuses either (see the attack roll).
+    const requirementsUnmet = actor ? getUnmetRequirements(actor, item.system).length > 0 : false;
+    const lehrenDamageBonus = actor && !requirementsUnmet
       ? computeLehrenTargetBonus(actor, 'damageBonus', { skillKey: item.system.weaponType, kind: 'weapon' })
       : 0;
     const damageTypeBonus = actor?.system.damageBonus?.[damageType] ?? 0;
     const allWeaponsDamageBonus = (actor?.system.damageBonusAll ?? 0)
       + (actor?.system.weaponDamageBonus?.[item.system.weaponType] ?? 0);
-    const patronDamageBonus = actor ? computePatronDamageBonus(actor, { skillKey: item.system.weaponType, damageType }) : 0;
+    const patronDamageBonus = actor && !requirementsUnmet ? computePatronDamageBonus(actor, { skillKey: item.system.weaponType, damageType }) : 0;
     // The Elementarist ability's own Feuer-Ladungen bonus (helpers/
     // elementalChargeEffects.mjs) - general "extra damage", applies to
     // weapon damage the same as spell damage (see helpers/spells.mjs#
@@ -220,10 +242,10 @@ export async function rollWeaponItem(item) {
     parts.push(wrapDamageBlock(damageBlockId,
       `<div class="sksk-roll-damage"><strong>${game.i18n.localize('SKSK.Spell.Roll.Damage')}</strong>${wrapRerollIcons(rerollOnesIcon)}</div>${rendered}${line}`
     ));
-    damageEntries.push({ damageType, amount: total, ...barrierFlag });
+    damageEntries.push({ damageType, amount: total, ...barrierFlag, ...weaponFlags.entry });
     // Zusatzschaden from Active Effects (helpers/extraDamage.mjs) - its own
     // roll and entries, so defenses treat it separately.
-    const extraDamage = await rollExtraDamage(actor, { kind: 'weapon', damageType, skillKey: item.system.weaponType }, { entryFlags: barrierFlag, used: usedEffects });
+    const extraDamage = await rollExtraDamage(actor, { kind: 'weapon', damageType, skillKey: item.system.weaponType }, { entryFlags: { ...barrierFlag, ...weaponFlags.entry }, used: usedEffects });
     parts.push(extraDamage.html);
     damageEntries.push(...extraDamage.entries);
     applyButtonIndex = parts.length;
@@ -403,7 +425,7 @@ export async function rollMartialArtsAttack(actor, index) {
   const offTurn = !isActorsOwnTurn(actor);
   if (offTurn ? !hasEnoughReactionPoints(actor, attack.apCost) : !hasEnoughActionPoints(actor, attack.apCost)) return;
 
-  const damageDice = [{ damageType: attack.damageType, dieSizes: getDamageDieSizes(attack.formula) }];
+  const damageDice = [{ damageType: attack.damageType, dieSizes: getDamageDieSizes(attack.formula), melee: true }];
   const technique = await consumePrimedTechnique(actor, 'martialArts');
   const flank = resolveAttackFlanking(actor);
   const flankBonus = flank.flanking ? getActorSkillLevel(actor, 'tactic') : 0;
@@ -429,10 +451,10 @@ export async function rollMartialArtsAttack(actor, index) {
   const rollTwice = hasRollTwiceWeapon(actor);
   const { total: rollTotal, html: renderedRoll, pickedRoll } = await rollPossiblyDoubledDamage(formula, actor.getRollData(), rollTwice);
   const { total: damageTotal, line: techniqueLine } = await applyTechniqueBonusDamage(rollTotal, technique, actor.getRollData());
-  const damageEntries = [{ damageType: attack.damageType, amount: damageTotal }];
+  const damageEntries = [{ damageType: attack.damageType, amount: damageTotal, melee: true }];
   // Zusatzschaden from Active Effects (helpers/extraDamage.mjs).
   const usedEffects = new Set();
-  const extraDamage = await rollExtraDamage(actor, { kind: 'martialArts', damageType: attack.damageType }, { used: usedEffects });
+  const extraDamage = await rollExtraDamage(actor, { kind: 'martialArts', damageType: attack.damageType }, { entryFlags: { melee: true }, used: usedEffects });
   damageEntries.push(...extraDamage.entries);
   const damageBlockId = foundry.utils.randomID();
   const rerollOnesIcon = renderDamageRerollOnesIcon(
@@ -778,6 +800,24 @@ export async function useMove(actor, movementType) {
   const extraHTML = `<div class="sksk-roll-description">${game.i18n.format('SKSK.Action.MoveDistance', { label, speed })}</div>`
     + formatSkillFpGrantLine(fpGrant) + formatSkillFpGrantLine(await checkReflexActionTrigger(actor));
   return postActionChatCard(actor, game.i18n.localize('SKSK.Action.Move'), null, apCost, extraHTML, null, rpCost);
+}
+
+/** AP cost of using Formwandelnd (Shapeshifting). */
+export const SHAPESHIFTING_AP_COST = 3;
+
+/**
+ * Formwandelnd (Shapeshifting): the Actions tab's "Nutze Formwandelnd" - costs
+ * 3 AP and tells the table the item changes its form; the GM then switches
+ * the item itself.
+ * @param {Actor} actor
+ * @param {Item} item   An equipped weapon/armor with the property.
+ * @return {Promise<ChatMessage|void>}
+ */
+export async function useShapeshifting(actor, item) {
+  if (!hasEnoughActionPoints(actor, SHAPESHIFTING_AP_COST)) return;
+  await actor.update(spendActionPoints(actor, SHAPESHIFTING_AP_COST));
+  const description = `<div class="sksk-roll-description">${game.i18n.format('SKSK.WeaponProperty.ShapeshiftingUsed', { actor: actor.name, item: item.name })}</div>`;
+  return postActionChatCard(actor, game.i18n.localize('SKSK.ModelProperty.Shapeshifting.Name'), null, SHAPESHIFTING_AP_COST, description);
 }
 
 /**

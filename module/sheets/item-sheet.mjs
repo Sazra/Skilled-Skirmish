@@ -28,6 +28,7 @@ import {
 import { ensureLinkedSpellEffect, getSpellEffectTemplate } from '../helpers/spell-rolls.mjs';
 import { SKSKSoulPathElementsDialog } from '../apps/soul-path-elements-dialog.mjs';
 import { getWorldDeities } from '../helpers/religion.mjs';
+import { checkOneHandedAllowed } from '../helpers/weaponProperties.mjs';
 import { captureScrollPositions, restoreScrollPositions } from '../helpers/scrollPreservation.mjs';
 
 /**
@@ -447,6 +448,9 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       context.canAddAbility = (item.system.abilities?.length ?? 0) < 3;
       context.sizeCategoryChoices = CONFIG.SKSK.sizeCategories;
       context.creatureCategoryChoices = CONFIG.SKSK.creatureCategories;
+      // The materiell/immateriell choice only exists for undead (see data/species.mjs#undeadForm).
+      context.hasUndeadCategory = (item.system.creatureCategories ?? []).includes('undead');
+      context.undeadFormChoices = { material: 'SKSK.Species.UndeadFormMaterial', immaterial: 'SKSK.Species.UndeadFormImmaterial' };
     }
 
     if (item.type === 'class') {
@@ -674,6 +678,18 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       const effective = item.system.effectiveProperties ?? [];
       context.effectivePropertyKeys = effective.map(e => e.property);
       context.effectivePropertyValues = Object.fromEntries(effective.map(e => [e.property, e.value ?? 0]));
+      // Coupled formula/attribute parameters of some properties (Spiky, Reach/
+      // Long/Very Long) - one entry per overridable property so the template
+      // can look any of them up.
+      context.effectivePropertyFormulas = Object.fromEntries(effective.map(e => [e.property, e.formula ?? '']));
+      context.effectivePropertyAttributes = Object.fromEntries(
+        Object.keys(context.overridePropertyChoices).map(key => [key, effective.find(e => e.property === key)?.attributes ?? []])
+      );
+      context.hasTwoHandedProperty = item.type === 'weapon' && effective.some(e => e.property === 'twoHanded' || e.property === 'flexible');
+      if (context.hasTwoHandedProperty && item.actor) {
+        const check = checkOneHandedAllowed(item.actor, item.system);
+        context.oneHandedBlockedHint = check.allowed ? '' : game.i18n.format('SKSK.WeaponProperty.OneHandedNeeds', { needs: check.needs });
+      }
       context.attributeChoices = CONFIG.SKSK.attributes;
       context.damageTypeChoices = CONFIG.SKSK.damageTypes;
     }
@@ -1418,7 +1434,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       : (item.system.armorType === 'cloth' ? null : getArmorModel(item.system.model));
     const natural = new Map(
       computeEffectiveProperties({ material: item.system.material, propertyOverrides: [] }, model)
-        .map(e => [e.property, e.value])
+        .map(e => [e.property, e])
     );
 
     const section = event.currentTarget;
@@ -1428,13 +1444,21 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       const def = CONFIG.SKSK.modelProperties[key];
       const valueInput = section.querySelector(`.property-override-value[data-property="${key}"]`);
       const value = valueInput ? Number(valueInput.value) || 0 : 0;
+      const formula = (section.querySelector(`.property-override-formula[data-property="${key}"]`)?.value ?? '').trim();
+      const attributes = [...section.querySelectorAll(`.property-override-attr[data-property="${key}"]`)]
+        .filter(box => box.checked).map(box => box.dataset.attribute);
       const isNatural = natural.has(key);
+      const naturalEntry = natural.get(key);
+      const hasNumber = def?.hasRequirement || def?.hasRange || def?.hasApCost || def?.hasLevel;
+      const differs = (hasNumber && value !== (naturalEntry?.value ?? 0))
+        || (def?.hasFormula && formula !== (naturalEntry?.formula ?? ''))
+        || (def?.hasAttributes && attributes.join() !== (naturalEntry?.attributes ?? []).join());
       if (toggle.checked && !isNatural) {
-        overrides.push({ property: key, mode: 'add', value });
+        overrides.push({ property: key, mode: 'add', value, formula, attributes });
       } else if (!toggle.checked && isNatural) {
-        overrides.push({ property: key, mode: 'remove', value: 0 });
-      } else if (toggle.checked && isNatural && (def?.hasRequirement || def?.hasRange) && value !== natural.get(key)) {
-        overrides.push({ property: key, mode: 'add', value });
+        overrides.push({ property: key, mode: 'remove', value: 0, formula: '', attributes: [] });
+      } else if (toggle.checked && isNatural && differs) {
+        overrides.push({ property: key, mode: 'add', value, formula, attributes });
       }
     }
     await item.update({ 'system.propertyOverrides': overrides });

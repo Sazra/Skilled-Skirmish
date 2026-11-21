@@ -1,6 +1,7 @@
 import { getActorSkillLevel, isActorSkillUnlocked, getSkillStacks } from "./skills.mjs";
 import { computeLehrenTargetBonus } from "./lehren.mjs";
 import { computeDurabilityRatio } from "./materials.mjs";
+import { getUnmetRequirements } from "./weaponProperties.mjs";
 import { getElementalEarthArmorBonus, getElementalWaterResistanceBonus } from "./elementalChargeEffects.mjs";
 
 /**
@@ -53,11 +54,36 @@ export function computeNaturalMaterialBonus(actor) {
  */
 export function computeArmorPieceBonus(armorItem) {
   const system = armorItem.system;
+  // Hart (Hardened): the Model's hardened value, capped at half the Material
+  // bonus.
+  const hardened = Math.min(system.resolvedModel?.hardenedValue ?? 0, Math.floor((system.materialArmorBonus ?? 0) / 2));
   const rawBonus = (system.materialArmorBonus ?? 0)
     + (system.resolvedModel?.flatBonus ?? 0)
-    + (system.resolvedModel?.hardenedValue ?? 0);
+    + hardened;
   const qualityBonus = Math.floor(rawBonus * system.quality / 100);
   return Math.ceil(qualityBonus * computeDurabilityRatio(system));
+}
+
+/**
+ * The AC bonus an actor has from SPELLS: the Armor Class bonuses of Active
+ * Effects that came from a Spell item (an effect a spell applied to it) and
+ * the Elementarist's Erde-Ladungen (charged by casting). An attack with a
+ * Magiestörend (Antimagic) weapon ignores exactly this part of the AC - see
+ * helpers/attackRolls.mjs#evaluateHitAgainstDefender.
+ * @param {Actor} actor
+ * @return {number}
+ */
+export function computeSpellArmorClassBonus(actor) {
+  let total = getElementalEarthArmorBonus(actor);
+  for (const effect of actor.appliedEffects) {
+    let origin = null;
+    try { origin = effect.origin ? fromUuidSync(effect.origin) : null; } catch (error) { origin = null; }
+    if (origin?.type !== 'spell') continue;
+    for (const change of effect.changes ?? []) {
+      if (change.key === 'system.customArmorClassBonus' && change.type === 'add') total += Number(change.value) || 0;
+    }
+  }
+  return total;
 }
 
 /**
@@ -149,8 +175,9 @@ function computeArmorClassComponents(actor) {
   const wornArmor = lightArmor ?? heavyArmor ?? clothArmor;
 
   let armorSkillBonus = 0;
-  if (lightArmor) armorSkillBonus = Math.min(getActorSkillLevel(actor, 'lightArmor'), 5);
-  else if (heavyArmor) armorSkillBonus = Math.min(getActorSkillLevel(actor, 'heavyArmor'), 6);
+  // Unmet Schwer/Fordernd/Zehrend: the worn armor gives no skill bonus (its Material bonus stays).
+  if (lightArmor && !getUnmetRequirements(actor, lightArmor.system).length) armorSkillBonus = Math.min(getActorSkillLevel(actor, 'lightArmor'), 5);
+  else if (heavyArmor && !lightArmor && !getUnmetRequirements(actor, heavyArmor.system).length) armorSkillBonus = Math.min(getActorSkillLevel(actor, 'heavyArmor'), 6);
   // Cloth has no armor skill of its own - never adds to armorSkillBonus,
   // even when it's the piece actually worn (wornArmor above).
   rows.push({ label: game.i18n.localize('SKSK.Breakdown.ArmorSkillBonus'), perLevel: null, value: armorSkillBonus });

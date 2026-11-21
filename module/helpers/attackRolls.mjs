@@ -3,10 +3,14 @@ import { computeDurabilityRatio } from './materials.mjs';
 import { computeLehrenTargetBonus } from './lehren.mjs';
 import { getSpellSchool } from './spells.mjs';
 import { computeNaturalMaterialBonus } from './defense.mjs';
-import { applyD20Malus, getStatusStacks, setStatusStacks } from './statusEffects.mjs';
-import { getAttackCriticalType, resolveCheckSuccess, wrapCriticalBlock, wrapCriticalInline } from './criticalRolls.mjs';
+import { applyD20Malus, getStatusStacks, setStatusStacks, increaseStatusStacks } from './statusEffects.mjs';
+import { getAttackCriticalType, getNaturalD20, resolveCheckSuccess, wrapCriticalBlock, wrapCriticalInline } from './criticalRolls.mjs';
+import { offerDefenderReactions } from './reactions.mjs';
 import { formatRollCardHeading } from './rollCard.mjs';
-import { getEquippedArmorSkillKeys } from './defense.mjs';
+import { getEquippedArmorSkillKeys, computeSpellArmorClassBonus } from './defense.mjs';
+import {
+  pickFlags, BONUS_FLAG_KEYS, getDistantAttackAttributes, getEquippedArmorWithProperty, getUnmetRequirements, isHeldOneHanded,
+} from './weaponProperties.mjs';
 import { grantSkillUsageFp, grantSkillUsageFp as grantSkillUsageFpReal, formatSkillFpGrantLine } from './skillFp.mjs';
 import {
   resolveClickDefender, renderApplyDamageButton, applyResolvedDamageEntries, halveDamageEntries, recordHitEvaluation,
@@ -170,6 +174,20 @@ export function getWeaponAttributeKeys(weaponSystem) {
 }
 
 /**
+ * The attributes a weapon attack is rolled with: the weapon's usual ones, or -
+ * for an attack over more than 2m - the alternative attributes picked on its
+ * Reach/Long/Very Long property (see helpers/weaponProperties.mjs#
+ * getDistantAttackAttributes), if it has any.
+ * @param {object} weaponSystem
+ * @param {boolean} [distant=false]
+ * @return {string[]}
+ */
+export function getWeaponAttackAttributeKeys(weaponSystem, distant = false) {
+  const distantKeys = distant ? getDistantAttackAttributes(weaponSystem) : [];
+  return distantKeys.length ? distantKeys : getWeaponAttributeKeys(weaponSystem);
+}
+
+/**
  * A weapon's damage type (for Resistance/Weakness/Immunity/Absorption
  * purposes - see helpers/defense.mjs#applyElementalDefense): its own
  * damageTypeOverride if enabled AND not set to "inherit", otherwise its
@@ -239,10 +257,14 @@ export function computeWeaponRangeLabel(weaponItem, actor = null) {
  * highest (ties don't stack), with Specialized doubling the result.
  * @param {Actor} actor
  * @param {object} weaponSystem
+ * @param {{distant?: boolean}} [options]   distant: an attack over more than 2m,
+ *   rolled with the Reach/Long/Very Long attributes if the weapon has any.
  * @return {number}
  */
-export function computeWeaponAttributeBonus(actor, weaponSystem) {
-  const keys = getWeaponAttributeKeys(weaponSystem);
+export function computeWeaponAttributeBonus(actor, weaponSystem, { distant = false } = {}) {
+  // Unmet Schwer/Fordernd/Zehrend: no attribute bonus from this weapon.
+  if (getUnmetRequirements(actor, weaponSystem).length) return 0;
+  const keys = getWeaponAttackAttributeKeys(weaponSystem, distant);
   const mods = keys.map(key => actor.system.attributes?.[key]?.mod ?? 0);
   if (!mods.length) return 0;
 
@@ -251,7 +273,10 @@ export function computeWeaponAttributeBonus(actor, weaponSystem) {
 
   if (has('masterful')) return highestOrSumIfAllTied(mods);
   const highest = Math.max(...mods);
-  return has('specialized') ? highest * 2 : highest;
+  // Specialized doubles the attribute - but loses that while a Two-Handed
+  // weapon is held one-handed.
+  const doubled = has('specialized') && !(has('twoHanded') && isHeldOneHanded(actor, weaponSystem));
+  return doubled ? highest * 2 : highest;
 }
 
 /**
@@ -264,20 +289,23 @@ export function computeWeaponAttributeBonus(actor, weaponSystem) {
  * rounded UP - plus its attribute bonus (see computeWeaponAttributeBonus).
  * @param {Actor} actor
  * @param {Item} weaponItem
+ * @param {{distant?: boolean}} [options]   See computeWeaponAttributeBonus.
  * @return {number}
  */
-export function computeWeaponAttackBonus(actor, weaponItem) {
+export function computeWeaponAttackBonus(actor, weaponItem, { distant = false } = {}) {
   const system = weaponItem.system;
   const skillLevel = getActorSkillLevel(actor, system.weaponType);
   const rawItemBonus = (system.materialAttackBonus ?? 0) + (system.resolvedModel?.flatBonus ?? 0);
   const qualityItemBonus = Math.floor(rawItemBonus * system.quality / 100);
   const itemBonus = Math.ceil(qualityItemBonus * computeDurabilityRatio(system));
-  const attributeBonus = computeWeaponAttributeBonus(actor, system);
-  const lehrenBonus = computeLehrenTargetBonus(actor, 'attackBonus', { skillKey: system.weaponType, kind: 'weapon' });
+  const attributeBonus = computeWeaponAttributeBonus(actor, system, { distant });
+  // Unmet Schwer/Fordernd/Zehrend: the skill (and what hangs on it) gives nothing either.
+  const unmet = getUnmetRequirements(actor, system).length > 0;
+  const lehrenBonus = unmet ? 0 : computeLehrenTargetBonus(actor, 'attackBonus', { skillKey: system.weaponType, kind: 'weapon' });
   const weaponTypeBonus = actor.system.weaponAttackBonus?.[system.weaponType] ?? 0;
   const allWeaponsBonus = actor.system.weaponAttackBonusAll ?? 0;
-  const patronBonus = computePatronRollBonus(actor, system.weaponType);
-  return skillLevel + itemBonus + attributeBonus + lehrenBonus + weaponTypeBonus + patronBonus + allWeaponsBonus;
+  const patronBonus = unmet ? 0 : computePatronRollBonus(actor, system.weaponType);
+  return (unmet ? 0 : skillLevel) + itemBonus + attributeBonus + lehrenBonus + weaponTypeBonus + patronBonus + allWeaponsBonus;
 }
 
 /**
@@ -508,7 +536,7 @@ export async function maybeRollPrecision(actor, isOrdinaryHit) {
  * @return {Promise<string>}
  */
 export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor, damageInfo = {}) {
-  const { damageDice = [], killSkillKey = null, flanking = false, bonus = 0, label = '', attributeKeys = [], noFp = false } = damageInfo;
+  const { damageDice = [], killSkillKey = null, flanking = false, bonus = 0, label = '', attributeKeys = [], noFp = false, isArea = false } = damageInfo;
   const critA = getAttackCriticalType(rollA, actor);
   const critB = getAttackCriticalType(rollB, actor);
   const renderedA = wrapCriticalBlock(await rollA.render(), critA);
@@ -524,7 +552,7 @@ export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor
   // luck.mjs#redoAttackPairRoll re-renders the fresh block through this
   // same function, and needs attributeKeys again to decide whether the
   // OTHER icon still belongs on that new block too.
-  const rerollPayload = { blockId, bonus, comparisonType, damageDice, killSkillKey, flanking, label, attributeKeys, noFp };
+  const rerollPayload = { blockId, bonus, comparisonType, damageDice, killSkillKey, flanking, label, attributeKeys, noFp, isArea };
   const attributeRerollHTML = renderAttributeRerollButton(actor, attributeKeys, 'attack', rerollPayload);
   const rerollHTML = renderRerollButton(actor, 'attack', rerollPayload);
   return `
@@ -543,6 +571,7 @@ export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor
       data-crit-a="${critA ?? ''}" data-crit-b="${critB ?? ''}" data-attacker-uuid="${actor?.uuid ?? ''}"
       data-damage-dice="${encodeURIComponent(JSON.stringify(damageDice))}"
       data-kill-skill="${killSkillKey ?? ''}" data-flanking="${flanking}" data-no-fp="${noFp}"
+      data-attack-bonus="${bonus}" data-is-area="${isArea}"
       title="${game.i18n.localize('SKSK.AttackRoll.EvaluateShiftHint')}">
       ${game.i18n.localize('SKSK.AttackRoll.Evaluate')}
     </button>
@@ -627,7 +656,7 @@ export function stripRerollButton(html) {
  * @param {"armorClass"|"magicResistance"} context.comparisonType
  * @param {Array<{damageType: string, dieSizes: number[]}>} context.damageDice
  * @param {string|null} context.killSkillKey
- * @return {Promise<{hit: boolean, criticalType: string|null, line: string, fpHTML: string, title: string}>}
+ * @return {Promise<{hit: boolean, criticalType: string|null, line: string, fpHTML: string, title: string, stunStacks: number}>}
  */
 async function evaluateHitAgainstDefender({
   defender, attacker, mode, rollA, rollB, critA, critB, comparisonType, damageDice, killSkillKey, noFp = false,
@@ -657,9 +686,14 @@ async function evaluateHitAgainstDefender({
   // Not applicable at all with no defender resolved (forceHit).
   const defenderFlanks = !!defender && comparisonType === 'armorClass' && attacker
     && getActorSkillLevel(defender, 'tactic') >= 10 && checkFlanking(defender, attacker).flanking;
+  // Magiestörend (Antimagic): an attack with such a weapon ignores the AC
+  // bonuses the defender has from spells.
+  const ignoredSpellAc = defender && comparisonType === 'armorClass' && damageDice.some(d => d.antimagic)
+    ? Math.max(0, computeSpellArmorClassBonus(defender))
+    : 0;
   const statValue = defender
     ? (comparisonType === 'magicResistance' ? defender.system.magicResistance : defender.system.armorClass)
-      + (defenderFlanks ? FLANKING_AC_BONUS : 0)
+      + (defenderFlanks ? FLANKING_AC_BONUS : 0) - ignoredSpellAc
     : null;
 
   // With no defender to compare against (forceHit), the attack counts as a
@@ -674,6 +708,9 @@ async function evaluateHitAgainstDefender({
   if (!defender) {
     extraHTML += `<div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.NoDefenderForcedHit')}</div>`;
   }
+  if (ignoredSpellAc > 0) {
+    extraHTML += `<div class="sksk-roll-line">${game.i18n.format('SKSK.WeaponProperty.AntimagicIgnoresSpellAc', { bonus: ignoredSpellAc })}</div>`;
+  }
 
   if (criticalType === null && hit) {
     const precision = await maybeRollPrecision(attacker, true);
@@ -684,7 +721,15 @@ async function evaluateHitAgainstDefender({
     }
   }
 
-  if (criticalType === 'success') {
+  // Schwachstellenlos (Flawless): a critical hit against its wearer still
+  // hits automatically, but none of the on-critical effects happen (Brutal
+  // bonus damage, Betäubend, ...).
+  const critEffectsBlocked = criticalType === 'success' && !!defender && getEquippedArmorWithProperty(defender, 'flawless').length > 0;
+  if (critEffectsBlocked) {
+    extraHTML += `<div class="sksk-roll-line">${game.i18n.format('SKSK.WeaponProperty.FlawlessBlocksCrit', { defender: defender.name })}</div>`;
+  }
+
+  if (criticalType === 'success' && !critEffectsBlocked) {
     const bonusResults = await rollCriticalBonusDamage(attacker, damageDice, comparisonType === 'magicResistance' ? 'spell' : 'weapon');
     if (bonusResults.length) {
       let bonusTotal = 0;
@@ -695,6 +740,7 @@ async function evaluateHitAgainstDefender({
         bonusEntries.push({
           damageType, amount: total,
           ...(damageDice.some(d => d.damageType === damageType && d.ignoresBarrier) ? { ignoresBarrier: true } : {}),
+          ...pickFlags(damageDice.find(d => d.damageType === damageType), BONUS_FLAG_KEYS),
         });
         bonusTotal += total;
       }
@@ -718,6 +764,7 @@ async function evaluateHitAgainstDefender({
     extraHTML += `<div class="sksk-roll-line"><strong>${typeLabel} ${game.i18n.localize('SKSK.AttackRoll.AssassinationDamage')}</strong></div>${await assassinationRoll.render()}`;
     extraHTML += renderApplyDamageButton(attacker, [{
       damageType: assassinationType, amount: assassinationRoll.total, ...(damageDice[0].ignoresBarrier ? { ignoresBarrier: true } : {}),
+      ...pickFlags(damageDice[0], BONUS_FLAG_KEYS),
     }], killSkillKey);
     if (killSkillKey) {
       extraHTML += formatSkillFpGrantLine(await grantSkillUsageFp(attacker, 'assassination', 'assassinationAttack'));
@@ -732,10 +779,15 @@ async function evaluateHitAgainstDefender({
   // or "concealmentBreaksOnlyOnHit" is on (only breaks on a confirmed hit -
   // a miss leaves it standing). See data/actor-base.mjs. A no-op if the
   // attacker isn't Concealed to begin with.
-  if (attacker && getStatusStacks(attacker, 'concealed') > 0 && !attacker.system.concealmentNeverBreaksOnAttack
+  // Versteckt (Concealed weapon): the attack does not remove Tarnung by itself.
+  const keepsConcealment = damageDice.some(d => d.keepsConcealment);
+  if (attacker && getStatusStacks(attacker, 'concealed') > 0 && !attacker.system.concealmentNeverBreaksOnAttack && !keepsConcealment
     && (hit || !attacker.system.concealmentBreaksOnlyOnHit)) {
     await setStatusStacks(attacker, 'concealed', 0);
     extraHTML += `<div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.ConcealmentBroken')}</div>`;
+  } else if (keepsConcealment && hit && attacker && getStatusStacks(attacker, 'concealed') > 0) {
+    // Only a recommendation - the GM decides.
+    extraHTML += `<div class="sksk-roll-line">${game.i18n.localize('SKSK.WeaponProperty.ConcealedRecommendation')}</div>`;
   }
 
   if (hit) {
@@ -775,7 +827,13 @@ async function evaluateHitAgainstDefender({
     ? game.i18n.format('SKSK.AttackRoll.EvaluationTitle', { defender: defender.name })
     : game.i18n.localize('SKSK.AttackRoll.EvaluationTitleNoDefender');
 
-  return { hit, criticalType, line, fpHTML, title };
+  // Betäubend (Stunning): a critical hit gives Benommenheit stacks - applied by
+  // the caller, which knows whether it may write to the defender itself.
+  const stunStacks = hit && criticalType === 'success' && !critEffectsBlocked
+    ? (damageDice.find(d => d.stunStacks)?.stunStacks ?? 0)
+    : 0;
+
+  return { hit, criticalType, line, fpHTML, title, stunStacks };
 }
 
 /**
@@ -806,10 +864,37 @@ export async function resolveHitEvaluationFromChat(button, forceHit = false) {
   const damageDice = JSON.parse(decodeURIComponent(button.dataset.damageDice || '[]'));
   const killSkillKey = button.dataset.killSkill || null;
 
-  const { hit, line, fpHTML, title } = await evaluateHitAgainstDefender({
-    defender, attacker, mode,
-    rollA: Number(button.dataset.rollA), rollB: Number(button.dataset.rollB),
-    critA: button.dataset.critA || null, critB: button.dataset.critB || null,
+  // Entwaffnend/Umleitung: the defender may react before the hit is evaluated.
+  let evalDefender = defender;
+  let rollA = Number(button.dataset.rollA);
+  let rollB = Number(button.dataset.rollB);
+  let critA = button.dataset.critA || null;
+  let critB = button.dataset.critB || null;
+  let reactionHTML = '';
+  if (defender) {
+    const reaction = await offerDefenderReactions({
+      defender, attacker, comparisonType: button.dataset.comparisonType, damageDice, isArea: button.dataset.isArea === 'true',
+    });
+    reactionHTML = reaction.html;
+    if (reaction.kind === 'failed') {
+      const failTitle = game.i18n.format('SKSK.AttackRoll.EvaluationTitle', { defender: defender.name });
+      return ChatMessage.create({
+        speaker: ChatMessage.getSpeaker({ actor: defender }),
+        flavor: failTitle,
+        content: `<div class="sksk-chat-card sksk-action-card">${formatRollCardHeading(failTitle)}${reactionHTML}<div class="sksk-roll-line"><strong>${game.i18n.localize('SKSK.WeaponProperty.DisarmAttackFails')}</strong></div></div>`,
+      });
+    }
+    if (reaction.kind === 'redirect') {
+      const redirected = await rollRedirectedPair(Number(button.dataset.attackBonus) || 0, attacker);
+      evalDefender = reaction.target;
+      ({ rollA, rollB, critA, critB } = redirected);
+      reactionHTML += redirected.html;
+    }
+  }
+
+  const { hit, line, fpHTML, title, stunStacks } = await evaluateHitAgainstDefender({
+    defender: evalDefender, attacker, mode,
+    rollA, rollB, critA, critB,
     comparisonType: button.dataset.comparisonType, damageDice, killSkillKey,
     noFp: button.dataset.noFp === 'true',
   });
@@ -817,17 +902,19 @@ export async function resolveHitEvaluationFromChat(button, forceHit = false) {
   // Remember the outcome on the roll's own message, so that message's Apply
   // Damage button can deal a missed spell's half damage - see
   // damageApplication.mjs#applyDamageFromChat.
-  if (defender) {
+  if (evalDefender) {
     const messageId = button.closest('[data-message-id]')?.dataset.messageId;
-    await recordHitEvaluation(messageId ? game.messages.get(messageId) : null, defender.uuid, button.dataset.comparisonType, hit);
+    await recordHitEvaluation(messageId ? game.messages.get(messageId) : null, evalDefender.uuid, button.dataset.comparisonType, hit);
   }
 
+  const stunHTML = stunStacks && evalDefender ? await applyCritStun(evalDefender, stunStacks) : '';
+
   const content = `<div class="sksk-chat-card sksk-action-card">`
-    + formatRollCardHeading(title) + line + fpHTML
+    + formatRollCardHeading(title) + reactionHTML + line + fpHTML + stunHTML
     + `</div>`;
 
   const messageData = {
-    speaker: ChatMessage.getSpeaker({ actor: defender ?? attacker }),
+    speaker: ChatMessage.getSpeaker({ actor: evalDefender ?? attacker }),
     flavor: title,
     content,
   };
@@ -936,7 +1023,7 @@ export function greyOutManualEvalButtons(html) {
  * @return {Promise<string>}
  */
 export async function autoResolveAttackForTargets([rollA, rollB], comparisonType, attacker, options = {}) {
-  const { damageEntries = [], damageDice = [], killSkillKey = null, flanking = false, techniqueItemUuid = null, noFp = false, wounds = 0 } = options;
+  const { damageEntries = [], damageDice = [], killSkillKey = null, flanking = false, techniqueItemUuid = null, noFp = false, wounds = 0, isArea = false } = options;
   const defenders = getOtherTargetedActors(attacker);
   if (!defenders.length) return '';
 
@@ -945,6 +1032,8 @@ export async function autoResolveAttackForTargets([rollA, rollB], comparisonType
 
   const critA = getAttackCriticalType(rollA, attacker);
   const critB = getAttackCriticalType(rollB, attacker);
+  // The attack's own modifier (both d20s carry the same one) - a redirected attack rolls anew with it.
+  const attackBonus = rollA.total - (getNaturalD20(rollA) ?? 0);
 
   const blocks = [];
   let relayedCount = 0;
@@ -953,12 +1042,12 @@ export async function autoResolveAttackForTargets([rollA, rollB], comparisonType
       relayedCount += requestGmAction('autoResolveHit', {
         defenderUuid: defender.uuid, attackerUuid: attacker?.uuid ?? null, mode,
         rollA: rollA.total, rollB: rollB.total, critA, critB,
-        comparisonType, damageDice, killSkillKey, damageEntries, techniqueItemUuid, noFp, wounds,
+        comparisonType, damageDice, killSkillKey, damageEntries, techniqueItemUuid, noFp, wounds, attackBonus, isArea,
       }) ? 1 : 0;
       continue;
     }
     const { title, line, fpHTML, damageHTML } = await resolveAndApplyOneAttack(defender, attacker, {
-      mode, rollA: rollA.total, rollB: rollB.total, critA, critB, comparisonType, damageDice, killSkillKey, damageEntries, techniqueItemUuid, noFp, wounds,
+      mode, rollA: rollA.total, rollB: rollB.total, critA, critB, comparisonType, damageDice, killSkillKey, damageEntries, techniqueItemUuid, noFp, wounds, attackBonus, isArea,
     });
     blocks.push(formatRollCardHeading(title) + line + fpHTML + damageHTML);
   }
@@ -996,12 +1085,51 @@ export async function autoResolveAttackForTargets([rollA, rollB], comparisonType
  * @return {Promise<{title: string, line: string, fpHTML: string, damageHTML: string}>}
  */
 async function resolveAndApplyOneAttack(defender, attacker, args) {
-  const { mode, rollA, rollB, critA, critB, comparisonType, damageDice, killSkillKey, damageEntries, techniqueItemUuid, noFp = false, wounds = 0 } = args;
-  const { hit, line, fpHTML, title } = await evaluateHitAgainstDefender({
+  const {
+    mode, rollA, rollB, critA, critB, comparisonType, damageDice, killSkillKey, damageEntries, techniqueItemUuid,
+    noFp = false, wounds = 0, attackBonus = 0, isArea = false, noReactions = false,
+  } = args;
+
+  // Entwaffnend/Umleitung: the defender may react before the hit is evaluated.
+  let reactionHTML = '';
+  if (!noReactions) {
+    const reaction = await offerDefenderReactions({ defender, attacker, comparisonType, damageDice, isArea });
+    reactionHTML = reaction.html;
+    if (reaction.kind === 'failed') {
+      return {
+        title: game.i18n.format('SKSK.AttackRoll.EvaluationTitle', { defender: defender.name }),
+        line: reactionHTML + `<div class="sksk-roll-line"><strong>${game.i18n.localize('SKSK.WeaponProperty.DisarmAttackFails')}</strong></div>`,
+        fpHTML: '', damageHTML: '',
+      };
+    }
+    if (reaction.kind === 'redirect') {
+      const redirected = await rollRedirectedPair(attackBonus, attacker);
+      const redirectArgs = {
+        ...args, defenderUuid: reaction.target.uuid, attackerUuid: attacker?.uuid ?? null,
+        rollA: redirected.rollA, rollB: redirected.rollB, critA: redirected.critA, critB: redirected.critB, noReactions: true,
+      };
+      if (!reaction.target.isOwner) {
+        // The new target can't be written to here - the GM resolves it (own card).
+        const relayed = requestGmAction('autoResolveHit', redirectArgs);
+        const note = relayed ? `<div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.AutoResolveRelayed')}</div>` : '';
+        return {
+          title: game.i18n.format('SKSK.AttackRoll.EvaluationTitle', { defender: reaction.target.name }),
+          line: reactionHTML + redirected.html + note, fpHTML: '', damageHTML: '',
+        };
+      }
+      const inner = await resolveAndApplyOneAttack(reaction.target, attacker, redirectArgs);
+      return { ...inner, line: reactionHTML + redirected.html + inner.line };
+    }
+  }
+
+  const { hit, line: evaluationLine, fpHTML, title, stunStacks } = await evaluateHitAgainstDefender({
     defender, attacker, mode, rollA, rollB, critA, critB, comparisonType, damageDice, killSkillKey, noFp,
   });
+  const line = reactionHTML + evaluationLine;
 
   let damageHTML = '';
+  // This runs where the defender can be written to (the owner, or the GM via the relay).
+  if (stunStacks) damageHTML += await applyCritStun(defender, stunStacks, true);
   if (hit) {
     if (damageEntries.length || techniqueItemUuid || wounds) {
       const { lines } = await applyResolvedDamageEntries(defender, attacker, damageEntries, killSkillKey, techniqueItemUuid, wounds);
@@ -1020,6 +1148,46 @@ async function resolveAndApplyOneAttack(defender, attacker, args) {
 
   return { title, line, fpHTML, damageHTML };
 }
+
+/**
+ * Umleitung (Redirection): the redirected attack gets a new attack roll - two
+ * d20s with the same modifier as the original one - against its new target.
+ * @param {number} bonus   The attack's modifier.
+ * @param {Actor|null} attacker
+ * @return {Promise<{html: string, rollA: number, rollB: number, critA: string|null, critB: string|null}>}
+ */
+async function rollRedirectedPair(bonus, attacker) {
+  const [a, b] = await rollAttackPair(bonus, attacker);
+  const critA = getAttackCriticalType(a, attacker);
+  const critB = getAttackCriticalType(b, attacker);
+  const html = `<div class="sksk-roll-line">${game.i18n.localize('SKSK.WeaponProperty.RedirectNewRoll')}</div>`
+    + `<div class="sksk-attack-roll-pair"><div class="sksk-attack-roll-single">${wrapCriticalBlock(await a.render(), critA)}</div>`
+    + `<div class="sksk-attack-roll-single">${wrapCriticalBlock(await b.render(), critB)}</div></div>`;
+  return { html, rollA: a.total, rollB: b.total, critA, critB };
+}
+
+/**
+ * Betäubend (Stunning): give the defender its Benommenheit stacks after a
+ * critical hit. Applied right away if the current user may write to the
+ * defender (or `direct` says the caller already runs where it can), otherwise
+ * handed to the active GM.
+ * @param {Actor} defender
+ * @param {number} stacks
+ * @param {boolean} [direct=false]
+ * @return {Promise<string>}   The chat line.
+ */
+async function applyCritStun(defender, stacks, direct = false) {
+  if (direct || defender.isOwner) {
+    await increaseStatusStacks(defender, 'dazed', stacks);
+  } else if (!requestGmAction('addStatusStacks', { defenderUuid: defender.uuid, statusId: 'dazed', stacks })) {
+    return `<div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.NoPermissionToApply')}</div>`;
+  }
+  return `<div class="sksk-roll-line sksk-roll-status-effect">${game.i18n.format('SKSK.WeaponProperty.StunningApplied', { defender: defender.name, stacks })}</div>`;
+}
+registerGmRelayAction('addStatusStacks', async (data) => {
+  const defender = await fromUuid(data.defenderUuid);
+  if (defender) await increaseStatusStacks(defender, data.statusId, data.stacks);
+});
 
 /**
  * GM-side handler (helpers/gmRelay.mjs#registerGmRelayAction) for the

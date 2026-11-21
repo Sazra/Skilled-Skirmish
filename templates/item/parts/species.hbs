@@ -8,6 +8,13 @@
   </div>
 
   <div class="resource">
+    <label class="casting-method-option" title="{{localize 'SKSK.GM.SilverWeaknessHint'}}">
+      <input type="checkbox" name="system.silverWeakness" {{checked system.silverWeakness}} />
+      {{localize 'SKSK.GM.SilverWeakness'}}
+    </label>
+  </div>
+
+  <div class="resource">
     <label class="resource-label">Aura</label>
     <input type="text" name="system.aura" value="{{system.aura}}" data-dtype="Number" />
   </div>
@@ -70,6 +77,12 @@
         </div>
       </li>
     </ol>
+    {{#if hasUndeadCategory}}
+    <label class="resource-label" title="{{localize 'SKSK.Species.UndeadFormHint'}}">{{localize 'SKSK.Species.UndeadForm'}}</label>
+    <select name="system.undeadForm" title="{{localize 'SKSK.Species.UndeadFormHint'}}">
+      {{selectOptions undeadFormChoices selected=system.undeadForm localize=true}}
+    </select>
+    {{/if}}
   </div>
 
   <div class="resource">

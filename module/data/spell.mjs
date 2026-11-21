@@ -120,6 +120,9 @@ export default class SKSKSpell extends SKSKItemBase {
     // Active-Effect AP reductions nor by Chant Shortening (see helpers/
     // spells.mjs#computeSpellApCost). Überladen's surcharge still applies.
     schema.apCostFixed = new fields.BooleanField({ required: true, initial: false });
+    // The spell can only be cast while the caster has an equipped weapon with
+    // the Infusion (Infusion) property - see helpers/spell-rolls.mjs#rollSpellItem.
+    schema.requiresInfusionWeapon = new fields.BooleanField({ required: true, initial: false });
     // What apCost's own number actually counts - a flat AP amount (the
     // default), a casting time in minutes/hours/days, or a flat RP amount
     // (unit "rp" - see rpCost below for the different, additive-RP case).

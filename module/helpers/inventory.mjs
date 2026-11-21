@@ -41,7 +41,7 @@ export function computeCarriedWeight(actor) {
   for (const item of actor.items) {
     if (!GEAR_ITEM_TYPES.includes(item.type)) continue;
     const quantity = item.system.quantity ?? 1;
-    total += (item.system.weight ?? 0) * quantity;
+    total += (item.system.effectiveWeight ?? item.system.weight ?? 0) * quantity;
   }
   const currency = actor.system.currency;
   if (currency) {

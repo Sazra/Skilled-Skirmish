@@ -7,6 +7,9 @@ import {
 import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
 import { resolveSpellStatusStacks, isSpellFoundryEffectActive, replaceElementPlaceholders } from './spells.mjs';
 import { createVariantItem } from './spellVariants.mjs';
+import {
+  ENTRY_FLAG_KEYS, pickFlags, getGiantSlayerFactor, isRendingTarget, isSilverWeak, getEquippedArmorWithProperty, getEffectiveProperty,
+} from './weaponProperties.mjs';
 import { applyWounds } from './wounds.mjs';
 import { getElementalDeathChargeHeal } from './elementalChargeEffects.mjs';
 import { requestGmAction, registerGmRelayAction } from './gmRelay.mjs';
@@ -87,12 +90,16 @@ export function resolveClickRoller() {
  */
 export function mergeDamageEntries(entries) {
   const totals = new Map();
-  for (const { damageType, amount, ignoresBarrier, barrier } of entries) {
+  for (const entry of entries) {
+    const { damageType, amount, ignoresBarrier, barrier } = entry;
     if (!(amount > 0)) continue;
+    // Weapon property flags (see helpers/weaponProperties.mjs) only merge with
+    // entries carrying the same ones.
+    const flags = pickFlags(entry);
     // A Barrier grant (damageType "barrier", see helpers/barrier.mjs) only
     // merges with another one of the same kind and duration.
-    const key = `${damageType}|${ignoresBarrier ? 1 : 0}|${barrier ? JSON.stringify(barrier) : ''}`;
-    const existing = totals.get(key) ?? { damageType, amount: 0, ...(ignoresBarrier ? { ignoresBarrier: true } : {}), ...(barrier ? { barrier } : {}) };
+    const key = `${damageType}|${ignoresBarrier ? 1 : 0}|${barrier ? JSON.stringify(barrier) : ''}|${ENTRY_FLAG_KEYS.filter(k => flags[k]).join(',')}`;
+    const existing = totals.get(key) ?? { damageType, amount: 0, ...(ignoresBarrier ? { ignoresBarrier: true } : {}), ...(barrier ? { barrier } : {}), ...flags };
     existing.amount += amount;
     totals.set(key, existing);
   }
@@ -349,13 +356,19 @@ export function renderApplyDamageButton(attacker, damageEntries, killSkillKey = 
  *   damage entries above, same as a real button click always has.
  * @param {number} [wounds=0]   Wounds the hit also inflicts (see
  *   renderApplyDamageButton's own wounds param).
+ * @param {{noSpecials?: boolean}} [options]   noSpecials: skip the armor properties
+ *   that hit back at the attacker (Stachlig, Reflektierend) - set for that
+ *   retaliation damage itself.
  * @return {Promise<{lines: string[]}>}
  */
-export async function applyResolvedDamageEntries(defender, attacker, entries, killSkillKey, techniqueItemUuid = null, wounds = 0) {
+export async function applyResolvedDamageEntries(defender, attacker, entries, killSkillKey, techniqueItemUuid = null, wounds = 0, options = {}) {
   // A pure Barrier grant is not a hit - armor durability only suffers from damage.
+  // Zerschmetternd (Shattering): such a weapon deals five times the durability
+  // damage to the armor/shield of its target.
+  const durabilityLoss = entries.some(entry => entry.shattering) ? 5 : 1;
   if (isDurabilityEnabled() && entries.some(entry => entry.damageType !== 'barrier')) {
     for (const armorItem of getDurabilityAffectedArmor(defender)) {
-      await armorItem.update({ 'system.durability.value': Math.max(0, armorItem.system.durability.value - 1) });
+      await armorItem.update({ 'system.durability.value': Math.max(0, armorItem.system.durability.value - durabilityLoss) });
     }
   }
 
@@ -374,19 +387,46 @@ export async function applyResolvedDamageEntries(defender, attacker, entries, ki
   let lifeDamage = 0;
   const lines = [];
   const barrierGrants = entries.filter(entry => entry.damageType === 'barrier');
-  for (const { damageType, amount, ignoresBarrier } of entries.filter(entry => entry.damageType !== 'barrier')) {
+  // Weapon property notes (Riesenfäller, Abreißend) and the damage a
+  // Reflektierend item reflects back - see helpers/weaponProperties.mjs.
+  const propertyNotes = new Set();
+  const reflectEntries = [];
+  for (const entry of entries.filter(entry => entry.damageType !== 'barrier')) {
+    const { damageType, ignoresBarrier } = entry;
+    let amount = entry.amount;
+    // Riesenfäller (Giant Slayer): extra damage by the target's size category.
+    if (entry.giantSlayer) {
+      const factor = getGiantSlayerFactor(defender);
+      if (factor > 1) {
+        amount = Math.floor(amount * factor);
+        propertyNotes.add(game.i18n.format('SKSK.WeaponProperty.GiantSlayerBonus', { percent: Math.round((factor - 1) * 100) }));
+      }
+    }
+    // Abreißend (Rending): double damage to constructs, undead and objects.
+    if (entry.rending && isRendingTarget(defender)) {
+      amount *= 2;
+      propertyNotes.add(game.i18n.localize('SKSK.WeaponProperty.RendingDouble'));
+    }
+    // Versilbert (Silvered): +100% damage to creatures weak to silver.
+    if (entry.silvered && isSilverWeak(defender)) {
+      amount *= 2;
+      propertyNotes.add(game.i18n.localize('SKSK.WeaponProperty.SilveredDouble'));
+    }
+    // Magiestörend (Antimagic): double damage to Barrier.
+    const entryBarrierFactor = barrierFactor * (entry.antimagic ? 2 : 1);
     const { amount: adjusted, healing, outcome } = applyElementalDefense(defender, damageType, amount);
+    if (entry.reflectable && !healing && adjusted > 0) reflectEntries.push({ damageType, amount: adjusted });
     if (healing) {
       healTotal += adjusted;
     } else if (ignoresBarrier || barrierValue <= 0) {
       lifeDamage += adjusted;
     } else {
-      const needed = Math.ceil(adjusted * barrierFactor);
+      const needed = Math.ceil(adjusted * entryBarrierFactor);
       if (barrierValue >= needed) {
         barrierValue -= needed;
         barrierAbsorbed += adjusted;
       } else {
-        const absorbed = Math.floor(barrierValue / barrierFactor);
+        const absorbed = Math.floor(barrierValue / entryBarrierFactor);
         barrierValue = 0;
         barrierAbsorbed += absorbed;
         lifeDamage += adjusted - absorbed;
@@ -416,6 +456,8 @@ export async function applyResolvedDamageEntries(defender, attacker, entries, ki
       lines.push(formatSkillFpGrantLine(await grantSkillUsageFp(attacker, 'healer', 'healedCreature', adjusted)));
     }
   }
+
+  for (const note of propertyNotes) lines.push(`<div class="sksk-roll-line">${note}</div>`);
 
   if (barrierValue !== barrierStart) {
     await reduceBarrier(defender, barrierStart - barrierValue);
@@ -466,7 +508,9 @@ export async function applyResolvedDamageEntries(defender, attacker, entries, ki
   // applyAdrenalinDamage/applyCauterization) - those reduce max Life via a
   // standing ActiveEffect rather than ever landing here, so they're
   // naturally excluded without any extra guard.
-  await checkConcentration(defender, damageDealt);
+  // Magiestörend (Antimagic): the attacked creature has disadvantage on its
+  // Concentration check.
+  await checkConcentration(defender, damageDealt, { disadvantage: entries.some(entry => entry.antimagic) });
 
   const isDead = defender.system.life.value === 0 && defender.system.negativeLife.value <= 0;
   if (isDead && !wasAlreadyDead) {
@@ -482,7 +526,68 @@ export async function applyResolvedDamageEntries(defender, attacker, entries, ki
     }
   }
 
+  if (attacker && !options.noSpecials) {
+    lines.push(...await applyHitBackDamage(defender, attacker, entries, reflectEntries));
+  }
+
   return { lines };
+}
+
+/**
+ * Armor properties that hit back at the attacker:
+ * - Stachlig (Spiky): a melee attack against the wearer costs the attacker
+ *   the damage of the item's own formula (default 1d6, Stich) - once per
+ *   spiky item worn.
+ * - Reflektierend (Reflective): 10% of the magical damage the wearer suffers
+ *   from a real spell (not an ability's) is dealt back to the caster, rounded
+ *   down, per reflective item worn.
+ * The damage itself goes through the normal application (so the attacker's
+ * own defenses count) - relayed to the GM if the current user may not write
+ * to the attacker.
+ * @param {Actor} defender   The wearer.
+ * @param {Actor} attacker
+ * @param {Array<object>} entries   The damage entries just applied.
+ * @param {Array<{damageType: string, amount: number}>} reflectEntries   The
+ *   damage of their reflectable entries after the wearer's defenses.
+ * @return {Promise<string[]>}   Chat lines.
+ */
+async function applyHitBackDamage(defender, attacker, entries, reflectEntries) {
+  const chatLines = [];
+  const hitBack = [];
+
+  if (entries.some(entry => entry.melee)) {
+    for (const item of getEquippedArmorWithProperty(defender, 'spiky')) {
+      const formula = getEffectiveProperty(item.system, 'spiky')?.formula || '1d6';
+      let roll;
+      try {
+        roll = await new Roll(formula, defender.getRollData()).evaluate();
+      } catch (error) {
+        roll = await new Roll('1d6').evaluate();
+      }
+      chatLines.push(await roll.render(), `<div class="sksk-roll-line">${game.i18n.format('SKSK.WeaponProperty.SpikyApplied', { attacker: attacker.name, amount: roll.total, item: item.name })}</div>`);
+      hitBack.push({ damageType: 'piercing', amount: roll.total });
+    }
+  }
+
+  if (reflectEntries.length) {
+    const reflectiveItems = getEquippedArmorWithProperty(defender, 'reflective').length;
+    for (const { damageType, amount } of reflectEntries) {
+      const reflected = Math.floor(amount * 0.1 * reflectiveItems);
+      if (reflected <= 0) continue;
+      hitBack.push({ damageType, amount: reflected });
+      chatLines.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.WeaponProperty.ReflectApplied', { attacker: attacker.name, amount: reflected, type: game.i18n.localize(CONFIG.SKSK.damageTypes[damageType] ?? damageType) })}</div>`);
+    }
+  }
+
+  if (!hitBack.length) return chatLines;
+  const merged = mergeDamageEntries(hitBack);
+  if (attacker.isOwner) {
+    const result = await applyResolvedDamageEntries(attacker, defender, merged, null, null, 0, { noSpecials: true });
+    chatLines.push(...result.lines);
+  } else if (!requestGmAction('applyDamage', { defenderUuid: attacker.uuid, attackerUuid: defender.uuid, entries: merged, killSkillKey: null, techniqueItemUuid: null, noteHTML: '', wounds: 0 })) {
+    chatLines.push(`<div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.NoPermissionToApply')}</div>`);
+  }
+  return chatLines;
 }
 
 /**

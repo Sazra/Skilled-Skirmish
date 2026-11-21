@@ -80,6 +80,18 @@
                     value="{{lookup entry.model (concat key 'Requirement')}}" data-dtype="Number"
                     title="{{localize 'SKSK.Models.Requirement'}}" placeholder="{{localize 'SKSK.Models.Requirement'}}" />
                   {{/if}}
+                  {{#if def.hasLevel}}
+                  <input type="text" class="model-requirement-input"
+                    name="armorModels.{{entry.index}}.{{concat key 'Level'}}"
+                    value="{{lookup entry.model (concat key 'Level')}}" data-dtype="Number"
+                    title="{{localize 'SKSK.Models.Level'}}" placeholder="{{localize 'SKSK.Models.Level'}}" />
+                  {{/if}}
+                  {{#if def.hasFormula}}
+                  <input type="text" class="model-requirement-input"
+                    name="armorModels.{{entry.index}}.{{concat key 'Formula'}}"
+                    value="{{lookup entry.model (concat key 'Formula')}}"
+                    title="{{localize 'SKSK.Models.Formula'}}" placeholder="{{localize 'SKSK.Models.Formula'}}" />
+                  {{/if}}
                 </div>
                 {{/each}}
               </div>

@@ -109,6 +109,11 @@ export default class SKSKArmor extends SKSKItemBase {
       property: new fields.StringField({ required: true, blank: false, initial: "hardened" }),
       mode: new fields.StringField({ required: true, blank: false, initial: "add", choices: ["add", "remove"] }),
       value: new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 }),
+      // Coupled parameters of some properties (see helpers/properties.mjs): a
+      // formula (Spiky) and attribute keys (Reach/Long/Very Long: the
+      // attributes an attack over more than 2m is rolled with).
+      formula: new fields.StringField({ required: true, blank: true, initial: "" }),
+      attributes: new fields.ArrayField(new fields.StringField({ required: true, blank: false })),
     }));
 
     // Haltbarkeit (Durability) - only the current value is real schema data

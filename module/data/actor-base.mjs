@@ -843,6 +843,10 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // entirely (a miss blocks everything), same as a weapon/Martial Arts
     // miss always has. Off by default. Targetable by Active Effects.
     schema.improvedMagicResistance = new fields.BooleanField({ initial: false });
+    // GM-tab switch: weak to silver - Silvered (Versilbert) weapons deal +100%
+    // damage to this actor (Species can carry the same switch, see
+    // data/species.mjs). Off by default. Targetable by Active Effects.
+    schema.silverWeakness = new fields.BooleanField({ initial: false });
     // GM-tab switches: attacking while Concealed (Tarnung) normally breaks
     // that status automatically once the attack resolves - see helpers/
     // attackRolls.mjs#evaluateHitAgainstDefender. Attentat's (Assassination's)

@@ -7,6 +7,7 @@ import {
   getSpellElementOptions, resolveSpellDamages, getSpellSchool, SPELL_BARRIER,
 } from './spells.mjs';
 import { rollExtraDamage, consumeUsedEffects } from './extraDamage.mjs';
+import { isAbilitySpellCopy } from './abilitySpell.mjs';
 import { promptMetamagicChoice, placeMetamagicMarker } from './metamagic.mjs';
 import {
   detectSpellVariants, createVariantItem, renderVariantLines, consumeVariantMarkers, variantAttribute,
@@ -35,6 +36,8 @@ import {
 import { formatRollCardHeading } from './rollCard.mjs';
 import { computePassiveManaRegenPerSegment } from './rest.mjs';
 import { wrapRerollIcons } from './luck.mjs';
+import { hasEffectiveProperty } from './weaponProperties.mjs';
+import { isAreaSpell } from './reactions.mjs';
 import {
   hasRollTwiceSpell, rollPossiblyDoubledDamage, renderDamageRerollOnesIcon, wrapDamageBlock,
 } from './damageReroll.mjs';
@@ -716,6 +719,9 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
   const dealtTypes = new Set();
   let damageRolled = false;
   const extraSchool = system.spellType === 'systemless' ? null : getSpellSchool(system);
+  // Reflektierend (Reflective armor) only reflects the damage of real spells -
+  // not that of an ability's effect spell (see helpers/abilitySpell.mjs).
+  const reflectFlag = actor && !isAbilitySpellCopy(item) ? { reflectable: true } : {};
   const rollDamageWithTechnique = async (damage) => {
     // A Barrier entry is no damage: no technique bonus, no extra damage, and
     // it does not count as "an attack/damage was rolled" for "Bis Nutzung".
@@ -728,6 +734,7 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
     }
     const applyTech = technique && !techniqueDamageApplied;
     const { html, entry } = await renderDamageRoll(damage, actor, effectiveOvercharge, system, applyTech ? technique : null);
+    Object.assign(entry, reflectFlag);
     let fullHTML = html;
     if (applyTech) {
       const adjusted = await applyTechniqueBonusDamage(entry.amount, technique, actor?.getRollData());
@@ -738,7 +745,7 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
     damageRolled = true;
     dealtTypes.add(entry.damageType);
     const extra = await rollExtraDamage(actor, { kind: 'spell', damageType: entry.damageType, school: extraSchool }, {
-      entryFlags: system.ignoresBarrier ? { ignoresBarrier: true } : {}, used: usedEffects,
+      entryFlags: { ...(system.ignoresBarrier ? { ignoresBarrier: true } : {}), ...reflectFlag }, used: usedEffects,
     });
     return { html: fullHTML + extra.html, entry, extras: extra.entries };
   };
@@ -792,7 +799,7 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
       // The attacks an Überladung adds come last and give no FP.
       const isOverchargeAttack = i > baseAttackCount;
       const rendered = await renderAttackPairHTML(rolls, 'magicResistance', actor, {
-        damageDice, bonus: attackBonus, noFp: isOverchargeAttack,
+        damageDice, bonus: attackBonus, noFp: isOverchargeAttack, isArea: isAreaSpell(system),
         label: isOverchargeAttack
           ? game.i18n.format('SKSK.Spell.Roll.OverchargeAttack', { number: i - baseAttackCount })
           : game.i18n.format('SKSK.Spell.Roll.Attack', { number: i }),
@@ -826,7 +833,7 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
       // this actually did something.
       if (actor) {
         const autoResolveHTML = await autoResolveAttackForTargets(rolls, 'magicResistance', actor, {
-          damageEntries, damageDice, killSkillKey: null, techniqueItemUuid: techniqueEffect?.itemUuid ?? null, noFp: isOverchargeAttack,
+          damageEntries, damageDice, killSkillKey: null, techniqueItemUuid: techniqueEffect?.itemUuid ?? null, noFp: isOverchargeAttack, isArea: isAreaSpell(system),
         });
         if (autoResolveHTML) {
           parts[attackBlockIndex] = stripRerollButton(greyOutManualEvalButtons(parts[attackBlockIndex]));
@@ -1002,6 +1009,13 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
   // see helpers/statusEffects.mjs#canCastMovementSpell.
   if (actor && !abilityOptions && system.castingMethods?.movement && !canCastMovementSpell(actor)) {
     ui.notifications.warn(game.i18n.localize('SKSK.StatusEffect.MovementSpellBlocked'));
+    return;
+  }
+
+  // Infusion: a spell that must be cast with an Infusion weapon needs one equipped.
+  if (actor && system.requiresInfusionWeapon
+    && !actor.items.some(i => i.type === 'weapon' && i.system.equipped && hasEffectiveProperty(i.system, 'infusion'))) {
+    ui.notifications.warn(game.i18n.localize('SKSK.Spell.Roll.InfusionWeaponRequired'));
     return;
   }
 

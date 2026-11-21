@@ -1,4 +1,5 @@
 import { getMaterialProperties } from '../helpers/materials.mjs';
+import { collectPropertyParams } from '../helpers/properties.mjs';
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
@@ -93,6 +94,7 @@ export class SKSKMaterialsConfig extends HandlebarsApplicationMixin(ApplicationV
       heavyRequirement: Number(m.heavyRequirement) || 0,
       demandingRequirement: Number(m.demandingRequirement) || 0,
       drainingRequirement: Number(m.drainingRequirement) || 0,
+      ...collectPropertyParams(m),
     }));
     await game.settings.set('sksk', 'materials', materials);
   }

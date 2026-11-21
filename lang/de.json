@@ -128,7 +128,8 @@
             "Drake": "Drake",
             "Diera": "Diera",
             "Otherworldly": "Überirdisch",
-            "Construct": "Konstrukt"
+            "Construct": "Konstrukt",
+            "Object": "Objekt"
         },
         "General": {
             "Overview": "Übersicht",
@@ -184,6 +185,10 @@
             "Equipped": "Ausgerüstet",
             "EquippedAbbr": "Ausg.",
             "Enchanted": "Verzaubert",
+            "HeldOneHanded": "Einhändig geführt",
+            "HeldOneHandedHint": "Eine zweihändige Waffe wird normalerweise mit beiden Händen geführt, eine flexible kann frei umgeschaltet werden. Einhändig geführt verliert Spezialisiert seine Wirkung; eine flexible Waffe nutzt dann die einhändige Wurfformel ihres Modells.",
+            "HeldOneHandedNow": "Einhändig geführt (Klicken zum Wechseln)",
+            "HeldTwoHandedNow": "Zweihändig geführt (Klicken zum Wechseln)",
             "EnchantedAbbr": "Verz.",
             "Quantity": "Menge",
             "QuantityAbbr": "Anz.",
@@ -573,6 +578,8 @@
             "SkillGrantLabel": "+{fp} FP {skill}",
             "ImprovedMagicResistance": "Verbesserte Magieresistenz",
             "ImprovedMagicResistanceHint": "Ein Zauber-Angriffswurf, der diesen Akteur nicht trifft, verursacht normalerweise trotzdem halbierten Schaden (aufgerundet) - bei aktiviertem Schalter verhindert die Magieresistenz den Schaden bei einem Fehlschlag stattdessen vollständig. Von Active Effects ansteuerbar.",
+            "SilverWeakness": "Schwäche gegen Silber",
+            "SilverWeaknessHint": "Versilberte Waffen (Eigenschaft Versilbert) richten gegen diesen Akteur +100% Schaden an. Auch an der Spezies einstellbar. Von Active Effects ansteuerbar.",
             "ConcealmentBreaksOnlyOnHit": "Tarnung bricht nicht solange der Angriff nicht getroffen hat",
             "ConcealmentBreaksOnlyOnHitHint": "Ein Angriff aus der Tarnung heraus hebt diese normalerweise sofort auf, unabhängig von Treffer oder Fehlschlag - bei aktiviertem Schalter bleibt die Tarnung bei einem Fehlschlag stattdessen bestehen. Attentats-Angriffe werden unabhängig davon immer normal berechnet (anhand der Tarnung zum Zeitpunkt des Angriffs). Von Active Effects ansteuerbar.",
             "ConcealmentNeverBreaksOnAttack": "Tarnung bricht nicht bei Angriff",
@@ -1525,6 +1532,10 @@
             "GmNotes": "GM-Notizen",
             "CreatureCategories": "Kreaturenkategorien",
             "AddCreatureCategory": "Kreaturenkategorie hinzufügen",
+            "UndeadForm": "Form des Untoten",
+            "UndeadFormHint": "Materielle Untote haben einen Körper (z.B. Skelett, Zombie) und erleiden von Abreißend doppelten Schaden, immaterielle (z.B. Geist) nicht.",
+            "UndeadFormMaterial": "Materiell",
+            "UndeadFormImmaterial": "Immateriell",
             "ElementalSpecializations": "Elementarladungen-Spezialisierung",
             "ElementalSpecializationsHint": "Einfache Magieschulen, deren Elementarladungen-Effekt diese Spezies verdoppelt - immer aktiv, kein Mindestlevel (siehe die Klassen-eigene Version mit Mindestlevel). Frei editierbar."
         },
@@ -1847,6 +1858,8 @@
             "ApCostMinHint": "Geringste AP-Menge, die beim Wirken gewählt werden kann.",
             "ApCostFixed": "AP-Kosten nicht reduzierbar",
             "ApCostFixedHint": "Die AP-Kosten dieses Zaubers können nicht verringert werden (weder durch Fähigkeiten/Effekte noch durch Spruchkürzung). Überladen erhöht sie weiterhin.",
+            "RequiresInfusionWeapon": "Muss mit Infusionswaffe gewirkt werden",
+            "RequiresInfusionWeaponHint": "Dieser Zauber kann nur gewirkt werden, solange der Wirkende eine ausgerüstete Waffe mit der Eigenschaft Infusion besitzt. Gilt auch für Fähigkeiten mit angehängtem Zauber.",
             "Variant": {
                 "Hint": "Varianten ändern diesen Zauber, solange ein Marker-Status oder -Effekt auf dem Zaubernden liegt (z.B. die Infusionen der Trickkunst oder \"Wasser sammeln\"). Gilt ein Marker mit der Effektdauer \"Bis Nutzung\", wird er mit dem Wirken verbraucht; hat er eine andere Dauer, greift die Variante bei jedem Wirken, solange er aktiv ist.",
                 "Label": "Varianten",
@@ -2033,6 +2046,7 @@
                 "ApOwed": "Nicht genug AP - {paid} jetzt bezahlt, {remaining} noch offen. Konzentration ist nötig, um den Zauber fertigzustellen.",
                 "ApPaidTowardSpell": "{paid} AP für den ausstehenden Zauber bezahlt ({remaining} noch offen)",
                 "AlreadyConcentrating": "Beende erst den aktuellen Zauber (oder lass die Konzentration brechen), bevor du einen weiteren wirkst.",
+                "InfusionWeaponRequired": "Dieser Zauber muss mit einer Infusionswaffe gewirkt werden - rüste zuerst eine Waffe mit der Eigenschaft Infusion aus.",
                 "SpellCancelled": "Der kanalisierte Zauber wird abgebrochen - seine Manakosten sind verloren.",
                 "RitualMinutesStarted": "Ritual begonnen - {minutes} Minuten Wirkzeit ({rounds} Runden). Jede Runde werden alle AP verbraucht.",
                 "RitualRoundPassed": "Ritual-Runde vollzogen - {remaining} Runden verbleibend.",
@@ -2107,6 +2121,44 @@
             "ExtraDamage": "Zusatzschaden",
             "ExtraDamageHalved": "halbiert",
             "EffectConsumed": "Effekt verbraucht: {name}"
+        },
+        "WeaponProperty": {
+            "AntimagicIgnoresSpellAc": "Magiestörend: AC-Boni durch Zauber ({bonus}) werden ignoriert.",
+            "FlawlessBlocksCrit": "Schwachstellenlos: {defender} wird zwar automatisch getroffen, kritische Zusatzeffekte entfallen aber.",
+            "ConcealedRecommendation": "Empfehlung: Das Ziel erhält Vorteil auf seinen nächsten Beobachtungswurf, um den Angreifer aufzudecken.",
+            "StunningApplied": "Betäubend: {defender} erhält {stacks} Stapel Benommenheit.",
+            "GiantSlayerBonus": "Riesenfäller: +{percent}% Schaden.",
+            "RendingDouble": "Abreißend: doppelter Schaden.",
+            "SpikyApplied": "Stachlig ({item}): {attacker} erleidet {amount} Stichschaden.",
+            "ReflectApplied": "Reflektierend: {attacker} erleidet {amount} {type} zurückgeworfenen Schaden.",
+            "RangedBlocked": "Fernkampfwaffen können nicht auf Ziele in 2m oder weniger Entfernung angreifen.",
+            "RequirementUnmet": "Anforderung nicht erfüllt ({requirements}): Attributs- und Fertigkeitsboni dieses Gegenstands entfallen.",
+            "OneHandedNeeds": "Einhändig führbar mit: {needs}.",
+            "SilveredDouble": "Versilbert: +100% Schaden gegen Silberschwäche.",
+            "ReactionCheckLine": "{actor}: {attribute} gegen DC {dc} - {total} - {outcome}",
+            "DisarmChooseTitle": "Entwaffnen",
+            "DisarmChoosePrompt": "{attacker} muss einen Wurf gegen das Entwaffnen von {weapon} bestehen. Welchen Wurf nutzt {attacker}?",
+            "ReactionDisarm": "Entwaffnen",
+            "ReactionRedirect": "Umleiten auf {target}",
+            "ReactionNone": "Keine Reaktion",
+            "ReactionTitle": "Reaktion von {defender}",
+            "ReactionPrompt": "{attacker} greift {defender} an. {defender} kann als Reaktion für {cost} RP (vorhanden: {rp}) reagieren.",
+            "ReactionPaid": "{defender} reagiert ({cost} RP).",
+            "ReactionUsed": "{defender} reagiert (außerhalb des Kampfs kostenlos).",
+            "DisarmResisted": "Das Entwaffnen misslingt - der Angriff läuft weiter.",
+            "DisarmSucceeded": "{attacker} wird entwaffnet: {weapon} wird abgelegt.",
+            "DisarmAttackFails": "Der Angriff schlägt fehl.",
+            "RedirectResisted": "{target} widersteht - der Angriff trifft weiter das ursprüngliche Ziel.",
+            "RedirectSucceeded": "Der Angriff wird auf {target} umgeleitet.",
+            "RedirectNewRoll": "Neuer Angriffswurf gegen das neue Ziel:",
+            "ShapeshiftingUsed": "{actor} nutzt Formwandelnd: {item} wandelt seine Form - der GM schaltet den Gegenstand um.",
+            "UseShapeshifting": "Nutze Formwandelnd",
+            "UseShapeshiftingHint": "Kostet 3 AP. Der GM schaltet den Gegenstand danach um.",
+            "DistantAttributes": "Angriff auf mehr als 2m Entfernung: die Attribute der Reichweiten-Eigenschaft werden genutzt.",
+            "UnstableRoll": "Instabil: D10-Wurf",
+            "UnstableChanges": "{item} nimmt von selbst eine andere Form an (Wahl durch den GM)!",
+            "StealthRecommendationLoud": "Empfehlung: Nachteil auf den Tarnungswurf ({item} ist laut).",
+            "StealthRecommendationHeavy": "Empfehlung: Nachteil auf den Tarnungswurf (schwere Rüstung {item})."
         },
         "Wound": {
             "Applied": "{target} erleidet {count}x {name}: +{gained} Wundenwert (gesamt {total})."
@@ -2270,12 +2322,17 @@
         "Models": {
             "Name": "Name",
             "DiceFormula": "Wurfformel",
+            "TwoHandedDiceFormula": "Wurfformel zweihändig",
+            "TwoHandedDiceFormulaHint": "Nur für Waffen mit Flexibel: Wurfformel, wenn die Waffe zweihändig geführt wird (die normale Wurfformel gilt einhändig). Leer: dieselbe Formel.",
             "FlatBonus": "Fester Wert",
             "DamageType": "Schadenstyp",
             "Attributes": "Genutzte Attributsmodifikatoren",
             "Properties": "Eigenschaften",
             "HardenedValue": "Härte-Wert (X)",
             "Requirement": "Voraussetzung",
+            "Level": "Stufe (X)",
+            "Formula": "Formel (z.B. 1d6)",
+            "DistantAttributesHint": "Optional: Attribute, mit denen ein Angriff auf mehr als 2m Entfernung (Angriffs- und Schadenswurf) statt der normalen Attribute berechnet wird.",
             "Range": "Reichweite",
             "ApCost": "AP-Kosten",
             "MagazineSize": "Magazingröße",
@@ -2318,15 +2375,15 @@
         "ModelProperty": {
             "Heavy": {
                 "Name": "Schwer",
-                "Hint": "Dieser Gegenstand ist schwer und benötigt zur effektiven Benutzung mindestens den angegebenen Stärkewert. Eine Waffe mit diesem Modifikator kann erst dann in beiden Händen getragen werden, wenn die Stärke des Charakters deutlich über diesem Wert liegt."
+                "Hint": "Dieser Gegenstand ist schwer und benötigt zur effektiven Benutzung mindestens den angegebenen Stärkewert. Wird der Wert unterschritten, entfallen alle Attributs- und Fertigkeitsboni des Trägers für diesen Gegenstand (der Materialbonus bleibt). Eine zweihändige Waffe mit diesem Modifikator kann erst einhändig geführt werden, wenn die Stärke mindestens X + 25% von X (aufgerundet) beträgt."
             },
             "Demanding": {
                 "Name": "Fordernd",
-                "Hint": "Dieser Gegenstand ist schwer zu händeln und benötigt zur effektiven Benutzung mindestens den angegebenen Geschicklichkeitswert. Eine Waffe mit diesem Modifikator kann erst dann in beiden Händen getragen werden, wenn die Geschicklichkeit des Charakters deutlich über diesem Wert liegt."
+                "Hint": "Dieser Gegenstand ist schwer zu händeln und benötigt zur effektiven Benutzung mindestens den angegebenen Geschicklichkeitswert. Wird der Wert unterschritten, entfallen alle Attributs- und Fertigkeitsboni des Trägers für diesen Gegenstand (der Materialbonus bleibt). Eine zweihändige Waffe mit diesem Modifikator kann erst einhändig geführt werden, wenn die Geschicklichkeit mindestens X + 25% von X (aufgerundet) beträgt."
             },
             "Draining": {
                 "Name": "Zehrend",
-                "Hint": "Die Benutzung dieses Gegenstands ermüdet den Träger schnell und benötigt zur effektiven Benutzung mindestens den angegebenen Konstitutionswert. Eine Waffe mit diesem Modifikator kann erst dann in beiden Händen getragen werden, wenn die Konstitution des Charakters deutlich über diesem Wert liegt."
+                "Hint": "Die Benutzung dieses Gegenstands ermüdet den Träger schnell und benötigt zur effektiven Benutzung mindestens den angegebenen Konstitutionswert. Wird der Wert unterschritten, entfallen alle Attributs- und Fertigkeitsboni des Trägers für diesen Gegenstand (der Materialbonus bleibt). Eine zweihändige Waffe mit diesem Modifikator kann erst einhändig geführt werden, wenn die Konstitution mindestens X + 25% von X (aufgerundet) beträgt."
             },
             "Refined": {
                 "Name": "Raffiniert",
@@ -2342,19 +2399,19 @@
             },
             "Rending": {
                 "Name": "Abreißend",
-                "Hint": "Eine Waffe mit diesem Modifikator fügt Gebäuden, Konstrukten, materiellen Untoten, Objekten und inorganischen Hindernissen doppelten Schaden zu."
+                "Hint": "Eine Waffe mit diesem Modifikator fügt Konstrukten, materiellen Untoten, Objekten (Kreaturenkategorie Objekt) und inorganischen Hindernissen doppelten Schaden zu. Gebäude sind noch nicht umgesetzt."
             },
             "Stunning": {
                 "Name": "Betäubend",
-                "Hint": "Ein kritischer Angriff mit einer Waffe mit diesem Modifikator verleiht dem Ziel des Angriffs mehrere Stapel Benommenheit. Die Menge entspricht dabei dem Materialbonus / 2 und wird mit 1.5 / 2 / 2.5 multipliziert, wenn diese Waffe die Modifikatoren Schwer (Verringert) / Schwer / Schwer (Erhöht) besitzt."
+                "Hint": "Ein kritischer Angriff mit einer Waffe mit diesem Modifikator verleiht dem Ziel des Angriffs mehrere Stapel Benommenheit. Die Menge entspricht dabei dem Materialbonus / 2 und wird mit (X/10) multipliziert, wenn diese Waffe den Modifikator Schwer (X) besitzt."
             },
             "Disarming": {
                 "Name": "Entwaffnend",
-                "Hint": "Eine Kreatur, die einen Gegenstand mit diesem Modifikator nutzt, kann als Reaktion auf einen Waffenangriff versuchen, den Angreifer zu entwaffnen. Dieser muss einen DC 16 Geschicklichkeit- oder DC 18 Stärkewurf schaffen (Wahl des Angreifers) und wird bei Fehlschlag entwaffnet. Der Angriff des Ziels schlägt bei einem fehlgeschlagenen Wurf fehl."
+                "Hint": "Eine Kreatur, die einen Gegenstand mit diesem Modifikator nutzt, kann als Reaktion (3 RP) auf einen Nahkampf-Waffenangriff versuchen, den Angreifer zu entwaffnen. Dieser muss einen DC 16 Geschicklichkeits- oder DC 18 Stärkewurf schaffen (Wahl des Angreifers) und wird bei Fehlschlag entwaffnet, die Waffe wird abgelegt. Der Angriff schlägt dann fehl."
             },
             "Ranged": {
                 "Name": "Fernkampf",
-                "Hint": "Eine Waffe mit diesem Modifikator kann genutzt werden, um auf Reichweite anzugreifen (in Klammern angegeben / Nachteil auf erweiterte Reichweite). Im direkten Kampf, also 2m oder weniger Entfernung zum Ziel, kann eine solche Waffe nicht zum Angreifen genutzt werden."
+                "Hint": "Eine Waffe mit diesem Modifikator kann genutzt werden, um auf Reichweite anzugreifen (in Klammern angegeben / Nachteil auf erweiterte Reichweite, nicht automatisch). Im direkten Kampf, also 2m oder weniger Entfernung zum markierten Ziel, kann eine solche Waffe nicht zum Angreifen genutzt werden."
             },
             "Reload": {
                 "Name": "Nachladen",
@@ -2362,35 +2419,35 @@
             },
             "Flexible": {
                 "Name": "Flexibel",
-                "Hint": "Eine Waffe mit diesem Modifikator kann sowohl einhändig als auch zweihändig genutzt werden."
+                "Hint": "Eine Waffe mit diesem Modifikator kann jederzeit einhändig oder zweihändig geführt werden (Schalter in den Aktionen/im Inventar). Das Modell kann dafür eine eigene zweihändige Wurfformel haben."
             },
             "Shapeshifting": {
                 "Name": "Formwandelnd",
-                "Hint": "Dieser Gegenstand kann seine Form wandeln. Es ist möglich, eine Waffe hiermit in eine andere zu verwandeln oder sogar in ein Rüstungsstück. Die allgemeine Masse des Gegenstands kann sich nicht durch diesen Modifikator verändern. Kostet 3 Aktionspunkte."
+                "Hint": "Dieser Gegenstand kann seine Form wandeln. Es ist möglich, eine Waffe hiermit in eine andere zu verwandeln oder sogar in ein Rüstungsstück. Die allgemeine Masse des Gegenstands kann sich nicht durch diesen Modifikator verändern. Kostet 3 Aktionspunkte (Button \"Nutze Formwandelnd\" in den Aktionen, der GM schaltet den Gegenstand um)."
             },
             "Infusion": {
                 "Name": "Infusion",
-                "Hint": "Diese Waffe kann mit Mana aufgeladen und damit für die Fähigkeiten Magische Angriffe und Tödliche Angriffe genutzt werden. Sollte dieser Effekt auf einem Material natürlich sein, dann geht er verloren, wenn die Waffe verzaubert wird (außer mit diesem Modifikator). Magiestörende Gegenstände mit diesem Modifikator können verzaubert oder mit Magie verstärkt werden."
+                "Hint": "Diese Waffe kann mit Mana aufgeladen und damit für die Fähigkeiten Magische Angriffe und Tödliche Angriffe genutzt werden. Zauber mit dem Schalter \"Muss mit Infusionswaffe gewirkt werden\" können nur mit einer ausgerüsteten Infusionswaffe gewirkt werden. Sollte dieser Effekt auf einem Material natürlich sein, dann geht er verloren, wenn die Waffe verzaubert wird (außer mit diesem Modifikator). Magiestörende Gegenstände mit diesem Modifikator können verzaubert oder mit Magie verstärkt werden."
             },
             "Unstable": {
                 "Name": "Instabil",
-                "Hint": "Ein Gegenstand mit diesem Modifikator ist instabil. Jede Runde muss ein D10 gewürfelt werden, bei einer 10 nimmt der Gegenstand von selbst eine andere Form an. Dieser Modifikator kann nur auf Gegenstände mit dem Modifikator Formwandelnd oder der Verzauberung Formanpassend angewandt werden."
+                "Hint": "Ein Gegenstand mit diesem Modifikator ist instabil. Jede Runde wird ein D10 gewürfelt, bei einer 10 nimmt der Gegenstand von selbst eine andere Form an - die neue Form bestimmt der GM. Dieser Modifikator kann nur auf Gegenstände mit dem Modifikator Formwandelnd oder der Verzauberung Formanpassend angewandt werden."
             },
             "Long": {
                 "Name": "Lang",
-                "Hint": "Eine Waffe mit diesem Modifikator hat eine doppelt so hohe Nahkampfreichweite."
+                "Hint": "Eine Waffe mit diesem Modifikator hat eine doppelt so hohe Nahkampfreichweite. Optional können Attribute eingestellt werden, mit denen Angriffs- und Schadenswurf auf mehr als 2m Entfernung statt der normalen Attribute berechnet werden (vor allem bei den Overrides am Item)."
             },
             "Light": {
                 "Name": "Leicht",
-                "Hint": "Eine Waffe mit diesem Modifikator verleiht dem Träger einen zusätzlichen AP."
+                "Hint": "Eine Waffe mit diesem Modifikator ist (X*5%) leichter als normal, ohne schwächer zu werden. Schwere Rüstungen mit diesem Modifikator verleihen keinen Nachteil auf Tarnungswürfe, wenn X mindestens 6 ist."
             },
             "Antimagic": {
                 "Name": "Magiestörend",
-                "Hint": "Ein Gegenstand mit diesem Modifikator ist nicht verzauberbar, fügt magischen Schilden doppelten Schaden zu und lässt eine Illusion bei Berührung flackern. Zudem hat die angegriffene Kreatur Nachteil auf ihren Konzentrationswurf. Rüstungen aus Materialien mit diesem Modifikator bieten Magieresistenz in Höhe von (gebotene AC / 2, abgerundet)."
+                "Hint": "Ein Gegenstand mit diesem Modifikator ist nicht verzauberbar, fügt Barrieren (magischen Schilden) doppelten Schaden zu und ignoriert AC-Boni, die das Ziel durch Zauber hat. Zudem hat die angegriffene Kreatur Nachteil auf ihren Konzentrationswurf. Rüstungen aus Materialien mit diesem Modifikator bieten Magieresistenz in Höhe von (gebotene AC / 2, abgerundet)."
             },
             "Reach": {
                 "Name": "Reichweite",
-                "Hint": "Eine Waffe mit diesem Modifikator kann genutzt werden, um auf Reichweite anzugreifen (in Klammern angegeben). Auf mehr als 2m Entfernung wird der Angriffswurf und Schadenswurf mit dem angegebenen Charakterwertmodifikator berechnet."
+                "Hint": "Eine Waffe mit diesem Modifikator kann genutzt werden, um auf Reichweite anzugreifen (in Klammern angegeben). Auf mehr als 2m Entfernung werden Angriffs- und Schadenswurf mit den hier eingestellten Attributen berechnet (ohne Einstellung: mit den normalen)."
             },
             "GiantSlayer": {
                 "Name": "Riesenfäller",
@@ -2398,7 +2455,7 @@
             },
             "VeryLong": {
                 "Name": "Sehr Lang",
-                "Hint": "Eine Waffe mit diesem Modifikator hat eine dreimal so hohe Nahkampfreichweite."
+                "Hint": "Eine Waffe mit diesem Modifikator hat eine dreimal so hohe Nahkampfreichweite. Optional können Attribute eingestellt werden, mit denen Angriffs- und Schadenswurf auf mehr als 2m Entfernung statt der normalen Attribute berechnet werden (vor allem bei den Overrides am Item)."
             },
             "Simple": {
                 "Name": "Simpel",
@@ -2406,15 +2463,15 @@
             },
             "Redirection": {
                 "Name": "Umleitung",
-                "Hint": "Der Träger eines Gegenstands mit diesem Modifikator kann als Reaktion einen Angriff ohne Arealeffekt auf die nächste Kreatur innerhalb von 2m umleiten, falls diese keinen DC 15 Konstitutionswurf schafft. Magische Angriffe können nur mit diesem Modifikator umgeleitet werden, wenn dieser verzaubert wurde."
+                "Hint": "Der Träger eines Gegenstands mit diesem Modifikator kann als Reaktion (3 RP) einen Angriff ohne Arealeffekt auf die nächste Kreatur innerhalb von 2m umleiten, falls diese keinen DC 15 Konstitutionswurf schafft. Das neue Ziel erhält einen neuen Angriffswurf gegen AC bzw. MR. Zauberangriffe können nur umgeleitet werden, wenn der Gegenstand verzaubert ist."
             },
             "Silvered": {
                 "Name": "Versilbert",
-                "Hint": "Waffen aus diesem Material verursachen zusätzlichen Schaden an bestimmten Kreaturen."
+                "Hint": "Waffen aus diesem Material verursachen gegen Kreaturen mit Schwäche gegen Silber +100% Schaden (Schalter am Akteur oder an der Spezies)."
             },
             "Concealed": {
                 "Name": "Versteckt",
-                "Hint": "Ein Angriff mit dieser Waffe entfernt nicht automatisch Tarnung. Kreaturen, die von einem Angriff mit einer solch modifizierten Waffe getroffen werden, erhalten Vorteil auf ihren nächsten Beobachtungswurf zur Aufdeckung des Angreifers."
+                "Hint": "Ein Angriff mit dieser Waffe entfernt nicht automatisch Tarnung. Kreaturen, die von einem Angriff mit einer solch modifizierten Waffe getroffen werden, erhalten Vorteil auf ihren nächsten Beobachtungswurf zur Aufdeckung des Angreifers (nur eine Empfehlung im Chat)."
             },
             "Wounding": {
                 "Name": "Verwundend",
@@ -2426,11 +2483,11 @@
             },
             "Shattering": {
                 "Name": "Zerschmetternd",
-                "Hint": "Die AC von Kreaturen, die mit einer Waffe mit diesem Modifikator getroffen werden, wird für eine Runde um die Anzahl an Waffenwürfeln gesenkt. Dieser Effekt kann sich stapeln, bis der Ausrüstungsmodifikator 0 erreicht."
+                "Hint": "Angriffe mit einer Waffe mit diesem Modifikator verursachen fünffachen Schaden an der Haltbarkeit der Rüstung / des Schildes des angegriffenen Ziels oder der Waffe, die zur Parierung genutzt wurde."
             },
             "TwoHanded": {
                 "Name": "Zweihändig",
-                "Hint": "Eine Waffe mit diesem Modifikator muss zweihändig geführt werden. Sollte eine solche Waffe nicht den Modifikator Schwer, Fordernd oder Zehrend besitzen, dann kann sie einhändig geführt werden, falls der Träger einen Stärkewert von 18 oder höher hat."
+                "Hint": "Eine Waffe mit diesem Modifikator wird zweihändig geführt. Einhändig geht das nur mit dem Schalter in den Aktionen/im Inventar und nur, wenn der Träger die Attribute dafür hat: mit Schwer/Fordernd/Zehrend (X) mindestens X + 25% von X (aufgerundet) im jeweiligen Attribut, sonst mindestens 16 in dem Attribut, das die Waffe nutzt. Einhändig geführt verliert Spezialisiert seine Wirkung."
             },
             "Deployable": {
                 "Name": "Aufbaubar",
@@ -2446,7 +2503,7 @@
             },
             "Loud": {
                 "Name": "Laut",
-                "Hint": "Der Träger erhält Nachteil auf Tarnungswürfe, solange er diesen Gegenstand trägt."
+                "Hint": "Der Träger sollte Nachteil auf Tarnungswürfe erhalten, solange er diesen Gegenstand trägt (nur eine Empfehlung im Chat - ob er gilt, hängt von der Situation ab)."
             },
             "Reflective": {
                 "Name": "Reflektierend",
@@ -2458,7 +2515,7 @@
             },
             "Spiky": {
                 "Name": "Stachlig",
-                "Hint": "Kreaturen, die den Träger eines solchen Gegenstands mit einem Nahkampfwaffenangriff angreifen, erleiden 1d6 Stichschaden."
+                "Hint": "Kreaturen, die den Träger eines solchen Gegenstands mit einem Nahkampfwaffenangriff angreifen, erleiden den angegebenen Stichschaden (Formel, ohne Angabe 1d6)."
             }
         },
         "ItemSheet": {

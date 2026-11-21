@@ -75,6 +75,14 @@ export default class SKSKSpecies extends SKSKItemBase {
       new fields.StringField({ required: true, blank: false, initial: "humanoid" })
     );
 
+    // Only meaningful for the category "undead": whether such an undead is
+    // material (a body that can be torn apart - Abreißend deals it double
+    // damage) or immaterial. Material by default.
+    schema.undeadForm = new fields.StringField({ required: true, blank: false, initial: "material", choices: ["material", "immaterial"] });
+
+    // Weak to silver: Silvered (Versilbert) weapons deal +100% damage to this species.
+    schema.silverWeakness = new fields.BooleanField({ initial: false });
+
     // Bonuses to attributes other than Aura. Player-extensible list.
     schema.attributeBonuses = new fields.ArrayField(new fields.SchemaField({
       attribute: new fields.StringField({ required: true, blank: false, initial: "str" }),

@@ -55,6 +55,11 @@
                   placeholder="e.g. 1d4" />
               </div>
               <div class="grid-span-1">
+                <label class="resource-label" title="{{localize 'SKSK.Models.TwoHandedDiceFormulaHint'}}">{{localize 'SKSK.Models.TwoHandedDiceFormula'}}</label>
+                <input type="text" name="weaponModels.{{entry.index}}.twoHandedDiceFormula" value="{{entry.model.twoHandedDiceFormula}}"
+                  placeholder="e.g. 1d6" title="{{localize 'SKSK.Models.TwoHandedDiceFormulaHint'}}" />
+              </div>
+              <div class="grid-span-1">
                 <label class="resource-label">{{localize 'SKSK.Models.FlatBonus'}}</label>
                 <input type="text" name="weaponModels.{{entry.index}}.flatBonus" value="{{entry.model.flatBonus}}"
                   data-dtype="Number" />
@@ -120,6 +125,18 @@
                     name="weaponModels.{{entry.index}}.{{concat key 'MagazineSize'}}"
                     value="{{lookup entry.model (concat key 'MagazineSize')}}" data-dtype="Number"
                     title="{{localize 'SKSK.Models.MagazineSize'}}" placeholder="{{localize 'SKSK.Models.MagazineSize'}}" />
+                  {{/if}}
+                  {{#if def.hasLevel}}
+                  <input type="text" class="model-requirement-input"
+                    name="weaponModels.{{entry.index}}.{{concat key 'Level'}}"
+                    value="{{lookup entry.model (concat key 'Level')}}" data-dtype="Number"
+                    title="{{localize 'SKSK.Models.Level'}}" placeholder="{{localize 'SKSK.Models.Level'}}" />
+                  {{/if}}
+                  {{#if def.hasFormula}}
+                  <input type="text" class="model-requirement-input"
+                    name="weaponModels.{{entry.index}}.{{concat key 'Formula'}}"
+                    value="{{lookup entry.model (concat key 'Formula')}}"
+                    title="{{localize 'SKSK.Models.Formula'}}" placeholder="{{localize 'SKSK.Models.Formula'}}" />
                   {{/if}}
                 </div>
                 {{/each}}

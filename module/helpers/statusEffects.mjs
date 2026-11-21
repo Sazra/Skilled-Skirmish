@@ -1395,6 +1395,25 @@ async function handleRestrainedTurnEnd(actor) {
 }
 
 /**
+ * Instabil (Unstable): every round an equipped item with this property rolls a
+ * d10 - on a 10 it takes another form by itself. WHICH form is left to the
+ * GM, so this only announces the result.
+ * @param {Actor} actor
+ * @return {Promise<string[]>}   Chat sections for the combined turn-start card.
+ */
+async function handleUnstableTurnStart(actor) {
+  const sections = [];
+  for (const item of actor.items) {
+    if (!['weapon', 'armor'].includes(item.type) || !item.system.equipped) continue;
+    if (!(item.system.effectiveProperties ?? []).some(entry => entry.property === 'unstable')) continue;
+    const roll = await new Roll('1d10').evaluate();
+    const changing = roll.total === 10 ? `<div class="sksk-roll-line"><strong>${game.i18n.format('SKSK.WeaponProperty.UnstableChanges', { item: item.name })}</strong></div>` : '';
+    sections.push(`<div class="sksk-roll-line"><strong>${item.name}</strong> - ${game.i18n.localize('SKSK.WeaponProperty.UnstableRoll')}</div>${await roll.render()}${changing}`);
+  }
+  return sections;
+}
+
+/**
  * Concentration's own damage-response check - exported for reuse anywhere
  * else in the system that deals real damage to an actor (not just the
  * turn-start sources below), per the "implement this in the background,
@@ -1405,9 +1424,11 @@ async function handleRestrainedTurnEnd(actor) {
  * (removes the status); success leaves it in place.
  * @param {Actor} actor
  * @param {number} damage
+ * @param {{disadvantage?: boolean}} [options]   disadvantage: the check is rolled
+ *   with disadvantage (Magiestörend weapons) - it cancels an advantage preset.
  * @return {Promise<void>}
  */
-export async function checkConcentration(actor, damage) {
+export async function checkConcentration(actor, damage, { disadvantage = false } = {}) {
   if (damage <= 0 || getStatusStacks(actor, 'concentration') <= 0) return;
 
   const dc = Math.max(5, Math.floor(damage / 2));
@@ -1422,7 +1443,9 @@ export async function checkConcentration(actor, damage) {
   // Fully automatic (damage-triggered) check - uses the actor's own GM-tab
   // preset (system.genericCriticalRollMode) rather than a per-check dialog,
   // see helpers/criticalRolls.mjs#evaluateD20WithMode.
-  const result = await evaluateD20WithMode(formula, actor.getRollData(), actor.system.genericCriticalRollMode);
+  const presetMode = actor.system.genericCriticalRollMode;
+  const checkMode = disadvantage ? (presetMode === 'advantage' ? 'neutral' : 'disadvantage') : presetMode;
+  const result = await evaluateD20WithMode(formula, actor.getRollData(), checkMode);
   const { roll, criticalType, doubleCritical } = result;
   const success = resolveCheckSuccess(roll.total, dc, criticalType);
 
@@ -1910,6 +1933,7 @@ async function postCombatTurnStartCard(actor, descriptionLines, extraSections) {
  */
 export async function handleCombatTurnStart(actor, round) {
   const dazedLines = await handleActionPointsTurnStart(actor);
+  const unstableSections = await handleUnstableTurnStart(actor);
 
   const poison = await handlePoisonTurnStart(actor, round);
   const frostbite = await handleFrostbiteTurnStart(actor);
@@ -1932,7 +1956,7 @@ export async function handleCombatTurnStart(actor, round) {
   ];
   const extraSections = [
     ...poison.extraSections, ...frostbite.extraSections, ...wound.extraSections, ...custom.extraSections,
-    ...restrainedSections,
+    ...restrainedSections, ...unstableSections,
   ];
   await postCombatTurnStartCard(actor, descriptionLines, extraSections);
 

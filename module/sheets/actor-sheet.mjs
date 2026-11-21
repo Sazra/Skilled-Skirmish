@@ -37,9 +37,10 @@ import { getArmorClassBreakdown, getMagicResistanceBreakdown, computeArmorPieceB
 import { isDurabilityEnabled } from '../helpers/materials.mjs';
 import { prepareElementalChargeSlots, consumeElementalCharge } from '../helpers/elementalCharges.mjs';
 import { computeWeaponAttackBonus, computeWeaponRangeLabel } from '../helpers/attackRolls.mjs';
+import { hasHandSwitch, isHeldOneHanded, checkOneHandedAllowed } from '../helpers/weaponProperties.mjs';
 import { renderBreakdownHtml } from '../helpers/tooltips.mjs';
 import {
-  rollMartialArtsAttack, rollRegeneration, rollMeditation, promptMultiRoll, rollAdrenalin, useMove, useDodge, useItem,
+  rollMartialArtsAttack, rollRegeneration, rollMeditation, promptMultiRoll, rollAdrenalin, useMove, useDodge, useItem, useShapeshifting,
   postActionChatCard, hasEnoughActionPoints, hasEnoughReactionPoints, spendActionPoints, spendReactionPoints,
 } from '../helpers/actions.mjs';
 import { chooseSpellCastOptions, setSpellSustaining } from '../helpers/spell-rolls.mjs';
@@ -165,6 +166,8 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       useMove: SKSKActorSheet.#useMove,
       useDodge: SKSKActorSheet.#useDodge,
       useItem: SKSKActorSheet.#useItem,
+      useShapeshifting: SKSKActorSheet.#useShapeshifting,
+      toggleHeldOneHanded: SKSKActorSheet.#toggleHeldOneHanded,
       openRestDialog: SKSKActorSheet.#openRestDialog,
       openTrainingDialog: SKSKActorSheet.#openTrainingDialog,
       openMassKillDialog: SKSKActorSheet.#openMassKillDialog,
@@ -642,8 +645,14 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     context.equippedWeapons = actor.items.filter(i => i.type === 'weapon' && i.system.equipped);
     // Range/reach parenthetical shown next to each weapon's own name - see
     // helpers/attackRolls.mjs#computeWeaponRangeLabel.
-    context.equippedWeapons.forEach(w => { w.rangeLabel = computeWeaponRangeLabel(w, actor); });
+    context.equippedWeapons.forEach(w => {
+      w.rangeLabel = computeWeaponRangeLabel(w, actor);
+      this.#addHandSwitchInfo(w);
+    });
     context.usableItems = actor.items.filter(i => i.type === 'item' && i.system.isUsable);
+    // Formwandelnd: equipped weapons/armor that can change their form (Actions tab).
+    context.shapeshiftItems = actor.items.filter(i => (i.type === 'weapon' || i.type === 'armor')
+      && i.system.equipped && (i.system.effectiveProperties ?? []).some(p => p.property === 'shapeshifting'));
     context.skillTabs = Object.values(this._prepareTabs('skillCategories'));
     context.spellTypeTabs = Object.values(this._prepareTabs('spellTypes'));
     context.spellSimpleSchoolTabs = Object.values(this._prepareTabs('spellSimpleSchools'));
@@ -952,6 +961,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
         i.typeIcon = CONFIG.SKSK.weaponTypeIcons[i.system.weaponType] ?? CONFIG.SKSK.itemTypeIcon;
         i.typeLabel = game.i18n.localize(CONFIG.SKSK.skills.weapons[i.system.weaponType]?.label ?? '');
         i.attackBonus = computeWeaponAttackBonus(this.actor, i);
+        this.#addHandSwitchInfo(i);
         gear.push(i);
       }
       // Append to features.
@@ -2063,6 +2073,54 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
   static async #useItem(event, target) {
     const item = this.actor.items.get(target.dataset.itemId);
     if (item) await useItem(this.actor, item);
+  }
+
+  /**
+   * Formwandelnd's Actions tab button (helpers/actions.mjs#useShapeshifting).
+   * @param {PointerEvent} event
+   * @param {HTMLElement} target   The clicked button, carrying data-item-id.
+   * @private
+   */
+  static async #useShapeshifting(event, target) {
+    const item = this.actor.items.get(target.dataset.itemId);
+    if (item) await useShapeshifting(this.actor, item);
+  }
+
+  /**
+   * For a weapon with the Two-Handed/Flexible property: what the sheet needs
+   * to show its one-handed/two-handed switch (see helpers/weaponProperties.mjs).
+   * @param {Item} weapon
+   * @private
+   */
+  #addHandSwitchInfo(weapon) {
+    weapon.hasHandSwitch = hasHandSwitch(weapon.system);
+    if (!weapon.hasHandSwitch) return;
+    weapon.heldOneHandedNow = isHeldOneHanded(this.actor, weapon.system);
+    const check = checkOneHandedAllowed(this.actor, weapon.system);
+    weapon.handSwitchTitle = game.i18n.localize(weapon.heldOneHandedNow ? 'SKSK.Items.HeldOneHandedNow' : 'SKSK.Items.HeldTwoHandedNow')
+      + (check.allowed ? '' : ` - ${game.i18n.format('SKSK.WeaponProperty.OneHandedNeeds', { needs: check.needs })}`);
+  }
+
+  /**
+   * Switch a Two-Handed/Flexible weapon between one-handed and two-handed
+   * (Actions tab and Items tab). Going one-handed with a Two-Handed weapon
+   * needs the attributes for it - the check is hard.
+   * @param {PointerEvent} event
+   * @param {HTMLElement} target   The clicked switch, carrying data-item-id.
+   * @private
+   */
+  static async #toggleHeldOneHanded(event, target) {
+    const item = this.actor.items.get(target.dataset.itemId);
+    if (!item || !hasHandSwitch(item.system)) return;
+    const next = !item.system.heldOneHanded;
+    if (next) {
+      const check = checkOneHandedAllowed(this.actor, item.system);
+      if (!check.allowed) {
+        ui.notifications.warn(game.i18n.format('SKSK.WeaponProperty.OneHandedNeeds', { needs: check.needs }));
+        return;
+      }
+    }
+    await item.update({ 'system.heldOneHanded': next });
   }
 
   /**

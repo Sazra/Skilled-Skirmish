@@ -1,4 +1,5 @@
 import { getWeaponModels, getArmorModels, getModelPropertiesFor, clampSingleAttributeSelection } from '../helpers/models.mjs';
+import { collectPropertyParams } from '../helpers/properties.mjs';
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
@@ -225,6 +226,7 @@ export class SKSKModelsConfig extends HandlebarsApplicationMixin(ApplicationV2) 
         // select and so always fall back to "weapon" here.
         kind: m.kind === 'ammunition' ? 'ammunition' : 'weapon',
         diceFormula: m.diceFormula ?? '',
+        twoHandedDiceFormula: m.twoHandedDiceFormula ?? '',
         flatBonus: Number(m.flatBonus) || 0,
         damageType: m.damageType ?? 'blunt',
         attributes,
@@ -232,6 +234,7 @@ export class SKSKModelsConfig extends HandlebarsApplicationMixin(ApplicationV2) 
         heavyRequirement: Number(m.heavyRequirement) || 0,
         demandingRequirement: Number(m.demandingRequirement) || 0,
         drainingRequirement: Number(m.drainingRequirement) || 0,
+        ...collectPropertyParams(m),
         reachRange: Number(m.reachRange) || 0,
         rangedRange: Number(m.rangedRange) || 0,
         reloadApCost: Number(m.reloadApCost) || 0,
@@ -254,6 +257,7 @@ export class SKSKModelsConfig extends HandlebarsApplicationMixin(ApplicationV2) 
       heavyRequirement: Number(m.heavyRequirement) || 0,
       demandingRequirement: Number(m.demandingRequirement) || 0,
       drainingRequirement: Number(m.drainingRequirement) || 0,
+      ...collectPropertyParams(m),
       durabilityMultiplier: sanitizeDurabilityMultiplier(m.durabilityMultiplier),
     }));
     await game.settings.set('sksk', 'weaponModels', weaponModels);

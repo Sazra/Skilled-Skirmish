@@ -88,6 +88,27 @@
           value="{{lookup ../effectivePropertyValues key}}" data-dtype="Number"
           title="{{localize 'SKSK.Models.ApCost'}}" placeholder="{{localize 'SKSK.Models.ApCost'}}" />
         {{/if}}
+        {{#if def.hasLevel}}
+        <input type="text" class="model-requirement-input property-override-value" data-property="{{key}}"
+          value="{{lookup ../effectivePropertyValues key}}" data-dtype="Number"
+          title="{{localize 'SKSK.Models.Level'}}" placeholder="{{localize 'SKSK.Models.Level'}}" />
+        {{/if}}
+        {{#if def.hasFormula}}
+        <input type="text" class="model-requirement-input property-override-formula" data-property="{{key}}"
+          value="{{lookup ../effectivePropertyFormulas key}}"
+          title="{{localize 'SKSK.Models.Formula'}}" placeholder="{{localize 'SKSK.Models.Formula'}}" />
+        {{/if}}
+        {{#if def.hasAttributes}}
+        <div class="property-override-attributes" title="{{localize 'SKSK.Models.DistantAttributesHint'}}">
+          {{#each ../attributeChoices as |attrLabel attrKey|}}
+          <label class="casting-method-option">
+            <input type="checkbox" class="property-override-attr" data-property="{{key}}" data-attribute="{{attrKey}}"
+              {{checked (includes (lookup ../../effectivePropertyAttributes key) attrKey)}} />
+            {{localize attrLabel}}
+          </label>
+          {{/each}}
+        </div>
+        {{/if}}
       </div>
       {{/each}}
     </div>

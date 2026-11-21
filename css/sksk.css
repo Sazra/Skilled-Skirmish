@@ -2904,3 +2904,10 @@ span.sksk-critical-failure {
 .sksk .ability-spell-drop input {
   flex: 1;
 }
+
+/* Property override: attribute picker (Reach/Long/Very Long). */
+.sksk .property-override-attributes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+}

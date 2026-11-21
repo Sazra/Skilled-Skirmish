@@ -119,6 +119,11 @@
             {{#if weapon.rangeLabel}}<span class="weapon-range-label">{{weapon.rangeLabel}}</span>{{/if}}
           </div>
           <div class="item-controls">
+            {{#if weapon.hasHandSwitch}}
+            <button type="button" class="action-roll-button hand-switch" data-action="toggleHeldOneHanded" data-item-id="{{weapon.id}}" title="{{weapon.handSwitchTitle}}">
+              <i class="fas {{#if weapon.heldOneHandedNow}}fa-hand{{else}}fa-hands{{/if}}"></i>
+            </button>
+            {{/if}}
             <button type="button" class="action-roll-button" data-action="useItem" data-item-id="{{weapon.id}}" title="{{localize 'SKSK.Action.Use'}}">
               <i class="fas fa-dice-d20"></i>
             </button>
@@ -151,5 +156,23 @@
       </ol>
     </div>
   </div>
+
+  {{#if shapeshiftItems.length}}
+  <div class="resource">
+    <label class="resource-label">{{localize 'SKSK.ModelProperty.Shapeshifting.Name'}}</label>
+    <ol class="items-list items-list-compact">
+      {{#each shapeshiftItems as |shapeItem|}}
+      <li class="item flexrow">
+        <div class="item-name">{{shapeItem.name}}</div>
+        <div class="item-controls">
+          <button type="button" class="action-roll-button" data-action="useShapeshifting" data-item-id="{{shapeItem.id}}" title="{{localize 'SKSK.WeaponProperty.UseShapeshiftingHint'}}">
+            <i class="fas fa-wand-magic-sparkles"></i> {{localize 'SKSK.WeaponProperty.UseShapeshifting'}}
+          </button>
+        </div>
+      </li>
+      {{/each}}
+    </ol>
+  </div>
+  {{/if}}
 
 </section>

@@ -22,6 +22,13 @@ export default class SKSKWeapon extends SKSKItemBase {
     // Weapons are always equippable, unlike the generic Item type.
     schema.equipped = new fields.BooleanField({ initial: false });
     schema.enchanted = new fields.BooleanField({ initial: false });
+    // Switch of a weapon with the Two-Handed or Flexible property: held
+    // one-handed (true) or with both hands (false). Two-Handed: one-handed
+    // only counts if the wielder's attributes allow it (helpers/
+    // weaponProperties.mjs#isHeldOneHanded), and Specialized loses its
+    // doubling then. Flexible: always free to switch, the Model's dice formula
+    // changes with it (see prepareDerivedData).
+    schema.heldOneHanded = new fields.BooleanField({ initial: false });
 
     // Zero or more mana-cost discounts for a specific magic school (of any
     // spellType) - e.g. an enchanted weapon granting a flat -5 discount on
@@ -119,6 +126,11 @@ export default class SKSKWeapon extends SKSKItemBase {
       property: new fields.StringField({ required: true, blank: false, initial: "throwable" }),
       mode: new fields.StringField({ required: true, blank: false, initial: "add", choices: ["add", "remove"] }),
       value: new fields.NumberField({ required: true, nullable: false, initial: 0, min: 0 }),
+      // Coupled parameters of some properties (see helpers/properties.mjs): a
+      // formula (Spiky) and attribute keys (Reach/Long/Very Long: the
+      // attributes an attack over more than 2m is rolled with).
+      formula: new fields.StringField({ required: true, blank: true, initial: "" }),
+      attributes: new fields.ArrayField(new fields.StringField({ required: true, blank: false })),
     }));
     // Per-item override of the Model's shared `attributes` list - e.g. a
     // unique variant of a Model normally shared by many weapons. When
@@ -197,6 +209,10 @@ export default class SKSKWeapon extends SKSKItemBase {
     this.totalManaCapacity = computeTotalManaCapacity(this);
     this.resolvedModel = getWeaponModel(this.model);
     this.effectiveProperties = computeEffectiveProperties(this, this.resolvedModel);
+    // Leicht (X): the weapon weighs X*5% less than its listed weight, without
+    // getting any weaker (mana capacity etc. keep using the listed weight).
+    const lightLevel = this.effectiveProperties.find(entry => entry.property === 'light')?.value ?? 0;
+    this.effectiveWeight = Math.round(this.weight * (1 - Math.min(100, Math.max(0, lightLevel * 5)) / 100) * 100) / 100;
     // Only Bow/Feuerwaffen actually resolve an Ammunition Model - every
     // other weaponType ignores a stale system.ammunitionModel value left
     // over from before a switch away from one of those two types.
@@ -239,7 +255,12 @@ export default class SKSKWeapon extends SKSKItemBase {
     const rawFlatBonus = materialBonus + (this.resolvedModel?.flatBonus ?? 0) + (this.resolvedAmmunitionModel?.flatBonus ?? 0);
     const qualityFlatBonus = Math.floor(rawFlatBonus * this.quality / 100);
     const flatBonus = Math.ceil(qualityFlatBonus * computeDurabilityRatio(this));
-    const diceFormula = combineDiceFormulas(this.resolvedModel?.diceFormula, this.resolvedAmmunitionModel?.diceFormula);
+    // Flexible: the Model's diceFormula is the one-handed one, its
+    // twoHandedDiceFormula (if set) the two-handed one.
+    const flexibleTwoHanded = this.effectiveProperties.some(entry => entry.property === 'flexible')
+      && !this.heldOneHanded && this.resolvedModel?.twoHandedDiceFormula;
+    const baseDiceFormula = flexibleTwoHanded ? this.resolvedModel.twoHandedDiceFormula : this.resolvedModel?.diceFormula;
+    const diceFormula = combineDiceFormulas(baseDiceFormula, this.resolvedAmmunitionModel?.diceFormula);
     this.formula = diceFormula ? `${diceFormula} + ${flatBonus}` : `${flatBonus}`;
   }
 }

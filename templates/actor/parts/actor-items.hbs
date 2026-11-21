@@ -62,7 +62,7 @@
         </div>
       </div>
       {{/if}}
-      <div class='item-weight'>{{item.system.weight}}</div>
+      <div class='item-weight'>{{#if (eq item.type "weapon")}}{{item.system.effectiveWeight}}{{else}}{{item.system.weight}}{{/if}}</div>
       <div class='item-equipped'>
         {{#if (eq item.type "item")}}
           {{#if item.system.equippable}}
@@ -90,6 +90,11 @@
         {{/if}}
       </div>
       <div class='item-controls'>
+        {{#if item.hasHandSwitch}}
+        <a class='item-control' data-action='toggleHeldOneHanded' data-item-id='{{item._id}}' title='{{item.handSwitchTitle}}'>
+          <i class='fas {{#if item.heldOneHandedNow}}fa-hand{{else}}fa-hands{{/if}}'></i>
+        </a>
+        {{/if}}
         <a
           class='item-control item-delete'
           data-action='deleteItem'

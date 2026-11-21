@@ -10,6 +10,7 @@ import { computeSkillRollCost } from './skillRollCost.mjs';
 import { SKSKSkillRollDialog } from '../apps/skill-roll-dialog.mjs';
 import { renderRerollButton, wrapRerollIcons } from './luck.mjs';
 import { renderAttributeRerollButton } from './attributeReroll.mjs';
+import { getStealthRecommendations } from './weaponProperties.mjs';
 
 /**
  * The skill's own config entry (CONFIG.SKSK.skills[category][skillKey]) if
@@ -237,6 +238,13 @@ export async function rollSkillCheck(actor, skillKey, chosenAttributes, variant 
     ? `<div class="sksk-roll-description">${game.i18n.format(descriptionKey, { name: actor.name })}</div>`
     : '';
   let extraHTML = descriptionHTML + formatSkillFpGrantLine(fpGrant);
+  // Laut (Loud) and heavy armor: only a RECOMMENDATION of disadvantage on a
+  // stealth roll - whether it applies is up to the situation (and the GM).
+  if (skillKey === 'stealth') {
+    for (const { item, reason } of getStealthRecommendations(actor)) {
+      extraHTML += `<div class="sksk-roll-line">${game.i18n.format(reason === 'loud' ? 'SKSK.WeaponProperty.StealthRecommendationLoud' : 'SKSK.WeaponProperty.StealthRecommendationHeavy', { item: item.name })}</div>`;
+    }
+  }
   // Luck's own "criticalRoll"/"doubleCriticalRoll" FP - any generic (non-
   // Angriffswurf) D20 roll's critical success/double critical, see
   // helpers/criticalRolls.mjs#evaluateD20WithMode.
