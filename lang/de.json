@@ -2108,6 +2108,9 @@
             "ExtraDamageHalved": "halbiert",
             "EffectConsumed": "Effekt verbraucht: {name}"
         },
+        "Wound": {
+            "Applied": "{target} erleidet {count}x {name}: +{gained} Wundenwert (gesamt {total})."
+        },
         "StatusEffect": {
             "SectionTitle": "Statuseffekte",
             "Name": "Name",
@@ -2221,7 +2224,7 @@
             },
             "Wound": {
                 "Name": "Wunde",
-                "Description": "Kann mehrfach erlitten werden, jeweils mit eigenem Schadenswert. Am Anfang des Zuges erleidet die Kreatur den summierten Schadenswert aller Wunden."
+                "Description": "Jedes Mal, wenn eine Wunde erlitten wird, wird ihr Schaden erwürfelt (1d[Lebenswert der ersten Klasse] + 1d[Lebenswert der zweiten Klasse]) und zum Wundenwert addiert. Am Anfang des Zuges erleidet die Kreatur den gesamten Wundenwert."
             },
             "MaxLifeDamage": {
                 "Name": "Schaden am maximalen Leben",

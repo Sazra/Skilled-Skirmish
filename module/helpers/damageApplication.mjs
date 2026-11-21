@@ -7,6 +7,7 @@ import {
 import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
 import { resolveSpellStatusStacks, isSpellFoundryEffectActive, replaceElementPlaceholders } from './spells.mjs';
 import { createVariantItem } from './spellVariants.mjs';
+import { applyWounds } from './wounds.mjs';
 import { getElementalDeathChargeHeal } from './elementalChargeEffects.mjs';
 import { requestGmAction, registerGmRelayAction } from './gmRelay.mjs';
 import { getBarrierTotal, reduceBarrier, grantBarrier, rollAndGrantBarrier } from './barrier.mjs';
@@ -152,6 +153,11 @@ export async function applyTechniqueEffectBundle(itemUuid, defender) {
   }
   for (const entry of item.system.effectStatusEffects ?? []) {
     if (!entry.statusId) continue;
+    // A Wound rolls its own damage (helpers/wounds.mjs) instead of stacking.
+    if (entry.statusId === 'wound') {
+      lines.push(await applyWounds(defender, entry.stacks ?? 1));
+      continue;
+    }
     await increaseStatusStacks(defender, entry.statusId, entry.stacks ?? 1);
     const def = getStatusEffectDefinitions().find(d => d.id === entry.statusId);
     lines.push(`<div class="sksk-roll-line sksk-roll-status-effect">${game.i18n.format('SKSK.Technique.StatusEffectApplied', { name: def?.name ?? entry.statusId, target: defender.name })}</div>`);
@@ -211,6 +217,11 @@ export async function applySpellEffectGroup(itemUuid, group, savingThrowIndex, d
     if (!matches(entry) || !entry.statusId) continue;
     const stacks = resolveSpellStatusStacks(item.system, index, extraCostTier, extraCostCounts);
     if (stacks === null || stacks <= 0) continue;
+    // A Wound rolls its own damage (helpers/wounds.mjs) instead of stacking.
+    if (entry.statusId === 'wound') {
+      lines.push(await applyWounds(defender, stacks));
+      continue;
+    }
     await increaseStatusStacks(defender, entry.statusId, stacks);
     const def = getStatusEffectDefinitions().find(d => d.id === entry.statusId);
     lines.push(`<div class="sksk-roll-line sksk-roll-status-effect">${game.i18n.format('SKSK.Spell.StatusEffectApplied', { name: def?.name ?? entry.statusId, target: defender.name })}${stacks > 1 ? ` (×${stacks})` : ''}</div>`);
@@ -274,14 +285,19 @@ export async function applySpellEffectGroup(itemUuid, group, savingThrowIndex, d
  *   that attack was already manually evaluated against the resolved
  *   defender as a miss, to deal a spell's half damage instead (see
  *   helpers/attackRolls.mjs#recordHitEvaluation).
+ * @param {number} [wounds=0]   How many Wounds a hit with this attack also
+ *   inflicts (a weapon with the "Verwundend" property - see helpers/actions.mjs
+ *   #rollWeaponItem and helpers/wounds.mjs#applyWounds): applied together with
+ *   the damage, i.e. only for a hit.
  * @return {string}
  */
-export function renderApplyDamageButton(attacker, damageEntries, killSkillKey = null, techniqueEffect = null, attackComparison = null) {
+export function renderApplyDamageButton(attacker, damageEntries, killSkillKey = null, techniqueEffect = null, attackComparison = null, wounds = 0) {
   const entries = mergeDamageEntries(damageEntries);
-  if (!entries.length && !techniqueEffect) return '';
+  if (!entries.length && !techniqueEffect && !wounds) return '';
   const payload = encodeURIComponent(JSON.stringify(entries));
   const techniqueAttrs = (techniqueEffect ? ` data-technique-item-uuid="${techniqueEffect.itemUuid}"` : '')
-    + (attackComparison ? ` data-attack-comparison="${attackComparison}"` : '');
+    + (attackComparison ? ` data-attack-comparison="${attackComparison}"` : '')
+    + (wounds ? ` data-wounds="${wounds}"` : '');
   const label = entries.length && entries.every(entry => entry.damageType === 'barrier')
     ? game.i18n.localize('SKSK.Barrier.ApplyButton')
     : entries.length
@@ -331,9 +347,11 @@ export function renderApplyDamageButton(attacker, damageEntries, killSkillKey = 
  *   "attackTarget" Technique's own payload (see renderApplyDamageButton's
  *   own techniqueEffect param) - applied unconditionally alongside the
  *   damage entries above, same as a real button click always has.
+ * @param {number} [wounds=0]   Wounds the hit also inflicts (see
+ *   renderApplyDamageButton's own wounds param).
  * @return {Promise<{lines: string[]}>}
  */
-export async function applyResolvedDamageEntries(defender, attacker, entries, killSkillKey, techniqueItemUuid = null) {
+export async function applyResolvedDamageEntries(defender, attacker, entries, killSkillKey, techniqueItemUuid = null, wounds = 0) {
   // A pure Barrier grant is not a hit - armor durability only suffers from damage.
   if (isDurabilityEnabled() && entries.some(entry => entry.damageType !== 'barrier')) {
     for (const armorItem of getDurabilityAffectedArmor(defender)) {
@@ -422,6 +440,9 @@ export async function applyResolvedDamageEntries(defender, attacker, entries, ki
   if (techniqueItemUuid) {
     lines.push(await applyTechniqueEffectBundle(techniqueItemUuid, defender));
   }
+
+  // A weapon with the "Verwundend" property: the hit inflicts Wounds too.
+  if (wounds > 0) lines.push(await applyWounds(defender, wounds));
 
   const netDelta = healTotal - lifeDamage;
   const wasAlreadyDead = defender.system.life.value === 0 && defender.system.negativeLife.value <= 0;
@@ -605,6 +626,7 @@ export async function applyDamageFromChat(button) {
 
   let entries = JSON.parse(decodeURIComponent(button.dataset.damageEntries || '[]'));
   let techniqueItemUuid = button.dataset.techniqueItemUuid || null;
+  const wounds = Number(button.dataset.wounds) || 0;
   let noteHTML = '';
 
   // A spell's own Angriffswurf damage that was already manually evaluated
@@ -640,15 +662,15 @@ export async function applyDamageFromChat(button) {
   const attackerNotOwned = !!attacker && !attacker.isOwner;
   if (!defender.isOwner || attackerNotOwned) {
     if (requestGmAction('applyDamage', {
-      defenderUuid: defender.uuid, attackerUuid: attacker?.uuid ?? null, entries, killSkillKey, techniqueItemUuid, noteHTML,
+      defenderUuid: defender.uuid, attackerUuid: attacker?.uuid ?? null, entries, killSkillKey, techniqueItemUuid, noteHTML, wounds,
     })) return;
     if (!defender.isOwner) return ui.notifications.warn(game.i18n.localize('SKSK.AttackRoll.NoPermissionToApply'));
     // No GM connected, but the defender itself is writable: still apply the
     // damage here, just without anything credited to/healed on the attacker.
-    return applyDamageAndPost(defender, null, entries, killSkillKey, techniqueItemUuid, noteHTML);
+    return applyDamageAndPost(defender, null, entries, killSkillKey, techniqueItemUuid, noteHTML, wounds);
   }
 
-  return applyDamageAndPost(defender, attacker, entries, killSkillKey, techniqueItemUuid, noteHTML);
+  return applyDamageAndPost(defender, attacker, entries, killSkillKey, techniqueItemUuid, noteHTML, wounds);
 }
 
 /**
@@ -663,10 +685,11 @@ export async function applyDamageFromChat(button) {
  * @param {string|null} techniqueItemUuid
  * @param {string} [noteHTML]   An extra line rendered above the results (a
  *   spell miss's "still deals half damage" note).
+ * @param {number} [wounds=0]   Wounds the hit also inflicts.
  * @return {Promise<ChatMessage>}
  */
-async function applyDamageAndPost(defender, attacker, entries, killSkillKey, techniqueItemUuid, noteHTML = '') {
-  const { lines } = await applyResolvedDamageEntries(defender, attacker, entries, killSkillKey, techniqueItemUuid);
+async function applyDamageAndPost(defender, attacker, entries, killSkillKey, techniqueItemUuid, noteHTML = '', wounds = 0) {
+  const { lines } = await applyResolvedDamageEntries(defender, attacker, entries, killSkillKey, techniqueItemUuid, wounds);
 
   const messageData = {
     speaker: ChatMessage.getSpeaker({ actor: defender }),
@@ -688,7 +711,7 @@ async function handleApplyDamageRelay(data) {
   const defender = await fromUuid(data.defenderUuid);
   if (!defender) return;
   const attacker = data.attackerUuid ? await fromUuid(data.attackerUuid) : null;
-  return applyDamageAndPost(defender, attacker, data.entries, data.killSkillKey, data.techniqueItemUuid, data.noteHTML ?? '');
+  return applyDamageAndPost(defender, attacker, data.entries, data.killSkillKey, data.techniqueItemUuid, data.noteHTML ?? '', data.wounds ?? 0);
 }
 registerGmRelayAction('applyDamage', handleApplyDamageRelay);
 

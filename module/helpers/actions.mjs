@@ -155,6 +155,10 @@ export async function rollWeaponItem(item) {
   // sends them straight to Life.
   const barrierFlag = item.system.ignoresBarrier ? { ignoresBarrier: true } : {};
   const damageDice = [{ damageType, dieSizes: getDamageDieSizes(item.system.formula), ...barrierFlag }];
+  // The "Verwundend" property (from the Model or the Material): a hit also
+  // inflicts a Wound - rolled and added to the target's Wound status when the
+  // damage is applied (see helpers/wounds.mjs#applyWounds).
+  const woundCount = (item.system.effectiveProperties ?? []).some(p => p.property === 'wounding') ? 1 : 0;
   const damageEntries = [];
 
   // A primed Technique (helpers/technique-rolls.mjs) is consumed by this
@@ -223,7 +227,7 @@ export async function rollWeaponItem(item) {
     parts.push(extraDamage.html);
     damageEntries.push(...extraDamage.entries);
     applyButtonIndex = parts.length;
-    parts.push(renderApplyDamageButton(actor, damageEntries, item.system.weaponType, techniqueEffect, 'armorClass'));
+    parts.push(renderApplyDamageButton(actor, damageEntries, item.system.weaponType, techniqueEffect, 'armorClass', woundCount));
     parts.push(renderTechniqueSavingThrowHTML(technique));
   } else if (item.system.description) {
     const descriptionHTML = await foundry.applications.ux.TextEditor.implementation.enrichHTML(
@@ -231,7 +235,7 @@ export async function rollWeaponItem(item) {
     );
     parts.push(`<div class="sksk-roll-description">${descriptionHTML}</div>`);
     applyButtonIndex = parts.length;
-    parts.push(renderApplyDamageButton(actor, [], item.system.weaponType, techniqueEffect));
+    parts.push(renderApplyDamageButton(actor, [], item.system.weaponType, techniqueEffect, null, woundCount));
     parts.push(renderTechniqueSavingThrowHTML(technique));
   }
 
@@ -243,7 +247,7 @@ export async function rollWeaponItem(item) {
   if (actor && rolls) {
     const autoResolveHTML = await autoResolveAttackForTargets(rolls, 'armorClass', actor, {
       damageEntries, damageDice, killSkillKey: item.system.weaponType, flanking: flank.flanking,
-      techniqueItemUuid: techniqueEffect?.itemUuid ?? null,
+      techniqueItemUuid: techniqueEffect?.itemUuid ?? null, wounds: woundCount,
     });
     if (autoResolveHTML) {
       if (attackBlockIndex >= 0) parts[attackBlockIndex] = stripRerollButton(greyOutManualEvalButtons(parts[attackBlockIndex]));

@@ -932,11 +932,11 @@ export function greyOutManualEvalButtons(html) {
  * @param {[Roll, Roll]} rolls
  * @param {"armorClass"|"magicResistance"} comparisonType
  * @param {Actor|null} attacker
- * @param {{damageEntries?: Array<{damageType: string, amount: number}>, damageDice?: Array<{damageType: string, dieSizes: number[]}>, killSkillKey?: string|null, flanking?: boolean, techniqueItemUuid?: string|null}} [options]
+ * @param {{damageEntries?: Array<{damageType: string, amount: number}>, damageDice?: Array<{damageType: string, dieSizes: number[]}>, killSkillKey?: string|null, flanking?: boolean, techniqueItemUuid?: string|null, wounds?: number}} [options]
  * @return {Promise<string>}
  */
 export async function autoResolveAttackForTargets([rollA, rollB], comparisonType, attacker, options = {}) {
-  const { damageEntries = [], damageDice = [], killSkillKey = null, flanking = false, techniqueItemUuid = null, noFp = false } = options;
+  const { damageEntries = [], damageDice = [], killSkillKey = null, flanking = false, techniqueItemUuid = null, noFp = false, wounds = 0 } = options;
   const defenders = getOtherTargetedActors(attacker);
   if (!defenders.length) return '';
 
@@ -953,12 +953,12 @@ export async function autoResolveAttackForTargets([rollA, rollB], comparisonType
       relayedCount += requestGmAction('autoResolveHit', {
         defenderUuid: defender.uuid, attackerUuid: attacker?.uuid ?? null, mode,
         rollA: rollA.total, rollB: rollB.total, critA, critB,
-        comparisonType, damageDice, killSkillKey, damageEntries, techniqueItemUuid, noFp,
+        comparisonType, damageDice, killSkillKey, damageEntries, techniqueItemUuid, noFp, wounds,
       }) ? 1 : 0;
       continue;
     }
     const { title, line, fpHTML, damageHTML } = await resolveAndApplyOneAttack(defender, attacker, {
-      mode, rollA: rollA.total, rollB: rollB.total, critA, critB, comparisonType, damageDice, killSkillKey, damageEntries, techniqueItemUuid, noFp,
+      mode, rollA: rollA.total, rollB: rollB.total, critA, critB, comparisonType, damageDice, killSkillKey, damageEntries, techniqueItemUuid, noFp, wounds,
     });
     blocks.push(formatRollCardHeading(title) + line + fpHTML + damageHTML);
   }
@@ -996,15 +996,15 @@ export async function autoResolveAttackForTargets([rollA, rollB], comparisonType
  * @return {Promise<{title: string, line: string, fpHTML: string, damageHTML: string}>}
  */
 async function resolveAndApplyOneAttack(defender, attacker, args) {
-  const { mode, rollA, rollB, critA, critB, comparisonType, damageDice, killSkillKey, damageEntries, techniqueItemUuid, noFp = false } = args;
+  const { mode, rollA, rollB, critA, critB, comparisonType, damageDice, killSkillKey, damageEntries, techniqueItemUuid, noFp = false, wounds = 0 } = args;
   const { hit, line, fpHTML, title } = await evaluateHitAgainstDefender({
     defender, attacker, mode, rollA, rollB, critA, critB, comparisonType, damageDice, killSkillKey, noFp,
   });
 
   let damageHTML = '';
   if (hit) {
-    if (damageEntries.length || techniqueItemUuid) {
-      const { lines } = await applyResolvedDamageEntries(defender, attacker, damageEntries, killSkillKey, techniqueItemUuid);
+    if (damageEntries.length || techniqueItemUuid || wounds) {
+      const { lines } = await applyResolvedDamageEntries(defender, attacker, damageEntries, killSkillKey, techniqueItemUuid, wounds);
       damageHTML = lines.join('');
     }
   } else if (comparisonType === 'magicResistance' && !defender.system.improvedMagicResistance) {

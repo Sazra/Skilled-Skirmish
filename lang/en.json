@@ -2108,6 +2108,9 @@
       "ExtraDamageHalved": "halved",
       "EffectConsumed": "Effect used up: {name}"
     },
+    "Wound": {
+      "Applied": "{target} suffers {count}x {name}: +{gained} Wound value (total {total})."
+    },
     "StatusEffect": {
       "SectionTitle": "Status Effects",
       "Name": "Name",
@@ -2221,7 +2224,7 @@
       },
       "Wound": {
         "Name": "Wound",
-        "Description": "Can be suffered multiple times, each with its own damage value. At the start of the creature's turn, it suffers the summed damage value of every Wound."
+        "Description": "Every time a Wound is suffered, its damage is rolled (1d[life value of the first Class] + 1d[life value of the second Class]) and added to the Wound value. At the start of the creature's turn, it suffers the whole Wound value."
       },
       "MaxLifeDamage": {
         "Name": "Max Life Damage",

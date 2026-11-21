@@ -559,6 +559,9 @@ export async function decreaseStatusStacks(actor, id, amount = 1) {
  * @return {Promise<ActiveEffect>}
  */
 export async function addStatusInstance(actor, id, value) {
+  // A Wound is no longer an instance of its own: every Wound adds its damage
+  // to the one Wound status (see addWoundValue).
+  if (id === 'wound') return addWoundValue(actor, value);
   const amount = Math.max(0, Math.round(Number(value) || 0));
   const def = getStatusEffectDefinitions().find(d => d.id === id);
   const name = `${def?.name || id} (${amount})`;
@@ -568,6 +571,36 @@ export async function addStatusInstance(actor, id, value) {
   const [effect] = await actor.createEmbeddedDocuments('ActiveEffect', [{
     name, img: def?.img || 'icons/svg/aura.svg', statuses: [id],
     origin: actor.uuid, flags: { sksk: { value: amount } }, changes,
+  }]);
+  return effect;
+}
+
+/**
+ * Add the damage of a suffered Wound to the actor's Wound status. Every
+ * Wound's damage is rolled when it is suffered (see helpers/wounds.mjs) and
+ * the values are summed up in ONE Wound status effect (named "Wunde (N)",
+ * value in flags.sksk.value) - at the start of its turn the creature suffers
+ * that sum (see handleWoundTurnStart). An older world may still hold several
+ * separate Wound instances; the value is merged into the first of them and
+ * the others keep counting in the sum.
+ * @param {Actor} actor
+ * @param {number} value   The rolled damage of the new Wound.
+ * @return {Promise<ActiveEffect|null>}   The Wound effect (null for a value of 0).
+ */
+export async function addWoundValue(actor, value) {
+  const amount = Math.max(0, Math.round(Number(value) || 0));
+  if (!amount) return null;
+  const def = getStatusEffectDefinitions().find(d => d.id === 'wound');
+  const existing = getStatusInstances(actor, 'wound')[0] ?? null;
+  const newTotal = (existing?.getFlag('sksk', 'value') ?? 0) + amount;
+  const name = `${def?.name || 'wound'} (${newTotal})`;
+  if (existing) {
+    await existing.update({ name, 'flags.sksk.value': newTotal });
+    return existing;
+  }
+  const [effect] = await actor.createEmbeddedDocuments('ActiveEffect', [{
+    name, img: def?.img || 'icons/svg/blood.svg', statuses: ['wound'],
+    origin: actor.uuid, flags: { sksk: { value: newTotal } }, changes: [],
   }]);
   return effect;
 }
