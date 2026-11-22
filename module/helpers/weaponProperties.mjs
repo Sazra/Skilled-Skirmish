@@ -287,6 +287,8 @@ const ONE_HANDED_ATTRIBUTE_VALUE = 16;
  * @return {boolean}
  */
 export function hasHandSwitch(system) {
+  // Bows can't be held one-handed - no switch for them.
+  if (system?.weaponType === 'bow') return false;
   return hasEffectiveProperty(system, 'twoHanded') || hasEffectiveProperty(system, 'flexible');
 }
 

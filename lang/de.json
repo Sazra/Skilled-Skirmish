@@ -2419,7 +2419,7 @@
             },
             "Flexible": {
                 "Name": "Flexibel",
-                "Hint": "Eine Waffe mit diesem Modifikator kann jederzeit einhändig oder zweihändig geführt werden (Schalter in den Aktionen/im Inventar). Das Modell kann dafür eine eigene zweihändige Wurfformel haben."
+                "Hint": "Eine Waffe mit diesem Modifikator kann jederzeit einhändig oder zweihändig geführt werden (Schalter in den Aktionen/im Inventar). Das Modell kann dafür eine eigene zweihändige Wurfformel haben. Bögen können nicht einhändig geführt werden."
             },
             "Shapeshifting": {
                 "Name": "Formwandelnd",
@@ -2487,7 +2487,7 @@
             },
             "TwoHanded": {
                 "Name": "Zweihändig",
-                "Hint": "Eine Waffe mit diesem Modifikator wird zweihändig geführt. Einhändig geht das nur mit dem Schalter in den Aktionen/im Inventar und nur, wenn der Träger die Attribute dafür hat: mit Schwer/Fordernd/Zehrend (X) mindestens X + 25% von X (aufgerundet) im jeweiligen Attribut, sonst mindestens 16 in dem Attribut, das die Waffe nutzt. Einhändig geführt verliert Spezialisiert seine Wirkung."
+                "Hint": "Eine Waffe mit diesem Modifikator wird zweihändig geführt. Einhändig geht das nur mit dem Schalter in den Aktionen/im Inventar und nur, wenn der Träger die Attribute dafür hat: mit Schwer/Fordernd/Zehrend (X) mindestens X + 25% von X (aufgerundet) im jeweiligen Attribut, sonst mindestens 16 in dem Attribut, das die Waffe nutzt. Einhändig geführt verliert Spezialisiert seine Wirkung. Bögen können nicht einhändig geführt werden."
             },
             "Deployable": {
                 "Name": "Aufbaubar",

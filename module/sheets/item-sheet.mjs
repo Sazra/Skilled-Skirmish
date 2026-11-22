@@ -685,7 +685,8 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       context.effectivePropertyAttributes = Object.fromEntries(
         Object.keys(context.overridePropertyChoices).map(key => [key, effective.find(e => e.property === key)?.attributes ?? []])
       );
-      context.hasTwoHandedProperty = item.type === 'weapon' && effective.some(e => e.property === 'twoHanded' || e.property === 'flexible');
+      // Bows can't be held one-handed - no switch for them.
+      context.hasTwoHandedProperty = item.type === 'weapon' && item.system.weaponType !== 'bow' && effective.some(e => e.property === 'twoHanded' || e.property === 'flexible');
       if (context.hasTwoHandedProperty && item.actor) {
         const check = checkOneHandedAllowed(item.actor, item.system);
         context.oneHandedBlockedHint = check.allowed ? '' : game.i18n.format('SKSK.WeaponProperty.OneHandedNeeds', { needs: check.needs });

@@ -2419,7 +2419,7 @@
       },
       "Flexible": {
         "Name": "Flexible",
-        "Hint": "A weapon with this modifier can be held one-handed or two-handed at any time (switch in the Actions tab/inventory). Its Model can have a separate two-handed roll formula."
+        "Hint": "A weapon with this modifier can be held one-handed or two-handed at any time (switch in the Actions tab/inventory). Its Model can have a separate two-handed roll formula. Bows cannot be held one-handed."
       },
       "Shapeshifting": {
         "Name": "Shapeshifting",
@@ -2487,7 +2487,7 @@
       },
       "TwoHanded": {
         "Name": "Two-Handed",
-        "Hint": "A weapon with this modifier is wielded with both hands. One-handed only works with the switch in the Actions tab/inventory and only if the bearer has the attributes: with Heavy/Demanding/Draining (X) at least X + 25% of X (rounded up) in that attribute, otherwise at least 16 in the attribute the weapon uses. Held one-handed, Specialized loses its effect."
+        "Hint": "A weapon with this modifier is wielded with both hands. One-handed only works with the switch in the Actions tab/inventory and only if the bearer has the attributes: with Heavy/Demanding/Draining (X) at least X + 25% of X (rounded up) in that attribute, otherwise at least 16 in the attribute the weapon uses. Held one-handed, Specialized loses its effect. Bows cannot be held one-handed."
       },
       "Deployable": {
         "Name": "Deployable",

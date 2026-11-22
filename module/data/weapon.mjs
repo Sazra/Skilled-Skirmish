@@ -258,7 +258,7 @@ export default class SKSKWeapon extends SKSKItemBase {
     // Flexible: the Model's diceFormula is the one-handed one, its
     // twoHandedDiceFormula (if set) the two-handed one.
     const flexibleTwoHanded = this.effectiveProperties.some(entry => entry.property === 'flexible')
-      && !this.heldOneHanded && this.resolvedModel?.twoHandedDiceFormula;
+      && (!this.heldOneHanded || this.weaponType === 'bow') && this.resolvedModel?.twoHandedDiceFormula;
     const baseDiceFormula = flexibleTwoHanded ? this.resolvedModel.twoHandedDiceFormula : this.resolvedModel?.diceFormula;
     const diceFormula = combineDiceFormulas(baseDiceFormula, this.resolvedAmmunitionModel?.diceFormula);
     this.formula = diceFormula ? `${diceFormula} + ${flatBonus}` : `${flatBonus}`;
