@@ -521,18 +521,28 @@ export function techniqueShowsEffectButton(item) {
 
 /**
  * Whether an "attackBonus" Technique is applicable to the given attack
- * context - see data/technique.mjs#applicableToWeapon/applicableToMartialArts/
- * applicableToSpell. Always true for any other category (only "attackBonus"
- * is ever restricted this way) or when no contextType was given.
+ * context - see data/technique.mjs#applicableToWeapon (with its weapon type
+ * selection and "only Infusion weapons") and applicableToSpell. Always true
+ * for any other category (only "attackBonus" is ever restricted this way) or
+ * when no contextType was given. A Martial Arts attack counts as the weapon
+ * type "martialArts" and always as an Infusion weapon.
  * @param {Item} item
  * @param {"weapon"|"martialArts"|"spell"|null} contextType
+ * @param {Item|null} [weapon]   The weapon item of a "weapon" attack.
  * @return {boolean}
  */
-function isTechniqueApplicableToContext(item, contextType) {
+function isTechniqueApplicableToContext(item, contextType, weapon = null) {
   if (item.system.category !== 'attackBonus' || !contextType) return true;
-  if (contextType === 'weapon') return item.system.applicableToWeapon;
-  if (contextType === 'martialArts') return item.system.applicableToMartialArts;
-  if (contextType === 'spell') return item.system.applicableToSpell;
+  const system = item.system;
+  if (contextType === 'spell') return system.applicableToSpell;
+  if (contextType === 'weapon' || contextType === 'martialArts') {
+    if (!system.applicableToWeapon) return false;
+    const weaponType = contextType === 'martialArts' ? 'martialArts' : (weapon?.system?.weaponType ?? null);
+    if (!system.applicableToAllWeaponTypes && !(weaponType && system.applicableWeaponTypes?.[weaponType])) return false;
+    const isInfusion = weaponType === 'martialArts'
+      || (weapon?.system?.effectiveProperties ?? []).some(entry => entry.property === 'infusion');
+    return !system.applicableInfusionOnly || isInfusion;
+  }
   return true;
 }
 
@@ -551,12 +561,14 @@ function isTechniqueApplicableToContext(item, contextType) {
  *   attack/cast is consuming it - only ever gates "attackBonus" Techniques
  *   (see data/technique.mjs#applicableToWeapon et al.); "effect" Techniques
  *   remain applicable to any attack/cast type regardless.
+ * @param {Item|null} [weapon]   The weapon item of a "weapon" attack (its type
+ *   and Infusion property are checked).
  * @return {Promise<{item: Item, styleAttackBonus: number, hitBonusAmount: number, bonusDamageMode: string|null, bonusDamageAmount: number, bonusDamageFormula: string, diceIncreaseMode: string|null, diceIncreaseAmount: number, styleDamageBonus: number, effectTarget: string|null, effectId: string|null, effectHasStatusEffects: boolean, effectSavingThrowEnabled: boolean}|null>}
  */
-export async function consumePrimedTechnique(actor, contextType = null) {
+export async function consumePrimedTechnique(actor, contextType = null, weapon = null) {
   const item = findPendingAttackSlotTechnique(actor);
   if (!item) return null;
-  if (!isTechniqueApplicableToContext(item, contextType)) return null;
+  if (!isTechniqueApplicableToContext(item, contextType, weapon)) return null;
 
   const bonuses = getActiveStyleBonuses(actor, item.system.combatStyle);
   const isAttackBonus = item.system.category === 'attackBonus';

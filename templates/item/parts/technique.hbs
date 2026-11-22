@@ -104,14 +104,33 @@
         {{localize 'SKSK.Technique.ApplicableToWeapon'}}
       </label>
       <label class="casting-method-option">
-        <input type="checkbox" name="system.applicableToMartialArts" {{checked system.applicableToMartialArts}} />
-        {{localize 'SKSK.Technique.ApplicableToMartialArts'}}
-      </label>
-      <label class="casting-method-option">
         <input type="checkbox" name="system.applicableToSpell" {{checked system.applicableToSpell}} />
         {{localize 'SKSK.Technique.ApplicableToSpell'}}
       </label>
     </div>
+    {{#if system.applicableToWeapon}}
+    <label class="resource-label" title="{{localize 'SKSK.Technique.WeaponTypesHint'}}">{{localize 'SKSK.Technique.WeaponTypes'}}</label>
+    <div class="casting-methods">
+      <label class="casting-method-option">
+        <input type="checkbox" name="system.applicableToAllWeaponTypes" {{checked system.applicableToAllWeaponTypes}} />
+        {{localize 'SKSK.Technique.AllWeaponTypes'}}
+      </label>
+      <label class="casting-method-option" title="{{localize 'SKSK.Technique.InfusionOnlyHint'}}">
+        <input type="checkbox" name="system.applicableInfusionOnly" {{checked system.applicableInfusionOnly}} />
+        {{localize 'SKSK.Technique.InfusionOnly'}}
+      </label>
+    </div>
+    {{#unless system.applicableToAllWeaponTypes}}
+    <div class="casting-methods">
+      {{#each techniqueWeaponTypes as |weaponType|}}
+      <label class="casting-method-option">
+        <input type="checkbox" name="system.applicableWeaponTypes.{{weaponType.key}}" {{checked weaponType.checked}} />
+        {{localize weaponType.label}}
+      </label>
+      {{/each}}
+    </div>
+    {{/unless}}
+    {{/if}}
   </div>
   {{/if}}
 

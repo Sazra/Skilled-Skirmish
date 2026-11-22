@@ -181,7 +181,7 @@ export async function rollWeaponItem(item) {
   // first - its styleAttackBonus (from any active same-Kampfstil stand)
   // applies to the attack roll below; its own attackBonus payload (if
   // any) applies to the damage roll further down.
-  const technique = actor ? await consumePrimedTechnique(actor, 'weapon') : null;
+  const technique = actor ? await consumePrimedTechnique(actor, 'weapon', item) : null;
   const techniqueEffect = getTechniqueEffectPayload(technique);
 
   let rolls = null;

@@ -861,6 +861,10 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       context.bonusDamageModeChoices = CONFIG.SKSK.bonusDamageModes;
       context.diceIncreaseModeChoices = CONFIG.SKSK.diceIncreaseModes;
       context.effectTargetChoices = CONFIG.SKSK.techniqueEffectTargets;
+      // Weapon types for "Weapon attacks" (Martial Arts included).
+      context.techniqueWeaponTypes = Object.entries(CONFIG.SKSK.skills.weapons).map(([key, def]) => ({
+        key, label: def.label, checked: !!item.system.applicableWeaponTypes?.[key],
+      }));
       context.hasCombatStyles = getCombatStyles().length > 0;
       context.isStand = item.system.category === 'stand';
       context.isAttackBonus = item.system.category === 'attackBonus';

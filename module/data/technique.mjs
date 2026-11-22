@@ -137,7 +137,18 @@ export default class SKSKTechnique extends SKSKItemBase {
     // Default true on all three so existing Techniques (authored before this
     // split existed) keep applying to every attack type, as before.
     schema.applicableToWeapon = new fields.BooleanField({ initial: true });
-    schema.applicableToMartialArts = new fields.BooleanField({ initial: true });
+    // With applicableToWeapon: which weapon types (CONFIG.SKSK.skills.weapons'
+    // keys, hardcoded here since static schema fields evaluate before the init
+    // hook - same as data/weapon.mjs#weaponType, Martial Arts included) the
+    // Technique may be used with - all of them, or only the checked ones.
+    schema.applicableToAllWeaponTypes = new fields.BooleanField({ initial: true });
+    schema.applicableWeaponTypes = new fields.SchemaField(Object.fromEntries(
+      ["axe", "bow", "bluntWeapon", "dagger", "firearms", "martialArts", "polearms", "sword"]
+        .map(key => [key, new fields.BooleanField({ initial: false })])
+    ));
+    // With applicableToWeapon: only weapons with the Infusion property (Martial
+    // Arts attacks always count as one).
+    schema.applicableInfusionOnly = new fields.BooleanField({ initial: false });
     schema.applicableToSpell = new fields.BooleanField({ initial: true });
 
     // Only meaningful for category "effect" - who effectId/effectStatusEffects
@@ -231,6 +242,25 @@ export default class SKSKTechnique extends SKSKItemBase {
    */
   static migrateData(source) {
     if (source.category === 'bonusDamage') source.category = 'attackBonus';
+    // The separate "Martial Arts attacks" checkbox moved into the weapon type
+    // selection of "Weapon attacks".
+    if ('applicableToMartialArts' in source) {
+      const weapon = source.applicableToWeapon ?? true;
+      const martialArts = source.applicableToMartialArts;
+      if (source.applicableWeaponTypes === undefined && source.applicableToAllWeaponTypes === undefined) {
+        if (weapon && martialArts) {
+          source.applicableToAllWeaponTypes = true;
+        } else {
+          source.applicableToAllWeaponTypes = false;
+          source.applicableToWeapon = weapon || martialArts;
+          source.applicableWeaponTypes = Object.fromEntries(
+            ["axe", "bow", "bluntWeapon", "dagger", "firearms", "polearms", "sword"].map(key => [key, weapon])
+          );
+          source.applicableWeaponTypes.martialArts = !!martialArts;
+        }
+      }
+      delete source.applicableToMartialArts;
+    }
     return super.migrateData(source);
   }
 }
