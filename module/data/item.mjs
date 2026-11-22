@@ -22,6 +22,8 @@ export default class SKSKItem extends SKSKItemBase {
     schema.equippable = new fields.BooleanField({ initial: false });
     schema.equipped = new fields.BooleanField({ initial: false });
     schema.enchanted = new fields.BooleanField({ initial: false });
+    // Freeform GM-only notes (see data/class.mjs#gmNotes for the same pattern).
+    schema.gmNotes = new fields.StringField({ required: true, blank: true });
     schema.consumable = new fields.BooleanField({ initial: false });
 
     // Whether this item tracks charges at all - value/max are only shown

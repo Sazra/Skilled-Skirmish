@@ -185,6 +185,7 @@
       "Equipped": "Equipped",
       "EquippedAbbr": "Eq.",
       "Enchanted": "Enchanted",
+      "GmNotes": "GM Notes",
       "HeldOneHanded": "Held one-handed",
       "HeldOneHandedHint": "A two-handed weapon is normally held with both hands, a flexible one can be switched freely. Held one-handed, Specialized loses its effect; a flexible weapon then uses its Model's one-handed roll formula.",
       "HeldOneHandedNow": "Held one-handed (click to switch)",

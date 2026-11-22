@@ -15,6 +15,8 @@ export default class SKSKArmor extends SKSKItemBase {
     // Armor is always equippable, unlike the generic Item type.
     schema.equipped = new fields.BooleanField({ initial: false });
     schema.enchanted = new fields.BooleanField({ initial: false });
+    // Freeform GM-only notes (see data/class.mjs#gmNotes for the same pattern).
+    schema.gmNotes = new fields.StringField({ required: true, blank: true });
 
     // Zero or more mana-cost discounts for a specific magic school (of any
     // spellType) - e.g. an enchanted piece of armor granting a flat -5

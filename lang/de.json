@@ -185,6 +185,7 @@
             "Equipped": "Ausgerüstet",
             "EquippedAbbr": "Ausg.",
             "Enchanted": "Verzaubert",
+            "GmNotes": "GM-Notizen",
             "HeldOneHanded": "Einhändig geführt",
             "HeldOneHandedHint": "Eine zweihändige Waffe wird normalerweise mit beiden Händen geführt, eine flexible kann frei umgeschaltet werden. Einhändig geführt verliert Spezialisiert seine Wirkung; eine flexible Waffe nutzt dann die einhändige Wurfformel ihres Modells.",
             "HeldOneHandedNow": "Einhändig geführt (Klicken zum Wechseln)",

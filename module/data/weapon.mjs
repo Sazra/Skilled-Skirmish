@@ -22,6 +22,8 @@ export default class SKSKWeapon extends SKSKItemBase {
     // Weapons are always equippable, unlike the generic Item type.
     schema.equipped = new fields.BooleanField({ initial: false });
     schema.enchanted = new fields.BooleanField({ initial: false });
+    // Freeform GM-only notes (see data/class.mjs#gmNotes for the same pattern).
+    schema.gmNotes = new fields.StringField({ required: true, blank: true });
     // Switch of a weapon with the Two-Handed or Flexible property: held
     // one-handed (true) or with both hands (false). Two-Handed: one-handed
     // only counts if the wielder's attributes allow it (helpers/
