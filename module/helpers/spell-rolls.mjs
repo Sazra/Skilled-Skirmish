@@ -1844,3 +1844,25 @@ export async function applySpellEffectFromChat(itemUuid, group, extraCostTier = 
   ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));
   return ChatMessage.create(messageData);
 }
+
+/**
+ * Cast a spell from a click on a sheet/window: a plain click casts it with the
+ * standard options, Shift+click first asks for the cast options (Überladen/
+ * extra Mana/alternative resource, see chooseSpellCastOptions).
+ * @param {Actor} actor
+ * @param {Item} item
+ * @param {boolean} [shiftKey=false]
+ * @return {Promise<*>}
+ */
+export async function castSpellFromSheet(actor, item, shiftKey = false) {
+  if (shiftKey) {
+    const pendingSpell = actor.system.pendingSpell;
+    if ((pendingSpell?.apCost ?? 0) > 0 || (pendingSpell?.roundsRemaining ?? 0) > 0) {
+      return ui.notifications.warn(game.i18n.localize('SKSK.Spell.Roll.AlreadyConcentrating'));
+    }
+    const choice = await chooseSpellCastOptions(actor, item);
+    if (!choice) return;
+    return item.roll(choice.overchargeCount, choice.extraCostTier, choice.altResourceIndex, choice.extraCostCounts, choice.variableMana, choice.castCount);
+  }
+  return item.roll();
+}

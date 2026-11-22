@@ -99,6 +99,8 @@ export default class SKSKSpell extends SKSKItemBase {
     // since Duration below is freeform text, not a tracked countdown, this
     // transition isn't automatic.
     schema.sustaining = new fields.BooleanField({ initial: false });
+    // Favorite: listed in the Actions window (apps/actions-dialog.mjs) for quick casting.
+    schema.favorite = new fields.BooleanField({ initial: false });
     // min 0 (not 1): a spell that also has its own rpCost set below may
     // have this dropped all the way to 0, signaling it has no real AP
     // payment path of its own at all - it's meant to only ever actually be

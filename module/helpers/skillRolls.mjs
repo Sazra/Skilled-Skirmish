@@ -260,3 +260,30 @@ export async function rollSkillCheck(actor, skillKey, chosenAttributes, variant 
     actor, `[skill] ${label}`, roll, offTurn ? 0 : apCost, extraHTML, criticalType, offTurn ? rpCost : 0, wrapRerollIcons(rerollIcons)
   );
 }
+
+/**
+ * Roll a skill's check from a click on a sheet/window: asks for the variant
+ * (some skills), then - with more than one possible attribute - the attribute
+ * and roll mode together; otherwise just the mode (see rollSkillCheck).
+ * Shift+click excludes Spezial-Boni from this roll's attribute modifier(s).
+ * @param {Actor} actor
+ * @param {string} skillKey
+ * @param {boolean} [ignoreSpecial=false]
+ * @return {Promise<ChatMessage|void>}
+ */
+export async function rollSkillFromSheet(actor, skillKey, ignoreSpecial = false) {
+  const def = getSkillCheckDefinition(skillKey);
+  if (!def) return;
+
+  const { chosen, variant } = await chooseSkillRollVariant(skillKey, def);
+  if (!chosen) return;
+
+  const attributes = def.attributes;
+  if (attributes.length === 1) {
+    return rollSkillCheck(actor, skillKey, attributes, variant, ignoreSpecial);
+  }
+
+  const choice = await chooseSkillRollAttributeAndMode(skillKey, def);
+  if (!choice) return;
+  return rollSkillCheck(actor, skillKey, choice.attributes, variant, ignoreSpecial, choice.mode);
+}

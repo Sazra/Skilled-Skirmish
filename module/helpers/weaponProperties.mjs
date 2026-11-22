@@ -344,3 +344,40 @@ export function isHeldOneHanded(actor, system) {
   if (!system?.heldOneHanded || !hasHandSwitch(system)) return false;
   return checkOneHandedAllowed(actor, system).allowed;
 }
+
+/**
+ * For a weapon with the Two-Handed/Flexible property: what a sheet/dialog needs
+ * to show its one-handed/two-handed switch. Sets hasHandSwitch, heldOneHandedNow
+ * and handSwitchTitle directly on the weapon (a throwaway context object).
+ * @param {Actor} actor
+ * @param {Item} weapon
+ */
+export function addHandSwitchInfo(actor, weapon) {
+  weapon.hasHandSwitch = hasHandSwitch(weapon.system);
+  if (!weapon.hasHandSwitch) return;
+  weapon.heldOneHandedNow = isHeldOneHanded(actor, weapon.system);
+  const check = checkOneHandedAllowed(actor, weapon.system);
+  weapon.handSwitchTitle = game.i18n.localize(weapon.heldOneHandedNow ? 'SKSK.Items.HeldOneHandedNow' : 'SKSK.Items.HeldTwoHandedNow')
+    + (check.allowed ? '' : ` - ${game.i18n.format('SKSK.WeaponProperty.OneHandedNeeds', { needs: check.needs })}`);
+}
+
+/**
+ * Switch a Two-Handed/Flexible weapon between one-handed and two-handed. Going
+ * one-handed with a Two-Handed weapon needs the attributes for it - the check
+ * is hard (warns and does nothing otherwise).
+ * @param {Actor} actor
+ * @param {Item} item
+ * @return {Promise<void>}
+ */
+export async function toggleHeldOneHanded(actor, item) {
+  if (!item || !hasHandSwitch(item.system)) return;
+  const next = !item.system.heldOneHanded;
+  if (next) {
+    const check = checkOneHandedAllowed(actor, item.system);
+    if (!check.allowed) {
+      ui.notifications.warn(game.i18n.format('SKSK.WeaponProperty.OneHandedNeeds', { needs: check.needs }));
+      return;
+    }
+  }
+  await item.update({ 'system.heldOneHanded': next });
+}

@@ -23,10 +23,9 @@
       </div>
       <div class="item-description" title="{{ability.description}}">{{ability.description}}</div>
       <div class="item-controls">
+        {{!-- Activating lives in the Actions window (apps/actions-dialog.mjs); only the status stays here. --}}
         {{#if (or (eq ability.type "active") (eq ability.type "once"))}}
         <span class="ap-cost-label">{{ability.statusLabel}}</span>
-        <button type="button" data-action="toggleClassSpeciesAbility" data-item-id="{{ability.sourceId}}"
-          data-index="{{ability.index}}">{{localize ability.actionLabel}}</button>
         {{/if}}
         <a class="item-control item-edit" data-action="editItem" title="Open {{ability.sourceLabel}}">
           <i class="fas fa-edit"></i>
@@ -50,9 +49,6 @@
       <div class="item-controls">
         {{#if (or (eq talent.system.abilityType "active") (eq talent.system.abilityType "once"))}}
         <span class="ap-cost-label">{{talent.abilityStatusLabel}}</span>
-        <button type="button" data-action="toggleTalentAbility" data-item-id="{{talent._id}}">
-          {{localize talent.abilityActionLabel}}
-        </button>
         {{/if}}
         <a class="item-control item-edit" data-action="editItem" title="{{localize 'DOCUMENT.Update' type='Talent'}}">
           <i class="fas fa-edit"></i>

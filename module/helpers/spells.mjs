@@ -1038,3 +1038,42 @@ export function replaceElementPlaceholders(text, element) {
   const label = game.i18n.localize(CONFIG.SKSK.damageTypes[element] ?? element);
   return text.replaceAll('{elementLabel}', label).replaceAll('{element}', element);
 }
+
+/**
+ * Attach what a spell list needs to show a spell directly on its (throwaway
+ * context) item: the real mana/AP cost, whether the actor can cast it at all,
+ * the cost colouring flags, whether it has a sustaining toggle and the short
+ * range text. Used by the sheet's Spells tab and the Actions window's favorites.
+ * @param {Item} item
+ * @param {Actor} actor
+ */
+export function decorateSpellForDisplay(item, actor) {
+  const { cost, increased } = computeSpellManaCost(item.system, actor);
+  item.effectiveManaCost = item.system.manaCostVariable ? '?' : cost;
+  item.manaCostIncreased = increased;
+  item.effectiveApCost = (item.system.apCostVariable && item.system.apCostUnit === 'ap')
+    ? `${computeSpellApCost(item.system, actor, 0, item.system.apCostMin ?? 0)}+`
+    : computeSpellApCost(item.system, actor);
+  if (item.system.spellType === 'simple' || item.system.spellType === 'advanced') {
+    const { castable, missingLabel } = checkSimpleOrAdvancedSpellPrerequisite(item.system, actor);
+    item.castable = castable;
+    item.missingLabel = missingLabel;
+  } else if (item.system.spellType === 'combined') {
+    const { castable, missingLabel } = checkCombinedSpellPrerequisite(item.system, actor);
+    item.castable = castable;
+    item.missingLabel = missingLabel;
+  } else {
+    // Systemless spells have no prerequisite at all.
+    item.castable = true;
+  }
+  // Whether the spell can be cast without the mana shortfall surcharge - mana
+  // cost turns blue and AP cost green in this case; mana cost turns red
+  // instead whenever the surcharge does apply (manaCostIncreased).
+  item.costGood = item.castable && !item.manaCostIncreased;
+  // Only a spell with a real ongoing cost to start/stop shows a sustaining toggle.
+  item.canSustain = !!(item.system.manaCostPerRound || item.system.upkeep || item.system.upkeepVariable
+    || (item.system.manaCostVariable && item.system.upkeepPerMana)
+    || item.system.extraManaCosts?.some(tier => tier.upkeepBonus));
+  // The ranges as short text ("30m/6m", "0,5m³") for the spell list.
+  item.rangeSummary = (item.system.ranges ?? []).map(range => formatRangeShort(range)).join('/');
+}

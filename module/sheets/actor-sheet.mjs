@@ -8,7 +8,8 @@ import {
   evaluateSkillFormula, computeSkillBonusTotals, getActorSkillLevel, isActorSkillUnlocked, getSkillStacks,
   getNextLevelPoints,
 } from '../helpers/skills.mjs';
-import { getSkillCheckDefinition, rollSkillCheck, chooseSkillRollVariant, chooseSkillRollAttributeAndMode } from '../helpers/skillRolls.mjs';
+import { rollSkillFromSheet } from '../helpers/skillRolls.mjs';
+import { getAbilityStatus } from '../helpers/abilityList.mjs';
 import {
   getVisibleAttributeBonusDropdowns, getResolvedAttributeBonuses, chooseAttributeBonus,
   resetAttributeBonusChoice, resetAllAttributeBonusChoices, applyPendingAutoGrants,
@@ -19,11 +20,7 @@ import {
   computeSpecialAttributeBonus, computeModifierAttributeBonus,
 } from '../helpers/attributes.mjs';
 import {
-  checkCombinedSpellPrerequisite,
-  checkSimpleOrAdvancedSpellPrerequisite,
-  computeSpellManaCost,
-  computeSpellApCost,
-  formatRangeShort,
+  decorateSpellForDisplay,
 } from '../helpers/spells.mjs';
 import { computeMovementSpeeds, getActorSizeCategory } from '../helpers/movement.mjs';
 import { computeCarriedWeight, computeMaxCarryWeight } from '../helpers/inventory.mjs';
@@ -36,14 +33,15 @@ import { daysToBreakdown, applyPendingLongevityGrowth, adjustLongevity, resetLon
 import { getArmorClassBreakdown, getMagicResistanceBreakdown, computeArmorPieceBonus } from '../helpers/defense.mjs';
 import { isDurabilityEnabled } from '../helpers/materials.mjs';
 import { prepareElementalChargeSlots, consumeElementalCharge } from '../helpers/elementalCharges.mjs';
-import { computeWeaponAttackBonus, computeWeaponRangeLabel } from '../helpers/attackRolls.mjs';
-import { hasHandSwitch, isHeldOneHanded, checkOneHandedAllowed } from '../helpers/weaponProperties.mjs';
+import { computeWeaponAttackBonus } from '../helpers/attackRolls.mjs';
+import { addHandSwitchInfo, toggleHeldOneHanded } from '../helpers/weaponProperties.mjs';
+import { getToolbarAvailability } from '../helpers/toolbar.mjs';
 import { renderBreakdownHtml } from '../helpers/tooltips.mjs';
 import {
   rollMartialArtsAttack, rollRegeneration, rollMeditation, promptMultiRoll, rollAdrenalin, useMove, useDodge, useItem, useShapeshifting,
   postActionChatCard, hasEnoughActionPoints, hasEnoughReactionPoints, spendActionPoints, spendReactionPoints,
 } from '../helpers/actions.mjs';
-import { chooseSpellCastOptions, setSpellSustaining } from '../helpers/spell-rolls.mjs';
+import { castSpellFromSheet, setSpellSustaining } from '../helpers/spell-rolls.mjs';
 import { captureScrollPositions, restoreScrollPositions } from '../helpers/scrollPreservation.mjs';
 import { SKSKRestDialog } from '../apps/rest-dialog.mjs';
 import { SKSKTrainingDialog } from '../apps/training-dialog.mjs';
@@ -64,6 +62,7 @@ import { SKSKMassKillDialog } from '../apps/mass-kill-dialog.mjs';
 import { SKSKMartialArtsAttacksDialog } from '../apps/martial-arts-attacks-dialog.mjs';
 import { SKSKCustomResourceManaAlternativeDialog } from '../apps/custom-resource-mana-alternative-dialog.mjs';
 import { SKSKTechniqueDialog } from '../apps/technique-dialog.mjs';
+import { SKSKActionsDialog } from '../apps/actions-dialog.mjs';
 import { SKSKManualDamageDialog } from '../apps/manual-damage-dialog.mjs';
 import {
   getSoulPathItem, isPathAbilityVisible, getPathAbilityStatusLabel, getPathAbilityActionLabel,
@@ -71,7 +70,7 @@ import {
   attemptBreakthrough, togglePathAbility,
 } from '../helpers/soulPathRolls.mjs';
 import {
-  getAbilityStatusLabel, getAbilityActionLabel, toggleClassSpeciesAbility, toggleTalentAbility, useOnceAbility,
+  getAbilityActionLabel, useOnceAbility,
 } from '../helpers/abilityRolls.mjs';
 import {
   readAbility, listChargeAbilities, getChargeState, changeCharges, describeRecovery,
@@ -143,6 +142,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       createItem: SKSKActorSheet.#createItem,
       toggleCreateItemMenu: SKSKActorSheet.#toggleCreateItemMenu,
       toggleSpellSustaining: SKSKActorSheet.#toggleSpellSustaining,
+      toggleSpellFavorite: SKSKActorSheet.#toggleSpellFavorite,
       consumeElementalCharge: SKSKActorSheet.#consumeElementalCharge,
       deleteItem: SKSKActorSheet.#deleteItem,
       create: SKSKActorSheet.#onEffectAction,
@@ -168,6 +168,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       useItem: SKSKActorSheet.#useItem,
       useShapeshifting: SKSKActorSheet.#useShapeshifting,
       toggleHeldOneHanded: SKSKActorSheet.#toggleHeldOneHanded,
+      openActionsDialog: SKSKActorSheet.#openActionsDialog,
       openRestDialog: SKSKActorSheet.#openRestDialog,
       openTrainingDialog: SKSKActorSheet.#openTrainingDialog,
       openMassKillDialog: SKSKActorSheet.#openMassKillDialog,
@@ -198,8 +199,6 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       configureToken: SKSKActorSheet.#configureToken,
       attemptBreakthrough: SKSKActorSheet.#attemptBreakthrough,
       togglePathAbility: SKSKActorSheet.#togglePathAbility,
-      toggleClassSpeciesAbility: SKSKActorSheet.#toggleClassSpeciesAbility,
-      toggleTalentAbility: SKSKActorSheet.#toggleTalentAbility,
       useAbilityCharge: SKSKActorSheet.#useAbilityCharge,
       adjustAbilityCharge: SKSKActorSheet.#adjustAbilityCharge,
       openPathAbilityEffect: SKSKActorSheet.#openPathAbilityEffect,
@@ -247,13 +246,13 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       initial: "sammlung",
     },
     // Sub-tabs shown inside the General tab - Character (formerly its own
-    // top-level tab) and Actions (new) alongside the General tab's
-    // pre-existing content, now named Overview.
+    // top-level tab) alongside the General tab's pre-existing content, now
+    // named Overview. (The Actions have their own window, opened from the
+    // TopBar - see apps/actions-dialog.mjs.)
     generalSections: {
       tabs: [
         { id: "overview", label: "SKSK.General.Overview" },
         { id: "character", label: "SKSK.SheetLabels.Character" },
-        { id: "actions", label: "SKSK.SheetLabels.Actions" },
       ],
       initial: "overview",
     },
@@ -503,6 +502,18 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     // action, #onRoll below), just icon-only.
     const bar = document.createElement('div');
     bar.classList.add('minimized-attribute-bar');
+    // First button: open the Actions window (apps/actions-dialog.mjs), also usable while minimized.
+    {
+      const actions = document.createElement('a');
+      actions.classList.add('minimized-attribute-button', 'minimized-actions-button');
+      actions.dataset.action = 'openActionsDialog';
+      actions.dataset.tooltip = game.i18n.localize('SKSK.SheetLabels.Actions');
+      actions.setAttribute('aria-label', game.i18n.localize('SKSK.SheetLabels.Actions'));
+      const actionsIcon = document.createElement('i');
+      actionsIcon.classList.add('fas', 'fa-bolt');
+      actions.appendChild(actionsIcon);
+      bar.appendChild(actions);
+    }
     for (const [key, attribute] of Object.entries(this.actor.system.attributes ?? {})) {
       const button = document.createElement('a');
       button.classList.add('minimized-attribute-button');
@@ -613,6 +624,8 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     context.tabs = this._prepareTabs('primary');
     // Header icon toolbar's own collapsed/expanded state - see #toolbarCollapsed.
     context.toolbarCollapsed = this.#toolbarCollapsed;
+    // Which TopBar buttons can be used at all - the others are hidden (helpers/toolbar.mjs).
+    context.toolbar = getToolbarAvailability(actor);
     // Elementarladungen Bottom-Bar widget - see helpers/elementalCharges.mjs.
     context.elementalChargesEnabled = actor.system.elementalChargesEnabled;
     context.elementalChargeSlots = prepareElementalChargeSlots(actor);
@@ -633,26 +646,9 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     if (actor.type === 'npc') delete characterSections.longevity;
     context.characterSectionTabs = Object.values(characterSections);
     context.genderChoices = CONFIG.SKSK.genders;
-    // Actions tab's Move dropdown - see helpers/actions.mjs.
-    context.movementTypeChoices = CONFIG.SKSK.movementTypes;
     context.genericRollModeChoices = CONFIG.SKSK.genericRollModes;
     // GM tab's attribute-bonus reset list - see helpers/attributeBonuses.mjs.
     context.resolvedAttributeBonuses = getResolvedAttributeBonuses(actor);
-    // Actions tab's Weapons/Usable Items containers - a "usable" Item is
-    // one that's either Consumable, or Equippable+Equipped+Enchanted (see
-    // data/item.mjs#prepareDerivedData's own isUsable) - see helpers/
-    // actions.mjs#rollItemUsage.
-    context.equippedWeapons = actor.items.filter(i => i.type === 'weapon' && i.system.equipped);
-    // Range/reach parenthetical shown next to each weapon's own name - see
-    // helpers/attackRolls.mjs#computeWeaponRangeLabel.
-    context.equippedWeapons.forEach(w => {
-      w.rangeLabel = computeWeaponRangeLabel(w, actor);
-      this.#addHandSwitchInfo(w);
-    });
-    context.usableItems = actor.items.filter(i => i.type === 'item' && i.system.isUsable);
-    // Formwandelnd: equipped weapons/armor that can change their form (Actions tab).
-    context.shapeshiftItems = actor.items.filter(i => (i.type === 'weapon' || i.type === 'armor')
-      && i.system.equipped && (i.system.effectiveProperties ?? []).some(p => p.property === 'shapeshifting'));
     context.skillTabs = Object.values(this._prepareTabs('skillCategories'));
     context.spellTypeTabs = Object.values(this._prepareTabs('spellTypes'));
     context.spellSimpleSchoolTabs = Object.values(this._prepareTabs('spellSimpleSchools'));
@@ -909,7 +905,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
           // index addresses back into source.system.abilities).
           index,
           type: ability.type,
-          statusLabel: this.#abilityStatus(source, index, ability),
+          statusLabel: getAbilityStatus(this.actor, source, index, ability),
           actionLabel: getAbilityActionLabel(ability),
         });
       });
@@ -930,7 +926,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
           requiredLevel: 0,
           index,
           type: ability.type,
-          statusLabel: this.#abilityStatus(source, index, ability),
+          statusLabel: getAbilityStatus(this.actor, source, index, ability),
           actionLabel: getAbilityActionLabel(ability),
         });
       });
@@ -961,7 +957,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
         i.typeIcon = CONFIG.SKSK.weaponTypeIcons[i.system.weaponType] ?? CONFIG.SKSK.itemTypeIcon;
         i.typeLabel = game.i18n.localize(CONFIG.SKSK.skills.weapons[i.system.weaponType]?.label ?? '');
         i.attackBonus = computeWeaponAttackBonus(this.actor, i);
-        this.#addHandSwitchInfo(i);
+        addHandSwitchInfo(this.actor, i);
         gear.push(i);
       }
       // Append to features.
@@ -976,7 +972,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
         i.typeLabel = game.i18n.localize(CONFIG.SKSK.talentTypes[i.system.talentType]).replace('Level ', 'Lvl ');
         // Activation state (only meaningful for abilityType "active" - see
         // helpers/abilityRolls.mjs#toggleTalentAbility).
-        i.abilityStatusLabel = this.#abilityStatus(this.actor.items.get(i._id), null, {
+        i.abilityStatusLabel = getAbilityStatus(this.actor, this.actor.items.get(i._id), null, {
           type: i.system.abilityType, active: i.system.abilityActive, roundsRemaining: i.system.abilityRoundsRemaining,
         });
         i.abilityActionLabel = getAbilityActionLabel({ type: i.system.abilityType, active: i.system.abilityActive });
@@ -1041,39 +1037,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     // have no prerequisite and are always castable) - both attached
     // directly on the item so the Spells tab can gray out uncastable
     // spells and show their real (possibly penalized/discounted) cost.
-    for (const item of spells) {
-      const { cost, increased } = computeSpellManaCost(item.system, actor);
-      item.effectiveManaCost = item.system.manaCostVariable ? '?' : cost;
-      item.manaCostIncreased = increased;
-      item.effectiveApCost = (item.system.apCostVariable && item.system.apCostUnit === 'ap')
-        ? `${computeSpellApCost(item.system, actor, 0, item.system.apCostMin ?? 0)}+`
-        : computeSpellApCost(item.system, actor);
-      if (item.system.spellType === 'simple' || item.system.spellType === 'advanced') {
-        const { castable, missingLabel } = checkSimpleOrAdvancedSpellPrerequisite(item.system, actor);
-        item.castable = castable;
-        item.missingLabel = missingLabel;
-      } else if (item.system.spellType === 'combined') {
-        const { castable, missingLabel } = checkCombinedSpellPrerequisite(item.system, actor);
-        item.castable = castable;
-        item.missingLabel = missingLabel;
-      } else {
-        // Systemless spells have no prerequisite at all.
-        item.castable = true;
-      }
-      // Whether the spell can be cast without the mana shortfall surcharge
-      // - mana cost (icon+number) turns blue and AP cost (icon+number)
-      // turns green in this case; mana cost turns red instead whenever the
-      // surcharge does apply (see manaCostIncreased above).
-      item.costGood = item.castable && !item.manaCostIncreased;
-      // Gates the Spells tab's own quick sustaining toggle (see
-      // #toggleSpellSustaining/actor-spells.hbs) - only a spell with a real
-      // ongoing cost to actually start/stop shows it at all.
-      item.canSustain = !!(item.system.manaCostPerRound || item.system.upkeep || item.system.upkeepVariable
-        || (item.system.manaCostVariable && item.system.upkeepPerMana)
-        || item.system.extraManaCosts?.some(tier => tier.upkeepBonus));
-      // The ranges as short text ("30m/6m", "0,5m³") for the spell list.
-      item.rangeSummary = (item.system.ranges ?? []).map(range => formatRangeShort(range)).join('/');
-    }
+    for (const item of spells) decorateSpellForDisplay(item, actor);
 
     const sortSpells = (list) => list.slice().sort((a, b) => {
       const levelDiff = (a.system.spellLevel ?? 1) - (b.system.spellLevel ?? 1);
@@ -1267,17 +1231,6 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     context.favoriteSkills = Object.values(context.skillCategories ?? {})
       .flat()
       .filter(row => row.favorite);
-
-    // Actions tab: Adrenalin/Inspiration rows are hidden individually
-    // (each still paired in the same grid row otherwise) until their own
-    // skill reaches level 1 - mirrors computeMaxAdrenalinCharges/
-    // computeMaxInspirationCharges's own level-1 gate (helpers/
-    // generalResources.mjs), checked directly here rather than inferred
-    // from the resulting max charges (a very low attribute modifier could
-    // theoretically zero that out even at level 1).
-    context.hasAdrenalin = getActorSkillLevel(actor, 'adrenalin') >= 1;
-    context.hasInspiration = getActorSkillLevel(actor, 'inspiration') >= 1;
-    context.hasAdrenalinOrInspiration = context.hasAdrenalin || context.hasInspiration;
 
     context.generalResources = GENERAL_RESOURCES
       .filter(r => !r.requiredSkill || getActorSkillLevel(actor, r.requiredSkill) >= 1)
@@ -2042,7 +1995,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
   /**
    * Use the Move action - either for the movement type currently chosen in
    * the Actions tab's own selector (clicked element carries no
-   * movementType of its own, see general-actions.hbs), or, clicked
+   * movementType of its own, see apps/actions-dialog.hbs), or, clicked
    * directly from one of the General tab's own Movement Speeds labels
    * (general-overview.hbs), for that entry's own type outright - both
    * paths share the exact same helpers/actions.mjs#useMove mechanic (first
@@ -2087,40 +2040,23 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
   }
 
   /**
-   * For a weapon with the Two-Handed/Flexible property: what the sheet needs
-   * to show its one-handed/two-handed switch (see helpers/weaponProperties.mjs).
-   * @param {Item} weapon
-   * @private
-   */
-  #addHandSwitchInfo(weapon) {
-    weapon.hasHandSwitch = hasHandSwitch(weapon.system);
-    if (!weapon.hasHandSwitch) return;
-    weapon.heldOneHandedNow = isHeldOneHanded(this.actor, weapon.system);
-    const check = checkOneHandedAllowed(this.actor, weapon.system);
-    weapon.handSwitchTitle = game.i18n.localize(weapon.heldOneHandedNow ? 'SKSK.Items.HeldOneHandedNow' : 'SKSK.Items.HeldTwoHandedNow')
-      + (check.allowed ? '' : ` - ${game.i18n.format('SKSK.WeaponProperty.OneHandedNeeds', { needs: check.needs })}`);
-  }
-
-  /**
    * Switch a Two-Handed/Flexible weapon between one-handed and two-handed
-   * (Actions tab and Items tab). Going one-handed with a Two-Handed weapon
-   * needs the attributes for it - the check is hard.
+   * (Items tab and Actions window) - see helpers/weaponProperties.mjs#
+   * toggleHeldOneHanded.
    * @param {PointerEvent} event
    * @param {HTMLElement} target   The clicked switch, carrying data-item-id.
    * @private
    */
   static async #toggleHeldOneHanded(event, target) {
-    const item = this.actor.items.get(target.dataset.itemId);
-    if (!item || !hasHandSwitch(item.system)) return;
-    const next = !item.system.heldOneHanded;
-    if (next) {
-      const check = checkOneHandedAllowed(this.actor, item.system);
-      if (!check.allowed) {
-        ui.notifications.warn(game.i18n.format('SKSK.WeaponProperty.OneHandedNeeds', { needs: check.needs }));
-        return;
-      }
-    }
-    await item.update({ 'system.heldOneHanded': next });
+    await toggleHeldOneHanded(this.actor, this.actor.items.get(target.dataset.itemId));
+  }
+
+  /**
+   * Open the "Aktionen" (Actions) window (apps/actions-dialog.mjs) from the
+   * TopBar's first button.
+   */
+  static #openActionsDialog(event, target) {
+    SKSKActionsDialog.open(this.actor);
   }
 
   /**
@@ -2262,27 +2198,14 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
   }
 
   /**
-   * A Class/Species ability's own Activate/Deactivate button - see
-   * helpers/abilityRolls.mjs#toggleClassSpeciesAbility.
+   * The star on a spell row of the Spells tab: marks/unmarks the spell as a
+   * favorite, which lists it in the Actions window (apps/actions-dialog.mjs).
    * @param {PointerEvent} event
-   * @param {HTMLElement} target   Carries data-item-id and data-index.
+   * @param {HTMLElement} target   Inside the spell's own .item row.
    */
-  static async #toggleClassSpeciesAbility(event, target) {
-    const item = this.actor.items.get(target.dataset.itemId);
-    if (!item) return;
-    await toggleClassSpeciesAbility(this.actor, item, Number(target.dataset.index));
-  }
-
-  /**
-   * A Talent's own single-ability Activate/Deactivate button - see
-   * helpers/abilityRolls.mjs#toggleTalentAbility.
-   * @param {PointerEvent} event
-   * @param {HTMLElement} target   Carries data-item-id.
-   */
-  static async #toggleTalentAbility(event, target) {
-    const item = this.actor.items.get(target.dataset.itemId);
-    if (!item) return;
-    await toggleTalentAbility(this.actor, item);
+  static async #toggleSpellFavorite(event, target) {
+    const item = this.actor.items.get(target.closest('.item')?.dataset.itemId);
+    if (item) await item.update({ 'system.favorite': !item.system.favorite });
   }
 
   /**
@@ -2309,22 +2232,6 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     const ability = readAbility(item, index);
     if (!ability) return;
     await changeCharges(this.actor, ability, Number(target.dataset.delta) || 0);
-  }
-
-  /**
-   * The status text of an ability row: for a "once" ability its charges and
-   * cooldown, otherwise the usual activation status.
-   * @param {Item} item   The Class/Species/Talent holding the ability.
-   * @param {number|null} index
-   * @param {{type: string, active: boolean, roundsRemaining: number}} entry
-   * @return {string}
-   */
-  #abilityStatus(item, index, entry) {
-    if (entry.type !== 'once') return getAbilityStatusLabel(entry);
-    const ability = item ? readAbility(item, index) : null;
-    const state = ability ? getChargeState(this.actor, ability) : { has: false };
-    const charges = state.has ? game.i18n.format('SKSK.Ability.Charges.Remaining', { current: state.current, max: state.max }) : '';
-    return [charges, getAbilityStatusLabel(entry)].filter(Boolean).join(' - ');
   }
 
   /**
@@ -2623,15 +2530,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
         const item = this.actor.items.get(itemId);
         if (!item) return;
 
-        if (event.shiftKey && item.type === 'spell') {
-          const pendingSpell = this.actor.system.pendingSpell;
-          if ((pendingSpell?.apCost ?? 0) > 0 || (pendingSpell?.roundsRemaining ?? 0) > 0) {
-            return ui.notifications.warn(game.i18n.localize('SKSK.Spell.Roll.AlreadyConcentrating'));
-          }
-          const choice = await chooseSpellCastOptions(this.actor, item);
-          if (!choice) return;
-          return item.roll(choice.overchargeCount, choice.extraCostTier, choice.altResourceIndex, choice.extraCostCounts, choice.variableMana, choice.castCount);
-        }
+        if (item.type === 'spell') return castSpellFromSheet(this.actor, item, event.shiftKey);
 
         return item.roll();
       }
@@ -2732,25 +2631,9 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
    */
   static async #rollSkill(event, target) {
     event.preventDefault();
-    const skillKey = target.dataset.skill;
-    const def = getSkillCheckDefinition(skillKey);
-    if (!def) return;
-
     // Shift+click excludes Spezial-Boni from this roll's attribute
     // modifier(s) - see helpers/skillRolls.mjs#rollSkillCheck.
-    const ignoreSpecial = event.shiftKey;
-
-    const { chosen, variant } = await chooseSkillRollVariant(skillKey, def);
-    if (!chosen) return;
-
-    const attributes = def.attributes;
-    if (attributes.length === 1) {
-      return rollSkillCheck(this.actor, skillKey, attributes, variant, ignoreSpecial);
-    }
-
-    const choice = await chooseSkillRollAttributeAndMode(skillKey, def);
-    if (!choice) return;
-    return rollSkillCheck(this.actor, skillKey, choice.attributes, variant, ignoreSpecial, choice.mode);
+    await rollSkillFromSheet(this.actor, target.dataset.skill, event.shiftKey);
   }
 
   /**

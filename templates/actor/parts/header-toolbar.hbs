@@ -1,33 +1,51 @@
 {{!-- Collapsible header icon toolbar - see sheets/actor-sheet.mjs's toggleHeaderToolbar action
-     and the frame arrow button added via _renderFrame. NPCs get a reduced set (Rest/Religion/
-     Lehren only) - see the isNpc guards below. --}}
+     and the frame arrow button added via _renderFrame. A button whose requirements aren't met
+     is not rendered at all - see helpers/toolbar.mjs#getToolbarAvailability (the `toolbar`
+     context object) for each one's requirement. The Actions button always comes first. --}}
 <div class="header-toolbar{{#if toolbarCollapsed}} collapsed{{/if}}">
+  {{#if toolbar.actions}}
+  <a class="item-control" data-action="openActionsDialog" title="{{localize 'SKSK.SheetLabels.Actions'}}">
+    <i class="fas fa-bolt"></i>
+  </a>
+  {{/if}}
+  {{#if toolbar.rest}}
   <a class="item-control" data-action="openRestDialog" title="{{localize 'SKSK.Rest.Title'}}">
     <i class="fas fa-clock"></i>
   </a>
-  {{#unless isNpc}}
+  {{/if}}
+  {{#if toolbar.training}}
   <a class="item-control" data-action="openTrainingDialog" title="{{localize 'SKSK.Training.Title'}}">
     <i class="fas fa-dumbbell"></i>
   </a>
-  {{/unless}}
+  {{/if}}
+  {{#if toolbar.religion}}
   <a class="item-control" data-action="openReligionDialog" title="{{localize 'SKSK.Religion.Title'}}">
     <i class="fas fa-hands-praying"></i>
   </a>
-  {{#unless isNpc}}
+  {{/if}}
+  {{#if toolbar.summoning}}
   <a class="item-control" data-action="openSummoningDialog" title="{{localize 'SKSK.Summoning.Title'}}">
     <i class="fas fa-dragon"></i>
   </a>
+  {{/if}}
+  {{#if toolbar.totem}}
   <a class="item-control" data-action="openTotemDialog" title="{{localize 'SKSK.Totem.Title'}}">
     <i class="fas fa-monument"></i>
   </a>
+  {{/if}}
+  {{#if toolbar.source}}
   <a class="item-control" data-action="openSourceDialog" title="{{localize 'SKSK.Source.Title'}}">
     <i class="fas fa-water"></i>
   </a>
+  {{/if}}
+  {{#if toolbar.productionFp}}
   <a class="item-control" data-action="openProductionFpDialog" title="{{localize 'SKSK.ProductionFp.Title'}}">
     <i class="fas fa-hammer"></i>
   </a>
-  {{/unless}}
+  {{/if}}
+  {{#if toolbar.lehren}}
   <a class="item-control" data-action="openLehrenDialog" title="{{localize 'SKSK.LehrenDialog.Title'}}">
     <i class="fas fa-book"></i>
   </a>
+  {{/if}}
 </div>

@@ -677,6 +677,465 @@ body.theme-light .application.sksk.actor {
   color: var(--color-level-warning, #ff8800);
 }
 
+/* Favorite star of a spell row (Spells tab) - a link instead of a checkbox, since
+   the favorite flag lives on the Spell item, not the actor form. */
+.sksk .spell-favorite-toggle {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  margin-right: 4px;
+  cursor: pointer;
+  color: var(--color-text-dark-secondary, #7a7971);
+}
+
+.sksk .spell-favorite-toggle .fas {
+  color: var(--color-level-warning, #ff8800);
+}
+
+
+/* ==========================================================================
+   Actions window (apps/actions-dialog.mjs): filter bar, two columns, uniform
+   entries (icon - name - costs - state - buttons), colour-coded state.
+   ========================================================================== */
+.sksk.actions-dialog {
+  --actions-active: var(--color-level-success, #2e8b57);
+  --actions-cooldown: var(--color-level-warning, #d98a00);
+  --actions-low: var(--color-level-error, #b03a2e);
+}
+
+.sksk.actions-dialog [hidden] {
+  display: none !important;
+}
+
+.sksk.actions-dialog .window-content {
+  padding: 0;
+  overflow: hidden;
+}
+
+.sksk-actions-dialog {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  container-type: inline-size;
+}
+
+/* Resource bar - only while the actor's sheet is minimized (class set by the dialog). */
+.sksk-actions-dialog .actions-resource-bar {
+  display: none;
+}
+
+.sksk.actions-dialog.sheet-minimized .actions-resource-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--color-border-light-tertiary, #d9d8ce);
+  background: color-mix(in srgb, var(--color-text-primary) 6%, transparent);
+}
+
+.actions-resource-bar .res {
+  display: grid;
+  grid-template-columns: auto auto;
+  column-gap: 6px;
+  align-items: center;
+  font-size: 12px;
+}
+
+.actions-resource-bar .res-label {
+  font-weight: bold;
+}
+
+.actions-resource-bar .res-meter {
+  grid-column: 1 / -1;
+  display: block;
+  height: 4px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--color-text-primary) 15%, transparent);
+  overflow: hidden;
+}
+
+.actions-resource-bar .res-meter > span {
+  display: block;
+  height: 100%;
+  background: var(--color-text-hyperlink, #4a7bd0);
+}
+
+.actions-resource-bar .res-life > span { background: var(--actions-low); }
+.actions-resource-bar .res-actionPoints > span { background: var(--actions-active); }
+.actions-resource-bar .res-reactionPoints > span { background: var(--actions-cooldown); }
+
+/* Filter chips + search */
+.actions-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  flex: 0 0 auto;
+}
+
+.actions-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  flex: 1 1 auto;
+}
+
+.actions-chip {
+  width: auto;
+  height: 24px;
+  padding: 0 10px;
+  line-height: 22px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+.actions-chip.active {
+  background: color-mix(in srgb, var(--color-text-hyperlink, #4a7bd0) 30%, transparent);
+  border-color: var(--color-text-hyperlink, #4a7bd0);
+  font-weight: bold;
+}
+
+.actions-search {
+  flex: 0 1 180px;
+  min-width: 110px;
+  height: 24px;
+}
+
+/* Scroll area + columns */
+.actions-scroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 0 8px 8px;
+}
+
+.actions-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+  align-items: start;
+}
+
+.actions-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.actions-columns:has(> .actions-column[hidden]) {
+  grid-template-columns: 1fr;
+}
+
+@container (max-width: 620px) {
+  .actions-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Sections */
+.actions-section {
+  margin-bottom: 8px;
+}
+
+.actions-column .actions-section {
+  margin-bottom: 0;
+}
+
+.actions-section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 6px;
+  cursor: pointer;
+  user-select: none;
+  font-weight: bold;
+  font-size: 13px;
+  color: var(--color-text-primary);
+  background: color-mix(in srgb, var(--color-text-primary) 8%, transparent);
+  border-bottom: 2px groove #eeede0;
+}
+
+.actions-section-header .chevron {
+  font-size: 10px;
+  transition: transform 0.15s;
+}
+
+.actions-section.collapsed .chevron {
+  transform: rotate(-90deg);
+}
+
+.actions-section-body {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.actions-section.collapsed .actions-section-body {
+  display: none;
+}
+
+.sksk.actions-dialog.searching .actions-section.collapsed .actions-section-body {
+  display: block;
+}
+
+.actions-empty {
+  padding: 4px 8px;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.actions-no-results {
+  text-align: center;
+  opacity: 0.7;
+}
+
+/* Uniform entry: icon - name/sub - costs - state - buttons (+ gear settings row) */
+.action-entry {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  column-gap: 6px;
+  padding: 3px 6px 3px 5px;
+  border-left: 3px solid transparent;
+  border-bottom: 1px solid var(--color-border-light-tertiary, #d9d8ce);
+}
+
+.action-entry .entry-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  font-size: 15px;
+}
+
+.action-entry .entry-icon img {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 3px;
+  object-fit: cover;
+}
+
+.action-entry .entry-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 8px;
+  min-width: 0;
+}
+
+.action-entry .entry-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.action-entry .entry-sub {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.action-entry .entry-main select {
+  height: 22px;
+  max-width: 130px;
+  font-size: 12px;
+}
+
+.action-entry .entry-costs {
+  display: flex;
+  gap: 6px;
+  font-size: 12px;
+  grid-column: 3;
+}
+
+.action-entry .entry-state {
+  grid-column: 4;
+}
+
+.action-entry .entry-buttons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  grid-column: 5;
+  justify-self: end;
+}
+
+.action-entry .state-badge {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-text-primary) 10%, transparent);
+  white-space: nowrap;
+}
+
+.action-entry .entry-gear {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  background: transparent;
+  border: none;
+  opacity: 0.6;
+}
+
+.action-entry .entry-gear:hover {
+  opacity: 1;
+}
+
+.action-entry .entry-text-button {
+  width: auto;
+  height: 26px;
+  padding: 0 10px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.action-entry .entry-settings {
+  display: none;
+  grid-column: 2 / -1;
+  padding: 2px 0 2px 0;
+  font-size: 12px;
+}
+
+.action-entry .entry-settings.open {
+  display: block;
+}
+
+/* State: active / cooldown / low (shortfall) / unavailable */
+.action-entry.state-active {
+  border-left-color: var(--actions-active);
+  background: color-mix(in srgb, var(--actions-active) 12%, transparent);
+}
+
+.action-entry.state-active .state-badge {
+  background: var(--actions-active);
+  color: #fff;
+}
+
+.action-entry.state-cooldown {
+  border-left-color: var(--actions-cooldown);
+  background: color-mix(in srgb, var(--actions-cooldown) 10%, transparent);
+}
+
+.action-entry.state-cooldown .state-badge {
+  background: var(--actions-cooldown);
+  color: #fff;
+}
+
+.action-entry.state-low {
+  border-left-color: var(--actions-low);
+}
+
+.action-entry.state-disabled {
+  opacity: 0.5;
+}
+
+
+/* --- Actions window: layout edit mode --- */
+.sksk.actions-dialog .edit-only {
+  display: none;
+}
+
+.sksk.actions-dialog.editing .edit-only {
+  display: inline-flex;
+}
+
+.actions-edit-toggle,
+.actions-reset {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 24px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+.sksk.actions-dialog.editing .actions-reset {
+  display: flex;
+}
+
+.actions-edit-toggle.active {
+  background: color-mix(in srgb, var(--color-text-hyperlink, #4a7bd0) 30%, transparent);
+  border-color: var(--color-text-hyperlink, #4a7bd0);
+}
+
+/* The main buttons don't fire while editing (and can't start a Hotbar drag). */
+.sksk.actions-dialog.editing .action-entry .entry-buttons > :not(.edit-only),
+.sksk.actions-dialog.editing .action-entry select,
+.sksk.actions-dialog.editing .action-entry .entry-settings {
+  pointer-events: none;
+  opacity: 0.35;
+}
+
+.sksk.actions-dialog.editing .actions-section-header,
+.sksk.actions-dialog.editing .action-entry {
+  cursor: grab;
+}
+
+.sksk.actions-dialog.editing .actions-zone {
+  min-height: 44px;
+  outline: 1px dashed color-mix(in srgb, var(--color-text-primary) 35%, transparent);
+  outline-offset: 2px;
+}
+
+.sksk.actions-dialog.editing .actions-zone.drop-into {
+  outline: 2px solid var(--color-text-hyperlink, #4a7bd0);
+}
+
+.actions-section-header .section-controls {
+  margin-left: auto;
+}
+
+.sksk.actions-dialog .section-eye,
+.sksk.actions-dialog .entry-eye {
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.sksk.actions-dialog .section-eye .fa-eye-slash,
+.sksk.actions-dialog .entry-eye .fa-eye-slash {
+  display: none;
+}
+
+.sksk.actions-dialog .section-off .section-eye .fa-eye,
+.sksk.actions-dialog .entry-off .entry-eye .fa-eye {
+  display: none;
+}
+
+.sksk.actions-dialog .section-off .section-eye .fa-eye-slash,
+.sksk.actions-dialog .entry-off .entry-eye .fa-eye-slash {
+  display: inline;
+}
+
+/* Hidden sections/entries: gone normally, dimmed while editing so they can be shown again. */
+.sksk.actions-dialog:not(.editing) .section-off,
+.sksk.actions-dialog:not(.editing) .entry-off {
+  display: none;
+}
+
+.sksk.actions-dialog.editing .section-off > .actions-section-body,
+.sksk.actions-dialog.editing .entry-off .entry-icon,
+.sksk.actions-dialog.editing .entry-off .entry-main,
+.sksk.actions-dialog.editing .entry-off .entry-costs,
+.sksk.actions-dialog.editing .entry-off .entry-state {
+  opacity: 0.4;
+}
+
+/* Drop indicators */
+.sksk.actions-dialog .drop-before {
+  box-shadow: 0 -3px 0 0 var(--color-text-hyperlink, #4a7bd0);
+}
+
+.sksk.actions-dialog .drop-after {
+  box-shadow: 0 3px 0 0 var(--color-text-hyperlink, #4a7bd0);
+}
+
 .sksk .attribute-bonus-row {
   background: rgba(255, 136, 0, 0.08);
   border-left: 2px solid var(--color-level-warning, #ff8800);
@@ -972,7 +1431,7 @@ body.theme-light .application.sksk.actor {
   background: var(--sksk-field-focus-bg);
 }
 
-/* Actions tab (General tab's Actions sub-tab) - one row per action, its
+/* Actions window (apps/actions-dialog.mjs) - one row per action, its
    controls (AP cost / a selector) right-aligned next to its own button. */
 .sksk .action-row {
   display: flex;
@@ -997,7 +1456,7 @@ body.theme-light .application.sksk.actor {
   text-align: center;
 }
 
-/* Actions tab's own roll/chat-output buttons - icon-only (a D20 die,
+/* Actions window's own roll/chat-output buttons - icon-only (a D20 die,
    fa-dice-d20), except Techniques which opens a sub-window rather than
    rolling/posting anything, so it keeps its own dialog's icon
    (fa-fist-raised, see apps/technique-dialog.mjs) instead. */
@@ -2516,7 +2975,7 @@ span.sksk-critical-failure {
    instead of fighting it. 268px is the exact content width (8 buttons +
    7 gaps + the bar's own padding); a little slack on top. */
 .application.sksk.actor.minimized {
-  --minimized-width: 300px;
+  --minimized-width: 340px;
 }
 
 .application.sksk.actor.minimized .minimized-attribute-bar {

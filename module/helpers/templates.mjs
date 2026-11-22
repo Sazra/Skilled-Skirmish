@@ -14,7 +14,6 @@ export const preloadHandlebarsTemplates = async function () {
     // explicitly to be usable as {{> "..."}} partials at all.
     'systems/sksk/templates/actor/parts/general-overview.hbs',
     'systems/sksk/templates/actor/parts/character.hbs',
-    'systems/sksk/templates/actor/parts/general-actions.hbs',
     // Item partials
     'systems/sksk/templates/item/parts/item-effects.hbs',
     'systems/sksk/templates/item/parts/material-section.hbs',

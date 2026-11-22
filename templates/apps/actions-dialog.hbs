@@ -1,0 +1,336 @@
+<div class="sksk-actions-dialog">
+
+  {{!-- Resource bar: only visible while this actor's sheet is minimized (see apps/actions-dialog.mjs#observeSheet). --}}
+  <div class="actions-resource-bar">
+    {{#each resources as |res|}}
+    <div class="res">
+      <span class="res-label">{{localize res.label}}</span>
+      <span class="res-value">{{res.value}} / {{res.max}}</span>
+      <span class="res-meter res-{{res.key}}"><span style="width: {{res.pct}}%"></span></span>
+    </div>
+    {{/each}}
+    {{#each defenses as |def|}}
+    <div class="res res-defense">
+      <span class="res-label">{{localize def.label}}</span>
+      <span class="res-value">{{def.value}}</span>
+    </div>
+    {{/each}}
+  </div>
+
+  {{!-- Filter chips and search --}}
+  <div class="actions-filter-bar">
+    <div class="actions-chips">
+      {{#each filters as |filter|}}
+      <button type="button" class="actions-chip" data-action="setFilter" data-filter="{{filter.key}}">{{localize filter.label}}</button>
+      {{/each}}
+    </div>
+    <input type="search" class="actions-search" placeholder="{{localize 'SKSK.ActionsDialog.Search'}}" />
+    {{#if canEdit}}
+    <button type="button" class="actions-reset edit-only" data-action="resetLayout" title="{{localize 'SKSK.ActionsDialog.ResetLayout'}}"><i class="fas fa-rotate-left"></i></button>
+    <button type="button" class="actions-edit-toggle" data-action="toggleEditMode" title="{{localize 'SKSK.ActionsDialog.EditLayout'}}"><i class="fas fa-pen"></i></button>
+    {{/if}}
+  </div>
+
+  <div class="actions-scroll">
+    <div class="actions-columns">
+
+      {{!-- ============ Left column: Combat ============ --}}
+      <div class="actions-column actions-zone" data-zone="left">
+
+        <section class="actions-section" data-section="combat" data-category="combat">
+          <header class="actions-section-header" data-action="toggleSection">
+            <i class="fas fa-chevron-down chevron"></i> {{localize 'SKSK.ActionsDialog.MovementAttack'}}
+            <span class="edit-only section-controls"><a class="section-eye" data-action="toggleSectionHidden" title="{{localize 'SKSK.ActionsDialog.ToggleVisible'}}"><i class="fas fa-eye"></i><i class="fas fa-eye-slash"></i></a></span>
+          </header>
+          <ol class="actions-section-body">
+            <li class="action-entry" data-key="move">
+              <span class="entry-icon"><i class="fas fa-person-running"></i></span>
+              <span class="entry-main">
+                <span class="entry-name" title="{{localize 'SKSK.Action.MoveHint'}}">{{localize 'SKSK.Action.Move'}}</span>
+                <select class="move-type-select">
+                  {{selectOptions movementTypeChoices selected=moveType localize=true}}
+                </select>
+              </span>
+              <span class="entry-buttons">
+                <a class="edit-only entry-eye" data-action="toggleEntryHidden" title="{{localize 'SKSK.ActionsDialog.ToggleVisible'}}"><i class="fas fa-eye"></i><i class="fas fa-eye-slash"></i></a>
+                <button type="button" class="action-roll-button" data-action="useMove" title="{{localize 'SKSK.Action.Move'}}"><i class="fas fa-dice-d20"></i></button>
+              </span>
+            </li>
+            <li class="action-entry" data-key="dodge">
+              <span class="entry-icon"><i class="fas fa-shield-halved"></i></span>
+              <span class="entry-main">
+                <span class="entry-name" title="{{localize 'SKSK.Action.DodgeHint'}}">{{localize 'SKSK.Action.Dodge'}}</span>
+              </span>
+              <span class="entry-buttons">
+                <a class="edit-only entry-eye" data-action="toggleEntryHidden" title="{{localize 'SKSK.ActionsDialog.ToggleVisible'}}"><i class="fas fa-eye"></i><i class="fas fa-eye-slash"></i></a>
+                <button type="button" class="action-roll-button" data-action="useDodge" title="{{localize 'SKSK.Action.Dodge'}}"><i class="fas fa-dice-d20"></i></button>
+              </span>
+            </li>
+            <li class="action-entry" data-key="martial">
+              <span class="entry-icon"><i class="fas fa-hand-fist"></i></span>
+              <span class="entry-main">
+                <span class="entry-name">{{localize 'SKSK.Action.MartialArtsAttack'}}</span>
+                <select class="martial-arts-attack-select">
+                  {{#each system.martialArtsAttacks as |attack index|}}
+                  <option value="{{index}}">{{attack.name}}</option>
+                  {{else}}
+                  <option value="" disabled>{{localize 'SKSK.MartialArtsAttack.None'}}</option>
+                  {{/each}}
+                </select>
+              </span>
+              <span class="entry-buttons">
+                <a class="edit-only entry-eye" data-action="toggleEntryHidden" title="{{localize 'SKSK.ActionsDialog.ToggleVisible'}}"><i class="fas fa-eye"></i><i class="fas fa-eye-slash"></i></a>
+                <button type="button" class="action-roll-button" data-action="rollMartialArtsAttack" title="{{localize 'SKSK.Action.Roll'}}"><i class="fas fa-dice-d20"></i></button>
+              </span>
+            </li>
+            <li class="action-entry" data-key="technique">
+              <span class="entry-icon"><i class="fas fa-fist-raised"></i></span>
+              <span class="entry-main">
+                <span class="entry-name">{{localize 'SKSK.Technique.SectionTitle'}}</span>
+              </span>
+              <span class="entry-buttons">
+                <a class="edit-only entry-eye" data-action="toggleEntryHidden" title="{{localize 'SKSK.ActionsDialog.ToggleVisible'}}"><i class="fas fa-eye"></i><i class="fas fa-eye-slash"></i></a>
+                <button type="button" class="action-roll-button" data-action="openTechniqueDialog" title="{{localize 'SKSK.Technique.OpenDialog'}}"><i class="fas fa-fist-raised"></i></button>
+              </span>
+            </li>
+          </ol>
+        </section>
+
+        <section class="actions-section" data-section="weapons" data-category="combat">
+          <header class="actions-section-header" data-action="toggleSection">
+            <i class="fas fa-chevron-down chevron"></i> {{localize 'SKSK.Action.Weapons'}}
+            <span class="edit-only section-controls"><a class="section-eye" data-action="toggleSectionHidden" title="{{localize 'SKSK.ActionsDialog.ToggleVisible'}}"><i class="fas fa-eye"></i><i class="fas fa-eye-slash"></i></a></span>
+          </header>
+          <ol class="actions-section-body">
+            {{#each equippedWeapons as |weapon|}}
+            <li class="action-entry" data-key="weapon:{{weapon.id}}">
+              <span class="entry-icon"><img src="{{weapon.img}}" alt="" /></span>
+              <span class="entry-main">
+                <span class="entry-name">{{weapon.name}}</span>
+                {{#if weapon.rangeLabel}}<span class="entry-sub">{{weapon.rangeLabel}}</span>{{/if}}
+              </span>
+              {{#if weapon.hasHandSwitch}}
+              <span class="entry-state state-badge">{{#if weapon.heldOneHandedNow}}{{localize 'SKSK.ActionsDialog.OneHanded'}}{{else}}{{localize 'SKSK.ActionsDialog.TwoHanded'}}{{/if}}</span>
+              {{/if}}
+              <span class="entry-buttons">
+                <a class="edit-only entry-eye" data-action="toggleEntryHidden" title="{{localize 'SKSK.ActionsDialog.ToggleVisible'}}"><i class="fas fa-eye"></i><i class="fas fa-eye-slash"></i></a>
+                {{#if weapon.hasHandSwitch}}
+                <button type="button" class="action-roll-button hand-switch" data-action="toggleHeldOneHanded" data-item-id="{{weapon.id}}" title="{{weapon.handSwitchTitle}}">
+                  <i class="fas {{#if weapon.heldOneHandedNow}}fa-hand{{else}}fa-hands{{/if}}"></i>
+                </button>
+                {{/if}}
+                <button type="button" class="action-roll-button" data-action="useItem" data-item-id="{{weapon.id}}" title="{{localize 'SKSK.Action.Use'}}"><i class="fas fa-dice-d20"></i></button>
+              </span>
+            </li>
+            {{else}}
+            <li class="actions-empty">{{localize 'SKSK.Action.NoWeapons'}}</li>
+            {{/each}}
+          </ol>
+        </section>
+
+        <section class="actions-section" data-section="items" data-category="combat">
+          <header class="actions-section-header" data-action="toggleSection">
+            <i class="fas fa-chevron-down chevron"></i> {{localize 'SKSK.Action.UsableItems'}}
+            <span class="edit-only section-controls"><a class="section-eye" data-action="toggleSectionHidden" title="{{localize 'SKSK.ActionsDialog.ToggleVisible'}}"><i class="fas fa-eye"></i><i class="fas fa-eye-slash"></i></a></span>
+          </header>
+          <ol class="actions-section-body">
+            {{#each usableItems as |usableItem|}}
+            <li class="action-entry" data-key="item:{{usableItem.id}}">
+              <span class="entry-icon"><img src="{{usableItem.img}}" alt="" /></span>
+              <span class="entry-main"><span class="entry-name">{{usableItem.name}}</span></span>
+              <span class="entry-buttons">
+                <a class="edit-only entry-eye" data-action="toggleEntryHidden" title="{{localize 'SKSK.ActionsDialog.ToggleVisible'}}"><i class="fas fa-eye"></i><i class="fas fa-eye-slash"></i></a>
+                <button type="button" class="action-roll-button" data-action="useItem" data-item-id="{{usableItem.id}}" title="{{localize 'SKSK.Action.Use'}}"><i class="fas fa-dice-d20"></i></button>
+              </span>
+            </li>
+            {{else}}
+            <li class="actions-empty">{{localize 'SKSK.Action.NoUsableItems'}}</li>
+            {{/each}}
+            {{#each shapeshiftItems as |shapeItem|}}
+            <li class="action-entry" data-key="shape:{{shapeItem.id}}">
+              <span class="entry-icon"><img src="{{shapeItem.img}}" alt="" /></span>
+              <span class="entry-main">
+                <span class="entry-name">{{shapeItem.name}}</span>
+                <span class="entry-sub">{{localize 'SKSK.ModelProperty.Shapeshifting.Name'}}</span>
+              </span>
+              <span class="entry-buttons">
+                <a class="edit-only entry-eye" data-action="toggleEntryHidden" title="{{localize 'SKSK.ActionsDialog.ToggleVisible'}}"><i class="fas fa-eye"></i><i class="fas fa-eye-slash"></i></a>
+                <button type="button" class="action-roll-button" data-action="useShapeshifting" data-item-id="{{shapeItem.id}}" title="{{localize 'SKSK.WeaponProperty.UseShapeshiftingHint'}}">
+                  <i class="fas fa-wand-magic-sparkles"></i>
+                </button>
+              </span>
+            </li>
+            {{/each}}
+          </ol>
+        </section>
+
+      </div>
+
+      {{!-- ============ Right column: Magic, Abilities, Skills ============ --}}
+      <div class="actions-column actions-zone" data-zone="right">
+
+        <section class="actions-section" data-section="spells" data-category="magic">
+          <header class="actions-section-header" data-action="toggleSection">
+            <i class="fas fa-chevron-down chevron"></i> {{localize 'SKSK.Action.FavoriteSpells'}}
+            <span class="edit-only section-controls"><a class="section-eye" data-action="toggleSectionHidden" title="{{localize 'SKSK.ActionsDialog.ToggleVisible'}}"><i class="fas fa-eye"></i><i class="fas fa-eye-slash"></i></a></span>
+          </header>
+          <ol class="actions-section-body">
+            {{#each favoriteSpells as |spell|}}
+            <li class="action-entry {{#unless spell.castable}}state-disabled{{else if spell.system.sustaining}}state-active{{else if spell.manaCostIncreased}}state-low{{/unless}}" data-key="spell:{{spell.id}}">
+              <span class="entry-icon"><img src="{{spell.img}}" alt="" /></span>
+              <span class="entry-main">
+                <span class="entry-name">{{spell.name}}</span>
+                <span class="entry-sub">{{localize 'SKSK.ActionsDialog.Level'}} {{spell.system.spellLevel}}{{#if spell.rangeSummary}} · {{spell.rangeSummary}}{{/if}}</span>
+              </span>
+              <span class="entry-costs">
+                {{#if spell.castable}}
+                <span class="spell-cost-line {{#if spell.manaCostIncreased}}mana-cost-increased{{else if spell.costGood}}mana-cost-good{{/if}}" title="{{localize 'SKSK.Spell.ManaCost'}}"><i class="fas fa-tint"></i>{{spell.effectiveManaCost}}</span>
+                <span class="spell-cost-line {{#if spell.costGood}}ap-cost-good{{/if}}" title="{{localize 'SKSK.Spell.APCost'}}"><i class="fas fa-bolt"></i>{{spell.effectiveApCost}}</span>
+                {{else}}
+                <i class="fas fa-exclamation-triangle spell-prerequisite-warning" title="{{localize 'SKSK.Spell.PrerequisiteNotMet' details=spell.missingLabel}}"></i>
+                {{/if}}
+              </span>
+              {{#if spell.system.sustaining}}<span class="entry-state state-badge">{{localize 'SKSK.ActionsDialog.Sustaining'}}</span>{{/if}}
+              <span class="entry-buttons">
+                <a class="edit-only entry-eye" data-action="toggleEntryHidden" title="{{localize 'SKSK.ActionsDialog.ToggleVisible'}}"><i class="fas fa-eye"></i><i class="fas fa-eye-slash"></i></a>
+                <button type="button" class="action-roll-button" data-action="castSpell" data-item-id="{{spell.id}}" title="{{localize 'SKSK.Action.CastSpell'}}"><i class="fas fa-wand-sparkles"></i></button>
+              </span>
+            </li>
+            {{else}}
+            <li class="actions-empty">{{localize 'SKSK.Action.NoFavoriteSpells'}}</li>
+            {{/each}}
+          </ol>
+        </section>
+
+        <section class="actions-section" data-section="abilities" data-category="abilities">
+          <header class="actions-section-header" data-action="toggleSection">
+            <i class="fas fa-chevron-down chevron"></i> {{localize 'SKSK.Action.Abilities'}}
+            <span class="edit-only section-controls"><a class="section-eye" data-action="toggleSectionHidden" title="{{localize 'SKSK.ActionsDialog.ToggleVisible'}}"><i class="fas fa-eye"></i><i class="fas fa-eye-slash"></i></a></span>
+          </header>
+          <ol class="actions-section-body">
+            {{#each abilities as |ability|}}
+            <li class="action-entry {{#if (eq ability.state 'active')}}state-active{{else if (eq ability.state 'cooldown')}}state-cooldown{{/if}}" data-key="ability:{{ability.itemId}}:{{ability.index}}">
+              <span class="entry-icon"><img src="{{ability.img}}" alt="" /></span>
+              <span class="entry-main">
+                <span class="entry-name">{{ability.name}}</span>
+                <span class="entry-sub">{{ability.source}}</span>
+              </span>
+              <span class="entry-state state-badge">{{ability.statusLabel}}</span>
+              <span class="entry-buttons">
+                <a class="edit-only entry-eye" data-action="toggleEntryHidden" title="{{localize 'SKSK.ActionsDialog.ToggleVisible'}}"><i class="fas fa-eye"></i><i class="fas fa-eye-slash"></i></a>
+                <button type="button" class="entry-text-button" data-action="{{#if (eq ability.kind 'talent')}}toggleTalentAbility{{else}}toggleClassSpeciesAbility{{/if}}"
+                  data-item-id="{{ability.itemId}}" data-index="{{ability.index}}">{{localize ability.actionLabel}}</button>
+              </span>
+            </li>
+            {{else}}
+            <li class="actions-empty">{{localize 'SKSK.Action.NoActivatableAbilities'}}</li>
+            {{/each}}
+          </ol>
+        </section>
+
+        <section class="actions-section" data-section="skills" data-category="skills">
+          <header class="actions-section-header" data-action="toggleSection">
+            <i class="fas fa-chevron-down chevron"></i> {{localize 'SKSK.Action.FavoriteSkills'}}
+            <span class="edit-only section-controls"><a class="section-eye" data-action="toggleSectionHidden" title="{{localize 'SKSK.ActionsDialog.ToggleVisible'}}"><i class="fas fa-eye"></i><i class="fas fa-eye-slash"></i></a></span>
+          </header>
+          <ol class="actions-section-body">
+            {{#each favoriteSkills as |skill|}}
+            <li class="action-entry {{#unless skill.rollable}}state-disabled{{/unless}}" data-key="skill:{{skill.key}}">
+              <span class="entry-icon"><i class="fas fa-graduation-cap"></i></span>
+              <span class="entry-main"><span class="entry-name">{{localize skill.label}}</span></span>
+              <span class="entry-state state-badge">{{skill.display}}</span>
+              <span class="entry-buttons">
+                <a class="edit-only entry-eye" data-action="toggleEntryHidden" title="{{localize 'SKSK.ActionsDialog.ToggleVisible'}}"><i class="fas fa-eye"></i><i class="fas fa-eye-slash"></i></a>
+                {{#if skill.rollable}}
+                <button type="button" class="action-roll-button" data-action="rollSkill" data-skill="{{skill.key}}" title="{{localize 'SKSK.Skill.RollButton'}}"><i class="fas fa-dice-d20"></i></button>
+                {{/if}}
+              </span>
+            </li>
+            {{else}}
+            <li class="actions-empty">{{localize 'SKSK.Action.NoFavoriteSkills'}}</li>
+            {{/each}}
+          </ol>
+        </section>
+
+      </div>
+    </div>
+
+    {{!-- ============ Misc (collapsed by default) ============ --}}
+    <div class="actions-zone actions-bottom" data-zone="bottom">
+    <section class="actions-section" data-section="misc" data-category="misc">
+      <header class="actions-section-header" data-action="toggleSection">
+        <i class="fas fa-chevron-down chevron"></i> {{localize 'SKSK.ActionsDialog.Misc'}}
+            <span class="edit-only section-controls"><a class="section-eye" data-action="toggleSectionHidden" title="{{localize 'SKSK.ActionsDialog.ToggleVisible'}}"><i class="fas fa-eye"></i><i class="fas fa-eye-slash"></i></a></span>
+      </header>
+      <ol class="actions-section-body">
+        <li class="action-entry {{#if noRegeneration}}state-disabled{{/if}}" data-key="regeneration">
+          <span class="entry-icon"><i class="fas fa-heart-pulse"></i></span>
+          <span class="entry-main">
+            <span class="entry-name">{{localize 'SKSK.Action.Regeneration'}}</span>
+            <span class="entry-sub">{{system.regenerationCharges.value}} / {{system.regenerationCharges.max}}</span>
+          </span>
+          <span class="entry-costs"><span class="spell-cost-line" title="{{localize 'SKSK.Spell.APCost'}}"><i class="fas fa-bolt"></i>{{system.regenerationApCost}}</span></span>
+          <span class="entry-buttons">
+                <a class="edit-only entry-eye" data-action="toggleEntryHidden" title="{{localize 'SKSK.ActionsDialog.ToggleVisible'}}"><i class="fas fa-eye"></i><i class="fas fa-eye-slash"></i></a>
+            <button type="button" class="entry-gear" data-action="toggleEntrySettings" data-key="regeneration" title="{{localize 'SKSK.ActionsDialog.Settings'}}"><i class="fas fa-gear"></i></button>
+            <button type="button" class="action-roll-button" data-action="rollRegeneration" title="{{localize 'SKSK.Action.Roll'}}"><i class="fas fa-dice-d20"></i></button>
+          </span>
+          <div class="entry-settings" data-key="regeneration">
+            <label>{{localize 'SKSK.Spell.APCost'}} <input type="text" class="ap-cost-input" value="{{system.regenerationApCost}}" data-system-field="regenerationApCost" /></label>
+          </div>
+        </li>
+        <li class="action-entry {{#if noMeditation}}state-disabled{{/if}}" data-key="meditation">
+          <span class="entry-icon"><i class="fas fa-spa"></i></span>
+          <span class="entry-main">
+            <span class="entry-name">{{localize 'SKSK.Action.Meditation'}}</span>
+            <span class="entry-sub">{{system.meditationCharges.value}} / {{system.meditationCharges.max}}</span>
+          </span>
+          <span class="entry-costs"><span class="spell-cost-line" title="{{localize 'SKSK.Spell.APCost'}}"><i class="fas fa-bolt"></i>{{system.meditationApCost}}</span></span>
+          <span class="entry-buttons">
+                <a class="edit-only entry-eye" data-action="toggleEntryHidden" title="{{localize 'SKSK.ActionsDialog.ToggleVisible'}}"><i class="fas fa-eye"></i><i class="fas fa-eye-slash"></i></a>
+            <button type="button" class="entry-gear" data-action="toggleEntrySettings" data-key="meditation" title="{{localize 'SKSK.ActionsDialog.Settings'}}"><i class="fas fa-gear"></i></button>
+            <button type="button" class="action-roll-button" data-action="rollMeditation" title="{{localize 'SKSK.Action.Roll'}}"><i class="fas fa-dice-d20"></i></button>
+          </span>
+          <div class="entry-settings" data-key="meditation">
+            <label>{{localize 'SKSK.Spell.APCost'}} <input type="text" class="ap-cost-input" value="{{system.meditationApCost}}" data-system-field="meditationApCost" /></label>
+          </div>
+        </li>
+        {{#if hasAdrenalin}}
+        <li class="action-entry {{#if noAdrenalin}}state-disabled{{/if}}" data-key="adrenalin">
+          <span class="entry-icon"><i class="fas fa-bolt-lightning"></i></span>
+          <span class="entry-main">
+            <span class="entry-name" title="{{localize 'SKSK.Action.AdrenalinHint'}}">{{localize 'SKSK.Action.Adrenalin'}}</span>
+            <span class="entry-sub">{{system.adrenalinCharges.value}} / {{system.adrenalinCharges.max}}</span>
+          </span>
+          <span class="entry-buttons">
+                <a class="edit-only entry-eye" data-action="toggleEntryHidden" title="{{localize 'SKSK.ActionsDialog.ToggleVisible'}}"><i class="fas fa-eye"></i><i class="fas fa-eye-slash"></i></a>
+            <button type="button" class="action-roll-button" data-action="rollAdrenalin" title="{{localize 'SKSK.Action.Use'}}"><i class="fas fa-dice-d20"></i></button>
+          </span>
+        </li>
+        {{/if}}
+        {{#if hasInspiration}}
+        <li class="action-entry {{#if noInspiration}}state-disabled{{/if}}" data-key="inspiration">
+          <span class="entry-icon"><i class="fas fa-lightbulb"></i></span>
+          <span class="entry-main">
+            <span class="entry-name" title="{{localize 'SKSK.Action.InspirationHint'}}">{{localize 'SKSK.Action.Inspiration'}}</span>
+            <span class="entry-sub">{{system.inspirationCharges.value}} / {{system.inspirationCharges.max}}</span>
+          </span>
+          <span class="entry-costs"><span class="spell-cost-line" title="{{localize 'SKSK.Spell.APCost'}}"><i class="fas fa-bolt"></i>{{system.inspirationApCost}}</span></span>
+          <span class="entry-buttons">
+                <a class="edit-only entry-eye" data-action="toggleEntryHidden" title="{{localize 'SKSK.ActionsDialog.ToggleVisible'}}"><i class="fas fa-eye"></i><i class="fas fa-eye-slash"></i></a>
+            <button type="button" class="entry-gear" data-action="toggleEntrySettings" data-key="inspiration" title="{{localize 'SKSK.ActionsDialog.Settings'}}"><i class="fas fa-gear"></i></button>
+            <button type="button" class="action-roll-button" data-action="grantInspiration" title="{{localize 'SKSK.Action.InspirationHint'}}"><i class="fas fa-dice-d20"></i></button>
+          </span>
+          <div class="entry-settings" data-key="inspiration">
+            <label>{{localize 'SKSK.Spell.APCost'}} <input type="text" class="ap-cost-input" value="{{system.inspirationApCost}}" data-system-field="inspirationApCost" /></label>
+          </div>
+        </li>
+        {{/if}}
+      </ol>
+    </section>
+    </div>
+
+    <p class="actions-no-results" hidden>{{localize 'SKSK.ActionsDialog.NoResults'}}</p>
+  </div>
+
+</div>

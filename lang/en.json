@@ -321,7 +321,7 @@
       "RogueHint": "Fallen's roll lets the player choose \"Falle stellen\" or \"Falle entschärfen\" when they use it (both automated); Fingerfertigkeit's roll likewise offers a choice between its base check, Schlossknacken and Taschendiebstahl (also automated). Assassination is automated too: Assassination Attack grants FP whenever a weapon/Martial Arts attack hits while Concealed (alongside Assassination's own bonus damage), Assassination Kill additionally if that same attack kills the defender.",
       "MagicHint": "Concentration checks, used Meditation dice, any spell cast (Magic Control, Chant Shortening once Magic Control reaches level 1), Mana Capacity/Mana Regeneration's own daily settlement (on the next Anpassungspause+, or automatically on every calendar day - see the optional Calendaria Daily Settlement in General Settings), Mana Core's flat per-item grant, Ritualism's hours per Ritual spell cast (at least 1 hour, even under the AP unit or a sub-60-minute casting time), Overcharge used (Shift+click a spell), Source-Bound/Ether-Bound (via the header's own \"Quelle\" button - Source Ability Used on \"Quelle aktivieren\", Source Opened on \"Ätherquelle öffnen\", each paying its own editable AP/Mana cost, no usage limit), and Summoning (via the header's Summoning button - Summoned Creature Level on \"Beschwören\", Day of Summon's Existence for every still-active slot on the next Anpassungspause+, or automatically on every calendar day - see the optional Calendaria Daily Settlement in General Settings) are all automated; everything else below (enchanting hours) is not yet automated - no matching system exists yet.",
       "FighterHint": "Regeneration dice used, combat movement, Dodge used, Reflexaktion (4+ AP spent in one turn), Adrenalin used, critical hits (incl. double crit), Brutality's bonus damage points, and Technique's own cooldown rounds (any owned Technique Item currently on cooldown, granted once per Combat round it spends there) are automated; everything else below is not yet automated.",
-      "MiscHint": "Bardic magic cast (Singing), being Concealed at the start of your own turn (Stealth), prayer via the header's Prayer button (Faith), clicks on the header's Passive Perception field (Observation), Apply Damage converting an entry into healing via the defender's own Absorption (Healer - credited to whoever caused it, scaled by the healed amount), Totem (via the header's Totem button - Totem Bond Formed on \"Totem binden\", Totem Used on \"Totem aktivieren\"), and Inspiration (via the Actions tab's own Inspiration button and the header's own Inspiration Die field - credited to whoever originally granted a die once it's actually rolled, whether by its own holder or via the granter's own Right-Click self-roll) are automated; everything else below is not yet automated - no matching system exists yet.",
+      "MiscHint": "Bardic magic cast (Singing), being Concealed at the start of your own turn (Stealth), prayer via the header's Prayer button (Faith), clicks on the header's Passive Perception field (Observation), Apply Damage converting an entry into healing via the defender's own Absorption (Healer - credited to whoever caused it, scaled by the healed amount), Totem (via the header's Totem button - Totem Bond Formed on \"Totem binden\", Totem Used on \"Totem aktivieren\"), and Inspiration (via the Actions window's own Inspiration button and the header's own Inspiration Die field - credited to whoever originally granted a die once it's actually rolled, whether by its own holder or via the granter's own Right-Click self-roll) are automated; everything else below is not yet automated - no matching system exists yet.",
       "SpecialHint": "A landed hit (Hit Correction), a defended-against attack (Defense Correction), being at 0 Life with Negative Life left at the start of your own turn (Tenacity), any generic (non-Angriffswurf) D20 roll's critical success/double critical - skill checks, saving throws, attribute checks, and a manual Restrained escape attempt prompt for Neutral/Vorteil/Nachteil every time; Restrained's own turn-start/end check, Poison's recheck, and Concentration instead use the GM tab's Background Roll Mode preset with no dialog (Luck's own \"Critical Roll\"/\"Double Critical Roll\", credited to whoever rolled it - double only from Vorteil/Nachteil, both dice critical) - Soulforce's own \"Meditation Die Used in Combat\" (alongside Meditation's own FP whenever a Combat is active, but only while the GM tab's own \"Soulforce: FP for Meditation in Combat\" switch is also on, off by default), and Massacre's own 5 GM-tab Mass Kill buttons (20/50/150/500/1500 people killed within roughly 10 minutes, a fully manual GM judgment call - each tier's own rate depends on the actor's current Massacre skill level, independently configured per tier/level combination in the Skill Usage FP settings) - are automated; everything else below is not yet automated.",
       "EssenceProcessed": "FP / Essence Processed in Brewing",
       "CraftingBonus": "Bonus (Material & Model Level)",
@@ -627,7 +627,33 @@
       "InvalidFormula": "Invalid formula: {formula}",
       "ChatTitle": "Manual damage for {defender}"
     },
+    "ActionsDialog": {
+      "FilterAll": "All",
+      "Combat": "Combat",
+      "Magic": "Magic",
+      "Skills": "Skills",
+      "Misc": "Misc",
+      "MovementAttack": "Movement & Attack",
+      "Search": "Search …",
+      "NoResults": "Nothing found.",
+      "OneHanded": "1H",
+      "TwoHanded": "2H",
+      "Sustaining": "Sustaining",
+      "Level": "Level",
+      "Settings": "Settings",
+      "EditLayout": "Edit layout (move & hide)",
+      "ResetLayout": "Reset layout",
+      "ResetLayoutConfirm": "Really reset the layout? Your section layout (just for you) and this actor's entry order and hidden entries will be lost.",
+      "ToggleVisible": "Show/hide"
+    },
     "Action": {
+      "FavoriteSkills": "Favorite Skills",
+      "FavoriteSpells": "Favorite Spells",
+      "Abilities": "Abilities",
+      "NoFavoriteSkills": "No favorite skills (star in the Skills tab).",
+      "NoFavoriteSpells": "No favorite spells (star in the Spells tab).",
+      "NoActivatableAbilities": "No activatable abilities.",
+      "CastSpell": "Cast (Shift: options)",
       "Regeneration": "Regeneration",
       "RegenerateLifeDescription": "{name} regenerates Life",
       "NotEnoughRegenerationCharges": "No Regeneration charges left.",
@@ -1804,6 +1830,7 @@
       }
     },
     "Spell": {
+      "ToggleFavorite": "Favorite (show in the Actions window)",
       "ManaCost": "Mana",
       "APCost": "AP",
       "RPCost": "RP",
@@ -2424,11 +2451,11 @@
       },
       "Flexible": {
         "Name": "Flexible",
-        "Hint": "A weapon with this modifier can be held one-handed or two-handed at any time (switch in the Actions tab/inventory). Its Model can have a separate two-handed roll formula. Bows cannot be held one-handed."
+        "Hint": "A weapon with this modifier can be held one-handed or two-handed at any time (switch in the Actions window/inventory). Its Model can have a separate two-handed roll formula. Bows cannot be held one-handed."
       },
       "Shapeshifting": {
         "Name": "Shapeshifting",
-        "Hint": "This item can change its form. A weapon can turn into another one or even an armor piece. The overall mass of the item cannot change through this modifier. Costs 3 action points (button \"Use Shapeshifting\" in the Actions tab, the GM switches the item)."
+        "Hint": "This item can change its form. A weapon can turn into another one or even an armor piece. The overall mass of the item cannot change through this modifier. Costs 3 action points (button \"Use Shapeshifting\" in the Actions window, the GM switches the item)."
       },
       "Infusion": {
         "Name": "Infusion",
@@ -2492,7 +2519,7 @@
       },
       "TwoHanded": {
         "Name": "Two-Handed",
-        "Hint": "A weapon with this modifier is wielded with both hands. One-handed only works with the switch in the Actions tab/inventory and only if the bearer has the attributes: with Heavy/Demanding/Draining (X) at least X + 25% of X (rounded up) in that attribute, otherwise at least 16 in the attribute the weapon uses. Held one-handed, Specialized loses its effect. Bows cannot be held one-handed."
+        "Hint": "A weapon with this modifier is wielded with both hands. One-handed only works with the switch in the Actions window/inventory and only if the bearer has the attributes: with Heavy/Demanding/Draining (X) at least X + 25% of X (rounded up) in that attribute, otherwise at least 16 in the attribute the weapon uses. Held one-handed, Specialized loses its effect. Bows cannot be held one-handed."
       },
       "Deployable": {
         "Name": "Deployable",

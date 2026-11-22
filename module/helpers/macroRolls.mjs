@@ -116,8 +116,9 @@ export function buildRollDragData(actor, element) {
   const action = element.dataset.action;
   if (!(action in MACRO_ACTIONS)) return null;
 
-  const row = element.closest('.action-row');
-  const rowLabel = row?.querySelector('.resource-label')?.textContent.trim();
+  // An entry of the Actions window (.action-entry) or, formerly, a row of the Actions tab.
+  const row = element.closest('.action-entry, .action-row');
+  const rowLabel = row?.querySelector('.entry-name, .resource-label')?.textContent.trim();
   let label;
   let params = {};
 

@@ -40,6 +40,9 @@
             <li class="item flexrow {{#unless item.castable}}spell-uncastable{{/unless}}" data-item-id="{{item._id}}">
               <div class="spell-level">{{item.system.spellLevel}}</div>
               <div class="item-name flexrow">
+                <a class="spell-favorite-toggle" data-action="toggleSpellFavorite" title="{{localize 'SKSK.Spell.ToggleFavorite'}}">
+                  <i class="{{#if item.system.favorite}}fas{{else}}far{{/if}} fa-star"></i>
+                </a>
                 <div class="item-image">
                   <a class="rollable" data-action="roll" data-roll-type="item">
                     <img src="{{item.img}}" title="{{item.name}}" width="24" height="24" />
@@ -130,6 +133,9 @@
             <li class="item flexrow {{#unless item.castable}}spell-uncastable{{/unless}}" data-item-id="{{item._id}}">
               <div class="spell-level">{{item.system.spellLevel}}</div>
               <div class="item-name flexrow">
+                <a class="spell-favorite-toggle" data-action="toggleSpellFavorite" title="{{localize 'SKSK.Spell.ToggleFavorite'}}">
+                  <i class="{{#if item.system.favorite}}fas{{else}}far{{/if}} fa-star"></i>
+                </a>
                 <div class="item-image">
                   <a class="rollable" data-action="roll" data-roll-type="item">
                     <img src="{{item.img}}" title="{{item.name}}" width="24" height="24" />
@@ -220,6 +226,9 @@
             <li class="item flexrow {{#unless item.castable}}spell-uncastable{{/unless}}" data-item-id="{{item._id}}">
               <div class="spell-level">{{item.system.spellLevel}}</div>
               <div class="item-name flexrow">
+                <a class="spell-favorite-toggle" data-action="toggleSpellFavorite" title="{{localize 'SKSK.Spell.ToggleFavorite'}}">
+                  <i class="{{#if item.system.favorite}}fas{{else}}far{{/if}} fa-star"></i>
+                </a>
                 <div class="item-image">
                   <a class="rollable" data-action="roll" data-roll-type="item">
                     <img src="{{item.img}}" title="{{item.name}}" width="24" height="24" />
@@ -311,6 +320,9 @@
             <li class="item flexrow" data-item-id="{{item._id}}">
               <div class="spell-level">{{item.system.spellLevel}}</div>
               <div class="item-name flexrow">
+                <a class="spell-favorite-toggle" data-action="toggleSpellFavorite" title="{{localize 'SKSK.Spell.ToggleFavorite'}}">
+                  <i class="{{#if item.system.favorite}}fas{{else}}far{{/if}} fa-star"></i>
+                </a>
                 <div class="item-image">
                   <a class="rollable" data-action="roll" data-roll-type="item">
                     <img src="{{item.img}}" title="{{item.name}}" width="24" height="24" />

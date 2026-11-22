@@ -212,9 +212,9 @@ export function getWeaponDamageType(weaponSystem) {
 }
 
 /**
- * A weapon's range display for the Actions tab's own weapon list (see
- * sheets/actor-sheet.mjs's equippedWeapons context and templates/actor/
- * parts/general-actions.hbs): a Ranged ("Fernkampf") weapon shows its own
+ * A weapon's range display for the Actions window's own weapon list (see
+ * apps/actions-dialog.mjs's equippedWeapons context and
+ * templates/apps/actions-dialog.hbs): a Ranged ("Fernkampf") weapon shows its own
  * normal range and its extended range - always exactly double the normal
  * one (no second stored field for it, see helpers/models.mjs), matching
  * the Ranged property's own Hint text. A melee weapon instead shows its
