@@ -4,6 +4,7 @@ import { advanceTechniquesByRounds } from './statusEffects.mjs';
 import { applyLongevityDelta } from './longevity.mjs';
 import { recoverChargesOnDayChange, postChargeLines } from './abilityCharges.mjs';
 import { isCombatActive } from './statusEffects.mjs';
+import { recoverResources } from './resourceDefinitions.mjs';
 import { applyElapsedRegen, hasPassiveRegen, MINUTE_SECONDS, TEN_MINUTE_SECONDS } from './passiveRegen.mjs';
 
 /**
@@ -234,6 +235,10 @@ export function registerCalendariaIntegration() {
     for (const actor of getTechniqueTickActors()) {
       if (!actor.items.some(item => item.type === 'class' || item.type === 'species' || item.type === 'talent')) continue;
       await postChargeLines(actor, await recoverChargesOnDayChange(actor, days));
+    }
+    // The "change of day" recovery rules of resources (Ressourcen-Definitionen).
+    for (const actor of getTechniqueTickActors()) {
+      await postChargeLines(actor, await recoverResources(actor, { mode: 'day', days }));
     }
 
     if (isCalendariaDailySettlementEnabled()) await settleDailyAccumulatorsForAllActors(days);

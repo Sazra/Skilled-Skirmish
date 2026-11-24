@@ -24,6 +24,10 @@ export default class SKSKTalent extends SKSKItemBase {
     // field (see module/data/class.mjs#gmNotes for the same pattern).
     schema.gmNotes = new fields.StringField({ required: true, blank: true });
 
+    // Resource definitions (world setting "resourceDefinitions", see helpers/
+    // resourceDefinitions.mjs) an actor owning this item gets as resources.
+    schema.grantedResources = new fields.ArrayField(new fields.StringField({ required: true, blank: false }));
+
     // Bonuses to attributes. Player-extensible list, like species/class.
     schema.attributeBonuses = new fields.ArrayField(new fields.SchemaField({
       attribute: new fields.StringField({ required: true, blank: false, initial: "str" }),

@@ -36,6 +36,11 @@
         "Hint": "Weapon Models (by weapon type) and Armor Models (Light Armor, Heavy Armor, Shield) selectable on Weapons/Armor.",
         "Label": "Configure Models"
       },
+      "Resources": {
+          "Name": "Resources",
+          "Hint": "Define frequently used resources (e.g. Void, Faith, Yin/Yang) once. Classes, Species and Talents grant them in their GM tab; the character then gets them automatically with name, abbreviation, maximum and recovery.",
+          "Label": "Configure resources"
+      },
       "StatusEffects": {
         "Name": "Status Effects",
         "Hint": "Status effects selectable/toggleable on tokens and actors. Predefined ones (Exhaustion, Dazed, the four Poisoning severities) carry their own automated mechanics and can't be removed, only re-named/re-iconned/re-described; custom ones you add are flavor-only.",
@@ -452,6 +457,41 @@
       "Computed": "Automatically calculated from Aura, Antimagic armor/shields and any effects - not directly editable"
     },
     "Resource": {
+        "Definition": {
+            "Recovered": "{name}: {from} → {to}",
+            "Granted": "Granted resources",
+            "GrantedHint": "Resources from the resource settings a character gets with this item (multiple selection with Ctrl).",
+            "NoneDefined": "No resources are defined (Settings → Resources).",
+            "RemoveTitle": "Remove resource",
+            "RemoveConfirm": "Remove the resource \"{name}\"? It disappears from every character that has it - with its current value.",
+            "Add": "Add resource",
+            "Unnamed": "New resource",
+            "Remove": "Remove resource",
+            "Name": "Name",
+            "Abbreviation": "Abbreviation",
+            "AbbreviationHint": "Name in formulas: @abbreviation (lowercase, no spaces), e.g. @void. Always available, 0 for characters without the resource.",
+            "StartValue": "Start value",
+            "MaxFormula": "Maximum (formula)",
+            "MaxFormulaHint": "Empty = no maximum. L = character level, @attributes.con.mod, @skills.<skill>, floor()/min()/max() etc.",
+            "Description": "Description",
+            "Recovery": "Recovery",
+            "AddRecovery": "Add rule",
+            "RemoveRecovery": "Remove rule",
+            "IntervalHint": "Every how many Abschnitte (30 minutes) of a Pause",
+            "AmountHint": "Amount (formula, e.g. 1, ceil(L / 6))",
+            "None": "No resources defined yet.",
+            "FormulaHint": "Formulas: L = character level, @attributes.<attribute>.mod/.value, @skills.<skill>, @<abbreviation> (other resources), + - * / ( ), floor(), ceil(), min(), max().",
+            "Mode": {
+                "turnStart": "Turn start (Combat)",
+                "segments": "Pause (per interval)",
+                "day": "Change of day (without Calendaria: Anpassungspause)"
+            },
+            "Direction": {
+                "increase": "increases by",
+                "decrease": "decreases by",
+                "set": "sets to"
+            }
+        },
       "Life": "Life",
       "NegativeLife": "Negative Life",
       "NegativeLifeAbbr": "Neg. Life",

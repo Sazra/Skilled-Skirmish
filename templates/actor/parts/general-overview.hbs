@@ -71,8 +71,12 @@
         {{#each system.customResources as |entry index|}}
         <li class="item flexrow">
           <div class="item-name custom-resource-name-row">
+            {{#if entry.definitionId}}
+            <span class="resource-computed" title="{{entry.description}}">{{entry.name}}</span>
+            {{else}}
             <input type="text" name="system.customResources.{{index}}.name" value="{{entry.name}}"
               placeholder="{{localize 'Name'}}" />
+            {{/if}}
             <a class="item-control" data-action="openCustomResourceManaAlternativeDialog" data-index="{{index}}"
               title="{{localize 'SKSK.General.ManaAlternativeDialogTitle'}}">
               <i class="fas fa-gear"></i>
@@ -81,15 +85,24 @@
           <div class="item-name flexrow flex-center">
             <input type="text" name="system.customResources.{{index}}.value" value="{{entry.value}}"
               data-dtype="Number" class="custom-resource-amount" />
+            {{#if entry.definitionId}}
+            {{#if entry.max}}
+            <span>/</span>
+            <span class="resource-computed">{{entry.max}}</span>
+            {{/if}}
+            {{else}}
             <span>/</span>
             <input type="text" name="system.customResources.{{index}}.max" value="{{entry.max}}"
               data-dtype="Number" class="custom-resource-amount" />
+            {{/if}}
           </div>
           <div class="item-controls">
+            {{#unless entry.definitionId}}
             <a class="item-control item-delete" data-action="removeResource" data-index="{{index}}"
               title="{{localize 'DOCUMENT.Delete' type='Resource'}}">
               <i class="fas fa-trash"></i>
             </a>
+            {{/unless}}
           </div>
         </li>
         {{/each}}

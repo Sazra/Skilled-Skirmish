@@ -19,6 +19,7 @@ const EXPORTABLE_SETTINGS = [
   'lehren',
   'skillUsageFp',
   'statusEffects',
+  'resourceDefinitions',
   'deities',
   'deityAbilityCount',
 ];

@@ -8,6 +8,7 @@ import { countActiveSummons } from './summoning.mjs';
 import { isCalendariaDailySettlementEnabled, isCalendariaActive } from './calendarIntegration.mjs';
 import { recoverChargesOnRest } from './abilityCharges.mjs';
 import { applyElapsedRegen } from './passiveRegen.mjs';
+import { recoverResources } from './resourceDefinitions.mjs';
 
 /**
  * A time segment - the atomic unit "spending time" is measured in.
@@ -506,6 +507,7 @@ export async function applyRest(actor, options) {
   // Charges of "once" abilities: per Abschnitt of a Pause, and - without
   // Calendaria - the "change of day" recovery after an Anpassungspause.
   lines.push(...await recoverChargesOnRest(actor, { segments, isBreak, tier, calendariaActive: isCalendariaActive() }));
+  lines.push(...await recoverResources(actor, { mode: 'rest', segments, isBreak, tier, calendariaActive: isCalendariaActive() }));
 
   // Effects that heal Life/Mana at the start of a turn also run outside of
   // Combat: with Calendaria the passing world time does that (helpers/

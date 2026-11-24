@@ -39,6 +39,7 @@ import * as models from './data/_module.mjs';
 import { EXTRA_DAMAGE_USE_EVENT } from './helpers/extraDamage.mjs';
 import { parseVariantAttribute } from './helpers/spellVariants.mjs';
 import { registerAbilityChargeHooks } from './helpers/abilityCharges.mjs';
+import { registerResourceHooks } from './helpers/resourceDefinitions.mjs';
 import { registerAbilitySpellHooks } from './helpers/abilitySpell.mjs';
 
 Hooks.once('init', function () {
@@ -173,6 +174,7 @@ Hooks.once('ready', async function () {
   // Charge recovery over world time and the clean-up of the hidden spell copies
   // "once" abilities use - see helpers/abilityCharges.mjs/abilitySpell.mjs.
   registerAbilityChargeHooks();
+  registerResourceHooks();
   registerAbilitySpellHooks();
 
   // Drag-to-hotbar macros (a sheet roll, or an owned Item) - see

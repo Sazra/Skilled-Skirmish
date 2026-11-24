@@ -3370,3 +3370,23 @@ span.sksk-critical-failure {
   flex-wrap: wrap;
   gap: 2px 8px;
 }
+
+/* Ressourcen-Konfiguration (apps/resources-config.mjs) */
+.sksk-resources-config .resource-definition {
+  margin-bottom: 8px;
+  padding: 4px 8px;
+}
+
+.sksk-resources-config .resource-definition legend {
+  font-weight: bold;
+}
+
+.sksk-resources-config .resource-recovery-rule {
+  gap: 4px;
+  margin-bottom: 2px;
+  align-items: center;
+}
+
+.sksk-resources-config .resource-recovery-rule input[type='number'] {
+  flex: 0 0 48px;
+}

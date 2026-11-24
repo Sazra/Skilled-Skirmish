@@ -5,6 +5,7 @@ import {
   readAbility, updateAbility, getChargeState, changeCharges, startChargeClocks, recoverChargesOnTurnStart,
 } from './abilityCharges.mjs';
 import { ensureAbilitySpell } from './abilitySpell.mjs';
+import { recoverResources } from './resourceDefinitions.mjs';
 
 /**
  * A Class/Species/Talent "Fähigkeit"'s own AP-/RP-/Mana-costed activation -
@@ -403,6 +404,9 @@ export async function handleAbilityTurnStart(actor) {
 
   // Charges of "once" abilities that come back at the start of the turn.
   lines.push(...await recoverChargesOnTurnStart(actor));
+
+  // Resources (Ressourcen-Definitionen) with a "turn start" recovery rule.
+  lines.push(...await recoverResources(actor, { mode: 'turnStart' }));
 
   return lines;
 }

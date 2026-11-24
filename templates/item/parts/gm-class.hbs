@@ -18,6 +18,17 @@
   </div>
 
   <div class="resource">
+    <label class="resource-label" title="{{localize 'SKSK.Resource.Definition.GrantedHint'}}">{{localize 'SKSK.Resource.Definition.Granted'}}</label>
+    {{#if hasResourceChoices}}
+    <select name="system.grantedResources" multiple size="4">
+      {{selectOptions resourceChoices selected=system.grantedResources}}
+    </select>
+    {{else}}
+    <p class="hint">{{localize 'SKSK.Resource.Definition.NoneDefined'}}</p>
+    {{/if}}
+  </div>
+
+  <div class="resource">
     <label class="resource-label">Combined School Overrides</label>
     <ol class="items-list items-list-compact">
       <li class="item flexrow items-header">

@@ -10,6 +10,8 @@ import { SKSKLehrenConfig } from '../apps/lehren-config.mjs';
 import { SKSKEffectKeyReference } from '../apps/effect-key-reference.mjs';
 import { SKSKGeneralSettingsConfig } from '../apps/general-settings-config.mjs';
 import { SKSKDeitiesConfig } from '../apps/deities-config.mjs';
+import { SKSKResourcesConfig } from '../apps/resources-config.mjs';
+import { onResourceDefinitionsChanged } from './resourceDefinitions.mjs';
 
 /**
  * Register world-scoped game settings for the system.
@@ -249,6 +251,26 @@ export function registerSettings() {
     config: false,
     type: Array,
     default: [],
+  });
+
+  // GM-configurable resource definitions (Leere, Glaube, ...) that Class/
+  // Species/Talent items grant to their owner - see apps/resources-config.mjs
+  // and helpers/resourceDefinitions.mjs.
+  game.settings.register('sksk', 'resourceDefinitions', {
+    scope: 'world',
+    config: false,
+    type: Array,
+    default: [],
+    onChange: () => onResourceDefinitionsChanged(),
+  });
+
+  game.settings.registerMenu('sksk', 'resourcesMenu', {
+    name: 'SKSK.Settings.Resources.Name',
+    hint: 'SKSK.Settings.Resources.Hint',
+    label: 'SKSK.Settings.Resources.Label',
+    icon: 'fas fa-gem',
+    type: SKSKResourcesConfig,
+    restricted: true,
   });
 
   game.settings.registerMenu('sksk', 'statusEffectsMenu', {

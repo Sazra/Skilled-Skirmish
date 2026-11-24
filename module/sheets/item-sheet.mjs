@@ -6,6 +6,7 @@ import {
 } from '../helpers/effects.mjs';
 import { getSkillBonusChoices } from '../helpers/skills.mjs';
 import { setSpellSustaining } from '../helpers/spell-rolls.mjs';
+import { getResourceDefinitions } from '../helpers/resourceDefinitions.mjs';
 import {
   computeSavingThrowValue, computeSavingThrowBonusSum, computeDamageBonus, computeCombinedSchoolOverrideLevel,
   computeExtraManaCostSum, formatRangeLabel, SPELL_ELEMENT, SPELL_BARRIER, SPELL_MANA_RESTORE,
@@ -548,6 +549,9 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
     // share the same attribute/skill-bonus UI and choices across all three
     // item types.
     if (item.type === 'species' || item.type === 'class' || item.type === 'talent') {
+      // The resources (Ressourcen-Definitionen) this item can grant.
+      context.resourceChoices = Object.fromEntries(getResourceDefinitions().map(def => [def.id, def.name || def.abbreviation || def.id]));
+      context.hasResourceChoices = Object.keys(context.resourceChoices).length > 0;
       context.attributeChoices = CONFIG.SKSK.attributes;
       context.combinedSchoolChoices = CONFIG.SKSK.combinedMagicSchools;
       if (item.actor) {

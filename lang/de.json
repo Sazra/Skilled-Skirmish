@@ -36,6 +36,11 @@
                 "Hint": "Waffenmodelle (nach Waffenart) und Rüstungsmodelle (Leichte Rüstung, Schwere Rüstung, Schild), die in Waffen/Rüstungen ausgewählt werden können.",
                 "Label": "Modelle konfigurieren"
             },
+            "Resources": {
+                "Name": "Ressourcen",
+                "Hint": "Häufig genutzte Ressourcen (z.B. Leere, Glaube, Yin/Yang) einmal definieren. Klassen, Spezies und Talente gewähren sie in ihrem GM-Tab; der Charakter erhält sie dann automatisch mit Name, Kürzel, Maximum und Regeneration.",
+                "Label": "Ressourcen konfigurieren"
+            },
             "StatusEffects": {
                 "Name": "Statuseffekte",
                 "Hint": "Statuseffekte, die auf Tokens/Akteuren ausgewählt/umgeschaltet werden können. Vordefinierte (Erschöpfung, Benommenheit, die vier Vergiftungs-Schweregrade) tragen eigene automatisierte Mechaniken und können nicht entfernt werden, nur umbenannt/mit neuem Symbol/neu beschrieben werden; selbst hinzugefügte sind rein kosmetisch.",
@@ -452,6 +457,41 @@
             "Computed": "Automatisch berechnet aus Aura, magiestörenden Rüstungen/Schilden und etwaigen Effekten - nicht direkt bearbeitbar"
         },
         "Resource": {
+            "Definition": {
+                "Recovered": "{name}: {from} → {to}",
+                "Granted": "Gewährte Ressourcen",
+                "GrantedHint": "Ressourcen aus der Ressourcen-Konfiguration, die ein Charakter mit diesem Gegenstand erhält (Mehrfachauswahl mit Strg).",
+                "NoneDefined": "Es sind keine Ressourcen definiert (Einstellungen → Ressourcen).",
+                "RemoveTitle": "Ressource entfernen",
+                "RemoveConfirm": "Die Ressource \"{name}\" entfernen? Sie verschwindet bei allen Charakteren, die sie haben - samt ihrem aktuellen Wert.",
+                "Add": "Ressource hinzufügen",
+                "Unnamed": "Neue Ressource",
+                "Remove": "Ressource entfernen",
+                "Name": "Name",
+                "Abbreviation": "Kürzel",
+                "AbbreviationHint": "Name in Formeln: @kürzel (klein geschrieben, ohne Leerzeichen), z.B. @leere. Ist immer verfügbar, 0 bei Charakteren ohne die Ressource.",
+                "StartValue": "Startwert",
+                "MaxFormula": "Maximum (Formel)",
+                "MaxFormulaHint": "Leer = kein Maximum. L = Charakterlevel, @attributes.con.mod, @skills.<Fertigkeit>, floor()/min()/max() usw.",
+                "Description": "Beschreibung",
+                "Recovery": "Regeneration",
+                "AddRecovery": "Regel hinzufügen",
+                "RemoveRecovery": "Regel entfernen",
+                "IntervalHint": "Alle wie viele Abschnitte (30 Minuten) einer Pause",
+                "AmountHint": "Menge (Formel, z.B. 1, ceil(L / 6))",
+                "None": "Noch keine Ressourcen definiert.",
+                "FormulaHint": "Formeln: L = Charakterlevel, @attributes.<Attribut>.mod/.value, @skills.<Fertigkeit>, @<Kürzel> (andere Ressourcen), + - * / ( ), floor(), ceil(), min(), max().",
+                "Mode": {
+                    "turnStart": "Zugbeginn (Kampf)",
+                    "segments": "Pause (pro Intervall)",
+                    "day": "Tageswechsel (ohne Calendaria: Anpassungspause)"
+                },
+                "Direction": {
+                    "increase": "erhöht um",
+                    "decrease": "senkt um",
+                    "set": "setzt auf"
+                }
+            },
             "Life": "Leben",
             "NegativeLife": "Negatives Leben",
             "NegativeLifeAbbr": "Neg. Leben",

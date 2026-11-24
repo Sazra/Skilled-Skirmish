@@ -19,6 +19,10 @@ export default class SKSKClass extends SKSKItemBase {
     // needs one fixed skill key).
     schema.gmNotes = new fields.StringField({ required: true, blank: true });
 
+    // Resource definitions (world setting "resourceDefinitions", see helpers/
+    // resourceDefinitions.mjs) an actor owning this item gets as resources.
+    schema.grantedResources = new fields.ArrayField(new fields.StringField({ required: true, blank: false }));
+
     // Marks this Class as a "Glaubensklasse" (faith class) - see helpers/
     // religion.mjs. A Glaubensklasse can follow its own Patron (below),
     // independent of the actor's own Religion choice, and each of its 3

@@ -5,6 +5,7 @@ import {
 } from '../helpers/attributes.mjs';
 import { computeNpcAttributeThresholdBonuses } from '../helpers/attributeBonuses.mjs';
 import { computeMaxLife, computeMaxNegativeLife } from '../helpers/life.mjs';
+import { applyResourceDefinitions, getResourceDefinitions, resourceRollKey } from '../helpers/resourceDefinitions.mjs';
 import { computeMaxMana } from '../helpers/mana.mjs';
 import { computeMaxActionPoints, computeMaxReactionPoints } from '../helpers/points.mjs';
 import { computeNaturalMaterialBonus, computeArmorClass, computeMagicResistance } from '../helpers/defense.mjs';
@@ -626,6 +627,14 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       abbreviation: new fields.StringField({ required: true, blank: true }),
       value: new fields.NumberField({ ...requiredInteger, initial: 0 }),
       max: new fields.NumberField({ ...requiredInteger, initial: 0 }),
+      // A resource granted by a Resource definition (world setting
+      // "resourceDefinitions", see helpers/resourceDefinitions.mjs): name,
+      // abbreviation and maximum then come live from that definition; only
+      // the value (and the recovery bookkeeping below) belongs to this actor.
+      definitionId: new fields.StringField({ required: true, blank: true, initial: "" }),
+      // Abschnitte of each "segments" recovery rule not yet adding up to a
+      // whole interval (runtime state, indexed like the rules).
+      recoveryCarry: new fields.ArrayField(new fields.NumberField({ required: true, nullable: false, initial: 0 })),
       // Whether this resource can be spent instead of Mana - see helpers/
       // customResources.mjs#getManaAlternativeResources/
       // computeManaAlternativeCoverage, chosen at spell-cast time via the
@@ -1208,6 +1217,8 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
       // Depends on Willenskraft's own mod, just computed in the attributes
       // loop above - see helpers/elementalCharges.mjs.
       this.elementalCharges.maxSlots = Math.max(0, this.attributes.wil?.mod ?? 0);
+      // Name/abbreviation/maximum of the resources granted by Resource definitions.
+      applyResourceDefinitions(this);
     }
   }
 
@@ -1258,6 +1269,11 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // Each custom resource with an abbreviation set exposes its current
     // value as "@<abbreviation, lowercased>" in any roll formula (damage,
     // the generic Item roll formula, attribute rolls, etc).
+    // Every defined resource is always available (0 for an actor without it).
+    for (const def of getResourceDefinitions()) {
+      const key = resourceRollKey(def.abbreviation);
+      if (key) data[key] = 0;
+    }
     for (const resource of this.customResources ?? []) {
       if (!resource.abbreviation) continue;
       data[resource.abbreviation.toLowerCase()] = resource.value;

@@ -20,6 +20,10 @@ export default class SKSKSpecies extends SKSKItemBase {
     // field (see module/data/class.mjs#gmNotes for the same pattern).
     schema.gmNotes = new fields.StringField({ required: true, blank: true });
 
+    // Resource definitions (world setting "resourceDefinitions", see helpers/
+    // resourceDefinitions.mjs) an actor owning this item gets as resources.
+    schema.grantedResources = new fields.ArrayField(new fields.StringField({ required: true, blank: false }));
+
     // Base value granted to the Aura attribute. A character's Aura is the
     // sum of this value from their main species and (if any) sub-species.
     // The field's own min covers a Sub-Species (0 - it doesn't have to add

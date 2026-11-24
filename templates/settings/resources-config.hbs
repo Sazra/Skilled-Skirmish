@@ -1,0 +1,74 @@
+<div class="sksk-resources-config">
+  <p class="hint">{{localize 'SKSK.Settings.Resources.Hint'}}</p>
+  <p class="hint">{{localize 'SKSK.Resource.Definition.FormulaHint'}}</p>
+
+  <div class="resources-config-toolbar">
+    <a class="item-control" data-action="addDefinition" title="{{localize 'SKSK.Resource.Definition.Add'}}">
+      <i class="fas fa-plus"></i> {{localize 'SKSK.Resource.Definition.Add'}}
+    </a>
+  </div>
+
+  {{#each definitions as |def index|}}
+  <fieldset class="resource-definition">
+    <legend>
+      {{#if def.name}}{{def.name}}{{else}}{{localize 'SKSK.Resource.Definition.Unnamed'}}{{/if}}
+      <a class="item-control item-delete" data-action="removeDefinition" data-index="{{index}}"
+        title="{{localize 'SKSK.Resource.Definition.Remove'}}"><i class="fas fa-trash"></i></a>
+    </legend>
+
+    <div class="grid grid-2col">
+      <div class="resource">
+        <label class="resource-label">{{localize 'SKSK.Resource.Definition.Name'}}</label>
+        <input type="text" name="definitions.{{index}}.name" value="{{def.name}}" />
+      </div>
+      <div class="resource">
+        <label class="resource-label" title="{{localize 'SKSK.Resource.Definition.AbbreviationHint'}}">{{localize 'SKSK.Resource.Definition.Abbreviation'}}</label>
+        <input type="text" name="definitions.{{index}}.abbreviation" value="{{def.abbreviation}}" />
+      </div>
+      <div class="resource">
+        <label class="resource-label">{{localize 'SKSK.Resource.Definition.StartValue'}}</label>
+        <input type="number" name="definitions.{{index}}.startValue" value="{{def.startValue}}" min="0" step="1" />
+      </div>
+      <div class="resource">
+        <label class="resource-label" title="{{localize 'SKSK.Resource.Definition.MaxFormulaHint'}}">{{localize 'SKSK.Resource.Definition.MaxFormula'}}</label>
+        <input type="text" name="definitions.{{index}}.maxFormula" value="{{def.maxFormula}}" placeholder="10 + @attributes.con.mod" />
+      </div>
+    </div>
+
+    <div class="resource">
+      <label class="resource-label">{{localize 'SKSK.Resource.Definition.Description'}}</label>
+      <textarea name="definitions.{{index}}.description" rows="2">{{def.description}}</textarea>
+    </div>
+
+    <div class="resource">
+      <label class="resource-label">
+        {{localize 'SKSK.Resource.Definition.Recovery'}}
+        <a class="item-control" data-action="addRecovery" data-index="{{index}}"
+          title="{{localize 'SKSK.Resource.Definition.AddRecovery'}}"><i class="fas fa-plus"></i></a>
+      </label>
+      {{#each def.recovery as |rule ruleIndex|}}
+      <div class="flexrow resource-recovery-rule">
+        <select name="definitions.{{index}}.recovery.{{ruleIndex}}.mode">
+          {{selectOptions @root.modeChoices selected=rule.mode localize=true}}
+        </select>
+        {{#if (eq rule.mode "segments")}}
+        <input type="number" name="definitions.{{index}}.recovery.{{ruleIndex}}.interval" value="{{rule.interval}}"
+          min="1" step="1" title="{{localize 'SKSK.Resource.Definition.IntervalHint'}}" />
+        {{else}}
+        <input type="hidden" name="definitions.{{index}}.recovery.{{ruleIndex}}.interval" value="{{rule.interval}}" />
+        {{/if}}
+        <select name="definitions.{{index}}.recovery.{{ruleIndex}}.direction">
+          {{selectOptions @root.directionChoices selected=rule.direction localize=true}}
+        </select>
+        <input type="text" name="definitions.{{index}}.recovery.{{ruleIndex}}.amountFormula" value="{{rule.amountFormula}}"
+          placeholder="1" title="{{localize 'SKSK.Resource.Definition.AmountHint'}}" />
+        <a class="item-control item-delete" data-action="removeRecovery" data-index="{{index}}" data-rule="{{ruleIndex}}"
+          title="{{localize 'SKSK.Resource.Definition.RemoveRecovery'}}"><i class="fas fa-trash"></i></a>
+      </div>
+      {{/each}}
+    </div>
+  </fieldset>
+  {{else}}
+  <p class="hint">{{localize 'SKSK.Resource.Definition.None'}}</p>
+  {{/each}}
+</div>
