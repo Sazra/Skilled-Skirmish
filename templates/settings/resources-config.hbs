@@ -1,4 +1,7 @@
 <div class="sksk-resources-config">
+  <datalist id="resource-effect-keys">
+    {{#each effectKeys as |key|}}<option value="{{key}}"></option>{{/each}}
+  </datalist>
   <p class="hint">{{localize 'SKSK.Settings.Resources.Hint'}}</p>
   <p class="hint">{{localize 'SKSK.Resource.Definition.FormulaHint'}}</p>
 
@@ -64,6 +67,30 @@
           placeholder="1" title="{{localize 'SKSK.Resource.Definition.AmountHint'}}" />
         <a class="item-control item-delete" data-action="removeRecovery" data-index="{{index}}" data-rule="{{ruleIndex}}"
           title="{{localize 'SKSK.Resource.Definition.RemoveRecovery'}}"><i class="fas fa-trash"></i></a>
+      </div>
+      {{/each}}
+    </div>
+
+    <div class="resource">
+      <label class="resource-label" title="{{localize 'SKSK.Resource.Definition.PerPointHint'}}">
+        {{localize 'SKSK.Resource.Definition.PerPoint'}}
+        <a class="item-control" data-action="addPerPoint" data-index="{{index}}"
+          title="{{localize 'SKSK.Resource.Definition.AddPerPoint'}}"><i class="fas fa-plus"></i></a>
+      </label>
+      {{#each def.perPoint as |rule ruleIndex|}}
+      <div class="flexrow resource-recovery-rule">
+        <input type="text" name="definitions.{{index}}.perPoint.{{ruleIndex}}.key" value="{{rule.key}}"
+          list="resource-effect-keys" placeholder="system.life.max" title="{{localize 'SKSK.Resource.Definition.EffectKey'}}" />
+        <select name="definitions.{{index}}.perPoint.{{ruleIndex}}.type">
+          {{selectOptions @root.typeChoices selected=rule.type localize=true}}
+        </select>
+        <select name="definitions.{{index}}.perPoint.{{ruleIndex}}.phase" title="{{localize 'SKSK.Resource.Definition.EffectPhaseHint'}}">
+          {{selectOptions @root.phaseChoices selected=rule.phase localize=true}}
+        </select>
+        <input type="text" name="definitions.{{index}}.perPoint.{{ruleIndex}}.value" value="{{rule.value}}"
+          placeholder="@value * 2" title="{{localize 'SKSK.Resource.Definition.EffectValueHint'}}" />
+        <a class="item-control item-delete" data-action="removePerPoint" data-index="{{index}}" data-rule="{{ruleIndex}}"
+          title="{{localize 'SKSK.Resource.Definition.RemovePerPoint'}}"><i class="fas fa-trash"></i></a>
       </div>
       {{/each}}
     </div>

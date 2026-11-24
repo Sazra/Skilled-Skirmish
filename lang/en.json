@@ -458,6 +458,25 @@
     },
     "Resource": {
         "Definition": {
+            "PerPoint": "Effects per point",
+            "AddPerPoint": "Add effect",
+            "RemovePerPoint": "Remove effect",
+            "PerPointHint": "Active while the character has the resource - like the changes of an effect. \"@value\" is the resource's current value (e.g. -(@value * 2) for 2 less per point).",
+            "EffectKey": "Effect key (system....)",
+            "EffectValueHint": "Value (formula). @value = the resource's current value, also L, @attributes.<attribute>.mod etc.",
+            "EffectPhaseHint": "Initial: before the derived values are computed (attribute modifiers are not ready yet). Final: after - needed for @attributes....mod and for computed targets like system.life.max (then type \"Custom\").",
+            "EffectType": {
+                "add": "Add",
+                "multiply": "Multiply",
+                "override": "Override",
+                "upgrade": "Upgrade",
+                "downgrade": "Downgrade",
+                "custom": "Custom (derived values)"
+            },
+            "EffectPhase": {
+                "initial": "Initial",
+                "final": "Final"
+            },
             "Recovered": "{name}: {from} → {to}",
             "Granted": "Granted resources",
             "GrantedHint": "Resources from the resource settings a character gets with this item (multiple selection with Ctrl).",
@@ -812,6 +831,8 @@
         "Misc": "AC/MR & Misc",
         "MagicSchoolAttack": "Magic School Attack Bonuses",
         "WeaponAttack": "Weapon Type Attack Bonuses",
+        "DamageReduction": "Damage reduction",
+        "DamageReductionHint": "Flat reduction of every incoming damage entry by these points (after Resistance/Weakness, never below 0). Aether (true damage) and healing are not reduced. The values add up: \"all\", \"physical\", \"magical\" and the single damage type.",
         "RollAdvantage": "Advantage/Disadvantage recommendations",
         "RollAdvantageHint": "Never forced: every effect counts +1 (advantage) or -1 (disadvantage); the dialog recommends the mode that outweighs (no recommendation on a tie). The player can always freely choose advantage/neutral/disadvantage. Enter 1 or -1 as the value (mode \"Add\").",
         "MagicSchoolDamage": "Magic School Damage Bonuses",

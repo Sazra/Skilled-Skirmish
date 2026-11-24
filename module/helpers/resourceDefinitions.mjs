@@ -19,12 +19,23 @@
  *   Anpassungspause). direction "increase"/"decrease" by the amount, or "set"
  *   the value to it.
  *
+ * - perPoint: effects every point of the resource has, [{key, type, phase,
+ *   value}] like the Changes of an Active Effect: "@value" in the value stands
+ *   for the current amount of this resource. Kept as one Active Effect on the
+ *   actor (flag resourceDefinitionId) per resource (see syncResourceEffects).
+ *   Derived targets (system.life.max, ...) need type "custom" and phase "final".
+ *
  * Every defined abbreviation is always part of an actor's roll data
  * ("@leere", 0 when the actor has none), so formulas never break.
  */
 
 export const RESOURCE_RECOVERY_MODES = ['turnStart', 'segments', 'day'];
 export const RESOURCE_RECOVERY_DIRECTIONS = ['increase', 'decrease', 'set'];
+export const RESOURCE_EFFECT_TYPES = ['add', 'multiply', 'override', 'upgrade', 'downgrade', 'custom'];
+export const RESOURCE_EFFECT_PHASES = ['initial', 'final'];
+
+/** The flag marking the Active Effect that carries a resource's per-point effects. */
+const EFFECT_FLAG = 'resourceDefinitionId';
 
 /** The item types that can grant resources. */
 export const RESOURCE_GRANTING_TYPES = ['class', 'species', 'talent'];
@@ -122,6 +133,71 @@ export function getGrantedDefinitionIds(actor) {
 }
 
 /**
+ * The Active Effect changes of a definition's per-point effects, with
+ * "@value" replaced by the resource's own roll-data name.
+ * @param {object} def
+ * @return {Array<{key: string, type: string, phase: string, priority: null, value: string}>}
+ */
+export function buildResourceEffectChanges(def) {
+  const rollKey = resourceRollKey(def.abbreviation);
+  if (!rollKey) return [];
+  return (def.perPoint ?? [])
+    .filter(rule => String(rule.key ?? '').trim())
+    .map(rule => ({
+      key: String(rule.key).trim(),
+      type: RESOURCE_EFFECT_TYPES.includes(rule.type) ? rule.type : 'add',
+      phase: RESOURCE_EFFECT_PHASES.includes(rule.phase) ? rule.phase : 'initial',
+      priority: null,
+      // "@value" = this resource; "L" = the level (effects know it as @lvl).
+      value: String(rule.value ?? '').replace(/@value\b/g, `@${rollKey}`).replace(/\bL\b/g, '@lvl'),
+    }));
+}
+
+/**
+ * Keep one Active Effect on the actor per granted resource that has per-point
+ * effects (and none for the others): created, updated to the definition's
+ * current changes, or removed.
+ * @param {Actor} actor
+ * @return {Promise<boolean>}   Whether an effect was created, changed or removed.
+ */
+export async function syncResourceEffects(actor) {
+  const wanted = new Map();
+  for (const entry of actor._source.system.customResources ?? []) {
+    const def = entry.definitionId ? getResourceDefinition(entry.definitionId) : null;
+    if (!def) continue;
+    const changes = buildResourceEffectChanges(def);
+    if (changes.length) wanted.set(def.id, { def, changes });
+  }
+
+  const simplify = changes => JSON.stringify((changes ?? []).map(({ key, type, phase, value }) => ({ key, type, phase, value })));
+  const remove = [];
+  const update = [];
+  const seen = new Set();
+  for (const effect of actor.effects) {
+    const id = effect.getFlag('sksk', EFFECT_FLAG);
+    if (!id) continue;
+    const target = wanted.get(id);
+    if (!target || seen.has(id)) {
+      remove.push(effect.id);
+      continue;
+    }
+    seen.add(id);
+    if (effect.name !== target.def.name || simplify(effect.system?.changes) !== simplify(target.changes)) {
+      update.push({ _id: effect.id, name: target.def.name, 'system.changes': target.changes });
+    }
+  }
+  const create = [...wanted.values()].filter(({ def }) => !seen.has(def.id)).map(({ def, changes }) => ({
+    name: def.name, img: 'icons/svg/aura.svg', type: 'base', disabled: false, transfer: false,
+    description: def.description ?? '', flags: { sksk: { [EFFECT_FLAG]: def.id } }, system: { changes },
+  }));
+
+  if (remove.length) await actor.deleteEmbeddedDocuments('ActiveEffect', remove);
+  if (update.length) await actor.updateEmbeddedDocuments('ActiveEffect', update);
+  if (create.length) await actor.createEmbeddedDocuments('ActiveEffect', create);
+  return !!(remove.length || update.length || create.length);
+}
+
+/**
  * Make the actor's definition-bound resource entries match what its items
  * grant: add the missing ones (with the definition's start value), remove
  * those no longer granted. Writes only if something changed.
@@ -152,7 +228,9 @@ export async function syncGrantedResources(actor) {
     changed = true;
   }
   if (changed) await actor.update({ 'system.customResources': resources });
-  return changed;
+  // The per-point effects of the (now) granted resources.
+  const effectsChanged = await syncResourceEffects(actor);
+  return changed || effectsChanged;
 }
 
 /**

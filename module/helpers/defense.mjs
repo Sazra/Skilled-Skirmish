@@ -277,6 +277,26 @@ export function getMagicResistanceBreakdown(actor) {
   return computeMagicResistanceComponents(actor);
 }
 
+/** The damage types counted as physical for the flat damage reduction. */
+const PHYSICAL_DAMAGE_TYPES = ['blunt', 'sharp', 'piercing'];
+
+/**
+ * The flat damage reduction an actor has against one damage type (Active
+ * Effect targets system.damageReductionAll/Physical/Magical and
+ * system.damageReduction.<type>, added up). Aether is true damage - never reduced.
+ * @param {Actor} actor
+ * @param {string} damageType
+ * @return {number}   0 or more.
+ */
+export function computeFlatDamageReduction(actor, damageType) {
+  if (damageType === 'aether') return 0;
+  const system = actor?.system;
+  if (!system) return 0;
+  const group = PHYSICAL_DAMAGE_TYPES.includes(damageType) ? system.damageReductionPhysical : system.damageReductionMagical;
+  const total = (system.damageReductionAll ?? 0) + (group ?? 0) + (system.damageReduction?.[damageType] ?? 0);
+  return Math.max(0, total);
+}
+
 /**
  * How a given amount of one element's damage is modified by the
  * defender's Resistance/Weakness/Immunity/Absorption skills for that same
@@ -324,6 +344,9 @@ export function applyElementalDefense(actor, damageType, amount) {
   const resistancePercent = Math.min(99, getActorSkillLevel(actor, `${damageType}Resistance`) * 10);
   const weaknessStacks = getSkillStacks(actor, `${damageType}Weakness`);
   const netFraction = 1 + weaknessStacks - resistancePercent / 100;
-  const outcome = netFraction < 1 ? 'resisted' : netFraction > 1 ? 'weakened' : 'normal';
-  return { amount: Math.max(0, Math.floor(amount * netFraction)), healing: false, outcome };
+  let outcome = netFraction < 1 ? 'resisted' : netFraction > 1 ? 'weakened' : 'normal';
+  const flatReduction = computeFlatDamageReduction(actor, damageType);
+  const reduced = Math.max(0, Math.floor(amount * netFraction) - flatReduction);
+  if (flatReduction > 0 && outcome === 'normal' && reduced < amount) outcome = 'resisted';
+  return { amount: reduced, healing: false, outcome };
 }

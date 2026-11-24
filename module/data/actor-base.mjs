@@ -857,6 +857,20 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // an Active Effect target ("system.barrierDamageBonus"), read from the
     // ATTACKER in helpers/damageApplication.mjs#applyResolvedDamageEntries.
     schema.barrierDamageBonus = new fields.NumberField({ ...requiredInteger, initial: 0 });
+
+    // Flat damage reduction (Active Effect targets, "Schutz" abilities): this
+    // many points less of each incoming damage entry, after Resistance/
+    // Weakness, never below 0 and never against Aether (true damage) or
+    // healing. They add up: damageReductionAll (every type),
+    // damageReductionPhysical (blunt/sharp/piercing), damageReductionMagical
+    // (every other type) and damageReduction.<type> (one type). See
+    // helpers/defense.mjs#computeFlatDamageReduction.
+    schema.damageReductionAll = new fields.NumberField({ ...requiredInteger, initial: 0 });
+    schema.damageReductionPhysical = new fields.NumberField({ ...requiredInteger, initial: 0 });
+    schema.damageReductionMagical = new fields.NumberField({ ...requiredInteger, initial: 0 });
+    schema.damageReduction = new fields.SchemaField(Object.fromEntries(
+      Object.keys(CONFIG.SKSK.damageTypes).map(key => [key, new fields.NumberField({ ...requiredInteger, initial: 0 })])
+    ));
     // Barrier this actor gets at the start of each of its own turns - purely
     // an Active Effect target ("system.barrierTurnStart", an amount): never
     // stackable, lasting until its next turn starts. See helpers/barrier.mjs#

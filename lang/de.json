@@ -458,6 +458,25 @@
         },
         "Resource": {
             "Definition": {
+                "PerPoint": "Effekte pro Punkt",
+                "AddPerPoint": "Effekt hinzufügen",
+                "RemovePerPoint": "Effekt entfernen",
+                "PerPointHint": "Wirkt, solange der Charakter die Ressource hat - wie die Änderungen eines Effekts. \"@value\" steht für den aktuellen Wert der Ressource (z.B. -(@value * 2) für 2 weniger pro Punkt).",
+                "EffectKey": "Schlüssel des Effekts (system....)",
+                "EffectValueHint": "Wert (Formel). @value = aktueller Wert der Ressource, außerdem L, @attributes.<Attribut>.mod usw.",
+                "EffectPhaseHint": "Anfang: vor der Berechnung der abgeleiteten Werte (Attributsmodifikatoren stehen noch nicht bereit). Ende: danach - nötig für @attributes....mod und für berechnete Ziele wie system.life.max (dann Typ \"Eigene\").",
+                "EffectType": {
+                    "add": "Addieren",
+                    "multiply": "Multiplizieren",
+                    "override": "Überschreiben",
+                    "upgrade": "Anheben",
+                    "downgrade": "Absenken",
+                    "custom": "Eigene (abgeleitete Werte)"
+                },
+                "EffectPhase": {
+                    "initial": "Anfang",
+                    "final": "Ende"
+                },
                 "Recovered": "{name}: {from} → {to}",
                 "Granted": "Gewährte Ressourcen",
                 "GrantedHint": "Ressourcen aus der Ressourcen-Konfiguration, die ein Charakter mit diesem Gegenstand erhält (Mehrfachauswahl mit Strg).",
@@ -812,6 +831,8 @@
                 "Misc": "AC/MR & Sonstiges",
                 "MagicSchoolAttack": "Magieschul-Angriffsboni",
                 "WeaponAttack": "Waffentyp-Angriffsboni",
+                "DamageReduction": "Schadensreduktion",
+                "DamageReductionHint": "Pauschale Verringerung jedes eingehenden Schadenseintrags um diese Punkte (nach Resistenz/Schwäche, nie unter 0). Äther (echter Schaden) und Heilung werden nicht reduziert. Die Werte addieren sich: \"alle\", \"physisch\", \"magisch\" und die einzelne Schadensart.",
                 "RollAdvantage": "Vorteil-/Nachteil-Empfehlungen",
                 "RollAdvantageHint": "Keine Erzwingung: Jeder Effekt zählt +1 (Vorteil) bzw. -1 (Nachteil), der Dialog empfiehlt den Modus, der überwiegt (bei Gleichstand keine Empfehlung). Der Spieler kann immer Vorteil/Neutral/Nachteil frei wählen. Als Value 1 bzw. -1 eintragen (Modus \"Addieren\").",
                 "MagicSchoolDamage": "Magieschul-Schadensboni",

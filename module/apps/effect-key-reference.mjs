@@ -255,6 +255,16 @@ export class SKSKEffectKeyReference extends HandlebarsApplicationMixin(Applicati
         rows: vocabRows(CONFIG.SKSK.damageTypes, 'system.damageRerollOnesElements.'),
       },
       {
+        title: 'SKSK.EffectKeyReference.Category.DamageReduction',
+        hint: 'SKSK.EffectKeyReference.Category.DamageReductionHint',
+        rows: [
+          { label: 'Schadensreduktion: alle Schadensarten', key: 'system.damageReductionAll' },
+          { label: 'Schadensreduktion: physisch (stumpf, schneidend, stechend)', key: 'system.damageReductionPhysical' },
+          { label: 'Schadensreduktion: magisch (alle außer physisch und Äther)', key: 'system.damageReductionMagical' },
+          ...vocabRows(CONFIG.SKSK.damageTypes, 'system.damageReduction.'),
+        ],
+      },
+      {
         title: 'SKSK.EffectKeyReference.Category.RollAdvantage',
         hint: 'SKSK.EffectKeyReference.Category.RollAdvantageHint',
         rows: [

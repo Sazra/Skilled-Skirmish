@@ -1,4 +1,7 @@
-import { RESOURCE_RECOVERY_MODES, RESOURCE_RECOVERY_DIRECTIONS } from '../helpers/resourceDefinitions.mjs';
+import {
+  RESOURCE_RECOVERY_MODES, RESOURCE_RECOVERY_DIRECTIONS, RESOURCE_EFFECT_TYPES, RESOURCE_EFFECT_PHASES,
+} from '../helpers/resourceDefinitions.mjs';
+import { SKSKEffectKeyReference } from './effect-key-reference.mjs';
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
@@ -31,6 +34,8 @@ export class SKSKResourcesConfig extends HandlebarsApplicationMixin(ApplicationV
       removeDefinition: SKSKResourcesConfig.#removeDefinition,
       addRecovery: SKSKResourcesConfig.#addRecovery,
       removeRecovery: SKSKResourcesConfig.#removeRecovery,
+      addPerPoint: SKSKResourcesConfig.#addPerPoint,
+      removePerPoint: SKSKResourcesConfig.#removePerPoint,
     },
   };
 
@@ -46,10 +51,21 @@ export class SKSKResourcesConfig extends HandlebarsApplicationMixin(ApplicationV
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
     context.definitions = (game.settings.get('sksk', 'resourceDefinitions') ?? []).map(def => ({
-      ...def, recovery: def.recovery ?? [],
+      ...def, recovery: def.recovery ?? [], perPoint: def.perPoint ?? [],
     }));
     context.modeChoices = Object.fromEntries(RESOURCE_RECOVERY_MODES.map(mode => [mode, `SKSK.Resource.Definition.Mode.${mode}`]));
     context.directionChoices = Object.fromEntries(RESOURCE_RECOVERY_DIRECTIONS.map(dir => [dir, `SKSK.Resource.Definition.Direction.${dir}`]));
+    context.typeChoices = Object.fromEntries(RESOURCE_EFFECT_TYPES.map(type => [type, `SKSK.Resource.Definition.EffectType.${type}`]));
+    context.phaseChoices = Object.fromEntries(RESOURCE_EFFECT_PHASES.map(phase => [phase, `SKSK.Resource.Definition.EffectPhase.${phase}`]));
+    // Suggestions for the effect key: every key of the effect key catalog plus
+    // the derived maximums that need type "custom"/phase "final".
+    const keys = new Set(['system.life.max', 'system.mana.max', 'system.actionPoints.max', 'system.reactionPoints.max']);
+    try {
+      for (const category of SKSKEffectKeyReference.buildCategories()) for (const row of category.rows) keys.add(row.key);
+    } catch (error) {
+      console.warn('SKSK | Could not build the effect key suggestions', error);
+    }
+    context.effectKeys = [...keys];
     return context;
   }
 
@@ -76,6 +92,12 @@ export class SKSKResourcesConfig extends HandlebarsApplicationMixin(ApplicationV
         direction: RESOURCE_RECOVERY_DIRECTIONS.includes(rule.direction) ? rule.direction : 'increase',
         amountFormula: String(rule.amountFormula ?? '').trim(),
       })),
+      perPoint: Object.values(def.perPoint ?? {}).map(rule => ({
+        key: String(rule.key ?? '').trim(),
+        type: RESOURCE_EFFECT_TYPES.includes(rule.type) ? rule.type : 'add',
+        phase: RESOURCE_EFFECT_PHASES.includes(rule.phase) ? rule.phase : 'initial',
+        value: String(rule.value ?? '').trim(),
+      })),
     }));
     await game.settings.set('sksk', 'resourceDefinitions', definitions);
   }
@@ -84,7 +106,7 @@ export class SKSKResourcesConfig extends HandlebarsApplicationMixin(ApplicationV
   static async #addDefinition() {
     const definitions = foundry.utils.deepClone(game.settings.get('sksk', 'resourceDefinitions') ?? []);
     definitions.push({
-      id: foundry.utils.randomID(), name: '', abbreviation: '', description: '', startValue: 0, maxFormula: '', recovery: [],
+      id: foundry.utils.randomID(), name: '', abbreviation: '', description: '', startValue: 0, maxFormula: '', recovery: [], perPoint: [],
     });
     await game.settings.set('sksk', 'resourceDefinitions', definitions);
     this.render();
@@ -112,6 +134,27 @@ export class SKSKResourcesConfig extends HandlebarsApplicationMixin(ApplicationV
     if (!definitions[index]) return;
     definitions[index].recovery = [...(definitions[index].recovery ?? []),
       { mode: 'turnStart', interval: 1, direction: 'increase', amountFormula: '1' }];
+    await game.settings.set('sksk', 'resourceDefinitions', definitions);
+    this.render();
+  }
+
+  /** @private */
+  static async #addPerPoint(event, target) {
+    const index = Number(target.dataset.index);
+    const definitions = foundry.utils.deepClone(game.settings.get('sksk', 'resourceDefinitions') ?? []);
+    if (!definitions[index]) return;
+    definitions[index].perPoint = [...(definitions[index].perPoint ?? []), { key: '', type: 'add', phase: 'initial', value: '@value' }];
+    await game.settings.set('sksk', 'resourceDefinitions', definitions);
+    this.render();
+  }
+
+  /** @private */
+  static async #removePerPoint(event, target) {
+    const index = Number(target.dataset.index);
+    const ruleIndex = Number(target.dataset.rule);
+    const definitions = foundry.utils.deepClone(game.settings.get('sksk', 'resourceDefinitions') ?? []);
+    if (!definitions[index]) return;
+    definitions[index].perPoint?.splice(ruleIndex, 1);
     await game.settings.set('sksk', 'resourceDefinitions', definitions);
     this.render();
   }
