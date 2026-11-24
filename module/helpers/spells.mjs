@@ -994,6 +994,23 @@ export function computeSpellApCost(spellSystem, actor, overchargeCount = 0, vari
 }
 
 /**
+ * Mana the caster regains for casting this spell: system.manaGainOnCastBySchool
+ * (flat) plus system.manaGainOnCastPerSpellLevelBySchool times the spell's
+ * level above 1, for the spell's school.
+ * @param {Actor} actor
+ * @param {object} spellSystem
+ * @return {number}
+ */
+export function computeManaGainOnCast(actor, spellSystem) {
+  const system = actor?.system;
+  if (!system) return 0;
+  const school = getSpellSchool(spellSystem);
+  const flat = system.manaGainOnCastBySchool?.[school] ?? 0;
+  const perLevel = system.manaGainOnCastPerSpellLevelBySchool?.[school] ?? 0;
+  return Math.max(0, flat + perLevel * Math.max(0, (spellSystem.spellLevel ?? 1) - 1));
+}
+
+/**
  * The caster's Active Effect factor on the AP cost of the spells of one school
  * (system.apCostMultiplierBySchool.<school> times system.apCostMultiplierAll).
  * @param {Actor} actor

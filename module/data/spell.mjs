@@ -490,6 +490,11 @@ export default class SKSKSpell extends SKSKItemBase {
       label: new fields.StringField({ required: true, blank: true, initial: "" }),
       note: new fields.StringField({ required: true, blank: true, initial: "" }),
       scope: new fields.StringField({ required: true, blank: false, initial: "spell", choices: ["spell", "next"] }),
+      // Scope "spell" only: a variant the caster CHOOSES when casting (the
+      // spell asks which of its "choice" variants to use - they are
+      // alternatives of each other, e.g. "restore Life" or "restore Mana").
+      // Needs no conditions.
+      choice: new fields.BooleanField({ initial: false }),
       // Only for scope "next". Every list is comma separated, blank = no
       // restriction; all given restrictions must hold.
       filter: new fields.SchemaField({

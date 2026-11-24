@@ -177,6 +177,38 @@ export function detectSpellVariants(item) {
 }
 
 /**
+ * The variants of a spell the caster chooses at cast time (variant.choice).
+ * @param {Item} item
+ * @return {Array<{index: number, label: string}>}
+ */
+export function getChoiceVariants(item) {
+  return (item.system.variants ?? [])
+    .map((variant, index) => ({ variant, index }))
+    .filter(({ variant }) => variant.choice && variant.scope !== 'next')
+    .map(({ variant, index }) => ({
+      index, label: variant.label || game.i18n.format('SKSK.Spell.Variant.Numbered', { number: index + 1 }),
+    }));
+}
+
+/**
+ * Ask which of a spell's choice variants this cast uses.
+ * @param {Item} item
+ * @return {Promise<number|null>}   The chosen variant's index, null if the prompt was closed (the cast is aborted).
+ */
+export async function promptVariantChoice(item) {
+  const choices = getChoiceVariants(item);
+  if (choices.length < 2) return choices[0]?.index ?? null;
+  return foundry.applications.api.DialogV2.wait({
+    window: { title: game.i18n.format('SKSK.Spell.Variant.ChoiceTitle', { name: item.name }) },
+    content: `<p>${game.i18n.localize('SKSK.Spell.Variant.ChoicePrompt')}</p>`,
+    buttons: choices.map(choice => ({
+      action: String(choice.index), label: foundry.utils.escapeHTML(choice.label), callback: () => choice.index,
+    })),
+    rejectClose: false,
+  });
+}
+
+/**
  * The "next" variants (see above) that change a spell about to be cast: those
  * of the spells whose marker effects the caster carries.
  * @param {Item} item   An owned spell.

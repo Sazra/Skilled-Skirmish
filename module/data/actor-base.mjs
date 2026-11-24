@@ -209,6 +209,11 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     const multiplierBySchool = () => new fields.SchemaField(Object.fromEntries(
       costSchoolKeys.map(key => [key, new fields.NumberField({ required: true, nullable: false, initial: 1, min: 0 })])
     ));
+    // Mana regained when casting a spell of a school: a flat amount per cast
+    // and an amount per spell level above 1 (e.g. "(level - 1) * 10" = 10 per
+    // level). See helpers/spells.mjs#computeManaGainOnCast.
+    schema.manaGainOnCastBySchool = bySchool();
+    schema.manaGainOnCastPerSpellLevelBySchool = bySchool();
     schema.apCostMultiplierBySchool = multiplierBySchool();
     schema.apCostMultiplierAll = new fields.NumberField({ required: true, nullable: false, initial: 1, min: 0 });
     schema.spellDurationMultiplierBySchool = multiplierBySchool();

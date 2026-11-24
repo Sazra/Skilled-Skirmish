@@ -953,6 +953,15 @@
           </select>
         </div>
 
+        {{#unless (eq variant.scope "next")}}
+        <div class="resource">
+          <label class="resource-label casting-method-option" title="{{localize 'SKSK.Spell.Variant.ChoiceHint'}}">
+            <input type="checkbox" name="system.variants.{{index}}.choice" {{checked variant.choice}} />
+            {{localize 'SKSK.Spell.Variant.Choice'}}
+          </label>
+        </div>
+        {{/unless}}
+
         {{#if (eq variant.scope "next")}}
         <div class="resource">
           <label class="resource-label" title="{{localize 'SKSK.Spell.Variant.FilterHint'}}">{{localize 'SKSK.Spell.Variant.Filter'}}</label>

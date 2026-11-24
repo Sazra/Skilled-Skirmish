@@ -4,7 +4,7 @@ import {
   getOverchargeSettings, formatOverchargeDuration, resolveSpellStatusStacks, isSpellFoundryEffectActive,
   computeMaxExtraCostTier, normalizeExtraCostCounts, computeCombinedSpellFpTargets,
   computeExtraCostEffects, computeExtraUpkeep, isSavingThrowActive, computeEffectiveRanges, formatRangeLabel,
-  getSpellElementOptions, resolveSpellDamages, getSpellSchool, SPELL_BARRIER, SPELL_MANA_RESTORE, getSpellDurationMultiplier,
+  getSpellElementOptions, resolveSpellDamages, getSpellSchool, SPELL_BARRIER, SPELL_MANA_RESTORE, getSpellDurationMultiplier, computeManaGainOnCast,
 } from './spells.mjs';
 import { rollExtraDamage, consumeUsedEffects } from './extraDamage.mjs';
 import { isAbilitySpellCopy } from './abilitySpell.mjs';
@@ -12,6 +12,7 @@ import { promptMetamagicChoice, placeMetamagicMarker, scaleDurationText } from '
 import { recommendRollMode, recommendSaveMode, recommendAttackMode } from './rollRecommendation.mjs';
 import {
   detectSpellVariants, createVariantItem, renderVariantLines, consumeVariantMarkers, variantAttribute,
+  getChoiceVariants, promptVariantChoice,
 } from './spellVariants.mjs';
 import { getActorSkillLevel, getSkillLabel } from './skills.mjs';
 import {
@@ -1099,6 +1100,14 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
     if (elementPick === null) return;
   }
 
+  // Variants the caster chooses at cast time (variant.choice): asked once;
+  // closing the prompt aborts the cast. Applied together with the detected ones.
+  let chosenVariant = null;
+  if (actor && getChoiceVariants(item).length) {
+    chosenVariant = await promptVariantChoice(item);
+    if (chosenVariant === null || chosenVariant === undefined) return;
+  }
+
   // Casting the same spell several times in a row (Shift+Click dialog, only
   // outside Combat - see canCastSpellMultiple): one compact card instead.
   castCount = !abilityOptions && canCastSpellMultiple(item)
@@ -1120,6 +1129,7 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
       // Varianten (helpers/spellVariants.mjs): re-detected for every cast, so
       // a marker with "Bis Nutzung" only changes the first of them.
       const found = detectSpellVariants(item);
+      if (chosenVariant !== null) found.indexes.unshift(chosenVariant);
       const castItem = createVariantItem(item, found.indexes);
       const cast = await resolveCastElement(castItem, elementPick);
       const castOvercharge = overchargeCount + (castItem.system.metaOvercharge ?? 0);
@@ -1150,6 +1160,7 @@ export async function rollSpellItem(item, overchargeCount = 0, extraCostTier = 0
   // Varianten (helpers/spellVariants.mjs): markers on the caster that change
   // this cast - everything below runs on the variant-modified stand-in item.
   const found = detectSpellVariants(item);
+  if (chosenVariant !== null) found.indexes.unshift(chosenVariant);
   const castItem = createVariantItem(item, found.indexes);
   const cast = await resolveCastElement(castItem, elementPick);
   ctx.element = cast.element;
@@ -1343,6 +1354,19 @@ async function paySpellCast(item, ctx) {
       const fromLife = -lifeDelta + negativeLifeDelta;
       parts.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.ManaShortfallFromLife', { amount: fromLife })}</div>`);
       parts.push(negativeLifeOverflowHTML(actor, negativeLifeDelta));
+    }
+
+    // Mana regained for casting a spell of a school (Active Effect keys
+    // system.manaGainOnCast...BySchool, e.g. Wiederholte Erkenntnis) - not for
+    // an ability's own effect spell.
+    if (!isAbilitySpellCopy(item)) {
+      const gain = computeManaGainOnCast(actor, system);
+      if (gain > 0) {
+        const mana = actor.system.mana;
+        const restored = Math.max(0, Math.min(mana.max, mana.value + gain) - mana.value);
+        if (restored > 0) await actor.update({ 'system.mana.value': mana.value + restored });
+        parts.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.ManaGainOnCast', { amount: restored })}</div>`);
+      }
     }
 
     // FP for casting a spell (per its own spellLevel) belongs to its magic

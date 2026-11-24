@@ -99,6 +99,8 @@ export class SKSKEffectKeyReference extends HandlebarsApplicationMixin(Applicati
         { label: `${label} - Mana (%)`, key: `system.manaCostReductionPercentBySchool.${key}` },
         { label: `${label} - Mana (Flat)`, key: `system.manaCostReductionFlatBySchool.${key}` },
         { label: `${label} - AP (Flat)`, key: `system.apCostReductionBySchool.${key}` },
+        { label: `${label} - Mana pro Zauber (Flat)`, key: `system.manaGainOnCastBySchool.${key}` },
+        { label: `${label} - Mana pro Zauberstufe über 1`, key: `system.manaGainOnCastPerSpellLevelBySchool.${key}` },
         { label: `${label} - AP-Faktor (Multiplizieren)`, key: `system.apCostMultiplierBySchool.${key}` },
         { label: `${label} - Wirkungsdauer-Faktor (Multiplizieren)`, key: `system.spellDurationMultiplierBySchool.${key}` },
       ];
