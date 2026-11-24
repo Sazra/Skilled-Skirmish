@@ -6,7 +6,7 @@
       {{#each modes as |mode|}}
       <button type="button" class="sksk-mode-button {{#if mode.active}}active{{/if}}"
         data-action="chooseMode" data-mode="{{mode.id}}">
-        {{localize mode.label}}
+        {{localize mode.label}}{{#if mode.recommended}} ({{localize 'SKSK.GenericRoll.RecommendedShort'}}){{/if}}
       </button>
       {{/each}}
     </div>
@@ -17,7 +17,7 @@
     <div class="sksk-attribute-buttons flexcol">
       {{#each attributeOptions as |option|}}
       <button type="button" class="sksk-attribute-button" data-action="rollAttribute" data-index="{{option.index}}">
-        {{option.label}}
+        {{option.label}}{{#if option.hint}} <small class="sksk-recommend-hint">- {{option.hint}}</small>{{/if}}
       </button>
       {{/each}}
     </div>

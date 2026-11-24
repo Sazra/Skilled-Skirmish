@@ -23,7 +23,7 @@ export class SKSKSkillRollDialog extends HandlebarsApplicationMixin(ApplicationV
   /**
    * @param {string} title
    * @param {string} promptKey   Lang key for the attribute section's own label.
-   * @param {Array<{index: number, label: string}>} attributeOptions
+   * @param {Array<{index: number, label: string, recommended?: string|null}>} attributeOptions
    * @param {object} [options]
    */
   constructor(title, promptKey, attributeOptions, options = {}) {
@@ -61,8 +61,22 @@ export class SKSKSkillRollDialog extends HandlebarsApplicationMixin(ApplicationV
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
     context.promptKey = this.promptKey;
-    context.modes = GENERIC_ROLL_MODES.map(mode => ({ ...mode, active: mode.id === this.mode }));
-    context.attributeOptions = this.attributeOptions;
+    // Recommendations (never forced): when every attribute option points to
+    // the same mode, that mode button is marked; otherwise each attribute
+    // button names its own recommendation.
+    const recommended = new Set(this.attributeOptions.map(option => option.recommended ?? null));
+    const common = recommended.size === 1 ? [...recommended][0] : null;
+    context.modes = GENERIC_ROLL_MODES.map(mode => ({
+      ...mode, active: mode.id === this.mode, recommended: mode.id === common,
+    }));
+    context.attributeOptions = this.attributeOptions.map(option => ({
+      ...option,
+      hint: !common && option.recommended
+        ? game.i18n.format('SKSK.GenericRoll.ModeRecommended', {
+          mode: game.i18n.localize(GENERIC_ROLL_MODES.find(mode => mode.id === option.recommended)?.label ?? ''),
+        })
+        : '',
+    }));
     return context;
   }
 

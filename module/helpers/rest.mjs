@@ -7,6 +7,7 @@ import { grantSkillUsageFp, formatSkillFpGrantText } from './skillFp.mjs';
 import { countActiveSummons } from './summoning.mjs';
 import { isCalendariaDailySettlementEnabled, isCalendariaActive } from './calendarIntegration.mjs';
 import { recoverChargesOnRest } from './abilityCharges.mjs';
+import { applyElapsedRegen } from './passiveRegen.mjs';
 
 /**
  * A time segment - the atomic unit "spending time" is measured in.
@@ -505,6 +506,18 @@ export async function applyRest(actor, options) {
   // Charges of "once" abilities: per Abschnitt of a Pause, and - without
   // Calendaria - the "change of day" recovery after an Anpassungspause.
   lines.push(...await recoverChargesOnRest(actor, { segments, isBreak, tier, calendariaActive: isCalendariaActive() }));
+
+  // Effects that heal Life/Mana at the start of a turn also run outside of
+  // Combat: with Calendaria the passing world time does that (helpers/
+  // calendarIntegration.mjs), without it the time of this Pause/waiting does -
+  // once per 10 minutes, the Elementarladungen once per minute. A segment is
+  // SEGMENT_MINUTES (30) minutes.
+  if (!isCalendariaActive()) {
+    lines.push(...await applyElapsedRegen(actor, {
+      tenMinuteTicks: Math.floor(segments * SEGMENT_MINUTES / 10),
+      minuteTicks: segments * SEGMENT_MINUTES,
+    }));
+  }
 
   const title = tier ? game.i18n.localize(`SKSK.Rest.Tier.${tier}`) : game.i18n.localize('SKSK.Rest.PlainTime');
   const hours = segments * SEGMENT_MINUTES / 60;

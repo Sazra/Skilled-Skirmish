@@ -99,6 +99,8 @@ export class SKSKEffectKeyReference extends HandlebarsApplicationMixin(Applicati
         { label: `${label} - Mana (%)`, key: `system.manaCostReductionPercentBySchool.${key}` },
         { label: `${label} - Mana (Flat)`, key: `system.manaCostReductionFlatBySchool.${key}` },
         { label: `${label} - AP (Flat)`, key: `system.apCostReductionBySchool.${key}` },
+        { label: `${label} - AP-Faktor (Multiplizieren)`, key: `system.apCostMultiplierBySchool.${key}` },
+        { label: `${label} - Wirkungsdauer-Faktor (Multiplizieren)`, key: `system.spellDurationMultiplierBySchool.${key}` },
       ];
     });
     const movementRows = [
@@ -148,6 +150,8 @@ export class SKSKEffectKeyReference extends HandlebarsApplicationMixin(Applicati
           { label: 'Manakosten dürfen unter 1 fallen (Schalter)', key: 'system.manaCostAllowBelowOne' },
           { label: 'Rituale: Magiekontrolle-Rabatt zusätzlich (Schalter)', key: 'system.ritualsUseMagicControl' },
           { label: 'AP-Kosten-Reduktion: alle Zauber (flat)', key: 'system.apCostReductionFlat' },
+          { label: 'AP-Kosten-Faktor: alle Zauber (Multiplizieren, aufgerundet)', key: 'system.apCostMultiplierAll' },
+          { label: 'Wirkungsdauer-Faktor: alle Zauber (Multiplizieren)', key: 'system.spellDurationMultiplierAll' },
           { label: 'Critical Hit Threshold', key: 'system.criticalHitThreshold' },
           { label: 'Critical Failure Threshold', key: 'system.criticalFailureThreshold' },
           { label: 'Generic Critical Roll Mode', key: 'system.genericCriticalRollMode' },
@@ -158,6 +162,7 @@ export class SKSKEffectKeyReference extends HandlebarsApplicationMixin(Applicati
           { label: 'Überladung: AP-Mehrkosten (pro Überladung)', key: 'system.overchargeApCostBonus' },
           { label: 'Zusatzschaden an Barrieren (%)', key: 'system.barrierDamageBonus' },
           { label: 'Barriere am Zugbeginn (nicht stapelnd, bis zum nächsten Zug)', key: 'system.barrierTurnStart' },
+          { label: 'Manaregeneration zu Zugbeginn (außerhalb des Kampfes alle 10 Minuten)', key: 'system.manaRegenTurnStart' },
           { label: 'Soul Path Breakthrough Bonus', key: 'system.soulPathBreakthroughBonus' },
           { label: 'Summon Slots Bonus', key: 'system.summonSlotsBonus' },
           { label: 'Totem Slots Bonus', key: 'system.totemSlotsBonus' },
@@ -246,6 +251,25 @@ export class SKSKEffectKeyReference extends HandlebarsApplicationMixin(Applicati
       {
         title: 'SKSK.EffectKeyReference.Category.DamageRerollOnes',
         rows: vocabRows(CONFIG.SKSK.damageTypes, 'system.damageRerollOnesElements.'),
+      },
+      {
+        title: 'SKSK.EffectKeyReference.Category.RollAdvantage',
+        hint: 'SKSK.EffectKeyReference.Category.RollAdvantageHint',
+        rows: [
+          { label: 'Empfehlung: alle Würfe', key: 'system.allRollsAdvantage' },
+          { label: 'Empfehlung: alle Angriffe', key: 'system.attackAdvantageAll' },
+          { label: 'Empfehlung: alle Waffenangriffe (inkl. Kampfkunst)', key: 'system.weaponAttackAdvantageAll' },
+          { label: 'Empfehlung: alle Zauberangriffe', key: 'system.spellAttackAdvantageAll' },
+          ...Object.entries(CONFIG.SKSK.attributes).map(([key, labelKey]) => ({
+            label: `Empfehlung Attributswurf: ${game.i18n.localize(labelKey)}`, key: `system.attributeRollAdvantage.${key}`,
+          })),
+          ...Object.keys(CONFIG.SKSK.skills.weapons).map(key => ({
+            label: `Empfehlung Angriff: ${game.i18n.localize(getSkillLabel(key))}`, key: `system.weaponAttackAdvantage.${key}`,
+          })),
+          ...Object.values(CONFIG.SKSK.skills).flatMap(category => Object.keys(category)).map(key => ({
+            label: `Empfehlung Fertigkeitswurf: ${game.i18n.localize(getSkillLabel(key))}`, key: `system.skillRollAdvantage.${key}`,
+          })),
+        ],
       },
       {
         title: 'SKSK.EffectKeyReference.Category.SkillRoll',

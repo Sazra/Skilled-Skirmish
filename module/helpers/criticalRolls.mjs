@@ -134,13 +134,18 @@ export const GENERIC_ROLL_MODES = [
  * (Restrained's own turn-start/end timing, Poison's recheck, Concentration)
  * skip this dialog entirely and use the actor's own GM-tab preset instead -
  * see data/actor-base.mjs#genericCriticalRollMode.
+ * @param {string|null} [suggestedMode]   A recommendation (see helpers/
+ *   rollRecommendation.mjs) - only appends "(empfohlen)" to that one button,
+ *   never preselects or forces anything.
  * @return {Promise<string|null>} The chosen mode's id, or null/undefined if
  *   the dialog was closed without picking one - the caller should abort.
  */
-export async function chooseGenericRollMode() {
+export async function chooseGenericRollMode(suggestedMode = null) {
   const buttons = GENERIC_ROLL_MODES.map(mode => ({
     action: mode.id,
-    label: game.i18n.localize(mode.label),
+    label: mode.id === suggestedMode
+      ? game.i18n.format('SKSK.GenericRoll.ModeRecommended', { mode: game.i18n.localize(mode.label) })
+      : game.i18n.localize(mode.label),
     callback: () => mode.id,
   }));
   return foundry.applications.api.DialogV2.wait({

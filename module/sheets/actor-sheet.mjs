@@ -82,6 +82,7 @@ import {
   setStatusIgnoreSpecialBonus, isActorsOwnTurn,
 } from '../helpers/statusEffects.mjs';
 import { wrapCriticalBlock, chooseGenericRollMode, evaluateD20WithMode } from '../helpers/criticalRolls.mjs';
+import { recommendRollMode } from '../helpers/rollRecommendation.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine, tradeSoulPowerForFp } from '../helpers/skillFp.mjs';
 import { computeAttributeRollCost } from '../helpers/skillRollCost.mjs';
 import { ROLL_DRAGGABLE_SELECTOR, buildRollDragData, getAttributeRollFormulas } from '../helpers/macroRolls.mjs';
@@ -2552,7 +2553,9 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
         : { apCost: 0, rpCost: 0 };
       if (offTurn ? !hasEnoughReactionPoints(this.actor, rpCost) : !hasEnoughActionPoints(this.actor, apCost)) return;
 
-      const mode = await chooseGenericRollMode();
+      const mode = await chooseGenericRollMode(
+        recommendRollMode(this.actor, { attributes: dataset.attributeKey ? [dataset.attributeKey] : [] })
+      );
       if (!mode) return;
 
       let label = dataset.label ? `[attribute] ${dataset.label}` : '';

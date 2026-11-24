@@ -965,10 +965,11 @@ export function computeSpellApCost(spellSystem, actor, overchargeCount = 0, vari
   if (spellSystem.apCostVariable && (spellSystem.apCostUnit ?? 'ap') === 'ap') {
     apCost = Math.max(spellSystem.apCostMin ?? 0, Number(variableAp ?? spellSystem.variableApPaid ?? 0) || 0);
   }
+  const eligible = isSpellDiscountEligible(spellSystem, actor);
 
   // A spell with "AP-Kosten nicht reduzierbar" skips every AP reduction
   // (school/Active-Effect reductions and Chant Shortening alike).
-  if (!spellSystem.apCostFixed && isSpellDiscountEligible(spellSystem, actor)) {
+  if (!spellSystem.apCostFixed && eligible) {
     const school = getSpellSchool(spellSystem);
     apCost -= getApCostReduction(actor, spellSystem.spellType, school);
 
@@ -978,8 +979,43 @@ export function computeSpellApCost(spellSystem, actor, overchargeCount = 0, vari
     }
   }
 
+  // The Active Effect factors (e.g. "halved casting time"), rounded up, come
+  // last: a factor below 1 is a reduction (same rules as the ones above), a
+  // factor above 1 always applies.
+  const apFactor = getApCostMultiplier(actor, getSpellSchool(spellSystem));
+  if (apFactor > 1 || (apFactor < 1 && !spellSystem.apCostFixed && eligible)) {
+    apCost = Math.ceil(apCost * apFactor - 1e-9);
+  }
+
   const floor = (spellSystem.rpCost ?? 0) > 0 ? 0 : 1;
   return Math.max(floor, Math.floor(apCost)) + getOverchargeSurcharges(spellSystem, actor).apCost * overchargeCount;
+}
+
+/**
+ * The caster's Active Effect factor on the AP cost of the spells of one school
+ * (system.apCostMultiplierBySchool.<school> times system.apCostMultiplierAll).
+ * @param {Actor} actor
+ * @param {string} school
+ * @return {number}
+ */
+export function getApCostMultiplier(actor, school) {
+  const system = actor?.system;
+  if (!system) return 1;
+  return (system.apCostMultiplierBySchool?.[school] ?? 1) * (system.apCostMultiplierAll ?? 1);
+}
+
+/**
+ * The caster's Active Effect factor on the duration of the effects of the
+ * spells of one school (system.spellDurationMultiplierBySchool.<school> times
+ * system.spellDurationMultiplierAll).
+ * @param {Actor} actor
+ * @param {string} school
+ * @return {number}
+ */
+export function getSpellDurationMultiplier(actor, school) {
+  const system = actor?.system;
+  if (!system) return 1;
+  return (system.spellDurationMultiplierBySchool?.[school] ?? 1) * (system.spellDurationMultiplierAll ?? 1);
 }
 
 /**

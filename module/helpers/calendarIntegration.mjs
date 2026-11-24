@@ -3,6 +3,8 @@ import { grantSkillUsageFp } from './skillFp.mjs';
 import { advanceTechniquesByRounds } from './statusEffects.mjs';
 import { applyLongevityDelta } from './longevity.mjs';
 import { recoverChargesOnDayChange, postChargeLines } from './abilityCharges.mjs';
+import { isCombatActive } from './statusEffects.mjs';
+import { applyElapsedRegen, hasPassiveRegen, MINUTE_SECONDS, TEN_MINUTE_SECONDS } from './passiveRegen.mjs';
 
 /**
  * Whether the optional "Calendaria" module (github.com/Sayshal/calendaria)
@@ -101,6 +103,30 @@ async function settleDailyAccumulatorsForAllActors(days) {
  */
 let pendingTechniqueSeconds = 0;
 
+/** Same idea for the out-of-Combat Life/Mana regeneration (helpers/passiveRegen.mjs). */
+let pendingMinuteSeconds = 0;
+let pendingTenMinuteSeconds = 0;
+
+/**
+ * World time passed outside of Combat: effects that heal Life/Mana at turn
+ * start count once per 10 minutes, the Elementarladungen once per minute.
+ * @param {number} seconds
+ * @return {Promise<void>}
+ */
+async function tickRegenForElapsedTime(seconds) {
+  pendingMinuteSeconds += seconds;
+  pendingTenMinuteSeconds += seconds;
+  const minuteTicks = Math.floor(pendingMinuteSeconds / MINUTE_SECONDS);
+  const tenMinuteTicks = Math.floor(pendingTenMinuteSeconds / TEN_MINUTE_SECONDS);
+  pendingMinuteSeconds -= minuteTicks * MINUTE_SECONDS;
+  pendingTenMinuteSeconds -= tenMinuteTicks * TEN_MINUTE_SECONDS;
+  if (minuteTicks < 1 && tenMinuteTicks < 1) return;
+  for (const actor of getTechniqueTickActors()) {
+    if (!hasPassiveRegen(actor)) continue;
+    await postChargeLines(actor, await applyElapsedRegen(actor, { tenMinuteTicks, minuteTicks }));
+  }
+}
+
 /**
  * Every Actor whose Techniques a world-time advance should tick: all world
  * actors, plus the (synthetic) actors of the active Scene's unlinked tokens,
@@ -162,6 +188,9 @@ export function registerCalendariaIntegration() {
     if (game.user.id !== game.users.activeGM?.id) return;
     if (!isCalendariaActive()) return;
     if (options?.documentName !== 'Setting' || !(dt > 0)) return;
+
+    // Out of Combat only - inside it the turn-start handlers apply them.
+    if (!isCombatActive()) await tickRegenForElapsedTime(dt);
 
     const roundTime = CONFIG.time.roundTime > 0 ? CONFIG.time.roundTime : 6;
     pendingTechniqueSeconds += dt;

@@ -1,6 +1,7 @@
 import { getActorSkillLevel } from './skills.mjs';
 import { applyD20Malus, computeDazedAttributeMalus, isActorsOwnTurn } from './statusEffects.mjs';
 import { chooseGenericRollMode, evaluateD20WithMode } from './criticalRolls.mjs';
+import { recommendRollMode, recommendSaveMode, recommendAttackMode } from './rollRecommendation.mjs';
 import {
   postActionChatCard, hasEnoughActionPoints, hasEnoughReactionPoints, spendActionPoints, spendReactionPoints,
 } from './actions.mjs';
@@ -158,11 +159,14 @@ export async function chooseSkillRollVariant(skillKey, def) {
  * @return {Promise<{attributes: string[], mode: string}|null>} null if the
  *   dialog was closed without confirming - the caller should abort.
  */
-export async function chooseSkillRollAttributeAndMode(skillKey, def) {
+export async function chooseSkillRollAttributeAndMode(skillKey, def, actor = null) {
   const isCombine = def.attributeMode === 'combine';
   const options = isCombine ? nonEmptyAttributeSubsets(def.attributes) : def.attributes.map(a => [a]);
+  // Each option carries the roll mode the actor's effects recommend for it
+  // (never forced, only shown - see helpers/rollRecommendation.mjs).
   const attributeOptions = options.map((option, index) => ({
     index, label: option.map(a => game.i18n.localize(CONFIG.SKSK.attributes[a])).join(' + '),
+    recommended: actor ? recommendRollMode(actor, { attributes: option, skillKey }) : null,
   }));
   const promptKey = isCombine ? 'SKSK.Skill.CombineAttributePrompt' : 'SKSK.Skill.ChooseAttributePrompt';
 
@@ -213,7 +217,7 @@ export async function rollSkillCheck(actor, skillKey, chosenAttributes, variant 
   const { apCost, rpCost } = computeSkillRollCost(actor, skillKey, trigger, chosenAttributes);
   if (offTurn ? !hasEnoughReactionPoints(actor, rpCost) : !hasEnoughActionPoints(actor, apCost)) return;
 
-  const mode = presetMode ?? await chooseGenericRollMode();
+  const mode = presetMode ?? await chooseGenericRollMode(recommendRollMode(actor, { attributes: chosenAttributes, skillKey }));
   if (!mode) return;
 
   const level = getActorSkillLevel(actor, skillKey) + (actor.system.skillRollBonus?.[skillKey] ?? 0)
@@ -283,7 +287,7 @@ export async function rollSkillFromSheet(actor, skillKey, ignoreSpecial = false)
     return rollSkillCheck(actor, skillKey, attributes, variant, ignoreSpecial);
   }
 
-  const choice = await chooseSkillRollAttributeAndMode(skillKey, def);
+  const choice = await chooseSkillRollAttributeAndMode(skillKey, def, actor);
   if (!choice) return;
   return rollSkillCheck(actor, skillKey, choice.attributes, variant, ignoreSpecial, choice.mode);
 }

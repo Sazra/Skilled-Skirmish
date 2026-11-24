@@ -11,6 +11,7 @@ import {
 } from './criticalRolls.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
 import { computeLehrenTargetBonus } from './lehren.mjs';
+import { recommendRollMode } from './rollRecommendation.mjs';
 import { applyElementalDefense } from './defense.mjs';
 import {
   getElementalLightStatusRollBonus, getElementalLifeChargeHeal, getElementalNatureManaGen,
@@ -1009,7 +1010,7 @@ export async function attemptRestrainedEscapeManual(actor, ignoreSpecial = false
   const ap = actor.system.actionPoints.value;
   if (combatActive && apCost > 0 && ap < apCost) return ui.notifications.warn(game.i18n.localize('SKSK.Action.NotEnoughAP'));
 
-  const mode = await chooseGenericRollMode();
+  const mode = await chooseGenericRollMode(recommendRollMode(actor, { attributes: ['str'] }));
   if (!mode) return;
 
   if (combatActive && apCost > 0) await actor.update({ 'system.actionPoints.value': ap - apCost });
@@ -1665,6 +1666,24 @@ async function handleElementalChargeTurnStart(actor) {
 }
 
 /**
+ * system.manaRegenTurnStart (an Active Effect target, e.g. the Druid's
+ * Naturstrom): Mana regained at the start of this actor's own Combat turn.
+ * Outside of Combat the same amount is counted once per 10 minutes - see
+ * helpers/passiveRegen.mjs.
+ * @param {Actor} actor
+ * @return {Promise<string[]>}   Description lines for the Mana gained.
+ */
+async function handleManaRegenTurnStart(actor) {
+  const amount = actor.system.manaRegenTurnStart ?? 0;
+  if (amount <= 0) return [];
+  const mana = actor.system.mana;
+  const newValue = clampResourceChange(mana.value, mana.max, amount);
+  if (newValue === mana.value) return [];
+  await actor.update({ 'system.mana.value': newValue });
+  return [game.i18n.format('SKSK.StatusEffect.TurnStartManaRegen', { amount: newValue - mana.value })];
+}
+
+/**
  * Drains manaCost from CURRENT mana, once per Combat turn start, for every
  * sustaining Spell Item on this actor whose manaCostPerRound is set (see
  * data/spell.mjs#sustaining/manaCostPerRound/upkeep) - same per-round-
@@ -1947,12 +1966,13 @@ export async function handleCombatTurnStart(actor, round) {
   const pathAbilityLines = await handlePathAbilityTurnStart(actor);
   const abilityLines = await handleAbilityTurnStart(actor);
   const barrierLines = await handleBarrierTurnStart(actor);
+  const manaRegenLines = await handleManaRegenTurnStart(actor);
 
   const totalDamage = poison.damage + frostbite.damage + wound.damage + custom.damage;
   const descriptionLines = [
     ...dazedLines,
     ...poison.descriptionLines, ...frostbite.descriptionLines, ...wound.descriptionLines, ...custom.descriptionLines,
-    ...totemLines, ...techniqueLines, ...spellUpkeepLines, ...elementalChargeLines, ...pathAbilityLines, ...abilityLines, ...barrierLines,
+    ...totemLines, ...techniqueLines, ...spellUpkeepLines, ...elementalChargeLines, ...pathAbilityLines, ...abilityLines, ...barrierLines, ...manaRegenLines,
   ];
   const extraSections = [
     ...poison.extraSections, ...frostbite.extraSections, ...wound.extraSections, ...custom.extraSections,

@@ -16,6 +16,7 @@ import {
   resolveClickDefender, renderApplyDamageButton, applyResolvedDamageEntries, halveDamageEntries, recordHitEvaluation,
 } from './damageApplication.mjs';
 import { checkFlanking } from './flanking.mjs';
+import { recommendAttackMode } from './rollRecommendation.mjs';
 import { computePatronRollBonus } from './religion.mjs';
 import { getElementalAirRangeBonus } from './elementalChargeEffects.mjs';
 import { renderRerollButton, wrapRerollIcons } from './luck.mjs';
@@ -858,7 +859,10 @@ export async function resolveHitEvaluationFromChat(button, forceHit = false) {
   const defender = resolveClickDefender(attacker);
   if (!defender && !forceHit) return ui.notifications.warn(game.i18n.localize('SKSK.AttackRoll.NoDefender'));
 
-  const mode = await chooseAttackMode(button.dataset.flanking === 'true' ? 'advantage' : null);
+  const mode = await chooseAttackMode(recommendAttackMode(attacker, {
+    comparisonType: button.dataset.comparisonType, killSkillKey: button.dataset.killSkill || null,
+    flanking: button.dataset.flanking === 'true',
+  }));
   if (!mode) return;
 
   const damageDice = JSON.parse(decodeURIComponent(button.dataset.damageDice || '[]'));
@@ -1027,7 +1031,7 @@ export async function autoResolveAttackForTargets([rollA, rollB], comparisonType
   const defenders = getOtherTargetedActors(attacker);
   if (!defenders.length) return '';
 
-  const mode = await chooseAttackMode(flanking ? 'advantage' : null);
+  const mode = await chooseAttackMode(recommendAttackMode(attacker, { comparisonType, killSkillKey, flanking }));
   if (!mode) return '';
 
   const critA = getAttackCriticalType(rollA, attacker);

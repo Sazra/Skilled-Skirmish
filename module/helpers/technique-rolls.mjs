@@ -7,6 +7,7 @@ import {
 } from './criticalRolls.mjs';
 import { getActorSkillLevel, getSkillLabel } from './skills.mjs';
 import { formatRollCardHeading } from './rollCard.mjs';
+import { recommendRollMode, recommendSaveMode, recommendAttackMode } from './rollRecommendation.mjs';
 import { grantSkillUsageFp } from './skillFp.mjs';
 import { isCalendariaActive } from './calendarIntegration.mjs';
 import { rollAndGrantBarrier } from './barrier.mjs';
@@ -733,7 +734,10 @@ export async function rollTechniqueEffectSaveFromChat(itemUuid) {
   const defender = resolveClickDefender();
   if (!defender) return ui.notifications.warn(game.i18n.localize('SKSK.AttackRoll.NoDefender'));
 
-  const mode = await chooseGenericRollMode();
+  const mode = await chooseGenericRollMode(recommendSaveMode(defender, {
+    testAttributes: item.system.effectSavingThrowTestAttributes, testSkills: item.system.effectSavingThrowTestSkills,
+    getSkillLevel: key => getActorSkillLevel(defender, key),
+  }));
   if (!mode) return;
 
   const system = item.system;

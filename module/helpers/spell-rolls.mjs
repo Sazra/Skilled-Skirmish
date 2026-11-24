@@ -4,11 +4,12 @@ import {
   getOverchargeSettings, formatOverchargeDuration, resolveSpellStatusStacks, isSpellFoundryEffectActive,
   computeMaxExtraCostTier, normalizeExtraCostCounts, computeCombinedSpellFpTargets,
   computeExtraCostEffects, computeExtraUpkeep, isSavingThrowActive, computeEffectiveRanges, formatRangeLabel,
-  getSpellElementOptions, resolveSpellDamages, getSpellSchool, SPELL_BARRIER,
+  getSpellElementOptions, resolveSpellDamages, getSpellSchool, SPELL_BARRIER, getSpellDurationMultiplier,
 } from './spells.mjs';
 import { rollExtraDamage, consumeUsedEffects } from './extraDamage.mjs';
 import { isAbilitySpellCopy } from './abilitySpell.mjs';
-import { promptMetamagicChoice, placeMetamagicMarker } from './metamagic.mjs';
+import { promptMetamagicChoice, placeMetamagicMarker, scaleDurationText } from './metamagic.mjs';
+import { recommendRollMode, recommendSaveMode, recommendAttackMode } from './rollRecommendation.mjs';
 import {
   detectSpellVariants, createVariantItem, renderVariantLines, consumeVariantMarkers, variantAttribute,
 } from './spellVariants.mjs';
@@ -1432,7 +1433,11 @@ async function renderSpellInfoParts(item, ctx, compact) {
 
   // 6. Duration, only when described.
   if (system.duration) {
-    parts.push(`<div class="sksk-roll-line"><strong>${game.i18n.localize('SKSK.Spell.DurationLabel')}:</strong> ${system.duration}</div>`);
+    // The caster's own duration factor (Active Effect keys
+    // system.spellDurationMultiplier...) changes the shown duration too.
+    const durationFactor = getSpellDurationMultiplier(item.actor, getSpellSchool(system));
+    const scaled = durationFactor !== 1 ? scaleDurationText(system.duration, durationFactor) : null;
+    parts.push(`<div class="sksk-roll-line"><strong>${game.i18n.localize('SKSK.Spell.DurationLabel')}:</strong> ${scaled ? scaled.text : system.duration}</div>`);
   }
   if (compact) return parts;
 
@@ -1683,7 +1688,10 @@ export async function rollSavingThrowFromChat(itemUuid, saveIndex, overchargeCou
   const actor = resolveClickRoller();
   if (!actor) return ui.notifications.warn(game.i18n.localize('SKSK.Spell.Roll.NoCharacter'));
 
-  const mode = await chooseGenericRollMode();
+  const mode = await chooseGenericRollMode(recommendSaveMode(actor, {
+    testAttributes: save.testAttributes, testSkills: save.testSkills,
+    modField: ignoreSpecial ? 'modExcludingSpecial' : 'mod', getSkillLevel: key => getActorSkillLevel(actor, key),
+  }));
   if (!mode) return;
 
   const r = await resolveAndRollSavingThrow(actor, item, save, saveIndex, overchargeCount, mode, ignoreSpecial, contestTotal, dcBonus);
@@ -1768,7 +1776,10 @@ export async function rollSpellEffectSaveFromChat(itemUuid, saveIndex, overcharg
   const actor = resolveClickRoller();
   if (!actor) return ui.notifications.warn(game.i18n.localize('SKSK.Spell.Roll.NoCharacter'));
 
-  const mode = await chooseGenericRollMode();
+  const mode = await chooseGenericRollMode(recommendSaveMode(actor, {
+    testAttributes: save.testAttributes, testSkills: save.testSkills,
+    modField: ignoreSpecial ? 'modExcludingSpecial' : 'mod', getSkillLevel: key => getActorSkillLevel(actor, key),
+  }));
   if (!mode) return;
 
   const r = await resolveAndRollSavingThrow(actor, item, save, saveIndex, overchargeCount, mode, ignoreSpecial, contestTotal, dcBonus);

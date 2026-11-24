@@ -5,7 +5,9 @@ import {
   checkConcentration, damageDealtFrom,
 } from './statusEffects.mjs';
 import { grantSkillUsageFp, formatSkillFpGrantLine } from './skillFp.mjs';
-import { resolveSpellStatusStacks, isSpellFoundryEffectActive, replaceElementPlaceholders } from './spells.mjs';
+import {
+  resolveSpellStatusStacks, isSpellFoundryEffectActive, replaceElementPlaceholders, getSpellDurationMultiplier, getSpellSchool,
+} from './spells.mjs';
 import { createVariantItem } from './spellVariants.mjs';
 import {
   ENTRY_FLAG_KEYS, pickFlags, getGiantSlayerFactor, isRendingTarget, isSilverWeak, getEquippedArmorWithProperty, getEffectiveProperty,
@@ -243,8 +245,13 @@ export async function applySpellEffectGroup(itemUuid, group, savingThrowIndex, d
     effectData.disabled = false;
     effectData.origin = item.uuid;
     // Verlängere/Transzendiere (helpers/metamagic.mjs): a longer duration.
-    const durationFactor = item.system.metaDurationMultiplier ?? 1;
-    if (durationFactor > 1 && effectData.duration?.value) effectData.duration.value *= durationFactor;
+    // ... and the caster's own duration factor (Active Effect keys
+    // system.spellDurationMultiplier...) for this spell's school.
+    const durationFactor = (item.system.metaDurationMultiplier ?? 1)
+      * getSpellDurationMultiplier(realItem.actor, getSpellSchool(item.system));
+    if (durationFactor !== 1 && effectData.duration?.value) {
+      effectData.duration.value = Math.max(1, Math.floor(effectData.duration.value * durationFactor + 1e-9));
+    }
     if (element) {
       effectData.name = replaceElementPlaceholders(effectData.name, element);
       for (const change of effectData.changes ?? []) {

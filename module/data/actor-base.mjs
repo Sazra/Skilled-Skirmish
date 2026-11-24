@@ -201,6 +201,18 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     schema.manaCostReductionFlatBySchool = bySchool();
     schema.apCostReductionBySchool = bySchool();
     schema.apCostReductionFlat = new fields.NumberField({ ...requiredInteger, initial: 0 });
+    // Multipliers (Active Effect mode "Multiply", base 1): "halved casting
+    // time" (0.5, rounded up) / "doubled duration" (2) for the spells of one
+    // school, or of every spell (...All). Both stack multiplicatively with
+    // every other effect. See helpers/spells.mjs#getApCostMultiplier/
+    // getSpellDurationMultiplier.
+    const multiplierBySchool = () => new fields.SchemaField(Object.fromEntries(
+      costSchoolKeys.map(key => [key, new fields.NumberField({ required: true, nullable: false, initial: 1, min: 0 })])
+    ));
+    schema.apCostMultiplierBySchool = multiplierBySchool();
+    schema.apCostMultiplierAll = new fields.NumberField({ required: true, nullable: false, initial: 1, min: 0 });
+    schema.spellDurationMultiplierBySchool = multiplierBySchool();
+    schema.spellDurationMultiplierAll = new fields.NumberField({ required: true, nullable: false, initial: 1, min: 0 });
     schema.manaCostAllowBelowOne = new fields.BooleanField({ initial: false });
     // Ritual-casting-method spells are normally discounted by Ritualism only
     // (max. 25%); with this GM-tab switch (also an Active Effect target) the
@@ -836,6 +848,32 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // stackable, lasting until its next turn starts. See helpers/barrier.mjs#
     // handleBarrierTurnStart.
     schema.barrierTurnStart = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+    // Mana regained at the start of this actor's own Combat turn (an Active
+    // Effect target, e.g. the Druid's Naturstrom). Like every other effect
+    // that heals Life/Mana at turn start it is also counted outside of
+    // Combat, once per 10 minutes - see helpers/passiveRegen.mjs.
+    schema.manaRegenTurnStart = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+
+    // Vorteil/Nachteil EMPFEHLUNGEN (never forced - the roll dialog only
+    // marks the mode these point to, the player can still pick any): every
+    // effect adds +1 (Vorteil) or -1 (Nachteil); the sign of the sum is the
+    // recommendation, a sum of 0 recommends nothing. See
+    // helpers/rollRecommendation.mjs.
+    const recommendationField = () => new fields.NumberField({ ...requiredInteger, initial: 0 });
+    schema.attributeRollAdvantage = new fields.SchemaField(Object.fromEntries(
+      Object.keys(CONFIG.SKSK.attributes).map(key => [key, recommendationField()])
+    ));
+    schema.skillRollAdvantage = new fields.SchemaField(Object.fromEntries(
+      Object.values(CONFIG.SKSK.skills).flatMap(category => Object.keys(category))
+        .map(key => [key, recommendationField()])
+    ));
+    schema.weaponAttackAdvantage = new fields.SchemaField(Object.fromEntries(
+      Object.keys(CONFIG.SKSK.skills.weapons).map(key => [key, recommendationField()])
+    ));
+    schema.allRollsAdvantage = recommendationField();
+    schema.attackAdvantageAll = recommendationField();
+    schema.weaponAttackAdvantageAll = recommendationField();
+    schema.spellAttackAdvantageAll = recommendationField();
     // GM-tab switch: a spell's own Angriffswurf that fails to exceed this
     // actor's Magic Resistance normally still deals half its rolled damage
     // (rounded up) anyway - see helpers/attackRolls.mjs#

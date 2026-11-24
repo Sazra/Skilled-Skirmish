@@ -772,6 +772,8 @@
         "Misc": "AC/MR & Misc",
         "MagicSchoolAttack": "Magic School Attack Bonuses",
         "WeaponAttack": "Weapon Type Attack Bonuses",
+        "RollAdvantage": "Advantage/Disadvantage recommendations",
+        "RollAdvantageHint": "Never forced: every effect counts +1 (advantage) or -1 (disadvantage); the dialog recommends the mode that outweighs (no recommendation on a tie). The player can always freely choose advantage/neutral/disadvantage. Enter 1 or -1 as the value (mode \"Add\").",
         "MagicSchoolDamage": "Magic School Damage Bonuses",
         "WeaponDamage": "Weapon Type Damage Bonuses",
         "DamageBonus": "Damage Type Bonuses",
@@ -1196,12 +1198,18 @@
         "SkillLevel": "{skill} (level)",
         "CustomResource": "{name} (current value)"
     },
+    "Regen": {
+        "Life": "Regeneration: +{amount} Life",
+        "Mana": "Regeneration: +{amount} Mana"
+    },
     "GenericRoll": {
       "ChooseModeTitle": "Choose Roll Mode",
       "ChooseModePrompt": "Which mode should this roll use?",
       "ModeNeutral": "Neutral",
       "ModeAdvantage": "Advantage",
-      "ModeDisadvantage": "Disadvantage"
+      "ModeDisadvantage": "Disadvantage",
+      "ModeRecommended": "{mode} (recommended)",
+      "RecommendedShort": "recommended"
     },
     "AttackRoll": {
       "Attack": "Attack",
@@ -2256,6 +2264,7 @@
       "NpcTurnStartAbsorbed": "Absorbs damage from {status}.",
       "NpcNegativeLifeOverflow": "Overflows into negative Life.",
       "TurnStartManaGain": "Mana +{amount} from {status}",
+      "TurnStartManaRegen": "Mana +{amount} from turn-start Mana regeneration",
       "TurnStartManaLoss": "Mana -{amount} from {status}",
       "ElementalChargeLifeHeal": "{amount} healing from Elemental Charges (Life Magic)",
       "NeedsMovementSpeed": "{actor} has no \"{type}\" speed - the status cannot be set.",

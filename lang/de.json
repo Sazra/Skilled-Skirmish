@@ -772,6 +772,8 @@
                 "Misc": "AC/MR & Sonstiges",
                 "MagicSchoolAttack": "Magieschul-Angriffsboni",
                 "WeaponAttack": "Waffentyp-Angriffsboni",
+                "RollAdvantage": "Vorteil-/Nachteil-Empfehlungen",
+                "RollAdvantageHint": "Keine Erzwingung: Jeder Effekt zählt +1 (Vorteil) bzw. -1 (Nachteil), der Dialog empfiehlt den Modus, der überwiegt (bei Gleichstand keine Empfehlung). Der Spieler kann immer Vorteil/Neutral/Nachteil frei wählen. Als Value 1 bzw. -1 eintragen (Modus \"Addieren\").",
                 "MagicSchoolDamage": "Magieschul-Schadensboni",
                 "WeaponDamage": "Waffentyp-Schadensboni",
                 "DamageBonus": "Schadenstyp-Boni",
@@ -1196,12 +1198,18 @@
             "SkillLevel": "{skill} (Stufe)",
             "CustomResource": "{name} (aktueller Wert)"
         },
+        "Regen": {
+            "Life": "Regeneration: +{amount} Leben",
+            "Mana": "Regeneration: +{amount} Mana"
+        },
         "GenericRoll": {
             "ChooseModeTitle": "Wurfmodus wählen",
             "ChooseModePrompt": "Welchen Modus soll dieser Wurf nutzen?",
             "ModeNeutral": "Neutral",
             "ModeAdvantage": "Vorteil",
-            "ModeDisadvantage": "Nachteil"
+            "ModeDisadvantage": "Nachteil",
+            "ModeRecommended": "{mode} (empfohlen)",
+            "RecommendedShort": "empfohlen"
         },
         "AttackRoll": {
             "Attack": "Angriff",
@@ -2256,6 +2264,7 @@
             "NpcTurnStartAbsorbed": "Absorbiert Schaden durch {status}.",
             "NpcNegativeLifeOverflow": "Läuft über ins negative Leben.",
             "TurnStartManaGain": "Mana +{amount} durch {status}",
+            "TurnStartManaRegen": "Mana +{amount} durch Manaregeneration zu Zugbeginn",
             "TurnStartManaLoss": "Mana -{amount} durch {status}",
             "ElementalChargeLifeHeal": "{amount} Heilung durch Elementarladungen (Lebensmagie)",
             "NeedsMovementSpeed": "{actor} hat keine Geschwindigkeit für „{type}“ – der Status kann nicht gesetzt werden.",
