@@ -4,7 +4,7 @@ import {
   getOverchargeSettings, formatOverchargeDuration, resolveSpellStatusStacks, isSpellFoundryEffectActive,
   computeMaxExtraCostTier, normalizeExtraCostCounts, computeCombinedSpellFpTargets,
   computeExtraCostEffects, computeExtraUpkeep, isSavingThrowActive, computeEffectiveRanges, formatRangeLabel,
-  getSpellElementOptions, resolveSpellDamages, getSpellSchool, SPELL_BARRIER, getSpellDurationMultiplier,
+  getSpellElementOptions, resolveSpellDamages, getSpellSchool, SPELL_BARRIER, SPELL_MANA_RESTORE, getSpellDurationMultiplier,
 } from './spells.mjs';
 import { rollExtraDamage, consumeUsedEffects } from './extraDamage.mjs';
 import { isAbilitySpellCopy } from './abilitySpell.mjs';
@@ -510,6 +510,7 @@ export async function setSpellSustaining(item, sustaining = !item.system.sustain
  */
 async function renderDamageRoll(damage, actor, overchargeCount = 0, spellSystem = null, technique = null, source = null) {
   const isBarrier = damage.damageType === SPELL_BARRIER;
+  const isRestore = damage.damageType === SPELL_MANA_RESTORE;
   const bonus = computeDamageBonus(damage, actor, spellSystem);
   const formulaBase = bonus ? `${damage.formula} + ${bonus}` : damage.formula;
   const formula = applyTechniqueDiceIncrease(formulaBase, technique);
@@ -524,7 +525,7 @@ async function renderDamageRoll(damage, actor, overchargeCount = 0, spellSystem 
     rollData.manaRegen = Math.max(0, computePassiveManaRegenPerSegment(actor));
   }
   const { total: rollTotal, html: rendered, pickedRoll } = await rollPossiblyDoubledDamage(formula, rollData, rollTwice);
-  const typeLabel = game.i18n.localize(isBarrier ? 'SKSK.Barrier.DamageType' : (CONFIG.SKSK.damageTypes[damage.damageType] ?? damage.damageType));
+  const typeLabel = game.i18n.localize(isBarrier ? 'SKSK.Barrier.DamageType' : isRestore ? 'SKSK.ManaRestore.DamageType' : (CONFIG.SKSK.damageTypes[damage.damageType] ?? damage.damageType));
   // A Spell with its own "ignores Barrier" switch tags every damage entry it
   // produces - see helpers/damageApplication.mjs#applyResolvedDamageEntries.
   const barrierFlag = spellSystem?.ignoresBarrier ? { ignoresBarrier: true } : {};
@@ -538,9 +539,9 @@ async function renderDamageRoll(damage, actor, overchargeCount = 0, spellSystem 
   }
   const postAdjust = overchargeMultiplier ? { type: 'multiplier', value: overchargeMultiplier } : { type: 'delta', value: 0 };
   const blockId = foundry.utils.randomID();
-  const rerollOnesIcon = actor && !isBarrier ? renderDamageRerollOnesIcon(actor, damage.damageType, pickedRoll, blockId, postAdjust) : '';
+  const rerollOnesIcon = actor && !isBarrier && !isRestore ? renderDamageRerollOnesIcon(actor, damage.damageType, pickedRoll, blockId, postAdjust) : '';
   const html = wrapDamageBlock(blockId,
-    `<div class="sksk-roll-damage"><strong>${isBarrier ? typeLabel : `${typeLabel} ${game.i18n.localize('SKSK.Spell.Roll.Damage')}`}</strong>${wrapRerollIcons(rerollOnesIcon)}</div>${rendered}${overchargeHTML}`
+    `<div class="sksk-roll-damage"><strong>${isBarrier || isRestore ? typeLabel : `${typeLabel} ${game.i18n.localize('SKSK.Spell.Roll.Damage')}`}</strong>${wrapRerollIcons(rerollOnesIcon)}</div>${rendered}${overchargeHTML}`
   );
   if (isBarrier) {
     // Barrier granted instead of damage (helpers/barrier.mjs): the entry
@@ -554,6 +555,7 @@ async function renderDamageRoll(damage, actor, overchargeCount = 0, spellSystem 
     };
     return { html, entry: { damageType: 'barrier', amount, barrier } };
   }
+  if (isRestore) return { html, entry: { damageType: 'manaRestore', amount } };
   return { html, entry: { damageType: damage.damageType, amount, ...barrierFlag } };
 }
 
@@ -682,7 +684,8 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
   // A Barrier entry (SPELL_BARRIER) is never attack- or save-gated: it is
   // granted unconditionally, or by a paid extra-cost step.
   const damages = resolveSpellDamages(system.damages, element, system)
-    .map(damage => (damage.damageType === SPELL_BARRIER && damage.trigger !== 'extraCost' ? { ...damage, trigger: 'unconditional' } : damage));
+    .map(damage => ((damage.damageType === SPELL_BARRIER || damage.damageType === SPELL_MANA_RESTORE) && damage.trigger !== 'extraCost'
+      ? { ...damage, trigger: 'unconditional' } : damage));
   // This spell's own Überladen rules (data/spell.mjs#overcharge): the
   // DC/range/damage scaling only applies in "scaling" mode (and with the
   // auto-effects switch on) - in "extraAttack" mode each Überladung is one
@@ -732,6 +735,11 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
         mana: system.manaCostVariable ? Math.max(0, Number(variableMana ?? system.variableManaPaid ?? 0) || 0) : (system.manaCost ?? 0),
       });
       return { html: barrierRoll.html, entry: barrierRoll.entry, extras: [] };
+    }
+    // A Mana restore entry is no damage either: no technique bonus, no extra damage.
+    if (damage.damageType === SPELL_MANA_RESTORE) {
+      const restoreRoll = await renderDamageRoll(damage, actor, effectiveOvercharge, system, null, { name: item.name, uuid: item.uuid, mana: 0 });
+      return { html: restoreRoll.html, entry: restoreRoll.entry, extras: [] };
     }
     const applyTech = technique && !techniqueDamageApplied;
     const { html, entry } = await renderDamageRoll(damage, actor, effectiveOvercharge, system, applyTech ? technique : null);

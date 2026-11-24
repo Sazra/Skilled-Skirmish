@@ -1198,6 +1198,11 @@
             "SkillLevel": "{skill} (Stufe)",
             "CustomResource": "{name} (aktueller Wert)"
         },
+        "ManaRestore": {
+            "DamageType": "Mana wiederherstellen",
+            "ApplyButton": "Mana wiederherstellen",
+            "Applied": "{name} stellt {amount} Mana wieder her."
+        },
         "Regen": {
             "Life": "Regeneration: +{amount} Leben",
             "Mana": "Regeneration: +{amount} Mana"

@@ -82,7 +82,9 @@ export function computeSavingThrowBonusSum(savingThrow, actor) {
 export function computeDamageBonus(damage, actor, spellSystem = null) {
   // Barrier is scaled only by its own entry's attribute/skill bonuses - the
   // general damage bonuses (damage type, school, Elementarist, ...) are for damage.
-  if (damage.damageType === SPELL_BARRIER) return sumBonuses(damage.attributeBonuses, damage.skillBonuses, actor);
+  if (damage.damageType === SPELL_BARRIER || damage.damageType === SPELL_MANA_RESTORE) {
+    return sumBonuses(damage.attributeBonuses, damage.skillBonuses, actor);
+  }
   const lehrenBonus = spellSystem
     ? computeLehrenTargetBonus(actor, 'damageBonus', { skillKey: spellSystem.magicSchool ?? null, kind: 'spell' })
     : 0;
@@ -1030,6 +1032,13 @@ export const SPELL_ELEMENT = '@element';
  * and scaled like damage, but its "Apply" button grants the amount as Barrier.
  */
 export const SPELL_BARRIER = '@barrier';
+
+/**
+ * The marker a Spell's Damage entry carries as its damage type to mean "Mana
+ * restored instead of damage": rolled and scaled like damage, but its "Apply"
+ * button gives the amount to the target as Mana (up to its maximum).
+ */
+export const SPELL_MANA_RESTORE = '@manaRestore';
 
 /**
  * The elements a spell with an element choice (data/spell.mjs#elementChoice)

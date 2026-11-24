@@ -209,7 +209,7 @@ export function applyMetamagic(data, codes, actor, env = {}) {
         const element = options[param];
         if (!element) { none(type, 'Choice'); break; }
         // Barrier entries ("@barrier") are no damage and keep their kind.
-        const damaging = (data.damages ?? []).filter(damage => damage.damageType !== '@barrier');
+        const damaging = (data.damages ?? []).filter(damage => damage.damageType !== '@barrier' && damage.damageType !== '@manaRestore');
         if (!damaging.length) { none(type, 'Damage'); break; }
         const wasLife = damaging.some(damage => damage.damageType === 'life');
         for (const damage of damaging) damage.damageType = element;

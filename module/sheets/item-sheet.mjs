@@ -8,7 +8,7 @@ import { getSkillBonusChoices } from '../helpers/skills.mjs';
 import { setSpellSustaining } from '../helpers/spell-rolls.mjs';
 import {
   computeSavingThrowValue, computeSavingThrowBonusSum, computeDamageBonus, computeCombinedSchoolOverrideLevel,
-  computeExtraManaCostSum, formatRangeLabel, SPELL_ELEMENT, SPELL_BARRIER,
+  computeExtraManaCostSum, formatRangeLabel, SPELL_ELEMENT, SPELL_BARRIER, SPELL_MANA_RESTORE,
 } from '../helpers/spells.mjs';
 import { getMaterials, getMaterial, isDurabilityEnabled } from '../helpers/materials.mjs';
 import { getWeaponModels, getArmorModels, getWeaponModel, getArmorModel, getOverridablePropertiesFor } from '../helpers/models.mjs';
@@ -735,6 +735,7 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       // ... or Barrier instead of damage (see helpers/barrier.mjs).
       context.damageTypeChoices = {
         [SPELL_BARRIER]: 'SKSK.Barrier.DamageType',
+        [SPELL_MANA_RESTORE]: 'SKSK.ManaRestore.DamageType',
         ...(item.system.elementChoice?.mode !== 'none' || (item.system.damages ?? []).some(d => d.damageType === SPELL_ELEMENT)
           ? { [SPELL_ELEMENT]: 'SKSK.Spell.Element.DamageType' } : {}),
         ...CONFIG.SKSK.damageTypes,

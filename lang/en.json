@@ -1198,6 +1198,11 @@
         "SkillLevel": "{skill} (level)",
         "CustomResource": "{name} (current value)"
     },
+    "ManaRestore": {
+        "DamageType": "Restore Mana",
+        "ApplyButton": "Restore Mana",
+        "Applied": "{name} restores {amount} Mana."
+    },
     "Regen": {
         "Life": "Regeneration: +{amount} Life",
         "Mana": "Regeneration: +{amount} Mana"

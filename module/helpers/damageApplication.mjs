@@ -314,6 +314,8 @@ export function renderApplyDamageButton(attacker, damageEntries, killSkillKey = 
     + (wounds ? ` data-wounds="${wounds}"` : '');
   const label = entries.length && entries.every(entry => entry.damageType === 'barrier')
     ? game.i18n.localize('SKSK.Barrier.ApplyButton')
+    : entries.length && entries.every(entry => entry.damageType === 'manaRestore')
+    ? game.i18n.localize('SKSK.ManaRestore.ApplyButton')
     : entries.length
     ? game.i18n.localize('SKSK.AttackRoll.ApplyDamage')
     : game.i18n.localize('SKSK.Technique.ApplyEffect');
@@ -373,7 +375,7 @@ export async function applyResolvedDamageEntries(defender, attacker, entries, ki
   // Zerschmetternd (Shattering): such a weapon deals five times the durability
   // damage to the armor/shield of its target.
   const durabilityLoss = entries.some(entry => entry.shattering) ? 5 : 1;
-  if (isDurabilityEnabled() && entries.some(entry => entry.damageType !== 'barrier')) {
+  if (isDurabilityEnabled() && entries.some(entry => entry.damageType !== 'barrier' && entry.damageType !== 'manaRestore')) {
     for (const armorItem of getDurabilityAffectedArmor(defender)) {
       await armorItem.update({ 'system.durability.value': Math.max(0, armorItem.system.durability.value - durabilityLoss) });
     }
@@ -394,11 +396,12 @@ export async function applyResolvedDamageEntries(defender, attacker, entries, ki
   let lifeDamage = 0;
   const lines = [];
   const barrierGrants = entries.filter(entry => entry.damageType === 'barrier');
+  const manaRestores = entries.filter(entry => entry.damageType === 'manaRestore');
   // Weapon property notes (Riesenfäller, Abreißend) and the damage a
   // Reflektierend item reflects back - see helpers/weaponProperties.mjs.
   const propertyNotes = new Set();
   const reflectEntries = [];
-  for (const entry of entries.filter(entry => entry.damageType !== 'barrier')) {
+  for (const entry of entries.filter(entry => entry.damageType !== 'barrier' && entry.damageType !== 'manaRestore')) {
     const { damageType, ignoresBarrier } = entry;
     let amount = entry.amount;
     // Riesenfäller (Giant Slayer): extra damage by the target's size category.
@@ -484,6 +487,15 @@ export async function applyResolvedDamageEntries(defender, attacker, entries, ki
       name: grant.barrier?.name ?? '', origin: grant.barrier?.origin ?? null,
     });
     if (line) lines.push(line);
+  }
+
+  // Mana restored by the same source (a spell's/ability's Mana restore entry).
+  if (manaRestores.length) {
+    const total = manaRestores.reduce((sum, restore) => sum + restore.amount, 0);
+    const mana = defender.system.mana;
+    const restored = Math.max(0, Math.min(mana.max, mana.value + total) - mana.value);
+    if (restored > 0) await defender.update({ 'system.mana.value': mana.value + restored });
+    lines.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.ManaRestore.Applied', { name: defender.name, amount: restored })}</div>`);
   }
 
   if (techniqueItemUuid) {
@@ -839,7 +851,7 @@ registerGmRelayAction('applyDamage', handleApplyDamageRelay);
 export function halveDamageEntries(entries) {
   // A Barrier grant is not damage - it is never halved.
   return entries
-    .map(entry => (entry.damageType === 'barrier' ? entry : { ...entry, amount: Math.ceil(entry.amount / 2) }))
+    .map(entry => (entry.damageType === 'barrier' || entry.damageType === 'manaRestore' ? entry : { ...entry, amount: Math.ceil(entry.amount / 2) }))
     .filter(entry => entry.amount > 0);
 }
 
