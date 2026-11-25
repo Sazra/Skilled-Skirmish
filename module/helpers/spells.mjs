@@ -894,6 +894,9 @@ export function computeSpellManaCost(spellSystem, actor, overchargeCount = 0, ex
     ? Math.max(0, Number(variableMana ?? spellSystem.variableManaPaid ?? 0) || 0)
     : (spellSystem.manaCost ?? 0);
   let cost = baseCost + computeExtraManaCostSum(spellSystem, extraCostTier, extraCostCounts);
+  // A spell declared free (Mana cost 0, e.g. Hasserfüllte Macht, which costs Life
+  // instead) stays free - the minimum of 1 below is for reduced costs only.
+  const freeSpell = cost <= 0;
   // Metamagie (helpers/metamagic.mjs) surcharges, present on the stand-in data
   // of a changed cast only.
   cost = cost * (1 + (spellSystem.manaSurchargePercent ?? 0) / 100) + (spellSystem.manaSurchargeFlat ?? 0);
@@ -923,7 +926,7 @@ export function computeSpellManaCost(spellSystem, actor, overchargeCount = 0, ex
   // Flat reductions apply first, then percentage ones.
   cost = (cost - grantedFlat) * (1 - totalPercent / 100);
   cost = Math.floor(cost);
-  cost = allowBelowOne ? Math.max(0, cost) : Math.max(1, cost);
+  cost = (allowBelowOne || (freeSpell && cost <= 0)) ? Math.max(0, cost) : Math.max(1, cost);
 
   if (overchargeCount > 0) {
     const oc = getOverchargeSurcharges(spellSystem, actor);
