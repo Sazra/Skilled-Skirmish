@@ -475,7 +475,7 @@ export default class SKSKSpell extends SKSKItemBase {
     // an ordinary spell.
     schema.metamagic = new fields.StringField({
       required: true, blank: true, initial: "",
-      choices: ["", "distance", "raise", "element", "hinder", "silent", "secure", "immobile", "extend", "overcharge", "double", "strengthen", "maximize", "transcend"]
+      choices: ["", "distance", "raise", "element", "hinder", "silent", "secure", "immobile", "extend", "overcharge", "double", "strengthen", "maximize", "transcend", "hateful"]
     });
 
     // Scope "next" (Nächster Zauber): the variant is stored on THIS spell but

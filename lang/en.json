@@ -1803,7 +1803,28 @@
         "double": "Duplicate",
         "strengthen": "Steady",
         "maximize": "Maximize",
-        "transcend": "Transcend"
+        "transcend": "Transcend",
+        "hateful": "Hateful Power"
+      },
+      "Hateful": {
+          "Intro": "Choose at least one hatred. The Life cost (by the level of the enhanced spell) is paid with the next attack spell.",
+          "Targeted": "Targeted Hatred",
+          "TargetedCost": "Targeted Hatred: hits automatically, cannot be averted (level × 3 Life, at least 3)",
+          "Strengthened": "Strengthened Hatred: +{damage} damage",
+          "StrengthenedCost": "Strengthened Hatred: +3 damage per Life (level × 2 Life, at least 2)",
+          "Tenacious": "Tenacious Hatred: saving throws −{penalty}",
+          "TenaciousCost": "Tenacious Hatred: saving throws harder (6 Life per penalty, penalty up to Magic Control/2):",
+          "Maximum": "Maximum Hatred",
+          "MaximumCost": "Maximum Hatred: hits automatically with maximum damage (level × 6 Life)",
+          "Devouring": "Devouring Hatred: −{mana} Mana",
+          "DevouringCost": "Devouring Hatred: −2 Mana per Life, Life (at most {max}):",
+          "Infinite": "Infinite Hatred: duration ×{factor}",
+          "InfiniteCost": "Infinite Hatred: +100 % duration per spell level (level × 3 Life)",
+          "NeedsDark": "needs Lehre of Darkness on level 3",
+          "NothingChosen": "Choose at least one hatred.",
+          "AutoHit": "Attack {number}: hits automatically (no attack roll)",
+          "AutoHitLine": "Hits automatically and cannot be averted.",
+          "LifePaid": "Hateful Power: {amount} Life paid"
       },
       "MarkerPlaced": "{name}: The next spell will be changed.",
       "SecondTarget": "Second target (Duplicate)",
@@ -1897,6 +1918,12 @@
           "None": {
             "Dice": "The spell rolls no damage."
           }
+        },
+        "hateful": {
+            "Applied": "Hatred: {options} - {life} Life.",
+            "None": {
+                "Attack": "The spell has no attack roll - nothing is changed."
+            }
         },
         "transcend": {
           "Applied": "Doubled dice, 1 AP, doubled duration and range.",

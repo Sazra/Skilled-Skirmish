@@ -29,13 +29,14 @@
  */
 
 import { getActorSkillLevel } from './skills.mjs';
+import { getLehrenDefinitions, getInvestedLehreLevel } from './lehren.mjs';
 import { computeMaxOverchargeCount } from './spells.mjs';
 import { EXTRA_DAMAGE_USE_EVENT } from './extraDamage.mjs';
 
 /** The rules a spell's "Metamagie" option can name (order = code order). */
 export const METAMAGIC_TYPES = [
   'distance', 'raise', 'element', 'hinder', 'silent', 'secure', 'immobile',
-  'extend', 'overcharge', 'double', 'strengthen', 'maximize', 'transcend',
+  'extend', 'overcharge', 'double', 'strengthen', 'maximize', 'transcend', 'hateful',
 ];
 
 const CODE_BASE = 100000;
@@ -46,6 +47,43 @@ const CODE_BASE = 100000;
  * whatever spell is cast next), not Metamagie.
  */
 export const ENHANCEMENT_CODE_BASE = 1000000;
+
+/**
+ * Codes from this value on are Hasserfüllte Macht (type "hateful"): the whole
+ * choice (which options, how many Life) is packed into the code itself - it
+ * does not fit the 0-999 parameter of the other types - see
+ * encodeHatefulOptions.
+ */
+export const HATEFUL_CODE_BASE = 10000000000;
+
+/** @param {*} value   @return {boolean} */
+export const isHatefulCode = (value) => Number.isInteger(value) && value >= HATEFUL_CODE_BASE;
+
+/**
+ * Pack the choices of Hasserfüllte Macht into one number: bit 0 targeted
+ * (Gezielter Hass), 1 strengthened (Gestärkter Hass), 2 maximum (Maximaler
+ * Hass), 3 infinite (Unendlicher Hass), bits 4-7 the penalty of Hartnäckiger
+ * Hass (0 = not chosen), bits 8-14 the Life paid for Verzehrender Hass
+ * (0 = not chosen).
+ * @param {{targeted?: boolean, strengthened?: boolean, maximum?: boolean, infinite?: boolean, tenacious?: number, devouring?: number}} options
+ * @return {number}
+ */
+export function encodeHatefulOptions(options = {}) {
+  return (options.targeted ? 1 : 0) | (options.strengthened ? 2 : 0) | (options.maximum ? 4 : 0) | (options.infinite ? 8 : 0)
+    | (Math.max(0, Math.min(15, Math.floor(options.tenacious ?? 0))) << 4)
+    | (Math.max(0, Math.min(127, Math.floor(options.devouring ?? 0))) << 8);
+}
+
+/**
+ * @param {number} param   See encodeHatefulOptions.
+ * @return {{targeted: boolean, strengthened: boolean, maximum: boolean, infinite: boolean, tenacious: number, devouring: number}}
+ */
+export function decodeHatefulOptions(param) {
+  return {
+    targeted: !!(param & 1), strengthened: !!(param & 2), maximum: !!(param & 4), infinite: !!(param & 8),
+    tenacious: (param >> 4) & 15, devouring: (param >> 8) & 127,
+  };
+}
 
 /** Elements Elementarisierung offers; the second group from Magiekontrolle 5. */
 export const METAMAGIC_ELEMENTS = ['fire', 'water', 'earth', 'air', 'dark', 'light', 'nature', 'mental', 'life', 'death'];
@@ -64,12 +102,13 @@ const DIRECT_INDICATORS = new Set(['targeted', 'touch', 'projectile']);
 export function encodeMetamagic(type, param = 0) {
   const index = METAMAGIC_TYPES.indexOf(type);
   if (index < 0) throw new Error(`Unknown metamagic type ${type}`);
+  if (type === 'hateful') return HATEFUL_CODE_BASE + Math.max(0, Math.floor(param));
   return CODE_BASE + index * 1000 + Math.max(0, Math.min(999, Math.floor(param)));
 }
 
 /** @param {*} value   @return {boolean} */
 export function isMetamagicCode(value) {
-  return Number.isInteger(value) && value >= CODE_BASE && value < ENHANCEMENT_CODE_BASE;
+  return (Number.isInteger(value) && value >= CODE_BASE && value < ENHANCEMENT_CODE_BASE) || isHatefulCode(value);
 }
 
 /**
@@ -78,6 +117,7 @@ export function isMetamagicCode(value) {
  */
 export function decodeMetamagic(code) {
   if (!isMetamagicCode(code)) return null;
+  if (isHatefulCode(code)) return { type: 'hateful', param: code - HATEFUL_CODE_BASE };
   const type = METAMAGIC_TYPES[Math.floor((code - CODE_BASE) / 1000)];
   return type ? { type, param: (code - CODE_BASE) % 1000 } : null;
 }
@@ -170,7 +210,7 @@ export function applyMetamagic(data, codes, actor, env = {}) {
 
   // The order matters: level/element/DC first, then the dice, then the
   // multiplications, then the costs of the parts that were saved.
-  const ORDER = ['raise', 'element', 'hinder', 'strengthen', 'maximize', 'transcend', 'extend', 'distance', 'silent', 'immobile', 'secure', 'double', 'overcharge'];
+  const ORDER = ['raise', 'element', 'hinder', 'strengthen', 'maximize', 'hateful', 'transcend', 'extend', 'distance', 'silent', 'immobile', 'secure', 'double', 'overcharge'];
   const sorted = [...rules].sort((a, b) => ORDER.indexOf(a.type) - ORDER.indexOf(b.type));
 
   for (const { type, param } of sorted) {
@@ -268,6 +308,59 @@ export function applyMetamagic(data, codes, actor, env = {}) {
         for (const damage of data.damages) damage.formula = mapDice(damage.formula, (count, faces) => String(count * faces));
         addFlat(Math.max(1, Math.floor(0.25 * baseMana() * (data.spellLevel ?? 1) - mk)));
         note(type, 'Applied');
+        break;
+      }
+      case 'hateful': {
+        // Hasserfüllte Macht: only an attack spell can be changed. The Life it
+        // costs is paid with the cast (data.hatefulLifeCost, see
+        // helpers/spell-rolls.mjs#paySpellCast); it depends on this spell's level.
+        if (!data.attackRoll?.enabled) { none(type, 'Attack'); break; }
+        const options = decodeHatefulOptions(param);
+        const level = Math.max(1, data.spellLevel ?? 1);
+        const parts = [];
+        let life = 0;
+        if (options.targeted) {
+          data.metaAutoHit = true;
+          life += Math.max(3, 3 * level);
+          parts.push(game.i18n.localize('SKSK.Metamagic.Hateful.Targeted'));
+        }
+        if (options.maximum) {
+          data.metaAutoHit = true;
+          for (const damage of data.damages ?? []) damage.formula = mapDice(damage.formula, (count, faces) => String(count * faces));
+          life += 6 * level;
+          parts.push(game.i18n.localize('SKSK.Metamagic.Hateful.Maximum'));
+        }
+        if (options.strengthened) {
+          const paid = Math.max(2, 2 * level);
+          const target = (data.damages ?? []).find(damage => damage.trigger === 'attack') ?? (data.damages ?? [])[0];
+          if (target) target.formula = `${target.formula} + ${3 * paid}`;
+          life += paid;
+          parts.push(game.i18n.format('SKSK.Metamagic.Hateful.Strengthened', { damage: 3 * paid }));
+        }
+        if (options.tenacious) {
+          const penalty = Math.max(1, Math.min(options.tenacious, Math.ceil(mk / 2)));
+          for (const save of data.savingThrows ?? []) save.baseValue = Math.max(0, (save.baseValue ?? 0) + penalty);
+          life += 6 * penalty;
+          parts.push(game.i18n.format('SKSK.Metamagic.Hateful.Tenacious', { penalty }));
+        }
+        if (options.devouring) {
+          const darkLevel = actor ? getActorSkillLevel(actor, 'dark') : 0;
+          const bloodLevel = actor ? getActorSkillLevel(actor, 'blood') : 0;
+          const paid = Math.max(1, Math.min(options.devouring, mk + darkLevel + bloodLevel));
+          addFlat(-2 * paid);
+          life += paid;
+          parts.push(game.i18n.format('SKSK.Metamagic.Hateful.Devouring', { mana: 2 * paid }));
+        }
+        if (options.infinite) {
+          const factor = 1 + level;
+          const scaled = scaleDurationText(data.duration, factor);
+          if (scaled) data.duration = scaled.text;
+          data.metaDurationMultiplier = (data.metaDurationMultiplier ?? 1) * factor;
+          life += 3 * level;
+          parts.push(game.i18n.format('SKSK.Metamagic.Hateful.Infinite', { factor }));
+        }
+        data.hatefulLifeCost = (data.hatefulLifeCost ?? 0) + life;
+        note(type, 'Applied', { life, options: parts.join(', ') });
         break;
       }
       case 'transcend': {
@@ -386,14 +479,17 @@ export function applyMetamagic(data, codes, actor, env = {}) {
 /**
  * The Metamagie markers on a caster that will change their next spell.
  * @param {Actor} actor
+ * @param {Item|null} [item]   The spell about to be cast (a Hasserfüllte Macht marker only applies to one with an attack roll).
  * @return {{codes: number[], markerIds: string[]}}
  */
-export function findMetamagicMarkers(actor) {
+export function findMetamagicMarkers(actor, item = null) {
   const result = { codes: [], markerIds: [] };
   if (!actor) return result;
   for (const effect of actor.appliedEffects) {
     const code = effect.getFlag('sksk', 'metamagic')?.code;
     if (!isMetamagicCode(code)) continue;
+    // Hasserfüllte Macht waits for the next spell that has an attack roll.
+    if (isHatefulCode(code) && item && !item.system.attackRoll?.enabled) continue;
     result.codes.push(code);
     result.markerIds.push(effect.id);
   }
@@ -425,6 +521,8 @@ export async function promptMetamagicChoice(item) {
     const options = [...METAMAGIC_ELEMENTS, ...(mk >= 5 ? METAMAGIC_ELEMENTS_ADVANCED : [])]
       .map((key, index) => `<option value="${index}">${game.i18n.localize(CONFIG.SKSK.damageTypes[key] ?? key)}</option>`).join('');
     field = `<label>${L('SKSK.Metamagic.Prompt.Element')}</label><select name="choice">${options}</select>`;
+  } else if (type === 'hateful') {
+    return promptHatefulChoice(item);
   } else if (type === 'hinder') {
     field = `<label>${L('SKSK.Metamagic.Prompt.Hinder')}</label><select name="choice">
       <option value="0">${L('SKSK.Metamagic.Prompt.HinderHarder')}</option>
@@ -443,6 +541,70 @@ export async function promptMetamagicChoice(item) {
   });
   if (value === null || value === undefined || Number.isNaN(value)) return null;
   return Math.max(0, Math.floor(value));
+}
+
+/**
+ * The level of the caster's "Lehre der Dunkelheit" (the Lehre of Dunkle Magie
+ * whose name contains "Dunkelheit"), 0 if there is none or it is not invested.
+ * @param {Actor|null} actor
+ * @return {number}
+ */
+export function getDarknessLehreLevel(actor) {
+  if (!actor) return 0;
+  const lehre = getLehrenDefinitions('dark').find(entry => /dunkelheit|darkness/i.test(entry.name ?? ''));
+  return lehre ? getInvestedLehreLevel(actor, 'dark', lehre.id) : 0;
+}
+
+/**
+ * The options dialog of Hasserfüllte Macht: which hatreds to pay Life for. The
+ * Life itself is paid with the next attack spell (its level sets the cost).
+ * @param {Item} item
+ * @return {Promise<number|null>}   The packed choice (see encodeHatefulOptions), null if closed or nothing was chosen.
+ */
+async function promptHatefulChoice(item) {
+  const actor = item.actor;
+  const L = (key, values) => (values ? game.i18n.format(key, values) : game.i18n.localize(key));
+  const mk = actor ? getActorSkillLevel(actor, 'magicControl') : 0;
+  const darkLevel = actor ? getActorSkillLevel(actor, 'dark') : 0;
+  const bloodLevel = actor ? getActorSkillLevel(actor, 'blood') : 0;
+  // Maximaler/Verzehrender/Unendlicher Hass need the Lehre der Dunkelheit on level 3.
+  const advanced = getDarknessLehreLevel(actor) >= 3;
+  const maxPenalty = Math.max(1, Math.ceil(mk / 2));
+  const maxDevour = Math.max(1, mk + darkLevel + bloodLevel);
+  const box = (name, label, locked) => `<div class="form-group"><label class="checkbox"><input type="checkbox" name="${name}" ${locked ? 'disabled' : ''} /> ${label}${locked ? ` <em>(${L('SKSK.Metamagic.Hateful.NeedsDark')})</em>` : ''}</label></div>`;
+  const content = `<p>${L('SKSK.Metamagic.Hateful.Intro')}</p>
+    ${box('targeted', L('SKSK.Metamagic.Hateful.TargetedCost'), false)}
+    ${box('strengthened', L('SKSK.Metamagic.Hateful.StrengthenedCost'), false)}
+    <div class="form-group"><label class="checkbox"><input type="checkbox" name="tenaciousOn" /> ${L('SKSK.Metamagic.Hateful.TenaciousCost')}</label>
+      <input type="number" name="tenacious" value="1" min="1" max="${maxPenalty}" step="1" style="max-width:4em" /></div>
+    ${box('maximum', L('SKSK.Metamagic.Hateful.MaximumCost'), !advanced)}
+    <div class="form-group"><label class="checkbox"><input type="checkbox" name="devouringOn" ${advanced ? '' : 'disabled'} /> ${L('SKSK.Metamagic.Hateful.DevouringCost', { max: maxDevour })}${advanced ? '' : ` <em>(${L('SKSK.Metamagic.Hateful.NeedsDark')})</em>`}</label>
+      <input type="number" name="devouring" value="1" min="1" max="${maxDevour}" step="1" style="max-width:4em" ${advanced ? '' : 'disabled'} /></div>
+    ${box('infinite', L('SKSK.Metamagic.Hateful.InfiniteCost'), !advanced)}`;
+
+  const result = await foundry.applications.api.DialogV2.prompt({
+    window: { title: L('SKSK.Metamagic.Prompt.Title', { name: item.name }) },
+    content,
+    ok: {
+      label: L('SKSK.Metamagic.Prompt.Confirm'),
+      callback: (event, button) => {
+        const el = button.form.elements;
+        return {
+          targeted: el.targeted.checked, strengthened: el.strengthened.checked, maximum: el.maximum.checked, infinite: el.infinite.checked,
+          tenacious: el.tenaciousOn.checked ? Math.max(1, Math.min(maxPenalty, Number(el.tenacious.value) || 1)) : 0,
+          devouring: el.devouringOn.checked ? Math.max(1, Math.min(maxDevour, Number(el.devouring.value) || 1)) : 0,
+        };
+      },
+    },
+    rejectClose: false,
+  });
+  if (!result) return null;
+  const packed = encodeHatefulOptions(result);
+  if (!packed) {
+    ui.notifications.warn(L('SKSK.Metamagic.Hateful.NothingChosen'));
+    return null;
+  }
+  return packed;
 }
 
 /**

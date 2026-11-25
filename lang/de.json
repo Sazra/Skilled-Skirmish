@@ -1803,7 +1803,28 @@
                 "double": "Verdopple",
                 "strengthen": "Verstärke",
                 "maximize": "Maximiere",
-                "transcend": "Transzendiere"
+                "transcend": "Transzendiere",
+                "hateful": "Hasserfüllte Macht"
+            },
+            "Hateful": {
+                "Intro": "Wähle mindestens einen Hass. Die Lebenskosten (nach der Stufe des verstärkten Zaubers) werden beim nächsten Angriffszauber bezahlt.",
+                "Targeted": "Gezielter Hass",
+                "TargetedCost": "Gezielter Hass: trifft automatisch, kann nicht abgewendet werden (Stufe × 3 Leben, mindestens 3)",
+                "Strengthened": "Gestärkter Hass: +{damage} Schaden",
+                "StrengthenedCost": "Gestärkter Hass: +3 Schaden pro Leben (Stufe × 2 Leben, mindestens 2)",
+                "Tenacious": "Hartnäckiger Hass: Rettungswürfe −{penalty}",
+                "TenaciousCost": "Hartnäckiger Hass: Rettungswürfe erschwert (6 Leben pro Malus, Malus bis Magiekontrolle/2):",
+                "Maximum": "Maximaler Hass",
+                "MaximumCost": "Maximaler Hass: trifft automatisch mit maximalem Schaden (Stufe × 6 Leben)",
+                "Devouring": "Verzehrender Hass: −{mana} Mana",
+                "DevouringCost": "Verzehrender Hass: −2 Mana pro Leben, Leben (höchstens {max}):",
+                "Infinite": "Unendlicher Hass: Dauer ×{factor}",
+                "InfiniteCost": "Unendlicher Hass: +100 % Dauer pro Zauberstufe (Stufe × 3 Leben)",
+                "NeedsDark": "benötigt Lehre der Dunkelheit auf Stufe 3",
+                "NothingChosen": "Wähle mindestens einen Hass.",
+                "AutoHit": "Angriff {number}: trifft automatisch (kein Angriffswurf)",
+                "AutoHitLine": "Trifft automatisch und kann nicht abgewendet werden.",
+                "LifePaid": "Hasserfüllte Macht: {amount} Leben gezahlt"
             },
             "MarkerPlaced": "{name}: Der nächste Zauber wird verändert.",
             "SecondTarget": "Zweites Ziel (Verdopple)",
@@ -1896,6 +1917,12 @@
                     "Applied": "Maximaler Schaden bzw. maximale Heilung.",
                     "None": {
                         "Dice": "Der Zauber würfelt keinen Schaden."
+                    }
+                },
+                "hateful": {
+                    "Applied": "Hass: {options} - {life} Leben.",
+                    "None": {
+                        "Attack": "Der Zauber hat keinen Angriffswurf - nichts wird verändert."
                     }
                 },
                 "transcend": {

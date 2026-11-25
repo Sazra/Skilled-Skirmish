@@ -666,8 +666,19 @@ export function stripRerollButton(html) {
  * @return {Promise<{hit: boolean, criticalType: string|null, line: string, fpHTML: string, title: string, stunStacks: number}>}
  */
 async function evaluateHitAgainstDefender({
-  defender, attacker, mode, rollA, rollB, critA, critB, comparisonType, damageDice, killSkillKey, noFp = false,
+  defender, attacker, mode, rollA, rollB, critA, critB, comparisonType, damageDice, killSkillKey, noFp = false, autoHit = false,
 }) {
+  // Hasserfüllte Macht (Gezielter/Maximaler Hass): no attack roll - the spell
+  // hits, never critically (nothing was rolled).
+  if (autoHit) {
+    return {
+      hit: true, criticalType: null, fpHTML: '', stunStacks: 0, usedEffectIds: [],
+      title: defender
+        ? game.i18n.format('SKSK.AttackRoll.EvaluationTitle', { defender: defender.name })
+        : game.i18n.localize('SKSK.AttackRoll.EvaluationTitleNoDefender'),
+      line: `<div class="sksk-roll-line">${game.i18n.localize('SKSK.Metamagic.Hateful.AutoHitLine')}</div>`,
+    };
+  }
   // An extra attack granted by a spell's Überladen (see data/spell.mjs#
   // overcharge.effect) gives no FP of its own.
   const grantSkillUsageFp = noFp ? async () => null : grantSkillUsageFpReal;
@@ -1070,18 +1081,20 @@ export function greyOutManualEvalButtons(html) {
  * @param {{damageEntries?: Array<{damageType: string, amount: number}>, damageDice?: Array<{damageType: string, dieSizes: number[]}>, killSkillKey?: string|null, flanking?: boolean, techniqueItemUuid?: string|null, wounds?: number}} [options]
  * @return {Promise<string>}
  */
-export async function autoResolveAttackForTargets([rollA, rollB], comparisonType, attacker, options = {}) {
-  const { damageEntries = [], damageDice = [], killSkillKey = null, flanking = false, techniqueItemUuid = null, noFp = false, wounds = 0, isArea = false } = options;
+export async function autoResolveAttackForTargets(rolls, comparisonType, attacker, options = {}) {
+  const { damageEntries = [], damageDice = [], killSkillKey = null, flanking = false, techniqueItemUuid = null, noFp = false, wounds = 0, isArea = false, autoHit = false } = options;
+  // autoHit (Hasserfüllte Macht): nothing was rolled - rolls may be null.
+  const [rollA, rollB] = rolls ?? [null, null];
   const defenders = getOtherTargetedActors(attacker);
   if (!defenders.length) return '';
 
-  const mode = await chooseAttackMode(recommendAttackMode(attacker, { comparisonType, killSkillKey, flanking }));
+  const mode = autoHit ? 'neutral' : await chooseAttackMode(recommendAttackMode(attacker, { comparisonType, killSkillKey, flanking }));
   if (!mode) return '';
 
-  const critA = getAttackCriticalType(rollA, attacker);
-  const critB = getAttackCriticalType(rollB, attacker);
+  const critA = autoHit ? null : getAttackCriticalType(rollA, attacker);
+  const critB = autoHit ? null : getAttackCriticalType(rollB, attacker);
   // The attack's own modifier (both d20s carry the same one) - a redirected attack rolls anew with it.
-  const attackBonus = rollA.total - (getNaturalD20(rollA) ?? 0);
+  const attackBonus = autoHit ? 0 : rollA.total - (getNaturalD20(rollA) ?? 0);
 
   const blocks = [];
   let relayedCount = 0;
@@ -1089,13 +1102,13 @@ export async function autoResolveAttackForTargets([rollA, rollB], comparisonType
     if (!defender.isOwner) {
       relayedCount += requestGmAction('autoResolveHit', {
         defenderUuid: defender.uuid, attackerUuid: attacker?.uuid ?? null, mode,
-        rollA: rollA.total, rollB: rollB.total, critA, critB,
-        comparisonType, damageDice, killSkillKey, damageEntries, techniqueItemUuid, noFp, wounds, attackBonus, isArea,
+        rollA: rollA?.total ?? 0, rollB: rollB?.total ?? 0, critA, critB,
+        comparisonType, damageDice, killSkillKey, damageEntries, techniqueItemUuid, noFp, wounds, attackBonus, isArea, autoHit,
       }) ? 1 : 0;
       continue;
     }
     const { title, line, fpHTML, damageHTML } = await resolveAndApplyOneAttack(defender, attacker, {
-      mode, rollA: rollA.total, rollB: rollB.total, critA, critB, comparisonType, damageDice, killSkillKey, damageEntries, techniqueItemUuid, noFp, wounds, attackBonus, isArea,
+      mode, rollA: rollA?.total ?? 0, rollB: rollB?.total ?? 0, critA, critB, comparisonType, damageDice, killSkillKey, damageEntries, techniqueItemUuid, noFp, wounds, attackBonus, isArea, autoHit,
     });
     blocks.push(formatRollCardHeading(title) + line + fpHTML + damageHTML);
   }
@@ -1135,12 +1148,13 @@ export async function autoResolveAttackForTargets([rollA, rollB], comparisonType
 async function resolveAndApplyOneAttack(defender, attacker, args) {
   const {
     mode, rollA, rollB, critA, critB, comparisonType, damageDice, killSkillKey, damageEntries, techniqueItemUuid,
-    noFp = false, wounds = 0, attackBonus = 0, isArea = false, noReactions = false,
+    noFp = false, wounds = 0, attackBonus = 0, isArea = false, noReactions = false, autoHit = false,
   } = args;
 
   // Entwaffnend/Umleitung: the defender may react before the hit is evaluated.
   let reactionHTML = '';
-  if (!noReactions) {
+  // An auto-hit (Hasserfüllte Macht) "can't be averted": no defender reaction.
+  if (!noReactions && !autoHit) {
     const reaction = await offerDefenderReactions({ defender, attacker, comparisonType, damageDice, isArea });
     reactionHTML = reaction.html;
     if (reaction.kind === 'failed') {
@@ -1171,7 +1185,7 @@ async function resolveAndApplyOneAttack(defender, attacker, args) {
   }
 
   const { hit, line: evaluationLine, fpHTML, title, stunStacks, usedEffectIds } = await evaluateHitAgainstDefender({
-    defender, attacker, mode, rollA, rollB, critA, critB, comparisonType, damageDice, killSkillKey, noFp,
+    defender, attacker, mode, rollA, rollB, critA, critB, comparisonType, damageDice, killSkillKey, noFp, autoHit,
   });
   const line = reactionHTML + evaluationLine + await consumeMarkerEffects(defender, usedEffectIds, true);
 

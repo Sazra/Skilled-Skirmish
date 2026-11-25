@@ -383,6 +383,7 @@ SKSK.metamagicTypes = {
   strengthen: 'SKSK.Metamagic.Type.strengthen',
   maximize: 'SKSK.Metamagic.Type.maximize',
   transcend: 'SKSK.Metamagic.Type.transcend',
+  hateful: 'SKSK.Metamagic.Type.hateful',
 };
 
 // The indicator paired with each of a spell's ranges - e.g. a fireball is

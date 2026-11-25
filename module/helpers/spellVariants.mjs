@@ -18,7 +18,9 @@
  */
 
 import { consumeUsedEffects } from './extraDamage.mjs';
-import { applyMetamagic, findMetamagicMarkers, isMetamagicCode, renderMetamagicLines, ENHANCEMENT_CODE_BASE } from './metamagic.mjs';
+import {
+  applyMetamagic, findMetamagicMarkers, isMetamagicCode, renderMetamagicLines, ENHANCEMENT_CODE_BASE, HATEFUL_CODE_BASE,
+} from './metamagic.mjs';
 import { getSpellSchool } from './spells.mjs';
 
 const normalize = (text) => String(text ?? '').trim().toLowerCase();
@@ -46,7 +48,7 @@ const hashText = (text) => {
 };
 
 /** @param {*} value   @return {boolean} */
-export const isEnhancementCode = (value) => Number.isInteger(value) && value >= ENHANCEMENT_CODE_BASE;
+export const isEnhancementCode = (value) => Number.isInteger(value) && value >= ENHANCEMENT_CODE_BASE && value < HATEFUL_CODE_BASE;
 
 /**
  * @param {Item} item   The infusion spell.
@@ -163,7 +165,7 @@ export function detectSpellVariants(item) {
   }
 
   if (!item.system.metamagic) {
-    const meta = findMetamagicMarkers(actor);
+    const meta = findMetamagicMarkers(actor, item);
     result.indexes.push(...meta.codes);
     for (const id of meta.markerIds) result.markerIds.add(id);
   }

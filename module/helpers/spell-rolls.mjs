@@ -16,7 +16,7 @@ import {
 } from './spellVariants.mjs';
 import { getActorSkillLevel, getSkillLabel } from './skills.mjs';
 import {
-  applyD20Malus, canCastMovementSpell, getStatusStacks, setStatusStacks, payManaCost, negativeLifeOverflowHTML,
+  applyD20Malus, canCastMovementSpell, getStatusStacks, setStatusStacks, payManaCost, applyLifeChange, negativeLifeOverflowHTML,
   isActorsOwnTurn, isCombatActive,
 } from './statusEffects.mjs';
 import {
@@ -805,6 +805,30 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
     }));
     const attackBonus = actor ? computeSpellAttackBonus(system, actor) + (technique?.styleAttackBonus ?? 0) + (technique?.hitBonusAmount ?? 0) : 0;
     for (let i = 1; i <= attackCount; i++) {
+      // Hasserfüllte Macht (Gezielter/Maximaler Hass): no attack roll, the spell hits.
+      if (system.metaAutoHit) {
+        parts.push(`<div class="sksk-roll-line"><strong>${game.i18n.format('SKSK.Metamagic.Hateful.AutoHit', { number: i })}</strong></div>`);
+        const autoEntries = [];
+        for (const damage of attackDamages) {
+          const { html, entry, extras } = await rollDamageWithTechnique(damage);
+          parts.push(html);
+          autoEntries.push(entry, ...extras);
+        }
+        const autoTechnique = takeTechniqueEffect();
+        const autoButtonIndex = parts.length;
+        parts.push(renderApplyDamageButton(actor, autoEntries, null, autoTechnique, 'magicResistance'));
+        if (actor) {
+          const autoHTML = await autoResolveAttackForTargets(null, 'magicResistance', actor, {
+            damageEntries: autoEntries, damageDice, killSkillKey: null, techniqueItemUuid: autoTechnique?.itemUuid ?? null,
+            isArea: isAreaSpell(system), autoHit: true,
+          });
+          if (autoHTML) {
+            parts[autoButtonIndex] = greyOutManualEvalButtons(parts[autoButtonIndex]);
+            parts.push(autoHTML);
+          }
+        }
+        continue;
+      }
       const rolls = await rollAttackPair(attackBonus, actor);
       // The attacks an Überladung adds come last and give no FP.
       const isOverchargeAttack = i > baseAttackCount;
@@ -1354,6 +1378,14 @@ async function paySpellCast(item, ctx) {
       const fromLife = -lifeDelta + negativeLifeDelta;
       parts.push(`<div class="sksk-roll-line">${game.i18n.format('SKSK.Spell.Roll.ManaShortfallFromLife', { amount: fromLife })}</div>`);
       parts.push(negativeLifeOverflowHTML(actor, negativeLifeDelta));
+    }
+
+    // Hasserfüllte Macht (helpers/metamagic.mjs): the chosen hatreds cost Life.
+    const hatefulLife = Math.max(0, Math.floor(system.hatefulLifeCost ?? 0));
+    if (hatefulLife > 0) {
+      const paidLife = await applyLifeChange(actor, -hatefulLife);
+      parts.push(`<div class="sksk-roll-line"><strong>${game.i18n.format('SKSK.Metamagic.Hateful.LifePaid', { amount: hatefulLife })}</strong></div>`);
+      parts.push(negativeLifeOverflowHTML(actor, paidLife?.negativeLifeDelta ?? 0));
     }
 
     // Mana regained for casting a spell of a school (Active Effect keys
