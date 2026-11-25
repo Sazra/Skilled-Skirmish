@@ -7,7 +7,7 @@ import { applyD20Malus, getStatusStacks, setStatusStacks, increaseStatusStacks }
 import { getAttackCriticalType, getNaturalD20, resolveCheckSuccess, wrapCriticalBlock, wrapCriticalInline } from './criticalRolls.mjs';
 import { offerDefenderReactions } from './reactions.mjs';
 import { formatRollCardHeading } from './rollCard.mjs';
-import { getEquippedArmorSkillKeys, computeSpellArmorClassBonus } from './defense.mjs';
+import { getEquippedArmorSkillKeys, computeSpellArmorClassBonus, computeHitBonusAgainst } from './defense.mjs';
 import {
   pickFlags, BONUS_FLAG_KEYS, getDistantAttackAttributes, getEquippedArmorWithProperty, getUnmetRequirements, isHeldOneHanded,
 } from './weaponProperties.mjs';
@@ -553,7 +553,13 @@ export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor
   // luck.mjs#redoAttackPairRoll re-renders the fresh block through this
   // same function, and needs attributeKeys again to decide whether the
   // OTHER icon still belongs on that new block too.
-  const rerollPayload = { blockId, bonus, comparisonType, damageDice, killSkillKey, flanking, label, attributeKeys, noFp, isArea };
+  // The Vorteil/Nachteil recommendation is fixed at roll time (a reroll keeps
+  // it): "Bis Nutzung" effects behind it (e.g. Nachteil from Tödliche
+  // Berührung) are used up by this very roll, long before Evaluate is clicked.
+  const suggestedMode = damageInfo.suggestedMode !== undefined
+    ? damageInfo.suggestedMode
+    : (recommendAttackMode(actor, { comparisonType, killSkillKey, flanking }) ?? '');
+  const rerollPayload = { blockId, bonus, comparisonType, damageDice, killSkillKey, flanking, label, attributeKeys, noFp, isArea, suggestedMode };
   const attributeRerollHTML = renderAttributeRerollButton(actor, attributeKeys, 'attack', rerollPayload);
   const rerollHTML = renderRerollButton(actor, 'attack', rerollPayload);
   return `
@@ -572,7 +578,7 @@ export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor
       data-crit-a="${critA ?? ''}" data-crit-b="${critB ?? ''}" data-attacker-uuid="${actor?.uuid ?? ''}"
       data-damage-dice="${encodeURIComponent(JSON.stringify(damageDice))}"
       data-kill-skill="${killSkillKey ?? ''}" data-flanking="${flanking}" data-no-fp="${noFp}"
-      data-attack-bonus="${bonus}" data-is-area="${isArea}"
+      data-attack-bonus="${bonus}" data-is-area="${isArea}" data-suggested-mode="${suggestedMode ?? ''}"
       title="${game.i18n.localize('SKSK.AttackRoll.EvaluateShiftHint')}">
       ${game.i18n.localize('SKSK.AttackRoll.Evaluate')}
     </button>
@@ -692,9 +698,12 @@ async function evaluateHitAgainstDefender({
   const ignoredSpellAc = defender && comparisonType === 'armorClass' && damageDice.some(d => d.antimagic)
     ? Math.max(0, computeSpellArmorClassBonus(defender))
     : 0;
+  // Markierung: the defender carries a Trefferbonus for attackers (e.g.
+  // Ionisierender Funken) - the attack counts as that much higher.
+  const marked = defender ? computeHitBonusAgainst(defender, damageDice.map(d => d.damageType)) : { bonus: 0, effectIds: [] };
   const statValue = defender
     ? (comparisonType === 'magicResistance' ? defender.system.magicResistance : defender.system.armorClass)
-      + (defenderFlanks ? FLANKING_AC_BONUS : 0) - ignoredSpellAc
+      + (defenderFlanks ? FLANKING_AC_BONUS : 0) - ignoredSpellAc - marked.bonus
     : null;
 
   // With no defender to compare against (forceHit), the attack counts as a
@@ -711,6 +720,9 @@ async function evaluateHitAgainstDefender({
   }
   if (ignoredSpellAc > 0) {
     extraHTML += `<div class="sksk-roll-line">${game.i18n.format('SKSK.WeaponProperty.AntimagicIgnoresSpellAc', { bonus: ignoredSpellAc })}</div>`;
+  }
+  if (marked.bonus) {
+    extraHTML += `<div class="sksk-roll-line">${game.i18n.format('SKSK.AttackRoll.MarkedHitBonus', { defender: defender.name, bonus: marked.bonus })}</div>`;
   }
 
   if (criticalType === null && hit) {
@@ -834,8 +846,36 @@ async function evaluateHitAgainstDefender({
     ? (damageDice.find(d => d.stunStacks)?.stunStacks ?? 0)
     : 0;
 
-  return { hit, criticalType, line, fpHTML, title, stunStacks };
+  return { hit, criticalType, line, fpHTML, title, stunStacks, usedEffectIds: marked.effectIds };
 }
+
+/**
+ * Use up the defender's "Bis Nutzung" markers an attack just got its hit
+ * bonus from (see defense.mjs#computeHitBonusAgainst). Deleted right away
+ * where the defender can be written to, otherwise by the active GM.
+ * @param {Actor|null} defender
+ * @param {string[]} effectIds
+ * @param {boolean} [direct=false]   The caller already runs where it can write.
+ * @return {Promise<string>}   The chat lines.
+ */
+async function consumeMarkerEffects(defender, effectIds, direct = false) {
+  if (!defender || !effectIds?.length) return '';
+  const names = effectIds.map(id => defender.effects.get(id)?.name).filter(Boolean);
+  if (direct || defender.isOwner) {
+    await defender.deleteEmbeddedDocuments('ActiveEffect', effectIds.filter(id => defender.effects.has(id)));
+  } else if (!requestGmAction('removeEffects', { defenderUuid: defender.uuid, effectIds })) {
+    return '';
+  }
+  return names
+    .map(name => `<div class="sksk-roll-line sksk-roll-effect-consumed">${game.i18n.format('SKSK.Roll.EffectConsumed', { name: foundry.utils.escapeHTML(name) })}</div>`)
+    .join('');
+}
+registerGmRelayAction('removeEffects', async (data) => {
+  const defender = await fromUuid(data.defenderUuid);
+  if (!defender) return;
+  const ids = (data.effectIds ?? []).filter(id => defender.effects.has(id));
+  if (ids.length) await defender.deleteEmbeddedDocuments('ActiveEffect', ids);
+});
 
 /**
  * Handle a click on an Angriffswurf's "Evaluate" button: resolves the
@@ -859,10 +899,13 @@ export async function resolveHitEvaluationFromChat(button, forceHit = false) {
   const defender = resolveClickDefender(attacker);
   if (!defender && !forceHit) return ui.notifications.warn(game.i18n.localize('SKSK.AttackRoll.NoDefender'));
 
-  const mode = await chooseAttackMode(recommendAttackMode(attacker, {
-    comparisonType: button.dataset.comparisonType, killSkillKey: button.dataset.killSkill || null,
-    flanking: button.dataset.flanking === 'true',
-  }));
+  // The recommendation fixed at roll time (see renderAttackPairHTML), if any.
+  const mode = await chooseAttackMode(button.dataset.suggestedMode !== undefined
+    ? (button.dataset.suggestedMode || null)
+    : recommendAttackMode(attacker, {
+      comparisonType: button.dataset.comparisonType, killSkillKey: button.dataset.killSkill || null,
+      flanking: button.dataset.flanking === 'true',
+    }));
   if (!mode) return;
 
   const damageDice = JSON.parse(decodeURIComponent(button.dataset.damageDice || '[]'));
@@ -896,12 +939,13 @@ export async function resolveHitEvaluationFromChat(button, forceHit = false) {
     }
   }
 
-  const { hit, line, fpHTML, title, stunStacks } = await evaluateHitAgainstDefender({
+  const { hit, line, fpHTML, title, stunStacks, usedEffectIds } = await evaluateHitAgainstDefender({
     defender: evalDefender, attacker, mode,
     rollA, rollB, critA, critB,
     comparisonType: button.dataset.comparisonType, damageDice, killSkillKey,
     noFp: button.dataset.noFp === 'true',
   });
+  const markerHTML = await consumeMarkerEffects(evalDefender, usedEffectIds);
 
   // Remember the outcome on the roll's own message, so that message's Apply
   // Damage button can deal a missed spell's half damage - see
@@ -914,7 +958,7 @@ export async function resolveHitEvaluationFromChat(button, forceHit = false) {
   const stunHTML = stunStacks && evalDefender ? await applyCritStun(evalDefender, stunStacks) : '';
 
   const content = `<div class="sksk-chat-card sksk-action-card">`
-    + formatRollCardHeading(title) + reactionHTML + line + fpHTML + stunHTML
+    + formatRollCardHeading(title) + reactionHTML + line + fpHTML + stunHTML + markerHTML
     + `</div>`;
 
   const messageData = {
@@ -1126,10 +1170,10 @@ async function resolveAndApplyOneAttack(defender, attacker, args) {
     }
   }
 
-  const { hit, line: evaluationLine, fpHTML, title, stunStacks } = await evaluateHitAgainstDefender({
+  const { hit, line: evaluationLine, fpHTML, title, stunStacks, usedEffectIds } = await evaluateHitAgainstDefender({
     defender, attacker, mode, rollA, rollB, critA, critB, comparisonType, damageDice, killSkillKey, noFp,
   });
-  const line = reactionHTML + evaluationLine;
+  const line = reactionHTML + evaluationLine + await consumeMarkerEffects(defender, usedEffectIds, true);
 
   let damageHTML = '';
   // This runs where the defender can be written to (the owner, or the GM via the relay).

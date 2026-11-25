@@ -871,6 +871,18 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     schema.damageReduction = new fields.SchemaField(Object.fromEntries(
       Object.keys(CONFIG.SKSK.damageTypes).map(key => [key, new fields.NumberField({ ...requiredInteger, initial: 0 })])
     ));
+
+    // Markierung (Active Effect targets on the DEFENDER): attacks against this
+    // actor get this Trefferbonus (the attack counts as that much higher
+    // against AC/Magic Resistance). hitBonusAgainstAll counts for every
+    // attack, hitBonusAgainst.<type> for attacks dealing that damage type (the
+    // best matching one counts). With the effect duration "Bis Nutzung" the
+    // marker is used up by the next such attack. See
+    // helpers/defense.mjs#computeHitBonusAgainst.
+    schema.hitBonusAgainstAll = new fields.NumberField({ ...requiredInteger, initial: 0 });
+    schema.hitBonusAgainst = new fields.SchemaField(Object.fromEntries(
+      Object.keys(CONFIG.SKSK.damageTypes).map(key => [key, new fields.NumberField({ ...requiredInteger, initial: 0 })])
+    ));
     // Barrier this actor gets at the start of each of its own turns - purely
     // an Active Effect target ("system.barrierTurnStart", an amount): never
     // stackable, lasting until its next turn starts. See helpers/barrier.mjs#

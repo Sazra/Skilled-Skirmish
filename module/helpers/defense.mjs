@@ -298,6 +298,28 @@ export function computeFlatDamageReduction(actor, damageType) {
 }
 
 /**
+ * The Trefferbonus attackers get against a marked defender (Active Effect
+ * targets system.hitBonusAgainstAll and system.hitBonusAgainst.<type> on the
+ * defender): the "all" value plus the best value among the damage types the
+ * attack deals. Also names the defender's "Bis Nutzung" effects that carry
+ * such a key - an attack that gets the bonus uses them up.
+ * @param {Actor|null} defender
+ * @param {string[]} damageTypes   The damage types the attack deals.
+ * @return {{bonus: number, effectIds: string[]}}
+ */
+export function computeHitBonusAgainst(defender, damageTypes) {
+  const system = defender?.system;
+  if (!system) return { bonus: 0, effectIds: [] };
+  const types = [...new Set((damageTypes ?? []).filter(Boolean))];
+  const perType = types.length ? Math.max(...types.map(type => system.hitBonusAgainst?.[type] ?? 0)) : 0;
+  const keys = new Set(['system.hitBonusAgainstAll', ...types.map(type => `system.hitBonusAgainst.${type}`)]);
+  const effectIds = defender.effects
+    .filter(effect => effect.active && effect.duration?.expiry === 'used' && (effect.changes ?? []).some(change => keys.has(change.key)))
+    .map(effect => effect.id);
+  return { bonus: (system.hitBonusAgainstAll ?? 0) + perType, effectIds };
+}
+
+/**
  * How a given amount of one element's damage is modified by the
  * defender's Resistance/Weakness/Immunity/Absorption skills for that same
  * element (CONFIG.SKSK.damageTypes key + "Resistance"/"Weakness"/

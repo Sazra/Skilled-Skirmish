@@ -72,6 +72,8 @@ export function buildExtraDamageSchema(fields) {
  *   the roll dealt.
  * @property {boolean} [rolled]   Consumption only: whether anything was
  *   actually rolled (an attack or a damage).
+ * @property {boolean} [attackRolled]   Consumption only: whether an attack
+ *   roll was made (the Vorteil/Nachteil recommendation keys count as used by it).
  */
 
 /**
@@ -200,6 +202,15 @@ function usageKeys(ctx) {
   for (const type of types) {
     keys.add(`system.damageBonus.${type}`);
     for (const { key } of matchingKeys({ ...ctx, damageType: type })) keys.add(key);
+  }
+  if (ctx.attackRolled) {
+    keys.add('system.attackAdvantageAll');
+    if (ctx.kind === 'spell') keys.add('system.spellAttackAdvantageAll');
+    else {
+      keys.add('system.weaponAttackAdvantageAll');
+      const advantageSkill = ctx.kind === 'martialArts' ? 'martialArts' : ctx.skillKey;
+      if (advantageSkill) keys.add(`system.weaponAttackAdvantage.${advantageSkill}`);
+    }
   }
   if (ctx.kind === 'weapon' || ctx.kind === 'martialArts') {
     const skill = ctx.kind === 'martialArts' ? 'martialArts' : ctx.skillKey;

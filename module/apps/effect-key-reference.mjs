@@ -265,6 +265,14 @@ export class SKSKEffectKeyReference extends HandlebarsApplicationMixin(Applicati
         ],
       },
       {
+        title: 'SKSK.EffectKeyReference.Category.HitBonusAgainst',
+        hint: 'SKSK.EffectKeyReference.Category.HitBonusAgainstHint',
+        rows: [
+          { label: 'Markiert: Trefferbonus für alle Angriffe gegen dieses Ziel', key: 'system.hitBonusAgainstAll' },
+          ...vocabRows(CONFIG.SKSK.damageTypes, 'system.hitBonusAgainst.'),
+        ],
+      },
+      {
         title: 'SKSK.EffectKeyReference.Category.RollAdvantage',
         hint: 'SKSK.EffectKeyReference.Category.RollAdvantageHint',
         rows: [

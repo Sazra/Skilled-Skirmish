@@ -957,7 +957,7 @@ async function renderSpellEffectParts(item, overchargeCount = 0, extraCostTier =
   // removed now - see helpers/extraDamage.mjs#consumeUsedEffects.
   if (actor) {
     parts.push(await consumeUsedEffects(actor, {
-      kind: 'spell', school: extraSchool, damageTypes: [...dealtTypes], rolled: attacksEnabled || damageRolled,
+      kind: 'spell', school: extraSchool, damageTypes: [...dealtTypes], rolled: attacksEnabled || damageRolled, attackRolled: attacksEnabled,
     }, usedEffects));
   }
 

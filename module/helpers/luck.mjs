@@ -185,10 +185,10 @@ export async function redoAttackPairRoll(actor, payload, messageId) {
   const message = messageId ? game.messages.get(messageId) : null;
   if (!message) return;
 
-  const { blockId, bonus, comparisonType, damageDice, killSkillKey, flanking, label, attributeKeys, noFp } = payload;
+  const { blockId, bonus, comparisonType, damageDice, killSkillKey, flanking, label, attributeKeys, noFp, suggestedMode } = payload;
   const rolls = await rollAttackPair(bonus, actor);
   const newBlock = await renderAttackPairHTML(rolls, comparisonType, actor, {
-    damageDice, killSkillKey, flanking, bonus, label, attributeKeys, noFp,
+    damageDice, killSkillKey, flanking, bonus, label, attributeKeys, noFp, suggestedMode,
   });
 
   // Find THIS specific block (not just the first one in the message) - a

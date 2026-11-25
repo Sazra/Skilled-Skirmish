@@ -283,7 +283,7 @@ export async function rollWeaponItem(item) {
   if (actor) {
     parts.push(await consumeUsedEffects(actor, {
       kind: 'weapon', damageType, damageTypes: damageEntries.map(entry => entry.damageType),
-      skillKey: item.system.weaponType, rolled: !!(rolls || item.system.formula),
+      skillKey: item.system.weaponType, rolled: !!(rolls || item.system.formula), attackRolled: !!rolls,
     }, usedEffects));
   }
 
@@ -484,7 +484,7 @@ export async function rollMartialArtsAttack(actor, index) {
   await actor.update(offTurn ? spendReactionPoints(actor, attack.apCost) : spendActionPoints(actor, attack.apCost));
   // "Bis Nutzung": an effect this attack used is removed now.
   const consumedHTML = await consumeUsedEffects(actor, {
-    kind: 'martialArts', damageType: attack.damageType, damageTypes: damageEntries.map(entry => entry.damageType), rolled: true,
+    kind: 'martialArts', damageType: attack.damageType, damageTypes: damageEntries.map(entry => entry.damageType), rolled: true, attackRolled: true,
   }, usedEffects);
   let fpHTML = formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'martialArts', 'weaponAttack'));
   if (flank.flanking) fpHTML += formatSkillFpGrantLine(await grantSkillUsageFp(actor, 'tactic', 'flankAttack'));
