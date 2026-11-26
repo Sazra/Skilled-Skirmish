@@ -1,5 +1,6 @@
 import SKSKItemBase from "./item-base.mjs";
 import { buildOnceAbilityFields } from "./abilityOnce.mjs";
+import { buildChoiceAbilityFields } from "./abilityChoice.mjs";
 
 export default class SKSKSpecies extends SKSKItemBase {
 
@@ -156,6 +157,8 @@ export default class SKSKSpecies extends SKSKItemBase {
       // activation - linked Spell effect, charges and their recovery. See
       // data/abilityOnce.mjs and helpers/abilityRolls.mjs#useOnceAbility.
       ...buildOnceAbilityFields(fields, requiredInteger),
+      // Ability choices ("Wähle ...") - see data/abilityChoice.mjs.
+      ...buildChoiceAbilityFields(fields),
     }));
 
     // Zero or more overrides granting the ability to cast spells from a

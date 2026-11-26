@@ -33,7 +33,7 @@
  * @return {Array<{damageRerollMode: string, damageRerollElement: string}>}
  */
 function abilityEntriesOf(item) {
-  return item.system.abilities ?? [];
+  return (item.system.abilities ?? []).filter(isAbilityChosen);
 }
 
 /**
@@ -279,4 +279,5 @@ export async function handleDamageRerollOnesFromChat(button) {
 
   const newContent = messageDoc.content.slice(0, blockStart) + newBlock + newRemainder;
   await messageDoc.update({ content: newContent });
-}
+}import { isAbilityChosen } from './abilityChoice.mjs';
+

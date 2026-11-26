@@ -1,5 +1,6 @@
 import { getActorSkillLevel, evaluateSkillFormula } from './skills.mjs';
 import { getClassAbilityLevels, actorHasAdvancedClass } from './abilities.mjs';
+import { isAbilityChosen, getAbilityUnlockLevel } from './abilityChoice.mjs';
 import { computeLehrenTargetBonus } from './lehren.mjs';
 import { getSpellUpkeep } from './spells.mjs';
 
@@ -43,11 +44,12 @@ function computeManaComponents(actor) {
     if (item.type === 'class') {
       const unlockLevels = getClassAbilityLevels(item.system.classType, hasAdvancedClass);
       item.system.abilities?.forEach((ability, index) => {
-        if (level < (unlockLevels[index] ?? 1)) return;
+        if (!isAbilityChosen(ability) || level < getAbilityUnlockLevel(unlockLevels, item.system.abilities, index)) return;
         pushAbility(ability.name || item.name, ability.manaBonusFormula);
       });
     } else if (item.type === 'species') {
       for (const ability of item.system.abilities ?? []) {
+        if (!isAbilityChosen(ability)) continue;
         pushAbility(ability.name || item.name, ability.manaBonusFormula);
       }
     } else if (item.type === 'talent') {

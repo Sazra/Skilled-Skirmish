@@ -1,4 +1,5 @@
 import { getClassAbilityLevels, actorHasAdvancedClass } from './abilities.mjs';
+import { isAbilityChosen, getAbilityUnlockLevel } from './abilityChoice.mjs';
 import { getAbilityStatusLabel, getAbilityActionLabel } from './abilityRolls.mjs';
 import { readAbility, getChargeState } from './abilityCharges.mjs';
 
@@ -48,7 +49,7 @@ export function getActivatableAbilities(actor) {
   for (const item of actor.items) {
     if (item.type === 'species') {
       (item.system.abilities ?? []).forEach((ability, index) => {
-        if ((!ability.name && !ability.description) || !isActivatable(ability.type)) return;
+        if ((!ability.name && !ability.description) || !isActivatable(ability.type) || !isAbilityChosen(ability)) return;
         add(0, 0, {
           kind: 'classSpecies', itemId: item.id, index, name: ability.name || item.name, source: item.name, img: item.img,
           type: ability.type, active: !!ability.active, state: abilityState(ability),
@@ -58,8 +59,8 @@ export function getActivatableAbilities(actor) {
     } else if (item.type === 'class') {
       const levels = getClassAbilityLevels(item.system.classType, hasAdvancedClass);
       (item.system.abilities ?? []).forEach((ability, index) => {
-        if ((!ability.name && !ability.description) || !isActivatable(ability.type)) return;
-        const requiredLevel = levels[index] ?? 1;
+        if ((!ability.name && !ability.description) || !isActivatable(ability.type) || !isAbilityChosen(ability)) return;
+        const requiredLevel = getAbilityUnlockLevel(levels, item.system.abilities, index);
         if (actorLevel < requiredLevel) return;
         add(1, requiredLevel, {
           kind: 'classSpecies', itemId: item.id, index, name: ability.name || item.name, source: item.name, img: item.img,

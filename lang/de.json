@@ -1685,6 +1685,26 @@
             "AddElementalSpecialization": "Spezialisierung hinzufügen"
         },
         "Ability": {
+            "Choice": {
+                "Label": "Auswahl {used}/{count}",
+                "Open": "Fähigkeiten auswählen",
+                "Title": "Auswahl: {name}",
+                "Intro": "{name}: Wähle {count} der folgenden Fähigkeiten.",
+                "HintGM": "Als GM kannst du jede Wahl ändern und die Anzahl überschreiten.",
+                "HintPlayer": "Eine getroffene Wahl kann nur der GM ändern.",
+                "ExtraFrom": "Alternativ aus {name}",
+                "Confirm": "Übernehmen",
+                "TooMany": "Es sind mehr Fähigkeiten gewählt, als erlaubt sind.",
+                "NotChosen": "{name} wurde nicht gewählt.",
+                "Count": "Anzahl der Wahlen",
+                "CountHint": "Formel: wie viele der Optionen dieser Fähigkeit gewählt werden dürfen (z. B. 2). Leer = keine Auswahl.",
+                "ExtraFromHint": "Indizes anderer Fähigkeiten (0 = erste), deren Optionen hier zusätzlich gewählt werden dürfen, sobald deren eigene Wahlen voll sind.",
+                "AddOption": "Option hinzufügen",
+                "RemoveOption": "Option entfernen",
+                "OptionOf": "Option von Fähigkeit Nr.",
+                "OptionOfHint": "Index der übergeordneten Fähigkeit (0 = erste).",
+                "Chosen": "Gewählt"
+            },
             "LifeBonusFormula": "Lebens-Bonus (skalierend)",
             "LifeBonusFormulaHint": "Wird zum maximalen Leben addiert, sobald diese Fähigkeit freigeschaltet ist. Unterstützt \"L\" für das Level des Akteurs, z.B. \"L * 2\".",
             "ManaBonusFormula": "Mana-Bonus (skalierend)",

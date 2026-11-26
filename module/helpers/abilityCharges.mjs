@@ -1,4 +1,4 @@
-import { getClassAbilityLevels, actorHasAdvancedClass } from './abilities.mjs';
+import { isAbilityAvailable } from './abilityChoice.mjs';
 
 /**
  * Charges of a Class/Species/Talent ability of the type "once" ("Aktiv,
@@ -117,9 +117,8 @@ export async function updateAbility(ability, patch) {
  * @return {boolean}
  */
 function isAbilityUnlocked(actor, item, index) {
-  if (item.type !== 'class') return true;
-  const levels = getClassAbilityLevels(item.system.classType, actorHasAdvancedClass(actor));
-  return (actor.system.resources?.level?.value ?? 1) >= (levels[index] ?? 1);
+  if (item.type !== 'class' && item.type !== 'species') return true;
+  return isAbilityAvailable(actor, item, index);
 }
 
 /**

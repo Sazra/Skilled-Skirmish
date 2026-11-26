@@ -1,5 +1,6 @@
 import SKSKItemBase from "./item-base.mjs";
 import { buildOnceAbilityFields } from "./abilityOnce.mjs";
+import { buildChoiceAbilityFields, CHOICE_ABILITY_DEFAULTS } from "./abilityChoice.mjs";
 
 export default class SKSKClass extends SKSKItemBase {
 
@@ -103,6 +104,8 @@ export default class SKSKClass extends SKSKItemBase {
       // activation - linked Spell effect, charges and their recovery. See
       // data/abilityOnce.mjs and helpers/abilityRolls.mjs#useOnceAbility.
       ...buildOnceAbilityFields(fields, requiredInteger),
+      // Ability choices ("Wähle ...") - see data/abilityChoice.mjs.
+      ...buildChoiceAbilityFields(fields),
     }), {
       // Every field spelled out: a partial entry here is not cleaned, so any
       // field left out fails validation ("may not be undefined") and makes a
@@ -112,19 +115,19 @@ export default class SKSKClass extends SKSKItemBase {
           name: "", description: "", lifeBonusFormula: "0", manaBonusFormula: "0", patronAbilityIndex: 0,
           type: "passive", apCost: 0, rpCost: 0, manaCost: 0, durationRounds: 1, cooldownRounds: 0,
           active: false, roundsRemaining: 0, effectId: "", damageRerollMode: "none", damageRerollElement: "",
-          effectSpellUuid: "", chargesFormula: "", chargesUsed: 0, chargeRecovery: []
+          effectSpellUuid: "", chargesFormula: "", chargesUsed: 0, chargeRecovery: [], ...CHOICE_ABILITY_DEFAULTS
         },
         {
           name: "", description: "", lifeBonusFormula: "0", manaBonusFormula: "0", patronAbilityIndex: 0,
           type: "passive", apCost: 0, rpCost: 0, manaCost: 0, durationRounds: 1, cooldownRounds: 0,
           active: false, roundsRemaining: 0, effectId: "", damageRerollMode: "none", damageRerollElement: "",
-          effectSpellUuid: "", chargesFormula: "", chargesUsed: 0, chargeRecovery: []
+          effectSpellUuid: "", chargesFormula: "", chargesUsed: 0, chargeRecovery: [], ...CHOICE_ABILITY_DEFAULTS
         },
         {
           name: "", description: "", lifeBonusFormula: "0", manaBonusFormula: "0", patronAbilityIndex: 0,
           type: "passive", apCost: 0, rpCost: 0, manaCost: 0, durationRounds: 1, cooldownRounds: 0,
           active: false, roundsRemaining: 0, effectId: "", damageRerollMode: "none", damageRerollElement: "",
-          effectSpellUuid: "", chargesFormula: "", chargesUsed: 0, chargeRecovery: []
+          effectSpellUuid: "", chargesFormula: "", chargesUsed: 0, chargeRecovery: [], ...CHOICE_ABILITY_DEFAULTS
         }
       ]
     });

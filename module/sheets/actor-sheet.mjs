@@ -25,6 +25,9 @@ import {
 import { computeMovementSpeeds, getActorSizeCategory } from '../helpers/movement.mjs';
 import { computeCarriedWeight, computeMaxCarryWeight } from '../helpers/inventory.mjs';
 import { getClassAbilityLevels, actorHasAdvancedClass } from '../helpers/abilities.mjs';
+import {
+  isAbilityChosen, isOptionEntry, getAbilityUnlockLevel, getChoiceLabel, openAbilityChoice,
+} from '../helpers/abilityChoice.mjs';
 import { getActorPatron, getEffectiveClassPatron, isPatronSkill } from '../helpers/religion.mjs';
 import { getLifeBreakdown, getNegativeLifeBreakdown } from '../helpers/life.mjs';
 import { getManaBreakdown } from '../helpers/mana.mjs';
@@ -140,6 +143,7 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     },
     actions: {
       editItem: SKSKActorSheet.#editItem,
+      chooseAbilityOptions: SKSKActorSheet.#chooseAbilityOptions,
       createItem: SKSKActorSheet.#createItem,
       toggleCreateItemMenu: SKSKActorSheet.#toggleCreateItemMenu,
       toggleSpellSustaining: SKSKActorSheet.#toggleSpellSustaining,
@@ -874,7 +878,8 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
       const levels = getClassAbilityLevels(source.system.classType, hasAdvancedClass);
       source.system.abilities?.forEach((ability, index) => {
         if (!ability.name && !ability.description) return;
-        const requiredLevel = levels[index] ?? 1;
+        if (!isAbilityChosen(ability)) return;
+        const requiredLevel = getAbilityUnlockLevel(levels, source.system.abilities, index);
         // Not unlocked yet at the actor's current level.
         if (actorLevel < requiredLevel) return;
         // Glaubensklasse (faith class) - dynamically append the effective
@@ -908,6 +913,8 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
           type: ability.type,
           statusLabel: getAbilityStatus(this.actor, source, index, ability),
           actionLabel: getAbilityActionLabel(ability),
+          isOption: isOptionEntry(ability),
+          choiceLabel: isOptionEntry(ability) ? '' : getChoiceLabel(this.actor, source, index),
         });
       });
     };
@@ -915,11 +922,14 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     const collectSpeciesAbilities = (source) => {
       source.system.abilities?.forEach((ability, index) => {
         if (!ability.name && !ability.description) return;
+        if (!isAbilityChosen(ability)) return;
         classAndSpeciesAbilities.push({
           name: ability.name || source.name,
           description: ability.description,
           sourceId: source.id,
           sourceImg: source.img,
+          isOption: isOptionEntry(ability),
+          choiceLabel: isOptionEntry(ability) ? '' : getChoiceLabel(this.actor, source, index),
           // Species abilities are labeled with only the species' name.
           sourceLabel: source.name,
           // Always sorted first - see the sort below the item-collection loop.
@@ -1771,6 +1781,18 @@ export class SKSKActorSheet extends HandlebarsApplicationMixin(DocumentSheetV2) 
     const li = target.closest('.item');
     const item = this.actor.items.get(li.dataset.itemId);
     item.sheet.render(true);
+  }
+
+  /**
+   * Open the dialog to choose the options of a Class/Species ability.
+   * @param {PointerEvent} event   The originating click event.
+   * @param {HTMLElement} target   The capturing HTML element, carrying data-index.
+   * @private
+   */
+  static async #chooseAbilityOptions(event, target) {
+    const li = target.closest('.item');
+    const item = this.actor.items.get(li.dataset.itemId);
+    if (item) await openAbilityChoice(this.actor, item, Number(target.dataset.index));
   }
 
   /**

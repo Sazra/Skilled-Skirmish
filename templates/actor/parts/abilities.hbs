@@ -13,19 +13,23 @@
     </li>
 
     {{#each classAndSpeciesAbilities as |ability|}}
-    <li class="item flexrow" data-item-id="{{ability.sourceId}}">
+    <li class="item flexrow{{#if ability.isOption}} ability-option{{/if}}" data-item-id="{{ability.sourceId}}">
       <div class="item-source">{{ability.sourceLabel}}</div>
       <div class="item-name">
         <div class="item-image">
           <img src="{{ability.sourceImg}}" title="{{ability.sourceLabel}}" width="24" height="24" />
         </div>
-        <h4>{{ability.name}}</h4>
+        <h4>{{#if ability.isOption}}↳ {{/if}}{{ability.name}}</h4>
       </div>
       <div class="item-description" title="{{ability.description}}">{{ability.description}}</div>
       <div class="item-controls">
         {{!-- Activating lives in the Actions window (apps/actions-dialog.mjs); only the status stays here. --}}
         {{#if (or (eq ability.type "active") (eq ability.type "once"))}}
         <span class="ap-cost-label">{{ability.statusLabel}}</span>
+        {{/if}}
+        {{#if ability.choiceLabel}}
+        <a class="item-control" data-action="chooseAbilityOptions" data-index="{{ability.index}}"
+          title="{{localize 'SKSK.Ability.Choice.Open'}}"><i class="fas fa-list-check"></i> {{ability.choiceLabel}}</a>
         {{/if}}
         <a class="item-control item-edit" data-action="editItem" title="Open {{ability.sourceLabel}}">
           <i class="fas fa-edit"></i>

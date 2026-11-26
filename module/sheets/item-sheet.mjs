@@ -54,6 +54,8 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
       addSkillBonus: SKSKItemSheet.#addSkillBonus,
       addCreatureCategory: SKSKItemSheet.#addCreatureCategory,
       addAbility: SKSKItemSheet.#addAbility,
+      addAbilityOption: SKSKItemSheet.#addAbilityOption,
+      removeAbilityOption: SKSKItemSheet.#removeAbilityOption,
       removeArrayEntry: SKSKItemSheet.#removeArrayEntry,
       addAbilityEffect: SKSKItemSheet.#addAbilityEffect,
       addRange: SKSKItemSheet.#addRange,
@@ -1085,6 +1087,51 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
   static async #addAbility(event, target) {
     if ((this.item.system.abilities?.length ?? 0) >= 3) return;
     await this.#addArrayEntry('abilities', { name: '', description: '', lifeBonusFormula: '0', manaBonusFormula: '0' });
+  }
+
+  /**
+   * Add an option to an ability (see helpers/abilityChoice.mjs).
+   * @param {PointerEvent} event
+   * @param {HTMLElement} target   Carrying data-index (the ability the option belongs to).
+   * @private
+   */
+  static async #addAbilityOption(event, target) {
+    const parentIndex = Number(target.dataset.index);
+    await this.#addArrayEntry('abilities', {
+      name: '', description: '', lifeBonusFormula: '0', manaBonusFormula: '0', optionOf: parentIndex,
+    });
+  }
+
+  /**
+   * Remove an option from the abilities array and shift everything that
+   * points at the entries behind it (other options' parent index, the
+   * extra-choice lists, the abilities' own Active Effects).
+   * @param {PointerEvent} event
+   * @param {HTMLElement} target   Carrying data-index (the option to remove).
+   * @private
+   */
+  static async #removeAbilityOption(event, target) {
+    const removed = Number(target.dataset.index);
+    const abilities = foundry.utils.deepClone(this.item.system.abilities ?? []);
+    if (!(abilities[removed]?.optionOf >= 0)) return;
+    abilities.splice(removed, 1);
+    const shift = (value) => (value > removed ? value - 1 : value);
+    for (const entry of abilities) {
+      if (entry.optionOf >= 0) entry.optionOf = shift(entry.optionOf);
+      entry.choiceExtraFrom = String(entry.choiceExtraFrom ?? '').split(/[,;\s]+/).filter(Boolean)
+        .map(part => String(shift(parseInt(part, 10)))).join(', ');
+    }
+    const doomed = [];
+    const effectUpdates = [];
+    for (const effect of this.item.effects) {
+      const index = effect.getFlag('sksk', 'abilityIndex');
+      if (!Number.isInteger(index)) continue;
+      if (index === removed) doomed.push(effect.id);
+      else if (index > removed) effectUpdates.push({ _id: effect.id, 'flags.sksk.abilityIndex': index - 1 });
+    }
+    if (doomed.length) await this.item.deleteEmbeddedDocuments('ActiveEffect', doomed);
+    if (effectUpdates.length) await this.item.updateEmbeddedDocuments('ActiveEffect', effectUpdates);
+    await this.item.update({ 'system.abilities': abilities });
   }
 
   /**

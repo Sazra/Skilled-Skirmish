@@ -1685,6 +1685,26 @@
       "AddElementalSpecialization": "Add Specialization"
     },
     "Ability": {
+        "Choice": {
+            "Label": "Choice {used}/{count}",
+            "Open": "Choose abilities",
+            "Title": "Choice: {name}",
+            "Intro": "{name}: Choose {count} of the following abilities.",
+            "HintGM": "As GM you can change any choice and exceed the number.",
+            "HintPlayer": "Only the GM can change a choice that was made.",
+            "ExtraFrom": "Alternatively from {name}",
+            "Confirm": "Apply",
+            "TooMany": "More abilities are chosen than allowed.",
+            "NotChosen": "{name} was not chosen.",
+            "Count": "Number of choices",
+            "CountHint": "Formula: how many of the options of this ability may be chosen (e.g. 2). Blank = no choice.",
+            "ExtraFromHint": "Indexes of other abilities (0 = first) whose options may also be chosen here once their own choices are full.",
+            "AddOption": "Add option",
+            "RemoveOption": "Remove option",
+            "OptionOf": "Option of ability no.",
+            "OptionOfHint": "Index of the parent ability (0 = first).",
+            "Chosen": "Chosen"
+        },
       "LifeBonusFormula": "Life Bonus (scaling)",
       "LifeBonusFormulaHint": "Added to max life once this ability is unlocked. Supports \"L\" for the actor's level, e.g. \"L * 2\".",
       "ManaBonusFormula": "Mana Bonus (scaling)",

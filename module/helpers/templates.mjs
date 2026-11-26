@@ -19,6 +19,7 @@ export const preloadHandlebarsTemplates = async function () {
     'systems/sksk/templates/item/parts/material-section.hbs',
     'systems/sksk/templates/item/parts/material-override-section.hbs',
     'systems/sksk/templates/item/parts/ability-once.hbs',
+    'systems/sksk/templates/item/parts/ability-choice.hbs',
     'systems/sksk/templates/item/parts/ability-once-talent.hbs',
   ]);
 };

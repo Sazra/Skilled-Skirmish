@@ -29,6 +29,7 @@ import {
 } from './helpers/statusEffects.mjs';
 import { clampSingleAttributeSelection } from './helpers/models.mjs';
 import { registerCalendariaIntegration } from './helpers/calendarIntegration.mjs';
+import { isEffectOfUnchosenOption } from './helpers/abilityChoice.mjs';
 import { applyCustomActiveEffectChange, addPhaseSelectToActiveEffectChanges } from './helpers/effects.mjs';
 import { attachEffectKeyAutocomplete } from './helpers/effectKeyAutocomplete.mjs';
 import { attachEffectValueAutocomplete } from './helpers/effectValueAutocomplete.mjs';
@@ -68,6 +69,21 @@ Hooks.once('init', function () {
     if (this.duration?.expiry === EXTRA_DAMAGE_USE_EVENT) return Number.isFinite(this.duration.value);
     return baseIsExpiryEvent.call(this, event, context);
   };
+
+  // Effects that belong to an ability option nobody chose (helpers/
+  // abilityChoice.mjs) are suppressed - they exist on the item but do nothing.
+  let suppressedOwner = effectProto;
+  let suppressedDescriptor = null;
+  while (suppressedOwner && !suppressedDescriptor) {
+    suppressedDescriptor = Object.getOwnPropertyDescriptor(suppressedOwner, 'isSuppressed');
+    suppressedOwner = Object.getPrototypeOf(suppressedOwner);
+  }
+  if (suppressedDescriptor?.get) {
+    Object.defineProperty(effectProto, 'isSuppressed', {
+      configurable: true,
+      get() { return isEffectOfUnchosenOption(this) || suppressedDescriptor.get.call(this); },
+    });
+  }
 
   // Foundry's own "invisible" token behaviour (half-transparent filter for
   // the GM/owner, undetectable by sight) belongs to this system's own

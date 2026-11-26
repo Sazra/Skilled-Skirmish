@@ -1,3 +1,4 @@
+import { isAbilityChosen } from './abilityChoice.mjs';
 import { postActionChatCard } from './actions.mjs';
 import { isCombatActive, isActorsOwnTurn } from './statusEffects.mjs';
 import { getManaAlternativeResources, computeManaAlternativeCoverage, payWithManaAlternative } from './customResources.mjs';
@@ -177,6 +178,9 @@ function onceAbilityCostLines(ability, offTurn) {
 export async function useOnceAbility(actor, item, index = null) {
   const ability = readAbility(item, index);
   if (!ability || ability.type !== 'once') return;
+  if (index !== null && !isAbilityChosen(item.system.abilities?.[index])) {
+    return ui.notifications.warn(game.i18n.format('SKSK.Ability.Choice.NotChosen', { name: ability.name }));
+  }
   const name = ability.name;
 
   if (ability.roundsRemaining > 0) {
@@ -247,6 +251,9 @@ export async function toggleClassSpeciesAbility(actor, item, index) {
   const entry = abilities[index];
   if (entry?.type === 'once') return useOnceAbility(actor, item, index);
   if (!entry || entry.type !== 'active') return;
+  if (!isAbilityChosen(entry)) {
+    return ui.notifications.warn(game.i18n.format('SKSK.Ability.Choice.NotChosen', { name: entry.name || item.name }));
+  }
 
   const combatActive = isCombatActive();
   const name = entry.name || item.name;

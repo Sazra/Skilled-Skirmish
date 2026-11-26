@@ -1,0 +1,24 @@
+{{!-- Ability choices (helpers/abilityChoice.mjs): an option of another ability, or a parent with a choice count. --}}
+{{#if (gt entry.optionOf -1)}}
+<div class="flexrow flex-center ability-choice-row">
+  <label class="resource-label">{{localize 'SKSK.Ability.Choice.OptionOf'}}</label>
+  <input type="text" name="system.abilities.{{index}}.optionOf" value="{{entry.optionOf}}" data-dtype="Number" style="max-width:4em"
+    title="{{localize 'SKSK.Ability.Choice.OptionOfHint'}}" />
+  <a class="item-control item-delete" data-action="removeAbilityOption" data-index="{{index}}"
+    title="{{localize 'SKSK.Ability.Choice.RemoveOption'}}"><i class="fas fa-trash"></i> {{localize 'SKSK.Ability.Choice.RemoveOption'}}</a>
+</div>
+{{#if hasActor}}
+<label class="checkbox"><input type="checkbox" name="system.abilities.{{index}}.chosen" {{checked entry.chosen}} /> {{localize 'SKSK.Ability.Choice.Chosen'}}</label>
+{{/if}}
+{{else}}
+<div class="flexrow flex-center ability-choice-row">
+  <label class="resource-label" title="{{localize 'SKSK.Ability.Choice.CountHint'}}">{{localize 'SKSK.Ability.Choice.Count'}}</label>
+  <input type="text" name="system.abilities.{{index}}.choiceCount" value="{{entry.choiceCount}}" placeholder="2"
+    title="{{localize 'SKSK.Ability.Choice.CountHint'}}" />
+  <label class="resource-label" title="{{localize 'SKSK.Ability.Choice.ExtraFromHint'}}">{{localize 'SKSK.Ability.Choice.ExtraFrom'}}</label>
+  <input type="text" name="system.abilities.{{index}}.choiceExtraFrom" value="{{entry.choiceExtraFrom}}" placeholder="1"
+    title="{{localize 'SKSK.Ability.Choice.ExtraFromHint'}}" style="max-width:5em" />
+  <a class="item-control item-create" data-action="addAbilityOption" data-index="{{index}}"
+    title="{{localize 'SKSK.Ability.Choice.AddOption'}}"><i class="fas fa-plus"></i> {{localize 'SKSK.Ability.Choice.AddOption'}}</a>
+</div>
+{{/if}}
