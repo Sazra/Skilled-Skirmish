@@ -1297,11 +1297,14 @@
       "NoDefender": "You have no target selected and no assigned character - cannot evaluate.",
       "NoPermissionToApply": "You don't own this target, and no GM is currently connected to relay it to - only the GM (or an owner) can apply damage here.",
       "NoDefenderForcedHit": "No target selected - automatically counted as a hit (Shift+click).",
-      "ForceHit": {
-          "Button": "{name}: hits after all (charges: {current}/{max})",
-          "Used": "{name}: {attacker} spends a charge - the attack hits and cannot be averted.",
-          "ManualNote": "Apply the damage with the attack's damage button.",
-          "NoCharge": "No charge of {name} left.",
+      "Trigger": {
+          "CostAp": "{n} AP",
+          "CostRp": "{n} RP",
+          "CostMana": "{n} Mana",
+          "Charges": "Charges {current}/{max}",
+          "Button": "{name}{cost}",
+          "Used": "{name}: {attacker} uses the ability.",
+          "ManualNote": "The attack hits and cannot be averted. Apply the damage with the attack's damage button.",
           "NotOwner": "Only the attacker's owner can use this.",
           "Spent": "Used."
       },
@@ -1741,8 +1744,33 @@
         "EffectSpellPlaceholder": "Drag a spell here or enter its UUID",
         "NotASpell": "Only spells can be linked as an effect."
       },
-      "ForceHit": "Force a hit (Sure Shot)",
-      "ForceHitHint": "A charge of this ability can turn the miss of a weapon attack into a hit that cannot be averted. The miss card shows a button for it while a charge is left. Needs charges.",
+      "Reaction": {
+          "Title": "Trigger and effect",
+          "Hint": "The ability offers its effect at a fixed moment of combat (a button on the card). Cost, charges and cooldown come from the ability.",
+          "TriggerLabel": "Trigger",
+          "Trigger": {
+              "none": "None (manual only)",
+              "afterAttack": "After my own attack",
+              "afterMiss": "After my own miss",
+              "whenHit": "When I am hit"
+          },
+          "EffectLabel": "Effect",
+          "Effect": {
+              "none": "None",
+              "followUp": "Follow-up attacks",
+              "forceHit": "Force a hit"
+          },
+          "Kinds": "Applies to (none checked = every kind)",
+          "Kind": {
+              "martialArts": "Martial Arts",
+              "meleeWeapon": "Melee weapon",
+              "rangedWeapon": "Ranged weapon",
+              "spell": "Spell"
+          },
+          "FollowUpCount": "Number of follow-up attacks",
+          "FollowUpFree": "Free (no AP)",
+          "FollowUpNoCrit": "No critical hits"
+      },
       "Charges": {
         "Formula": "Charges (maximum, formula)",
         "FormulaHint": "Blank = no charges. In the formula: L = level, @attributes.str.mod / @attributes.str.value = attribute modifier/value, @skills.adrenalin = skill level; plus + - * / ( ) and floor(), ceil(), round(), min(), max(). Examples: L / 2 - @attributes.str.mod * L - @skills.adrenalin * @attributes.con.mod. The result is rounded down.",

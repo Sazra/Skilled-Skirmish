@@ -3,7 +3,7 @@ import { computeDurabilityRatio } from './materials.mjs';
 import { computeLehrenTargetBonus } from './lehren.mjs';
 import { getSpellSchool } from './spells.mjs';
 import { computeNaturalMaterialBonus } from './defense.mjs';
-import { applyD20Malus, getStatusStacks, setStatusStacks, increaseStatusStacks } from './statusEffects.mjs';
+import { applyD20Malus, getStatusStacks, setStatusStacks, increaseStatusStacks, isCombatActive, isActorsOwnTurn } from './statusEffects.mjs';
 import { getAttackCriticalType, getNaturalD20, resolveCheckSuccess, wrapCriticalBlock, wrapCriticalInline } from './criticalRolls.mjs';
 import { offerDefenderReactions } from './reactions.mjs';
 import { formatRollCardHeading } from './rollCard.mjs';
@@ -23,8 +23,9 @@ import { renderRerollButton, wrapRerollIcons } from './luck.mjs';
 import { renderAttributeRerollButton } from './attributeReroll.mjs';
 import { hasRollTwiceWeapon, hasRollTwiceSpell, rollPossiblyDoubledDamage } from './damageReroll.mjs';
 import { requestGmAction, registerGmRelayAction } from './gmRelay.mjs';
-import { renderForceHitButton } from './forceHit.mjs';
-import { readAbility, getChargeState, changeCharges, startChargeClocks } from './abilityCharges.mjs';
+import { renderTriggerButtons, spendTriggerAbility, classifyAttack } from './abilityTriggers.mjs';
+import { readAbility } from './abilityCharges.mjs';
+import { onceAbilityCostLines } from './abilityRolls.mjs';
 
 /**
  * Tactic level 10's own flat AC bonus (see helpers/flanking.mjs) - a
@@ -51,6 +52,15 @@ const ATTACK_MODES = [
   { id: 'advantage', label: 'SKSK.AttackRoll.ModeAdvantage' },
   { id: 'disadvantage', label: 'SKSK.AttackRoll.ModeDisadvantage' },
 ];
+
+/**
+ * A critical SUCCESS counts as an ordinary roll while the attack cannot hit
+ * critically (a follow-up attack, e.g. Schlaghagel); a critical failure stays.
+ * @param {"success"|"failure"|null} type
+ * @param {boolean} noCrit
+ * @return {"success"|"failure"|null}
+ */
+const suppressCrit = (type, noCrit) => (noCrit && type === 'success' ? null : type);
 
 /**
  * Prompt for which of an Angriffswurf's two d20s counts - one button per
@@ -539,9 +549,9 @@ export async function maybeRollPrecision(actor, isOrdinaryHit) {
  * @return {Promise<string>}
  */
 export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor, damageInfo = {}) {
-  const { damageDice = [], killSkillKey = null, flanking = false, bonus = 0, label = '', attributeKeys = [], noFp = false, isArea = false } = damageInfo;
-  const critA = getAttackCriticalType(rollA, actor);
-  const critB = getAttackCriticalType(rollB, actor);
+  const { damageDice = [], killSkillKey = null, flanking = false, bonus = 0, label = '', attributeKeys = [], noFp = false, isArea = false, noCrit = false } = damageInfo;
+  const critA = suppressCrit(getAttackCriticalType(rollA, actor), noCrit);
+  const critB = suppressCrit(getAttackCriticalType(rollB, actor), noCrit);
   const renderedA = wrapCriticalBlock(await rollA.render(), critA);
   const renderedB = wrapCriticalBlock(await rollB.render(), critB);
   // A random id, unique per rendered pair (not per attack/item) - a spell
@@ -561,7 +571,7 @@ export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor
   const suggestedMode = damageInfo.suggestedMode !== undefined
     ? damageInfo.suggestedMode
     : (recommendAttackMode(actor, { comparisonType, killSkillKey, flanking, defender: singleTargetedActor(actor) }) ?? '');
-  const rerollPayload = { blockId, bonus, comparisonType, damageDice, killSkillKey, flanking, label, attributeKeys, noFp, isArea, suggestedMode };
+  const rerollPayload = { blockId, bonus, comparisonType, damageDice, killSkillKey, flanking, label, attributeKeys, noFp, isArea, suggestedMode, noCrit };
   const attributeRerollHTML = renderAttributeRerollButton(actor, attributeKeys, 'attack', rerollPayload);
   const rerollHTML = renderRerollButton(actor, 'attack', rerollPayload);
   return `
@@ -970,9 +980,11 @@ export async function resolveHitEvaluationFromChat(button, forceHit = false) {
 
   const stunHTML = stunStacks && evalDefender ? await applyCritStun(evalDefender, stunStacks) : '';
 
-  // A missed weapon attack may be turned into a hit (Zielsicher, see helpers/forceHit.mjs).
+  // A missed weapon attack may be turned into a hit (Zielsicher, see helpers/abilityTriggers.mjs).
   const forceHitHTML = !hit && button.dataset.comparisonType === 'armorClass'
-    ? renderForceHitButton(attacker, { kind: 'manual', attackerUuid: attacker?.uuid ?? null, defenderUuid: evalDefender?.uuid ?? null })
+    ? renderTriggerButtons(attacker, 'afterMiss', classifyAttack({ comparisonType: 'armorClass', killSkillKey, damageDice }), {
+      mode: 'manual', defenderUuid: evalDefender?.uuid ?? null,
+    })
     : '';
 
   const content = `<div class="sksk-chat-card sksk-action-card">`
@@ -1100,7 +1112,7 @@ export function greyOutManualEvalButtons(html) {
  * @return {Promise<string>}
  */
 export async function autoResolveAttackForTargets(rolls, comparisonType, attacker, options = {}) {
-  const { damageEntries = [], damageDice = [], killSkillKey = null, flanking = false, techniqueItemUuid = null, noFp = false, wounds = 0, isArea = false, autoHit = false } = options;
+  const { damageEntries = [], damageDice = [], killSkillKey = null, flanking = false, techniqueItemUuid = null, noFp = false, wounds = 0, isArea = false, autoHit = false, noCrit = false } = options;
   // autoHit (Hasserfüllte Macht): nothing was rolled - rolls may be null.
   const [rollA, rollB] = rolls ?? [null, null];
   const defenders = getOtherTargetedActors(attacker);
@@ -1109,8 +1121,8 @@ export async function autoResolveAttackForTargets(rolls, comparisonType, attacke
   const mode = autoHit ? 'neutral' : await chooseAttackMode(recommendAttackMode(attacker, { comparisonType, killSkillKey, flanking, defender: defenders.length === 1 ? defenders[0] : null }));
   if (!mode) return '';
 
-  const critA = autoHit ? null : getAttackCriticalType(rollA, attacker);
-  const critB = autoHit ? null : getAttackCriticalType(rollB, attacker);
+  const critA = autoHit ? null : suppressCrit(getAttackCriticalType(rollA, attacker), noCrit);
+  const critB = autoHit ? null : suppressCrit(getAttackCriticalType(rollB, attacker), noCrit);
   // The attack's own modifier (both d20s carry the same one) - a redirected attack rolls anew with it.
   const attackBonus = autoHit ? 0 : rollA.total - (getNaturalD20(rollA) ?? 0);
 
@@ -1233,8 +1245,9 @@ async function resolveAndApplyOneAttack(defender, attacker, args) {
 }
 
 /**
- * The Zielsicher button for a missed weapon attack resolved by resolveAndApplyOneAttack
- * ('' for a hit, an auto-hit, a spell or an attacker without the ability).
+ * The "afterMiss" buttons (Zielsicher) for a missed weapon attack resolved by
+ * resolveAndApplyOneAttack ('' for a hit, an auto-hit, a spell or an attacker
+ * without such an ability).
  * @param {Actor|null} attacker
  * @param {{hit?: boolean, hitDefender?: Actor}} result
  * @param {object} args   The resolveAndApplyOneAttack arguments of that attack.
@@ -1242,43 +1255,44 @@ async function resolveAndApplyOneAttack(defender, attacker, args) {
  */
 function renderMissForceHit(attacker, result, args) {
   if (!attacker || result.hit !== false || args.autoHit || args.comparisonType !== 'armorClass' || !result.hitDefender) return '';
-  return renderForceHitButton(attacker, {
-    kind: 'auto', attackerUuid: attacker.uuid, defenderUuid: result.hitDefender.uuid, args,
-  });
+  return renderTriggerButtons(attacker, 'afterMiss', classifyAttack(args), { mode: 'auto', defenderUuid: result.hitDefender.uuid, args });
 }
 
 /**
- * Zielsicher: the click on the "hits after all" button of a missed weapon
- * attack. Spends one charge of the ability, then resolves the attack again as
- * a hit that cannot be averted (an attack that was resolved right away - the
- * damage is applied) or just states the hit (an Evaluate click - the damage is
- * applied by hand). See helpers/forceHit.mjs.
+ * The click on the button of a triggered ability on an attack card (see
+ * helpers/abilityTriggers.mjs): pays the ability, then runs its effect -
+ * "forceHit" (Zielsicher): resolves the missed attack again as a hit that
+ * cannot be averted (an attack that was resolved right away - the damage is
+ * applied) or just states the hit (an Evaluate click - the damage is applied
+ * by hand); "followUp" (Schlaghagel): rolls the configured number of further
+ * attacks of the same kind.
  * @param {HTMLElement} button
  * @return {Promise<void>}
  */
-export async function handleForceHitFromChat(button) {
+export async function handleAbilityTriggerFromChat(button) {
   if (button.disabled) return;
   const payload = JSON.parse(decodeURIComponent(button.dataset.payload || '{}'));
   const attacker = payload.attackerUuid ? await fromUuid(payload.attackerUuid) : null;
   if (!attacker) return;
-  if (!attacker.isOwner) return void ui.notifications.warn(game.i18n.localize('SKSK.AttackRoll.ForceHit.NotOwner'));
+  if (!attacker.isOwner) return void ui.notifications.warn(game.i18n.localize('SKSK.AttackRoll.Trigger.NotOwner'));
 
   const item = await fromUuid(button.dataset.abilityItem);
   const indexText = button.dataset.abilityIndex;
   const ability = item ? readAbility(item, indexText === '' ? null : Number(indexText)) : null;
-  const state = ability ? getChargeState(attacker, ability) : null;
-  if (!state?.has || state.current < 1) {
-    return void ui.notifications.warn(game.i18n.format('SKSK.AttackRoll.ForceHit.NoCharge', { name: ability?.name ?? '' }));
-  }
+  if (!ability) return;
   button.disabled = true;
-  await changeCharges(attacker, ability, -1);
-  if (state.used === 0) await startChargeClocks(ability);
+  const paidLines = await spendTriggerAbility(attacker, ability);
+  if (paidLines === null) {
+    button.disabled = false;
+    return;
+  }
 
-  const usedLine = `<div class="sksk-roll-line"><strong>${foundry.utils.escapeHTML(game.i18n.format('SKSK.AttackRoll.ForceHit.Used', { name: ability.name, attacker: attacker.name }))}</strong></div>`;
-  const defender = payload.defenderUuid ? await fromUuid(payload.defenderUuid) : null;
-  const postCard = (title, content) => {
+  const context = payload.context ?? {};
+  const costHTML = onceAbilityCostLines(ability, isCombatActive() && !isActorsOwnTurn(attacker)).join('') + paidLines.join('');
+  const usedLine = `<div class="sksk-roll-line"><strong>${foundry.utils.escapeHTML(game.i18n.format('SKSK.AttackRoll.Trigger.Used', { name: ability.name, attacker: attacker.name }))}</strong></div>`;
+  const postCard = (title, content, actor) => {
     const messageData = {
-      speaker: ChatMessage.getSpeaker({ actor: defender ?? attacker }),
+      speaker: ChatMessage.getSpeaker({ actor }),
       flavor: title,
       content: `<div class="sksk-chat-card sksk-action-card">${formatRollCardHeading(title)}${content}</div>`,
     };
@@ -1286,26 +1300,43 @@ export async function handleForceHitFromChat(button) {
     return ChatMessage.create(messageData);
   };
 
-  if (payload.kind === 'auto' && defender) {
-    const forcedArgs = { ...payload.args, defenderUuid: defender.uuid, attackerUuid: attacker.uuid, autoHit: true, noReactions: true };
-    if (defender.isOwner) {
-      const result = await resolveAndApplyOneAttack(defender, attacker, forcedArgs);
-      await postCard(result.title, usedLine + result.line + result.fpHTML + result.damageHTML);
-    } else {
-      // The GM resolves it (own card, see handleAutoResolveHitRelay).
-      const relayed = requestGmAction('autoResolveHit', forcedArgs);
-      const note = relayed ? `<div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.AutoResolveRelayed')}</div>` : `<div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.NoPermissionToApply')}</div>`;
-      await postCard(game.i18n.format('SKSK.AttackRoll.EvaluationTitle', { defender: defender.name }), usedLine + note);
+  if (payload.effect === 'followUp') {
+    await postCard(ability.name, costHTML + usedLine, attacker);
+    const { rollMartialArtsAttack, rollWeaponItem } = await import('./actions.mjs');
+    const options = { followUp: ability.name, free: !!ability.reaction.followUpFree, noCrit: !!ability.reaction.followUpNoCrit };
+    for (let i = 0; i < Math.max(1, ability.reaction.followUpCount ?? 1); i++) {
+      if (context.attack === 'martialArts') {
+        await rollMartialArtsAttack(attacker, context.index, options);
+      } else {
+        const weapon = await fromUuid(context.itemUuid);
+        if (weapon) await rollWeaponItem(weapon, options);
+      }
     }
-  } else {
-    const title = defender
-      ? game.i18n.format('SKSK.AttackRoll.EvaluationTitle', { defender: defender.name })
-      : game.i18n.localize('SKSK.AttackRoll.EvaluationTitleNoDefender');
-    await postCard(title, usedLine + `<div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.ForceHit.ManualNote')}</div>`);
+  } else if (payload.effect === 'forceHit') {
+    const defender = context.defenderUuid ? await fromUuid(context.defenderUuid) : null;
+    if (context.mode === 'auto' && defender) {
+      const forcedArgs = { ...context.args, defenderUuid: defender.uuid, attackerUuid: attacker.uuid, autoHit: true, noReactions: true };
+      if (defender.isOwner) {
+        const result = await resolveAndApplyOneAttack(defender, attacker, forcedArgs);
+        await postCard(result.title, costHTML + usedLine + result.line + result.fpHTML + result.damageHTML, defender);
+      } else {
+        // The GM resolves it (own card, see handleAutoResolveHitRelay).
+        const relayed = requestGmAction('autoResolveHit', forcedArgs);
+        const note = relayed
+          ? `<div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.AutoResolveRelayed')}</div>`
+          : `<div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.NoPermissionToApply')}</div>`;
+        await postCard(game.i18n.format('SKSK.AttackRoll.EvaluationTitle', { defender: defender.name }), costHTML + usedLine + note, defender);
+      }
+    } else {
+      const title = defender
+        ? game.i18n.format('SKSK.AttackRoll.EvaluationTitle', { defender: defender.name })
+        : game.i18n.localize('SKSK.AttackRoll.EvaluationTitleNoDefender');
+      await postCard(title, costHTML + usedLine + `<div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.Trigger.ManualNote')}</div>`, defender ?? attacker);
+    }
   }
 
   // The button is spent: swap it for a note, on the stored message too if the user may edit it.
-  const spent = `<div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.ForceHit.Spent')}</div>`;
+  const spent = `<div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.Trigger.Spent')}</div>`;
   const message = game.messages.get(button.closest('[data-message-id]')?.dataset.messageId ?? '');
   const content = message?.content ?? '';
   const at = content.indexOf(`data-payload="${button.dataset.payload}"`);
@@ -1315,7 +1346,7 @@ export async function handleForceHitFromChat(button) {
   if (message?.isOwner && start >= 0 && end >= 0) {
     await message.update({ content: content.slice(0, start) + spent + content.slice(end + endTag.length) });
   } else {
-    button.closest('.sksk-roll-line')?.replaceWith(Object.assign(document.createElement('div'), { className: 'sksk-roll-line', textContent: game.i18n.localize('SKSK.AttackRoll.ForceHit.Spent') }));
+    button.closest('.sksk-roll-line')?.replaceWith(Object.assign(document.createElement('div'), { className: 'sksk-roll-line', textContent: game.i18n.localize('SKSK.AttackRoll.Trigger.Spent') }));
   }
 }
 

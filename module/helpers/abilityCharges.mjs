@@ -1,4 +1,5 @@
 import { isAbilityAvailable } from './abilityChoice.mjs';
+import { REACTION_DEFAULTS } from '../data/abilityOnce.mjs';
 
 /**
  * Charges of a Class/Species/Talent ability of the type "once" ("Aktiv,
@@ -55,7 +56,7 @@ export function evaluateChargeFormula(formula, actor) {
  * @property {string} chargesFormula
  * @property {number} chargesUsed
  * @property {object[]} chargeRecovery
- * @property {boolean} forceHit   Whether a charge may turn a missed weapon attack into a hit (helpers/forceHit.mjs).
+ * @property {object} reaction   The triggered use (data/abilityOnce.mjs#reaction, helpers/abilityTriggers.mjs).
  */
 
 /**
@@ -73,7 +74,7 @@ export function readAbility(item, index = null) {
       cooldownRounds: s.abilityCooldownRounds, roundsRemaining: s.abilityRoundsRemaining,
       effectSpellUuid: s.abilityEffectSpellUuid, chargesFormula: s.abilityChargesFormula,
       chargesUsed: s.abilityChargesUsed, chargeRecovery: foundry.utils.deepClone(s.abilityChargeRecovery ?? []),
-      forceHit: !!s.abilityForceHit,
+      reaction: foundry.utils.deepClone(s.abilityReaction ?? REACTION_DEFAULTS),
     };
   }
   const entry = item.system.abilities?.[index];
@@ -84,7 +85,7 @@ export function readAbility(item, index = null) {
     cooldownRounds: entry.cooldownRounds, roundsRemaining: entry.roundsRemaining,
     effectSpellUuid: entry.effectSpellUuid, chargesFormula: entry.chargesFormula,
     chargesUsed: entry.chargesUsed, chargeRecovery: foundry.utils.deepClone(entry.chargeRecovery ?? []),
-    forceHit: !!entry.forceHit,
+    reaction: foundry.utils.deepClone(entry.reaction ?? REACTION_DEFAULTS),
   };
 }
 
@@ -125,26 +126,36 @@ function isAbilityUnlocked(actor, item, index) {
 }
 
 /**
- * Every "once" ability of the actor that has charges.
+ * Every "once" ability of the actor (a Class/Species option only once chosen
+ * and unlocked).
  * @param {Actor} actor
  * @return {AbilityDescriptor[]}
  */
-export function listChargeAbilities(actor) {
+export function listOnceAbilities(actor) {
   const result = [];
   for (const item of actor.items) {
     if (item.type === 'talent') {
       const ability = readAbility(item);
-      if (ability.type === 'once' && ability.chargesFormula.trim()) result.push(ability);
+      if (ability.type === 'once') result.push(ability);
     } else if (item.type === 'class' || item.type === 'species') {
       for (const index of (item.system.abilities ?? []).keys()) {
         const ability = readAbility(item, index);
-        if (ability?.type !== 'once' || !ability.chargesFormula.trim()) continue;
+        if (ability?.type !== 'once') continue;
         if (!isAbilityUnlocked(actor, item, index)) continue;
         result.push(ability);
       }
     }
   }
   return result;
+}
+
+/**
+ * Every "once" ability of the actor that has charges.
+ * @param {Actor} actor
+ * @return {AbilityDescriptor[]}
+ */
+export function listChargeAbilities(actor) {
+  return listOnceAbilities(actor).filter(ability => ability.chargesFormula.trim());
 }
 
 /**

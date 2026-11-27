@@ -11,7 +11,7 @@ import { rollSavingThrowFromChat, rollSpellEffectSaveFromChat, applySpellEffectF
 function parseExtraCounts(text) {
   return String(text ?? '').split(',').filter(part => part !== '').map(Number);
 }
-import { resolveHitEvaluationFromChat, handleForceHitFromChat } from './helpers/attackRolls.mjs';
+import { resolveHitEvaluationFromChat, handleAbilityTriggerFromChat } from './helpers/attackRolls.mjs';
 import { applyDamageFromChat, handleManualKillFromChat } from './helpers/damageApplication.mjs';
 import { claimInspirationDie } from './helpers/inspiration.mjs';
 import { handleRerollFromChat, registerLuckRerollSync } from './helpers/luck.mjs';
@@ -296,13 +296,13 @@ Hooks.once('ready', async function () {
     resolveHitEvaluationFromChat(button, event.shiftKey);
   });
 
-  // A missed weapon attack's "hits after all" button (Zielsicher) - see
-  // helpers/attackRolls.mjs#handleForceHitFromChat.
+  // A triggered ability's button on an attack card (Zielsicher, Schlaghagel) -
+  // see helpers/attackRolls.mjs#handleAbilityTriggerFromChat.
   document.addEventListener('click', (event) => {
-    const button = event.target.closest('[data-action="forceHit"]');
+    const button = event.target.closest('[data-action="abilityTrigger"]');
     if (!button) return;
     event.preventDefault();
-    handleForceHitFromChat(button);
+    handleAbilityTriggerFromChat(button);
   });
 
   // Any damage roll's "Apply Damage" button - see

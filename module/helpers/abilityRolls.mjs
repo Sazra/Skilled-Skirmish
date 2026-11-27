@@ -34,7 +34,7 @@ import { recoverResources } from './resourceDefinitions.mjs';
  *   resource that contributed) on success, null if unaffordable (a warning
  *   was already shown, nothing was spent).
  */
-async function payAbilityCost(actor, apCost, rpCost, manaCost) {
+export async function payAbilityCost(actor, apCost, rpCost, manaCost) {
   const combatActive = isCombatActive();
   const offTurn = !isActorsOwnTurn(actor);
   const resolvedRpCost = rpCost > 0 ? rpCost : apCost;
@@ -147,7 +147,7 @@ export function getAbilityActionLabel(entry) {
  * @param {boolean} offTurn
  * @return {string[]}
  */
-function onceAbilityCostLines(ability, offTurn) {
+export function onceAbilityCostLines(ability, offTurn) {
   const result = [];
   if (offTurn && (ability.rpCost > 0 || ability.apCost > 0)) {
     const rp = ability.rpCost > 0 ? ability.rpCost : ability.apCost;

@@ -500,6 +500,20 @@ export class SKSKItemSheet extends HandlebarsApplicationMixin(DocumentSheetV2) {
         day: 'SKSK.Ability.Charges.Mode.day',
         time: 'SKSK.Ability.Charges.Mode.time',
       };
+      // "once" abilities: the triggered use (helpers/abilityTriggers.mjs).
+      context.reactionChoices = {
+        trigger: {
+          none: 'SKSK.Ability.Reaction.Trigger.none',
+          afterAttack: 'SKSK.Ability.Reaction.Trigger.afterAttack',
+          afterMiss: 'SKSK.Ability.Reaction.Trigger.afterMiss',
+          whenHit: 'SKSK.Ability.Reaction.Trigger.whenHit',
+        },
+        effect: {
+          none: 'SKSK.Ability.Reaction.Effect.none',
+          followUp: 'SKSK.Ability.Reaction.Effect.followUp',
+          forceHit: 'SKSK.Ability.Reaction.Effect.forceHit',
+        },
+      };
       context.abilityRecoveryUnitChoices = {
         minutes: 'SKSK.Ability.Charges.UnitChoice.minutes',
         hours: 'SKSK.Ability.Charges.UnitChoice.hours',

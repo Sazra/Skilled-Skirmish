@@ -1,4 +1,5 @@
 import { getActorSkillLevel } from "./skills.mjs";
+import { renderTriggerButtons, classifyAttack } from './abilityTriggers.mjs';
 import { getClassAbilityLevels, actorHasAdvancedClass } from "./abilities.mjs";
 import { computeMovementSpeeds } from "./movement.mjs";
 import { canUseWeaponAttack, canMove, applyAdrenalinDamage, isActorsOwnTurn, isCombatActive } from "./statusEffects.mjs";
@@ -141,9 +142,13 @@ async function rollWeaponReload(item, baseApCost) {
  * (pure per-Item runtime state, not schema data) tracks shots left in the
  * current magazine, refilling to a full magazine once reloaded.
  * @param {Item} item   The weapon item being used.
+ * @param {{followUp?: string|null, noCrit?: boolean}} [options]   followUp: the name of the
+ *   ability this attack was added by (helpers/abilityTriggers.mjs) - it uses up no primed
+ *   Technique and offers no further follow-ups; noCrit: it cannot hit critically.
  * @return {Promise<ChatMessage>}
  */
-export async function rollWeaponItem(item) {
+export async function rollWeaponItem(item, options = {}) {
+  const { followUp = null, noCrit = false } = options;
   const actor = item.actor;
   const reloadEntry = (item.system.effectiveProperties ?? []).find(e => e.property === 'reload');
   let ammoRemaining = null;
@@ -161,7 +166,7 @@ export async function rollWeaponItem(item) {
   // attributes picked on those properties (if any) instead of the usual ones.
   const distant = actor ? isDistantAttack(actor) : false;
 
-  const parts = [formatRollCardHeading(item.name)];
+  const parts = [formatRollCardHeading(followUp ? `${item.name} (${followUp})` : item.name)];
   const damageType = getWeaponDamageType(item.system);
   // A Weapon with its own "ignores Barrier" switch tags every damage entry it
   // produces, so helpers/damageApplication.mjs#applyResolvedDamageEntries
@@ -182,7 +187,7 @@ export async function rollWeaponItem(item) {
   // first - its styleAttackBonus (from any active same-Kampfstil stand)
   // applies to the attack roll below; its own attackBonus payload (if
   // any) applies to the damage roll further down.
-  const technique = actor ? await consumePrimedTechnique(actor, 'weapon', item) : null;
+  const technique = actor && !followUp ? await consumePrimedTechnique(actor, 'weapon', item) : null;
   const techniqueEffect = getTechniqueEffectPayload(technique);
 
   let rolls = null;
@@ -196,7 +201,7 @@ export async function rollWeaponItem(item) {
     const rendered = await renderAttackPairHTML(rolls, 'armorClass', actor, {
       damageDice, killSkillKey: item.system.weaponType, flanking: flank.flanking,
       bonus: attackBonus, label: game.i18n.localize('SKSK.AttackRoll.Attack'),
-      attributeKeys: getWeaponAttackAttributeKeys(item.system, distant),
+      attributeKeys: getWeaponAttackAttributeKeys(item.system, distant), noCrit,
     });
     attackBlockIndex = parts.length;
     parts.push(rendered);
@@ -270,13 +275,20 @@ export async function rollWeaponItem(item) {
   if (actor && rolls) {
     const autoResolveHTML = await autoResolveAttackForTargets(rolls, 'armorClass', actor, {
       damageEntries, damageDice, killSkillKey: item.system.weaponType, flanking: flank.flanking,
-      techniqueItemUuid: techniqueEffect?.itemUuid ?? null, wounds: woundCount,
+      techniqueItemUuid: techniqueEffect?.itemUuid ?? null, wounds: woundCount, noCrit,
     });
     if (autoResolveHTML) {
       if (attackBlockIndex >= 0) parts[attackBlockIndex] = stripRerollButton(greyOutManualEvalButtons(parts[attackBlockIndex]));
       if (applyButtonIndex >= 0) parts[applyButtonIndex] = greyOutManualEvalButtons(parts[applyButtonIndex]);
       parts.push(autoResolveHTML);
     }
+  }
+
+  // Triggered abilities (Schlaghagel: more attacks), not after a Technique or a follow-up.
+  if (actor && rolls && !technique && !followUp) {
+    parts.push(renderTriggerButtons(actor, 'afterAttack', classifyAttack({ comparisonType: 'armorClass', killSkillKey: item.system.weaponType, damageDice }), {
+      attack: 'weapon', itemUuid: item.uuid,
+    }));
   }
 
   // "Bis Nutzung": an effect this attack used (see helpers/extraDamage.mjs)
@@ -410,11 +422,17 @@ function resolveMartialArtsAttributeBonus(actor, attributes, attributeUsage) {
  * deducting its own AP cost.
  * @param {Actor} actor
  * @param {number} index   Index into actor.system.martialArtsAttacks.
+ * @param {{followUp?: string|null, free?: boolean, noCrit?: boolean}} [options]   followUp: the
+ *   name of the ability this attack was added by (helpers/abilityTriggers.mjs) - it uses up no
+ *   primed Technique and offers no further follow-ups; free: costs no AP/RP; noCrit: it cannot
+ *   hit critically.
  * @return {Promise<ChatMessage|void>}
  */
-export async function rollMartialArtsAttack(actor, index) {
+export async function rollMartialArtsAttack(actor, index, options = {}) {
+  const { followUp = null, free = false, noCrit = false } = options;
   const attack = actor.system.martialArtsAttacks?.[index];
   if (!attack) return;
+  const apCost = free ? 0 : attack.apCost;
   if (!canUseWeaponAttack(actor)) {
     return ui.notifications.warn(game.i18n.localize('SKSK.StatusEffect.AttackBlocked'));
   }
@@ -424,10 +442,10 @@ export async function rollMartialArtsAttack(actor, index) {
   // Arts Attacks are always melee, so unlike weapon items (see useItem
   // below) there's no Ranged property to block here.
   const offTurn = !isActorsOwnTurn(actor);
-  if (offTurn ? !hasEnoughReactionPoints(actor, attack.apCost) : !hasEnoughActionPoints(actor, attack.apCost)) return;
+  if (offTurn ? !hasEnoughReactionPoints(actor, apCost) : !hasEnoughActionPoints(actor, apCost)) return;
 
   const damageDice = [{ damageType: attack.damageType, dieSizes: getDamageDieSizes(attack.formula), melee: true }];
-  const technique = await consumePrimedTechnique(actor, 'martialArts');
+  const technique = followUp ? null : await consumePrimedTechnique(actor, 'martialArts');
   const flank = resolveAttackFlanking(actor);
   const flankBonus = flank.flanking ? getActorSkillLevel(actor, 'tactic') : 0;
   const attackBonus = computeMartialArtsAttackBonus(actor, attack) + (technique?.styleAttackBonus ?? 0) + (technique?.hitBonusAmount ?? 0) + flankBonus;
@@ -435,7 +453,7 @@ export async function rollMartialArtsAttack(actor, index) {
   let attackHTML = `${await renderAttackPairHTML(rolls, 'armorClass', actor, {
     damageDice, killSkillKey: 'martialArts', flanking: flank.flanking,
     bonus: attackBonus, label: game.i18n.localize('SKSK.AttackRoll.Attack'),
-    attributeKeys: getMartialArtsAttributeKeys(attack),
+    attributeKeys: getMartialArtsAttributeKeys(attack), noCrit,
   })}${formatFlankingBonusLine(flank, flankBonus)}`;
 
   const attributeBonus = resolveMartialArtsAttributeBonus(actor, attack.attributes, attack.attributeUsage);
@@ -475,14 +493,14 @@ export async function rollMartialArtsAttack(actor, index) {
   // either way, just visually dimmed once this actually did something.
   const autoResolveHTML = await autoResolveAttackForTargets(rolls, 'armorClass', actor, {
     damageEntries, damageDice, killSkillKey: 'martialArts', flanking: flank.flanking,
-    techniqueItemUuid: techniqueEffect?.itemUuid ?? null,
+    techniqueItemUuid: techniqueEffect?.itemUuid ?? null, noCrit,
   });
   if (autoResolveHTML) {
     attackHTML = stripRerollButton(greyOutManualEvalButtons(attackHTML));
     applyDamageHTML = greyOutManualEvalButtons(applyDamageHTML);
   }
 
-  await actor.update(offTurn ? spendReactionPoints(actor, attack.apCost) : spendActionPoints(actor, attack.apCost));
+  await actor.update(offTurn ? spendReactionPoints(actor, apCost) : spendActionPoints(actor, apCost));
   // "Bis Nutzung": an effect this attack used is removed now.
   const consumedHTML = await consumeUsedEffects(actor, {
     kind: 'martialArts', damageType: attack.damageType, damageTypes: damageEntries.map(entry => entry.damageType), rolled: true, attackRolled: true,
@@ -497,14 +515,19 @@ export async function rollMartialArtsAttack(actor, index) {
   }
   fpHTML += formatSkillFpGrantLine(await checkReflexActionTrigger(actor));
 
-  const apCostHTML = attack.apCost
-    ? `<div class="${offTurn ? 'sksk-roll-rp-cost' : 'sksk-roll-ap-cost'}"><strong>${game.i18n.localize(offTurn ? 'SKSK.Spell.RPCost' : 'SKSK.Spell.APCost')}:</strong> ${attack.apCost}</div>`
+  const apCostHTML = apCost
+    ? `<div class="${offTurn ? 'sksk-roll-rp-cost' : 'sksk-roll-ap-cost'}"><strong>${game.i18n.localize(offTurn ? 'SKSK.Spell.RPCost' : 'SKSK.Spell.APCost')}:</strong> ${apCost}</div>`
     : '';
-  const title = attack.name || game.i18n.localize('SKSK.Action.MartialArtsAttack');
+  const baseTitle = attack.name || game.i18n.localize('SKSK.Action.MartialArtsAttack');
+  const title = followUp ? `${baseTitle} (${followUp})` : baseTitle;
+  // Triggered abilities (Schlaghagel: more attacks), not after a Technique or a follow-up.
+  const triggerHTML = !technique && !followUp
+    ? renderTriggerButtons(actor, 'afterAttack', 'martialArts', { attack: 'martialArts', index })
+    : '';
   const messageData = {
     speaker: ChatMessage.getSpeaker({ actor }),
     flavor: title,
-    content: `<div class="sksk-chat-card sksk-action-card">${formatRollCardHeading(title)}${apCostHTML}${attackHTML}${renderedDamage}${extraDamage.html}${techniqueLine}${applyDamageHTML}${fpHTML}${autoResolveHTML}${consumedHTML}</div>`,
+    content: `<div class="sksk-chat-card sksk-action-card">${formatRollCardHeading(title)}${apCostHTML}${attackHTML}${renderedDamage}${extraDamage.html}${techniqueLine}${applyDamageHTML}${fpHTML}${autoResolveHTML}${triggerHTML}${consumedHTML}</div>`,
   };
   ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));
   return ChatMessage.create(messageData);

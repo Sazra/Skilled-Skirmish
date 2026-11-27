@@ -33,9 +33,44 @@
 <label class="resource-label" title="{{localize 'SKSK.Ability.Charges.FormulaHint'}}">{{localize 'SKSK.Ability.Charges.Formula'}}</label>
 <input type="text" name="system.abilityChargesFormula" value="{{system.abilityChargesFormula}}"
   title="{{localize 'SKSK.Ability.Charges.FormulaHint'}}" placeholder="{{localize 'SKSK.Ability.Charges.FormulaPlaceholder'}}" />
-<label class="checkbox" title="{{localize 'SKSK.Ability.ForceHitHint'}}">
-  <input type="checkbox" name="system.abilityForceHit" {{checked system.abilityForceHit}} /> {{localize 'SKSK.Ability.ForceHit'}}
-</label>
+<label class="resource-label" title="{{localize 'SKSK.Ability.Reaction.Hint'}}">{{localize 'SKSK.Ability.Reaction.Title'}}</label>
+<div class="grid grid-2col">
+  <div class="grid-span-1">
+    <label class="resource-label">{{localize 'SKSK.Ability.Reaction.TriggerLabel'}}</label>
+    <select name="system.abilityReaction.trigger">
+      {{selectOptions reactionChoices.trigger selected=system.abilityReaction.trigger localize=true}}
+    </select>
+  </div>
+  <div class="grid-span-1">
+    <label class="resource-label">{{localize 'SKSK.Ability.Reaction.EffectLabel'}}</label>
+    <select name="system.abilityReaction.effect">
+      {{selectOptions reactionChoices.effect selected=system.abilityReaction.effect localize=true}}
+    </select>
+  </div>
+</div>
+{{#unless (eq system.abilityReaction.trigger "none")}}
+<label class="resource-label">{{localize 'SKSK.Ability.Reaction.Kinds'}}</label>
+<div class="flexrow">
+  <label class="checkbox"><input type="checkbox" name="system.abilityReaction.kinds.martialArts" {{checked system.abilityReaction.kinds.martialArts}} /> {{localize 'SKSK.Ability.Reaction.Kind.martialArts'}}</label>
+  <label class="checkbox"><input type="checkbox" name="system.abilityReaction.kinds.meleeWeapon" {{checked system.abilityReaction.kinds.meleeWeapon}} /> {{localize 'SKSK.Ability.Reaction.Kind.meleeWeapon'}}</label>
+  <label class="checkbox"><input type="checkbox" name="system.abilityReaction.kinds.rangedWeapon" {{checked system.abilityReaction.kinds.rangedWeapon}} /> {{localize 'SKSK.Ability.Reaction.Kind.rangedWeapon'}}</label>
+  <label class="checkbox"><input type="checkbox" name="system.abilityReaction.kinds.spell" {{checked system.abilityReaction.kinds.spell}} /> {{localize 'SKSK.Ability.Reaction.Kind.spell'}}</label>
+</div>
+{{#if (eq system.abilityReaction.effect "followUp")}}
+<div class="grid grid-3col">
+  <div class="grid-span-1">
+    <label class="resource-label">{{localize 'SKSK.Ability.Reaction.FollowUpCount'}}</label>
+    <input type="text" name="system.abilityReaction.followUpCount" value="{{system.abilityReaction.followUpCount}}" data-dtype="Number" />
+  </div>
+  <div class="grid-span-1">
+    <label class="checkbox"><input type="checkbox" name="system.abilityReaction.followUpFree" {{checked system.abilityReaction.followUpFree}} /> {{localize 'SKSK.Ability.Reaction.FollowUpFree'}}</label>
+  </div>
+  <div class="grid-span-1">
+    <label class="checkbox"><input type="checkbox" name="system.abilityReaction.followUpNoCrit" {{checked system.abilityReaction.followUpNoCrit}} /> {{localize 'SKSK.Ability.Reaction.FollowUpNoCrit'}}</label>
+  </div>
+</div>
+{{/if}}
+{{/unless}}
 
 {{#if system.abilityChargesFormula}}
 <label class="resource-label" title="{{localize 'SKSK.Ability.Charges.RecoveryHint'}}">

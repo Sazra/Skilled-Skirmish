@@ -1297,11 +1297,14 @@
             "NoDefender": "Du hast weder ein Ziel ausgewählt noch einen zugewiesenen Charakter - kann nicht ausgewertet werden.",
             "NoPermissionToApply": "Du besitzt dieses Ziel nicht, und es ist aktuell kein GM online, der das übernehmen könnte - nur der GM (oder ein Besitzer) kann den Schaden hier anwenden.",
             "NoDefenderForcedHit": "Kein Ziel ausgewählt - automatisch als Treffer gewertet (Shift+Klick).",
-            "ForceHit": {
-                "Button": "{name}: trifft doch (Ladungen: {current}/{max})",
-                "Used": "{name}: {attacker} setzt eine Ladung ein - der Angriff trifft und kann nicht abgewendet werden.",
-                "ManualNote": "Wende den Schaden mit dem Schadenknopf des Angriffs an.",
-                "NoCharge": "Keine Ladung von {name} übrig.",
+            "Trigger": {
+                "CostAp": "{n} AP",
+                "CostRp": "{n} RP",
+                "CostMana": "{n} Mana",
+                "Charges": "Ladungen {current}/{max}",
+                "Button": "{name}{cost}",
+                "Used": "{name}: {attacker} setzt die Fähigkeit ein.",
+                "ManualNote": "Der Angriff trifft und kann nicht abgewendet werden. Wende den Schaden mit dem Schadenknopf des Angriffs an.",
                 "NotOwner": "Nur der Besitzer des Angreifers kann das einsetzen.",
                 "Spent": "Eingesetzt."
             },
@@ -1741,8 +1744,33 @@
                 "EffectSpellPlaceholder": "Zauber hierher ziehen oder UUID eintragen",
                 "NotASpell": "Nur Zauber können als Effekt verknüpft werden."
             },
-            "ForceHit": "Treffer erzwingen (Zielsicher)",
-            "ForceHitHint": "Eine Ladung dieser Fähigkeit kann den Fehlschlag eines Waffenangriffs in einen Treffer verwandeln, der nicht abgewendet werden kann. Die Karte des Fehlschlags zeigt dafür einen Knopf, solange noch eine Ladung übrig ist. Braucht Ladungen.",
+            "Reaction": {
+                "Title": "Auslöser und Wirkung",
+                "Hint": "Die Fähigkeit bietet ihre Wirkung zu einem festen Zeitpunkt des Kampfes an (Knopf auf der Karte). Kosten, Ladungen und Abklingzeit kommen von der Fähigkeit.",
+                "TriggerLabel": "Auslöser",
+                "Trigger": {
+                    "none": "Keiner (nur manuell)",
+                    "afterAttack": "Nach eigenem Angriff",
+                    "afterMiss": "Nach eigenem Fehlschlag",
+                    "whenHit": "Wenn ich getroffen werde"
+                },
+                "EffectLabel": "Wirkung",
+                "Effect": {
+                    "none": "Keine",
+                    "followUp": "Folgeangriffe",
+                    "forceHit": "Treffer erzwingen"
+                },
+                "Kinds": "Gilt für (nichts angehakt = alle Arten)",
+                "Kind": {
+                    "martialArts": "Kampfkunst",
+                    "meleeWeapon": "Nahkampfwaffe",
+                    "rangedWeapon": "Fernkampfwaffe",
+                    "spell": "Zauber"
+                },
+                "FollowUpCount": "Anzahl Folgeangriffe",
+                "FollowUpFree": "Kostenlos (keine AP)",
+                "FollowUpNoCrit": "Keine kritischen Treffer"
+            },
             "Charges": {
                 "Formula": "Ladungen (Maximum, Formel)",
                 "FormulaHint": "Leer = keine Ladungen. In der Formel: L = Level, @attributes.str.mod bzw. @attributes.str.value = Attributsmodifikator/-wert, @skills.adrenalin = Fertigkeitsstufe; dazu + - * / ( ) und floor(), ceil(), round(), min(), max(). Beispiele: L / 2 - @attributes.str.mod * L - @skills.adrenalin * @attributes.con.mod. Das Ergebnis wird abgerundet.",

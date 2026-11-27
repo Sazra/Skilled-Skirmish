@@ -44,12 +44,37 @@ export function buildOnceAbilityFields(fields, requiredInteger) {
       clock: new fields.NumberField({ required: true, nullable: false, initial: 0 }),
       carry: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
     })),
-    // "Treffer erzwingen" (Zielsicher): a charge of this ability may turn the
-    // miss of a weapon/Martial Arts attack into a hit that cannot be averted
-    // (see helpers/forceHit.mjs). Needs charges.
-    forceHit: new fields.BooleanField({ initial: false }),
+    // Triggered use (see helpers/abilityTriggers.mjs): the ability offers its
+    // effect at a fixed moment of combat, on top of its manual use.
+    reaction: new fields.SchemaField({
+      // When the button/question appears: "afterAttack" (own attack), "afterMiss"
+      // (own attack missed), "whenHit" (an attack hit the owner).
+      trigger: new fields.StringField({ required: true, blank: false, initial: "none", choices: ["none", "afterAttack", "afterMiss", "whenHit"] }),
+      // For which kinds of attack; none checked = every kind.
+      kinds: new fields.SchemaField({
+        martialArts: new fields.BooleanField({ initial: false }),
+        meleeWeapon: new fields.BooleanField({ initial: false }),
+        rangedWeapon: new fields.BooleanField({ initial: false }),
+        spell: new fields.BooleanField({ initial: false }),
+      }),
+      // "followUp": more attacks of the same kind (Schlaghagel); "forceHit": the
+      // missed attack hits after all and cannot be averted (Zielsicher);
+      // "mitigate": the damage of the hit is reduced.
+      effect: new fields.StringField({ required: true, blank: false, initial: "none", choices: ["none", "followUp", "forceHit", "mitigate"] }),
+      // followUp: how many attacks, whether they cost no AP, and whether they cannot hit critically.
+      followUpCount: new fields.NumberField({ ...requiredInteger, initial: 1, min: 1 }),
+      followUpFree: new fields.BooleanField({ initial: true }),
+      followUpNoCrit: new fields.BooleanField({ initial: false }),
+    }),
   };
 }
+
+/** The blank values of the reaction field (a Class's spelled-out default entries need them). */
+export const REACTION_DEFAULTS = Object.freeze({
+  trigger: "none",
+  kinds: Object.freeze({ martialArts: false, meleeWeapon: false, rangedWeapon: false, spell: false }),
+  effect: "none", followUpCount: 1, followUpFree: true, followUpNoCrit: false,
+});
 
 /**
  * The same fields for the Talent, whose single ability lives directly on the
@@ -68,5 +93,5 @@ export function buildTalentOnceAbilityFields(fields, requiredInteger) {
  * ability entries (a partial entry fails validation, see data/class.mjs).
  */
 export const ONCE_ABILITY_DEFAULTS = Object.freeze({
-  effectSpellUuid: "", chargesFormula: "", chargesUsed: 0, chargeRecovery: [], forceHit: false,
+  effectSpellUuid: "", chargesFormula: "", chargesUsed: 0, chargeRecovery: [], reaction: REACTION_DEFAULTS,
 });
