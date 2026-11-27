@@ -196,7 +196,10 @@ async function createItemMacro(data, slot) {
   const item = await Item.fromDropData(data);
   if (!item) return;
   const command = `game.sksk.rollItemMacro(${JSON.stringify(data.uuid)}, ${JSON.stringify(item.name)}, ${JSON.stringify(item.type)});`;
-  let macro = game.macros.find(m => m.name === item.name && m.command === command);
+  // Only the user's own macro: another user's (e.g. a co-owner of the same
+  // actor) isn't theirs to execute - no ownership, and since Foundry 14.371 a
+  // Player-authored script macro also needs GM approval for anyone else.
+  let macro = game.macros.find(m => m.name === item.name && m.command === command && m.author?.id === game.user.id);
   if (!macro) {
     macro = await Macro.create({
       name: item.name,
