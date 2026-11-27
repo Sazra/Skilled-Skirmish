@@ -1698,6 +1698,7 @@
             "NotChosen": "{name} was not chosen.",
             "Count": "Number of choices",
             "CountHint": "Formula: how many of the options of this ability may be chosen (e.g. 2). Blank = no choice.",
+            "ExtraFromField": "Also from no.",
             "ExtraFromHint": "Indexes of other abilities (0 = first) whose options may also be chosen here once their own choices are full.",
             "AddOption": "Add option",
             "RemoveOption": "Remove option",

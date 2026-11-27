@@ -1698,6 +1698,7 @@
                 "NotChosen": "{name} wurde nicht gewählt.",
                 "Count": "Anzahl der Wahlen",
                 "CountHint": "Formel: wie viele der Optionen dieser Fähigkeit gewählt werden dürfen (z. B. 2). Leer = keine Auswahl.",
+                "ExtraFromField": "Zusätzlich aus Nr.",
                 "ExtraFromHint": "Indizes anderer Fähigkeiten (0 = erste), deren Optionen hier zusätzlich gewählt werden dürfen, sobald deren eigene Wahlen voll sind.",
                 "AddOption": "Option hinzufügen",
                 "RemoveOption": "Option entfernen",
