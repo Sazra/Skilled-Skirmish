@@ -488,6 +488,11 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     // for CONFIG.Combat.initiative's formula (see sksk.mjs).
     schema.initiativeBonus = new fields.NumberField({ ...requiredInteger, initial: 0 });
 
+    // AP less every reload of a Nachladen(X) weapon costs (never below 0, so a
+    // reload may become free) - purely an Active Effect target. See
+    // helpers/actions.mjs#rollWeaponReload.
+    schema.reloadApReduction = new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 });
+
     // Four flat "everything of this kind" accumulators - purely Active
     // Effect targets, each summed in ALONGSIDE the existing per-type/per-
     // school fields above (weaponAttackBonus.<type>, damageBonus.<type>,
@@ -914,6 +919,10 @@ export default class SKSKActorBase extends foundry.abstract.TypeDataModel {
     schema.attackAdvantageAll = recommendationField();
     schema.weaponAttackAdvantageAll = recommendationField();
     schema.spellAttackAdvantageAll = recommendationField();
+    // Seen from the DEFENDER: every attack against this actor gets this
+    // recommendation (e.g. Ruhende Verteidigung: -1 = Nachteil on all attacks
+    // against it). See helpers/rollRecommendation.mjs#recommendAttackMode.
+    schema.attackedAdvantageAll = recommendationField();
     // GM-tab switch: a spell's own Angriffswurf that fails to exceed this
     // actor's Magic Resistance normally still deals half its rolled damage
     // (rounded up) anyway - see helpers/attackRolls.mjs#

@@ -558,7 +558,7 @@ export async function renderAttackPairHTML([rollA, rollB], comparisonType, actor
   // Berührung) are used up by this very roll, long before Evaluate is clicked.
   const suggestedMode = damageInfo.suggestedMode !== undefined
     ? damageInfo.suggestedMode
-    : (recommendAttackMode(actor, { comparisonType, killSkillKey, flanking }) ?? '');
+    : (recommendAttackMode(actor, { comparisonType, killSkillKey, flanking, defender: singleTargetedActor(actor) }) ?? '');
   const rerollPayload = { blockId, bonus, comparisonType, damageDice, killSkillKey, flanking, label, attributeKeys, noFp, isArea, suggestedMode };
   const attributeRerollHTML = renderAttributeRerollButton(actor, attributeKeys, 'attack', rerollPayload);
   const rerollHTML = renderRerollButton(actor, 'attack', rerollPayload);
@@ -915,7 +915,7 @@ export async function resolveHitEvaluationFromChat(button, forceHit = false) {
     ? (button.dataset.suggestedMode || null)
     : recommendAttackMode(attacker, {
       comparisonType: button.dataset.comparisonType, killSkillKey: button.dataset.killSkill || null,
-      flanking: button.dataset.flanking === 'true',
+      flanking: button.dataset.flanking === 'true', defender,
     }));
   if (!mode) return;
 
@@ -1007,6 +1007,17 @@ function getOtherTargetedActors(attacker) {
 }
 
 /**
+ * The one other actor the user targets, or null for none/several (the
+ * defender's own recommendation only counts when it is unambiguous).
+ * @param {Actor|null} attacker
+ * @return {Actor|null}
+ */
+function singleTargetedActor(attacker) {
+  const targeted = getOtherTargetedActors(attacker);
+  return targeted.length === 1 ? targeted[0] : null;
+}
+
+/**
  * Visually dims an already-rendered Evaluate/Apply Damage button's own
  * HTML fragment - a plain substitution on both buttons' own fixed, static
  * class names (renderAttackPairHTML above / helpers/damageApplication.mjs#
@@ -1088,7 +1099,7 @@ export async function autoResolveAttackForTargets(rolls, comparisonType, attacke
   const defenders = getOtherTargetedActors(attacker);
   if (!defenders.length) return '';
 
-  const mode = autoHit ? 'neutral' : await chooseAttackMode(recommendAttackMode(attacker, { comparisonType, killSkillKey, flanking }));
+  const mode = autoHit ? 'neutral' : await chooseAttackMode(recommendAttackMode(attacker, { comparisonType, killSkillKey, flanking, defender: defenders.length === 1 ? defenders[0] : null }));
   if (!mode) return '';
 
   const critA = autoHit ? null : getAttackCriticalType(rollA, attacker);

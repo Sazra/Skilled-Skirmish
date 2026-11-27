@@ -170,6 +170,7 @@ export class SKSKEffectKeyReference extends HandlebarsApplicationMixin(Applicati
           { label: 'Totem Slots Bonus', key: 'system.totemSlotsBonus' },
           { label: 'Genereller Wurfbonus (alle Würfe)', key: 'system.allRollsBonus' },
           { label: 'Initiative-Bonus', key: 'system.initiativeBonus' },
+          { label: 'Nachladen: AP-Ersparnis (Nachladen(X)-Waffen, mindestens 0 AP)', key: 'system.reloadApReduction' },
           { label: 'Tödliche Angriffe (Schalter)', key: 'system.damageRerollTwiceWeapon' },
           { label: 'Tödliche Magie (Schalter)', key: 'system.damageRerollTwiceSpell' },
           { label: 'Trefferbonus: alle Waffen (inkl. Kampfkunst)', key: 'system.weaponAttackBonusAll' },
@@ -280,6 +281,7 @@ export class SKSKEffectKeyReference extends HandlebarsApplicationMixin(Applicati
           { label: 'Empfehlung: alle Angriffe', key: 'system.attackAdvantageAll' },
           { label: 'Empfehlung: alle Waffenangriffe (inkl. Kampfkunst)', key: 'system.weaponAttackAdvantageAll' },
           { label: 'Empfehlung: alle Zauberangriffe', key: 'system.spellAttackAdvantageAll' },
+          { label: 'Empfehlung gegen dieses Ziel: alle Angriffe auf es (-1 = Nachteil)', key: 'system.attackedAdvantageAll' },
           ...Object.entries(CONFIG.SKSK.attributes).map(([key, labelKey]) => ({
             label: `Empfehlung Attributswurf: ${game.i18n.localize(labelKey)}`, key: `system.attributeRollAdvantage.${key}`,
           })),

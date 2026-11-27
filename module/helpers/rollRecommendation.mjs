@@ -88,14 +88,15 @@ export function recommendSaveMode(actor, { testAttributes = {}, testSkills = [],
 /**
  * Recommended mode for an Angriffswurf's evaluation.
  * @param {Actor|null} attacker
- * @param {{comparisonType?: string, killSkillKey?: string|null, flanking?: boolean}} [options]
+ * @param {{comparisonType?: string, killSkillKey?: string|null, flanking?: boolean, defender?: Actor|null}} [options]
  *   comparisonType "armorClass" = weapon/Martial Arts attack (killSkillKey is
- *   the weapon skill), "magicResistance" = spell attack.
+ *   the weapon skill), "magicResistance" = spell attack; defender: the one
+ *   attacked, if known (its attackedAdvantageAll counts too).
  * @return {"advantage"|"disadvantage"|null}
  */
-export function recommendAttackMode(attacker, { comparisonType = 'armorClass', killSkillKey = null, flanking = false } = {}) {
+export function recommendAttackMode(attacker, { comparisonType = 'armorClass', killSkillKey = null, flanking = false, defender = null } = {}) {
   const system = attacker?.system;
-  let score = flanking ? 1 : 0;
+  let score = (flanking ? 1 : 0) + sum(defender?.system?.attackedAdvantageAll);
   if (system) {
     score += sum(system.allRollsAdvantage, system.attackAdvantageAll);
     if (comparisonType === 'magicResistance') {

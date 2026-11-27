@@ -111,11 +111,12 @@ export async function postActionChatCard(
  * which routes here instead of its normal attack flow once the magazine is
  * empty.
  * @param {Item} item
- * @param {number} apCost
+ * @param {number} baseApCost   The weapon's Nachladen(X) cost, before the actor's reloadApReduction.
  * @return {Promise<ChatMessage|void>}
  */
-async function rollWeaponReload(item, apCost) {
+async function rollWeaponReload(item, baseApCost) {
   const actor = item.actor;
+  const apCost = Math.max(0, (baseApCost ?? 0) - (actor?.system.reloadApReduction ?? 0));
   if (actor && !hasEnoughActionPoints(actor, apCost)) return;
   if (actor) await actor.update(spendActionPoints(actor, apCost));
   await item.unsetFlag('sksk', 'ammoRemaining');
