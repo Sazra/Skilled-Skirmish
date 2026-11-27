@@ -115,19 +115,19 @@ export default class SKSKClass extends SKSKItemBase {
           name: "", description: "", lifeBonusFormula: "0", manaBonusFormula: "0", patronAbilityIndex: 0,
           type: "passive", apCost: 0, rpCost: 0, manaCost: 0, durationRounds: 1, cooldownRounds: 0,
           active: false, roundsRemaining: 0, effectId: "", damageRerollMode: "none", damageRerollElement: "",
-          effectSpellUuid: "", chargesFormula: "", chargesUsed: 0, chargeRecovery: [], ...CHOICE_ABILITY_DEFAULTS
+          effectSpellUuid: "", chargesFormula: "", chargesUsed: 0, chargeRecovery: [], forceHit: false, ...CHOICE_ABILITY_DEFAULTS
         },
         {
           name: "", description: "", lifeBonusFormula: "0", manaBonusFormula: "0", patronAbilityIndex: 0,
           type: "passive", apCost: 0, rpCost: 0, manaCost: 0, durationRounds: 1, cooldownRounds: 0,
           active: false, roundsRemaining: 0, effectId: "", damageRerollMode: "none", damageRerollElement: "",
-          effectSpellUuid: "", chargesFormula: "", chargesUsed: 0, chargeRecovery: [], ...CHOICE_ABILITY_DEFAULTS
+          effectSpellUuid: "", chargesFormula: "", chargesUsed: 0, chargeRecovery: [], forceHit: false, ...CHOICE_ABILITY_DEFAULTS
         },
         {
           name: "", description: "", lifeBonusFormula: "0", manaBonusFormula: "0", patronAbilityIndex: 0,
           type: "passive", apCost: 0, rpCost: 0, manaCost: 0, durationRounds: 1, cooldownRounds: 0,
           active: false, roundsRemaining: 0, effectId: "", damageRerollMode: "none", damageRerollElement: "",
-          effectSpellUuid: "", chargesFormula: "", chargesUsed: 0, chargeRecovery: [], ...CHOICE_ABILITY_DEFAULTS
+          effectSpellUuid: "", chargesFormula: "", chargesUsed: 0, chargeRecovery: [], forceHit: false, ...CHOICE_ABILITY_DEFAULTS
         }
       ]
     });

@@ -55,6 +55,7 @@ export function evaluateChargeFormula(formula, actor) {
  * @property {string} chargesFormula
  * @property {number} chargesUsed
  * @property {object[]} chargeRecovery
+ * @property {boolean} forceHit   Whether a charge may turn a missed weapon attack into a hit (helpers/forceHit.mjs).
  */
 
 /**
@@ -72,6 +73,7 @@ export function readAbility(item, index = null) {
       cooldownRounds: s.abilityCooldownRounds, roundsRemaining: s.abilityRoundsRemaining,
       effectSpellUuid: s.abilityEffectSpellUuid, chargesFormula: s.abilityChargesFormula,
       chargesUsed: s.abilityChargesUsed, chargeRecovery: foundry.utils.deepClone(s.abilityChargeRecovery ?? []),
+      forceHit: !!s.abilityForceHit,
     };
   }
   const entry = item.system.abilities?.[index];
@@ -82,6 +84,7 @@ export function readAbility(item, index = null) {
     cooldownRounds: entry.cooldownRounds, roundsRemaining: entry.roundsRemaining,
     effectSpellUuid: entry.effectSpellUuid, chargesFormula: entry.chargesFormula,
     chargesUsed: entry.chargesUsed, chargeRecovery: foundry.utils.deepClone(entry.chargeRecovery ?? []),
+    forceHit: !!entry.forceHit,
   };
 }
 

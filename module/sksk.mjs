@@ -11,10 +11,10 @@ import { rollSavingThrowFromChat, rollSpellEffectSaveFromChat, applySpellEffectF
 function parseExtraCounts(text) {
   return String(text ?? '').split(',').filter(part => part !== '').map(Number);
 }
-import { resolveHitEvaluationFromChat } from './helpers/attackRolls.mjs';
+import { resolveHitEvaluationFromChat, handleForceHitFromChat } from './helpers/attackRolls.mjs';
 import { applyDamageFromChat, handleManualKillFromChat } from './helpers/damageApplication.mjs';
 import { claimInspirationDie } from './helpers/inspiration.mjs';
-import { handleRerollFromChat } from './helpers/luck.mjs';
+import { handleRerollFromChat, registerLuckRerollSync } from './helpers/luck.mjs';
 import { handleAttributeRerollFromChat } from './helpers/attributeReroll.mjs';
 import { handleDamageRerollOnesFromChat } from './helpers/damageReroll.mjs';
 import { rollTechniqueEffectSaveFromChat } from './helpers/technique-rolls.mjs';
@@ -196,6 +196,7 @@ Hooks.once('ready', async function () {
   // Drag-to-hotbar macros (a sheet roll, or an owned Item) - see
   // helpers/macroRolls.mjs.
   Hooks.on('hotbarDrop', createMacroFromDrop);
+  registerLuckRerollSync();
 
   // Aktiver Manakern (see helpers/statusEffects.mjs#activateActiveManaCore/
   // deactivateActiveManaCore/handleConcentrationEnded) - hooked on the
@@ -293,6 +294,15 @@ Hooks.once('ready', async function () {
     if (!button) return;
     event.preventDefault();
     resolveHitEvaluationFromChat(button, event.shiftKey);
+  });
+
+  // A missed weapon attack's "hits after all" button (Zielsicher) - see
+  // helpers/attackRolls.mjs#handleForceHitFromChat.
+  document.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-action="forceHit"]');
+    if (!button) return;
+    event.preventDefault();
+    handleForceHitFromChat(button);
   });
 
   // Any damage roll's "Apply Damage" button - see

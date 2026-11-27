@@ -33,6 +33,9 @@
 <label class="resource-label" title="{{localize 'SKSK.Ability.Charges.FormulaHint'}}">{{localize 'SKSK.Ability.Charges.Formula'}}</label>
 <input type="text" name="system.abilityChargesFormula" value="{{system.abilityChargesFormula}}"
   title="{{localize 'SKSK.Ability.Charges.FormulaHint'}}" placeholder="{{localize 'SKSK.Ability.Charges.FormulaPlaceholder'}}" />
+<label class="checkbox" title="{{localize 'SKSK.Ability.ForceHitHint'}}">
+  <input type="checkbox" name="system.abilityForceHit" {{checked system.abilityForceHit}} /> {{localize 'SKSK.Ability.ForceHit'}}
+</label>
 
 {{#if system.abilityChargesFormula}}
 <label class="resource-label" title="{{localize 'SKSK.Ability.Charges.RecoveryHint'}}">

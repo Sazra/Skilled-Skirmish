@@ -48,16 +48,45 @@ import { renderAttributeRerollButton } from './attributeReroll.mjs';
 
 /**
  * Whether actor qualifies for the Reroll feature at all - Character-only,
- * same as every other Luck/FP mechanic (see helpers/skillFp.mjs) - and only
- * once the Luck skill is at least 1 (luckCharges.max is 0 until then, see
- * helpers/generalResources.mjs#computeMaxLuckCharges). Doesn't check the
- * actual charge count - see renderRerollButton's own doc comment for why
- * the icon still renders at 0 charges.
+ * same as every other Luck/FP mechanic (see helpers/skillFp.mjs) - with the
+ * Luck skill at least 1 (luckCharges.max is 0 until then, see
+ * helpers/generalResources.mjs#computeMaxLuckCharges) and at least one Luck
+ * charge left.
  * @param {Actor|null} actor
  * @return {boolean}
  */
 function qualifiesForReroll(actor) {
-  return !!actor && actor.type === 'character' && actor.system.luckCharges.max >= 1;
+  return !!actor && actor.type === 'character' && actor.system.luckCharges.max >= 1 && actor.system.luckCharges.value >= 1;
+}
+
+/**
+ * Show the Luck Reroll icons of the given chat markup only while their owner
+ * still has a Luck charge: a card rendered while charges were left must not
+ * keep offering the reroll once they are spent (and shows it again after
+ * they came back).
+ * @param {ParentNode} root
+ * @return {void}
+ */
+function syncLuckRerollIcons(root) {
+  for (const icon of root.querySelectorAll('.sksk-reroll-luck[data-actor-uuid]')) {
+    // An actor that cannot be resolved right now (e.g. an unlinked token's) keeps its icon.
+    const actor = fromUuidSync(icon.dataset.actorUuid);
+    if (!actor) continue;
+    icon.style.display = qualifiesForReroll(actor) ? '' : 'none';
+  }
+}
+
+/**
+ * Keep every Luck Reroll icon in the chat in step with its owner's charges
+ * (on render, and whenever an actor's Luck charges change).
+ * @return {void}
+ */
+export function registerLuckRerollSync() {
+  Hooks.on('renderChatMessageHTML', (message, html) => syncLuckRerollIcons(html));
+  Hooks.on('updateActor', (actor, changes) => {
+    if (foundry.utils.getProperty(changes, 'system.luckCharges') === undefined) return;
+    syncLuckRerollIcons(document.getElementById('chat') ?? document);
+  });
 }
 
 /**
@@ -79,13 +108,11 @@ async function spendLuckCharge(actor) {
 /**
  * The small Reroll icon rendered next to a D20 roll's own name (see
  * formatRollCardHeading's own extraHTML param, and helpers/attackRolls.mjs#
- * renderAttackPairHTML for the "attack" kind). Rendered for every
- * Character with the Luck skill (level 1+) regardless of their current
- * Luck charge count - 0 charges
- * still warns on click (see handleRerollFromChat), matching this system's
- * usual "check affordability at click time" convention (e.g. helpers/
- * inspiration.mjs#payInspirationCost) rather than hiding the control
- * outright. Renders nothing for an NPC or null actor.
+ * renderAttackPairHTML for the "attack" kind). Rendered only for a
+ * Character with the Luck skill (level 1+) who still has a Luck charge
+ * (registerLuckRerollSync hides it again once the charges are gone); a click
+ * still re-checks the charge (see handleRerollFromChat). Renders nothing for
+ * an NPC or null actor.
  * @param {Actor|null} actor
  * @param {"generic"|"attack"} kind
  * @param {object} payload   Everything redoGenericD20Roll/redoAttackPairRoll

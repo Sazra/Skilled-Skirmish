@@ -1297,6 +1297,14 @@
       "NoDefender": "You have no target selected and no assigned character - cannot evaluate.",
       "NoPermissionToApply": "You don't own this target, and no GM is currently connected to relay it to - only the GM (or an owner) can apply damage here.",
       "NoDefenderForcedHit": "No target selected - automatically counted as a hit (Shift+click).",
+      "ForceHit": {
+          "Button": "{name}: hits after all (charges: {current}/{max})",
+          "Used": "{name}: {attacker} spends a charge - the attack hits and cannot be averted.",
+          "ManualNote": "Apply the damage with the attack's damage button.",
+          "NoCharge": "No charge of {name} left.",
+          "NotOwner": "Only the attacker's owner can use this.",
+          "Spent": "Used."
+      },
       "AutoResolveRelayed": "Resolution relayed to the GM (you don't own that target) - the result will appear shortly as its own card.",
       "EvaluationTitle": "Hit Evaluation ({defender})",
       "EvaluationTitleNoDefender": "Hit Evaluation (no target)",
@@ -1733,6 +1741,8 @@
         "EffectSpellPlaceholder": "Drag a spell here or enter its UUID",
         "NotASpell": "Only spells can be linked as an effect."
       },
+      "ForceHit": "Force a hit (Sure Shot)",
+      "ForceHitHint": "A charge of this ability can turn the miss of a weapon attack into a hit that cannot be averted. The miss card shows a button for it while a charge is left. Needs charges.",
       "Charges": {
         "Formula": "Charges (maximum, formula)",
         "FormulaHint": "Blank = no charges. In the formula: L = level, @attributes.str.mod / @attributes.str.value = attribute modifier/value, @skills.adrenalin = skill level; plus + - * / ( ) and floor(), ceil(), round(), min(), max(). Examples: L / 2 - @attributes.str.mod * L - @skills.adrenalin * @attributes.con.mod. The result is rounded down.",

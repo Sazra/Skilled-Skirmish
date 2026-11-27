@@ -44,6 +44,10 @@ export function buildOnceAbilityFields(fields, requiredInteger) {
       clock: new fields.NumberField({ required: true, nullable: false, initial: 0 }),
       carry: new fields.NumberField({ ...requiredInteger, initial: 0, min: 0 }),
     })),
+    // "Treffer erzwingen" (Zielsicher): a charge of this ability may turn the
+    // miss of a weapon/Martial Arts attack into a hit that cannot be averted
+    // (see helpers/forceHit.mjs). Needs charges.
+    forceHit: new fields.BooleanField({ initial: false }),
   };
 }
 
@@ -64,5 +68,5 @@ export function buildTalentOnceAbilityFields(fields, requiredInteger) {
  * ability entries (a partial entry fails validation, see data/class.mjs).
  */
 export const ONCE_ABILITY_DEFAULTS = Object.freeze({
-  effectSpellUuid: "", chargesFormula: "", chargesUsed: 0, chargeRecovery: [],
+  effectSpellUuid: "", chargesFormula: "", chargesUsed: 0, chargeRecovery: [], forceHit: false,
 });

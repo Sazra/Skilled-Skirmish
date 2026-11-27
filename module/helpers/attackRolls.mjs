@@ -23,6 +23,8 @@ import { renderRerollButton, wrapRerollIcons } from './luck.mjs';
 import { renderAttributeRerollButton } from './attributeReroll.mjs';
 import { hasRollTwiceWeapon, hasRollTwiceSpell, rollPossiblyDoubledDamage } from './damageReroll.mjs';
 import { requestGmAction, registerGmRelayAction } from './gmRelay.mjs';
+import { renderForceHitButton } from './forceHit.mjs';
+import { readAbility, getChargeState, changeCharges, startChargeClocks } from './abilityCharges.mjs';
 
 /**
  * Tactic level 10's own flat AC bonus (see helpers/flanking.mjs) - a
@@ -968,8 +970,13 @@ export async function resolveHitEvaluationFromChat(button, forceHit = false) {
 
   const stunHTML = stunStacks && evalDefender ? await applyCritStun(evalDefender, stunStacks) : '';
 
+  // A missed weapon attack may be turned into a hit (Zielsicher, see helpers/forceHit.mjs).
+  const forceHitHTML = !hit && button.dataset.comparisonType === 'armorClass'
+    ? renderForceHitButton(attacker, { kind: 'manual', attackerUuid: attacker?.uuid ?? null, defenderUuid: evalDefender?.uuid ?? null })
+    : '';
+
   const content = `<div class="sksk-chat-card sksk-action-card">`
-    + formatRollCardHeading(title) + reactionHTML + line + fpHTML + stunHTML + markerHTML
+    + formatRollCardHeading(title) + reactionHTML + line + fpHTML + stunHTML + markerHTML + forceHitHTML
     + `</div>`;
 
   const messageData = {
@@ -1118,10 +1125,11 @@ export async function autoResolveAttackForTargets(rolls, comparisonType, attacke
       }) ? 1 : 0;
       continue;
     }
-    const { title, line, fpHTML, damageHTML } = await resolveAndApplyOneAttack(defender, attacker, {
+    const resolveArgs = {
       mode, rollA: rollA?.total ?? 0, rollB: rollB?.total ?? 0, critA, critB, comparisonType, damageDice, killSkillKey, damageEntries, techniqueItemUuid, noFp, wounds, attackBonus, isArea, autoHit,
-    });
-    blocks.push(formatRollCardHeading(title) + line + fpHTML + damageHTML);
+    };
+    const result = await resolveAndApplyOneAttack(defender, attacker, resolveArgs);
+    blocks.push(formatRollCardHeading(result.title) + result.line + result.fpHTML + result.damageHTML + renderMissForceHit(attacker, result, resolveArgs));
   }
 
   if (!blocks.length && !relayedCount) return '';
@@ -1154,7 +1162,9 @@ export async function autoResolveAttackForTargets(rolls, comparisonType, attacke
  * @param {object} args   Everything evaluateHitAgainstDefender needs, plus
  *   damageEntries/techniqueItemUuid - see autoResolveAttackForTargets'
  *   own options param for their shapes.
- * @return {Promise<{title: string, line: string, fpHTML: string, damageHTML: string}>}
+ * @return {Promise<{title: string, line: string, fpHTML: string, damageHTML: string, hit?: boolean, hitDefender?: Actor}>}
+ *   hit/hitDefender: the outcome and who was finally attacked (a redirected
+ *   attack has another target); absent if a reaction ended the attack early.
  */
 async function resolveAndApplyOneAttack(defender, attacker, args) {
   const {
@@ -1219,7 +1229,94 @@ async function resolveAndApplyOneAttack(defender, attacker, args) {
     damageHTML += `<div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.SpellMissResisted')}</div>`;
   }
 
-  return { title, line, fpHTML, damageHTML };
+  return { title, line, fpHTML, damageHTML, hit, hitDefender: defender };
+}
+
+/**
+ * The Zielsicher button for a missed weapon attack resolved by resolveAndApplyOneAttack
+ * ('' for a hit, an auto-hit, a spell or an attacker without the ability).
+ * @param {Actor|null} attacker
+ * @param {{hit?: boolean, hitDefender?: Actor}} result
+ * @param {object} args   The resolveAndApplyOneAttack arguments of that attack.
+ * @return {string}
+ */
+function renderMissForceHit(attacker, result, args) {
+  if (!attacker || result.hit !== false || args.autoHit || args.comparisonType !== 'armorClass' || !result.hitDefender) return '';
+  return renderForceHitButton(attacker, {
+    kind: 'auto', attackerUuid: attacker.uuid, defenderUuid: result.hitDefender.uuid, args,
+  });
+}
+
+/**
+ * Zielsicher: the click on the "hits after all" button of a missed weapon
+ * attack. Spends one charge of the ability, then resolves the attack again as
+ * a hit that cannot be averted (an attack that was resolved right away - the
+ * damage is applied) or just states the hit (an Evaluate click - the damage is
+ * applied by hand). See helpers/forceHit.mjs.
+ * @param {HTMLElement} button
+ * @return {Promise<void>}
+ */
+export async function handleForceHitFromChat(button) {
+  if (button.disabled) return;
+  const payload = JSON.parse(decodeURIComponent(button.dataset.payload || '{}'));
+  const attacker = payload.attackerUuid ? await fromUuid(payload.attackerUuid) : null;
+  if (!attacker) return;
+  if (!attacker.isOwner) return void ui.notifications.warn(game.i18n.localize('SKSK.AttackRoll.ForceHit.NotOwner'));
+
+  const item = await fromUuid(button.dataset.abilityItem);
+  const indexText = button.dataset.abilityIndex;
+  const ability = item ? readAbility(item, indexText === '' ? null : Number(indexText)) : null;
+  const state = ability ? getChargeState(attacker, ability) : null;
+  if (!state?.has || state.current < 1) {
+    return void ui.notifications.warn(game.i18n.format('SKSK.AttackRoll.ForceHit.NoCharge', { name: ability?.name ?? '' }));
+  }
+  button.disabled = true;
+  await changeCharges(attacker, ability, -1);
+  if (state.used === 0) await startChargeClocks(ability);
+
+  const usedLine = `<div class="sksk-roll-line"><strong>${foundry.utils.escapeHTML(game.i18n.format('SKSK.AttackRoll.ForceHit.Used', { name: ability.name, attacker: attacker.name }))}</strong></div>`;
+  const defender = payload.defenderUuid ? await fromUuid(payload.defenderUuid) : null;
+  const postCard = (title, content) => {
+    const messageData = {
+      speaker: ChatMessage.getSpeaker({ actor: defender ?? attacker }),
+      flavor: title,
+      content: `<div class="sksk-chat-card sksk-action-card">${formatRollCardHeading(title)}${content}</div>`,
+    };
+    ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));
+    return ChatMessage.create(messageData);
+  };
+
+  if (payload.kind === 'auto' && defender) {
+    const forcedArgs = { ...payload.args, defenderUuid: defender.uuid, attackerUuid: attacker.uuid, autoHit: true, noReactions: true };
+    if (defender.isOwner) {
+      const result = await resolveAndApplyOneAttack(defender, attacker, forcedArgs);
+      await postCard(result.title, usedLine + result.line + result.fpHTML + result.damageHTML);
+    } else {
+      // The GM resolves it (own card, see handleAutoResolveHitRelay).
+      const relayed = requestGmAction('autoResolveHit', forcedArgs);
+      const note = relayed ? `<div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.AutoResolveRelayed')}</div>` : `<div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.NoPermissionToApply')}</div>`;
+      await postCard(game.i18n.format('SKSK.AttackRoll.EvaluationTitle', { defender: defender.name }), usedLine + note);
+    }
+  } else {
+    const title = defender
+      ? game.i18n.format('SKSK.AttackRoll.EvaluationTitle', { defender: defender.name })
+      : game.i18n.localize('SKSK.AttackRoll.EvaluationTitleNoDefender');
+    await postCard(title, usedLine + `<div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.ForceHit.ManualNote')}</div>`);
+  }
+
+  // The button is spent: swap it for a note, on the stored message too if the user may edit it.
+  const spent = `<div class="sksk-roll-line">${game.i18n.localize('SKSK.AttackRoll.ForceHit.Spent')}</div>`;
+  const message = game.messages.get(button.closest('[data-message-id]')?.dataset.messageId ?? '');
+  const content = message?.content ?? '';
+  const at = content.indexOf(`data-payload="${button.dataset.payload}"`);
+  const start = at < 0 ? -1 : content.lastIndexOf('<div class="sksk-roll-line"><button', at);
+  const endTag = '</button></div>';
+  const end = at < 0 ? -1 : content.indexOf(endTag, at);
+  if (message?.isOwner && start >= 0 && end >= 0) {
+    await message.update({ content: content.slice(0, start) + spent + content.slice(end + endTag.length) });
+  } else {
+    button.closest('.sksk-roll-line')?.replaceWith(Object.assign(document.createElement('div'), { className: 'sksk-roll-line', textContent: game.i18n.localize('SKSK.AttackRoll.ForceHit.Spent') }));
+  }
 }
 
 /**
@@ -1279,12 +1376,13 @@ async function handleAutoResolveHitRelay(data) {
   if (!defender) return;
   const attacker = data.attackerUuid ? await fromUuid(data.attackerUuid) : null;
 
-  const { title, line, fpHTML, damageHTML } = await resolveAndApplyOneAttack(defender, attacker, data);
+  const result = await resolveAndApplyOneAttack(defender, attacker, data);
+  const { title, line, fpHTML, damageHTML } = result;
 
   const messageData = {
     speaker: ChatMessage.getSpeaker({ actor: defender }),
     flavor: title,
-    content: `<div class="sksk-chat-card sksk-action-card sksk-auto-resolved">${formatRollCardHeading(title)}${line}${fpHTML}${damageHTML}</div>`,
+    content: `<div class="sksk-chat-card sksk-action-card sksk-auto-resolved">${formatRollCardHeading(title)}${line}${fpHTML}${damageHTML}${renderMissForceHit(attacker, result, data)}</div>`,
   };
   ChatMessage.applyRollMode(messageData, game.settings.get('core', 'rollMode'));
   return ChatMessage.create(messageData);
